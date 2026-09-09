@@ -1,0 +1,114 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-6417519081522245559
+MonoBehaviour:
+  m_ObjectHideFlags: 11
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0353a89b1f911e48b9e16bdc9f2e058, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  version: 7
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Shader Graphs_Dissolve 3_Builtin
+  m_Shader: {fileID: 4800000, guid: 2c34f061b86d6264689e761297d106e8, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords:
+  - _FRESNEL_MASK_ON
+  - _USEPARTICLEALPHADISSOLVE_ON
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: Vector1_0cf83b3f9db94c6383a1aeb97d535574
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - Texture2D_1c361cb5b2ce46bf8a7ef64a6dbecefe:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - Texture2D_70b86665e3384870b51e309aef21bbb3:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DissolveTex:
+        m_Texture: {fileID: 2800000, guid: 0d3b9e79f7fd7d54082216f440d53474, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DistortionMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MainTex:
+        m_Texture: {fileID: 2800000, guid: b2e3075485469244c8c2313d89c34e61, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _OverlayTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - unity_Lightmaps:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - unity_LightmapsInd:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - unity_ShadowMasks:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - Vector1_0cf83b3f9db94c6383a1aeb97d535574: 0.065
+    - Vector1_14f71e82016c4ca486d38ec088362cfe: 0.02
+    - Vector1_2b4b09cb371640399897a3cf067749b9: 0.5
+    - Vector1_bb506e3cf2914149937d6beae841c477: 0.45
+    - Vector1_f32807a44a684792ae255c52b7e7970e: 48
+    - Vector1_f66285c636ff47e69491208700897158: 0.15
+    - _Brightness: 1
+    - _DissolveAmount: 0.345
+    - _DissolveEdgeWidth: 0.05
+    - _DistortFrequency: 2
+    - _DistortSpeed: 1
+    - _DistortStrength: 0
+    - _DistortionPower: 0
+    - _FresnelIntensity: 10.44
+    - _FresnelMasksTexture: 1
+    - _FresnelType: 0
+    - _FresnelWidth: 7.9
+    - _QueueControl: 0
+    - _QueueOffset: 0
+    - _SoftParticlesEnabled: 0
+    - _SoftParticlesFadeDistance: 1
+    - _UseAlphaDissolve: 1
+    - _UseFresnel: 0
+    - _UseVertexDistort: 0
+    - _VertexAlphaRef: 0.653
+    m_Colors:
+    - Color_23ceb2f3f2cf455fae8c6806db2ef1f6: {r: 0.7735849, g: 0.65496373, b: 0.20872192, a: 0}
+    - Color_b7e7841110874cdfabddcd2d57990895: {r: 11.984314, g: 1.0313118, b: 0, a: 0}
+    - _DissolveEdgeColor: {r: 1.7857783, g: 0, b: 8.883027, a: 1}
+    - _DistortionSpeed: {r: 0, g: 0, b: 0, a: 0}
+    - _FlowSpeed: {r: 0, g: 0, b: 0, a: 0}
+    - _FresnelColor: {r: 0.73563343, g: 0.13458967, b: 1.5177143, a: 1}
+    - _OverlayColor: {r: 1, g: 1, b: 1, a: 1}
+    - _OverlayFlowSpeed: {r: 0, g: 0, b: 0, a: 0}
+    - _TintColor: {r: 0.63534784, g: 0.2471698, b: 1, a: 1}
+  m_BuildTextureStacks: []

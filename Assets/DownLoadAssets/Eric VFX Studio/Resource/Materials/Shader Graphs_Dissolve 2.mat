@@ -1,0 +1,74 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-6417519081522245559
+MonoBehaviour:
+  m_ObjectHideFlags: 11
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0353a89b1f911e48b9e16bdc9f2e058, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  version: 10
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Shader Graphs_Dissolve 2
+  m_Shader: {fileID: -6465566751694194690, guid: a39643deebfe6e24f8cb48d1ba3c5b5a, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses:
+  - MOTIONVECTORS
+  m_LockedProperties: Vector1_0cf83b3f9db94c6383a1aeb97d535574
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - Texture2D_1c361cb5b2ce46bf8a7ef64a6dbecefe:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - Texture2D_70b86665e3384870b51e309aef21bbb3:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - unity_Lightmaps:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - unity_LightmapsInd:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - unity_ShadowMasks:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - Vector1_0cf83b3f9db94c6383a1aeb97d535574: 0.065
+    - Vector1_14f71e82016c4ca486d38ec088362cfe: 0.02
+    - Vector1_2b4b09cb371640399897a3cf067749b9: 0.5
+    - Vector1_bb506e3cf2914149937d6beae841c477: 0.45
+    - Vector1_f32807a44a684792ae255c52b7e7970e: 48
+    - Vector1_f66285c636ff47e69491208700897158: 0.15
+    - _QueueControl: 0
+    - _QueueOffset: 0
+    m_Colors:
+    - Color_23ceb2f3f2cf455fae8c6806db2ef1f6: {r: 0, g: 0.37497008, b: 0.9144009, a: 0}
+    - Color_b7e7841110874cdfabddcd2d57990895: {r: 0, g: 4.3840437, b: 11.984314, a: 0}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1
