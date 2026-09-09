@@ -21,7 +21,7 @@ ProjectSettings는 이미 Force Text, Visible Meta Files이다. 다른 버전으
 3. python3 tools/validate_collaboration.py 실행.
 4. 해당 Sandbox에서 확인하고 결과·재현 절차를 PR에 기록.
 5. 공통 계약 변경은 상대 검토 후 먼저 병합. 후속 기능 브랜치는 최신 기준을 반영.
-6. 통합 담당이 Bootstrap에 두 프리팹을 연결해 첫 루프 확인 후 병합.
+6. 통합 담당이 Main 씬에 두 프리팹을 연결해 첫 루프 확인 후 병합.
 7. PDF 재생성은 사용자만 담당. 생성 PDF/JSON 충돌은 원본을 병합하고 다시 생성한다.
 
 ## 충돌 시

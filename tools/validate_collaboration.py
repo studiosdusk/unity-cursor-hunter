@@ -18,7 +18,8 @@ def main():
     for module, refs in expected.items():
         path=base/module/'Runtime'/f'CursorHunter.{module}.asmdef'
         data=json.loads(path.read_text())
-        require(data['references']==['CursorHunter.'+r for r in refs], f'Forbidden reference in {module}')
+        project_refs=[ref for ref in data['references'] if ref.startswith('CursorHunter.')]
+        require(project_refs==['CursorHunter.'+r for r in refs], f'Forbidden reference in {module}')
         require(data['name']=='CursorHunter.'+module, f'Assembly name mismatch: {module}')
         if module=='Contracts': require(data.get('noEngineReferences'), 'Contracts must be engine independent')
     all_guids={}

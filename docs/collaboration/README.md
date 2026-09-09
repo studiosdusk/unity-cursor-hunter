@@ -1,7 +1,7 @@
 # 두 사람 개발 인수인계
 기준 기획: [v0.0.4](../cursor-hunter-game-design-v0.0.4.md). Unity **6000.3.13f1**.
 macOS 설치 확인: `python3 tools/open_unity.py --check`. 확인 후 같은 명령에서 `--check`를 빼면 지정 버전으로 프로젝트를 연다. 커스텀 경로는 `--editor /설치경로/Unity.app`으로 지정한다. Windows에서는 Hub에서 같은 버전을 선택한다.
-런타임 씬 전략: **One Scene + 개발용 Sandbox 씬**. `App/Scenes/Bootstrap.unity`가 실제 런타임 단일 진입점이며, `CombatSandbox.unity`와 `ProgressionSandbox.unity`는 통합 런타임에 로드하지 않는 모듈별 개발·검증 씬이다.
+런타임 씬 전략: **One Scene + 개발용 Sandbox 씬**. `App/Scenes/Main.unity`가 실제 런타임·빌드 단일 진입점이며, `CombatSandbox.unity`와 `ProgressionSandbox.unity`는 통합 런타임에 로드하지 않는 모듈별 개발·검증 씬이다.
 이 폴더는 개발 협업 문서다. 기획 PDF는 수정하지 않는다.
 
 ## 승기에게 전달할 순서
