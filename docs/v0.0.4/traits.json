@@ -1,0 +1,1264 @@
+[
+  {
+    "id": "STAT_ROOT",
+    "tab": "STAT",
+    "parent": null,
+    "boss": 0,
+    "garnet_cost": 0,
+    "parts": 1,
+    "free": true,
+    "secondary_cost": {}
+  },
+  {
+    "id": "SKILL_ROOT",
+    "tab": "SKILL",
+    "parent": null,
+    "boss": 0,
+    "garnet_cost": 0,
+    "parts": 1,
+    "free": true,
+    "secondary_cost": {}
+  },
+  {
+    "id": "MONSTER_ROOT",
+    "tab": "MONSTER",
+    "parent": null,
+    "boss": 0,
+    "garnet_cost": 0,
+    "parts": 1,
+    "free": true,
+    "secondary_cost": {}
+  },
+  {
+    "id": "PWR_01",
+    "tab": "STAT",
+    "parent": "STAT_ROOT",
+    "boss": 0,
+    "garnet_cost": 30,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "PWR_02",
+    "tab": "STAT",
+    "parent": "PWR_01",
+    "boss": 0,
+    "garnet_cost": 36,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "PWR_03",
+    "tab": "STAT",
+    "parent": "PWR_02",
+    "boss": 0,
+    "garnet_cost": 42,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "PWR_04",
+    "tab": "STAT",
+    "parent": "PWR_03",
+    "boss": 0,
+    "garnet_cost": 50,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "PWR_05",
+    "tab": "STAT",
+    "parent": "PWR_04",
+    "boss": 0,
+    "garnet_cost": 59,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "PWR_06",
+    "tab": "STAT",
+    "parent": "PWR_05",
+    "boss": 1,
+    "garnet_cost": 2000,
+    "parts": 5,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "PWR_07",
+    "tab": "STAT",
+    "parent": "PWR_06",
+    "boss": 1,
+    "garnet_cost": 2700,
+    "parts": 5,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "PWR_08",
+    "tab": "STAT",
+    "parent": "PWR_07",
+    "boss": 1,
+    "garnet_cost": 3645,
+    "parts": 5,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "PWR_09",
+    "tab": "STAT",
+    "parent": "PWR_08",
+    "boss": 1,
+    "garnet_cost": 4921,
+    "parts": 5,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "PWR_10",
+    "tab": "STAT",
+    "parent": "PWR_09",
+    "boss": 1,
+    "garnet_cost": 6644,
+    "parts": 5,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "PWR_11",
+    "tab": "STAT",
+    "parent": "PWR_10",
+    "boss": 2,
+    "garnet_cost": 80000,
+    "parts": 10,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "PWR_12",
+    "tab": "STAT",
+    "parent": "PWR_11",
+    "boss": 2,
+    "garnet_cost": 108000,
+    "parts": 10,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "PWR_13",
+    "tab": "STAT",
+    "parent": "PWR_12",
+    "boss": 2,
+    "garnet_cost": 145800,
+    "parts": 10,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "PWR_14",
+    "tab": "STAT",
+    "parent": "PWR_13",
+    "boss": 2,
+    "garnet_cost": 196830,
+    "parts": 10,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "PWR_15",
+    "tab": "STAT",
+    "parent": "PWR_14",
+    "boss": 2,
+    "garnet_cost": 265721,
+    "parts": 10,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "PWR_16",
+    "tab": "STAT",
+    "parent": "PWR_15",
+    "boss": 3,
+    "garnet_cost": 5000000,
+    "parts": 10,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "PWR_17",
+    "tab": "STAT",
+    "parent": "PWR_16",
+    "boss": 3,
+    "garnet_cost": 6750000,
+    "parts": 10,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "PWR_18",
+    "tab": "STAT",
+    "parent": "PWR_17",
+    "boss": 3,
+    "garnet_cost": 9112500,
+    "parts": 10,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "PWR_19",
+    "tab": "STAT",
+    "parent": "PWR_18",
+    "boss": 3,
+    "garnet_cost": 12301875,
+    "parts": 10,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "PWR_20",
+    "tab": "STAT",
+    "parent": "PWR_19",
+    "boss": 3,
+    "garnet_cost": 16607532,
+    "parts": 10,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "PWR_21",
+    "tab": "STAT",
+    "parent": "PWR_20",
+    "boss": 4,
+    "garnet_cost": 200000000,
+    "parts": 10,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "PWR_22",
+    "tab": "STAT",
+    "parent": "PWR_21",
+    "boss": 4,
+    "garnet_cost": 270000000,
+    "parts": 10,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "PWR_23",
+    "tab": "STAT",
+    "parent": "PWR_22",
+    "boss": 4,
+    "garnet_cost": 364500000,
+    "parts": 10,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "PWR_24",
+    "tab": "STAT",
+    "parent": "PWR_23",
+    "boss": 4,
+    "garnet_cost": 492075000,
+    "parts": 10,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "PWR_25",
+    "tab": "STAT",
+    "parent": "PWR_24",
+    "boss": 4,
+    "garnet_cost": 664301250,
+    "parts": 10,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "PWR_26",
+    "tab": "STAT",
+    "parent": "PWR_25",
+    "boss": 5,
+    "garnet_cost": 5000000000,
+    "parts": 10,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "PWR_27",
+    "tab": "STAT",
+    "parent": "PWR_26",
+    "boss": 5,
+    "garnet_cost": 6750000000,
+    "parts": 10,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "PWR_28",
+    "tab": "STAT",
+    "parent": "PWR_27",
+    "boss": 5,
+    "garnet_cost": 9112500000,
+    "parts": 10,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "PWR_29",
+    "tab": "STAT",
+    "parent": "PWR_28",
+    "boss": 5,
+    "garnet_cost": 12301875000,
+    "parts": 10,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "PWR_30",
+    "tab": "STAT",
+    "parent": "PWR_29",
+    "boss": 5,
+    "garnet_cost": 16607531250,
+    "parts": 10,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "RANGE_1",
+    "tab": "STAT",
+    "parent": "STAT_ROOT",
+    "boss": 0,
+    "garnet_cost": 80,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "RANGE_2",
+    "tab": "STAT",
+    "parent": "RANGE_1",
+    "boss": 1,
+    "garnet_cost": 2000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "RANGE_3",
+    "tab": "STAT",
+    "parent": "RANGE_2",
+    "boss": 2,
+    "garnet_cost": 40000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "RANGE_4",
+    "tab": "STAT",
+    "parent": "RANGE_3",
+    "boss": 3,
+    "garnet_cost": 2000000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "RANGE_5",
+    "tab": "STAT",
+    "parent": "RANGE_4",
+    "boss": 4,
+    "garnet_cost": 50000000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "RANGE_6",
+    "tab": "STAT",
+    "parent": "RANGE_5",
+    "boss": 5,
+    "garnet_cost": 1000000000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "MULTI_2",
+    "tab": "STAT",
+    "parent": "STAT_ROOT",
+    "boss": 1,
+    "garnet_cost": 100,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {
+      "topaz": 8
+    }
+  },
+  {
+    "id": "MULTI_3",
+    "tab": "STAT",
+    "parent": "MULTI_2",
+    "boss": 2,
+    "garnet_cost": 5000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {
+      "topaz": 25
+    }
+  },
+  {
+    "id": "AUTO",
+    "tab": "STAT",
+    "parent": "STAT_ROOT",
+    "boss": 3,
+    "garnet_cost": 1000000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {
+      "amethyst": 30
+    }
+  },
+  {
+    "id": "SPEED_1",
+    "tab": "STAT",
+    "parent": "AUTO",
+    "boss": 4,
+    "garnet_cost": 10000000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {
+      "sapphire": 10
+    }
+  },
+  {
+    "id": "SPEED_2",
+    "tab": "STAT",
+    "parent": "SPEED_1",
+    "boss": 4,
+    "garnet_cost": 20000000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {
+      "sapphire": 20
+    }
+  },
+  {
+    "id": "SPEED_3",
+    "tab": "STAT",
+    "parent": "SPEED_2",
+    "boss": 4,
+    "garnet_cost": 40000000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {
+      "sapphire": 30
+    }
+  },
+  {
+    "id": "SPEED_4",
+    "tab": "STAT",
+    "parent": "SPEED_3",
+    "boss": 4,
+    "garnet_cost": 80000000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {
+      "sapphire": 40
+    }
+  },
+  {
+    "id": "FIRE",
+    "tab": "SKILL",
+    "parent": "SKILL_ROOT",
+    "boss": 1,
+    "garnet_cost": 1500,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {
+      "topaz": 10
+    }
+  },
+  {
+    "id": "FIRE_1",
+    "tab": "SKILL",
+    "parent": "FIRE",
+    "boss": 1,
+    "garnet_cost": 2000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {
+      "amethyst": 5
+    }
+  },
+  {
+    "id": "FIRE_2",
+    "tab": "SKILL",
+    "parent": "FIRE_1",
+    "boss": 1,
+    "garnet_cost": 3000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {
+      "amethyst": 10
+    }
+  },
+  {
+    "id": "FIRE_3",
+    "tab": "SKILL",
+    "parent": "FIRE_2",
+    "boss": 1,
+    "garnet_cost": 4500,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {
+      "amethyst": 15
+    }
+  },
+  {
+    "id": "FIRE_4",
+    "tab": "SKILL",
+    "parent": "FIRE_3",
+    "boss": 1,
+    "garnet_cost": 6750,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {
+      "amethyst": 20
+    }
+  },
+  {
+    "id": "FIRE_5",
+    "tab": "SKILL",
+    "parent": "FIRE_4",
+    "boss": 1,
+    "garnet_cost": 10125,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {
+      "amethyst": 25
+    }
+  },
+  {
+    "id": "LIGHTNING",
+    "tab": "SKILL",
+    "parent": "SKILL_ROOT",
+    "boss": 2,
+    "garnet_cost": 40000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {
+      "amethyst": 12
+    }
+  },
+  {
+    "id": "LIGHTNING_1",
+    "tab": "SKILL",
+    "parent": "LIGHTNING",
+    "boss": 2,
+    "garnet_cost": 80000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {
+      "amethyst": 5
+    }
+  },
+  {
+    "id": "LIGHTNING_2",
+    "tab": "SKILL",
+    "parent": "LIGHTNING_1",
+    "boss": 2,
+    "garnet_cost": 120000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {
+      "amethyst": 10
+    }
+  },
+  {
+    "id": "LIGHTNING_3",
+    "tab": "SKILL",
+    "parent": "LIGHTNING_2",
+    "boss": 2,
+    "garnet_cost": 180000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {
+      "amethyst": 15
+    }
+  },
+  {
+    "id": "LIGHTNING_4",
+    "tab": "SKILL",
+    "parent": "LIGHTNING_3",
+    "boss": 2,
+    "garnet_cost": 270000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {
+      "amethyst": 20
+    }
+  },
+  {
+    "id": "LIGHTNING_5",
+    "tab": "SKILL",
+    "parent": "LIGHTNING_4",
+    "boss": 2,
+    "garnet_cost": 405000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {
+      "amethyst": 25
+    }
+  },
+  {
+    "id": "FREEZE",
+    "tab": "SKILL",
+    "parent": "SKILL_ROOT",
+    "boss": 3,
+    "garnet_cost": 1000000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {
+      "amethyst": 25
+    }
+  },
+  {
+    "id": "FREEZE_1",
+    "tab": "SKILL",
+    "parent": "FREEZE",
+    "boss": 3,
+    "garnet_cost": 5000000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {
+      "amethyst": 5
+    }
+  },
+  {
+    "id": "FREEZE_2",
+    "tab": "SKILL",
+    "parent": "FREEZE_1",
+    "boss": 3,
+    "garnet_cost": 7500000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {
+      "amethyst": 10
+    }
+  },
+  {
+    "id": "FREEZE_3",
+    "tab": "SKILL",
+    "parent": "FREEZE_2",
+    "boss": 3,
+    "garnet_cost": 11250000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {
+      "amethyst": 15
+    }
+  },
+  {
+    "id": "FREEZE_4",
+    "tab": "SKILL",
+    "parent": "FREEZE_3",
+    "boss": 3,
+    "garnet_cost": 16875000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {
+      "amethyst": 20
+    }
+  },
+  {
+    "id": "FREEZE_5",
+    "tab": "SKILL",
+    "parent": "FREEZE_4",
+    "boss": 3,
+    "garnet_cost": 25312500,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {
+      "amethyst": 25
+    }
+  },
+  {
+    "id": "HURRICANE",
+    "tab": "SKILL",
+    "parent": "SKILL_ROOT",
+    "boss": 4,
+    "garnet_cost": 30000000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {
+      "sapphire": 12
+    }
+  },
+  {
+    "id": "HURRICANE_1",
+    "tab": "SKILL",
+    "parent": "HURRICANE",
+    "boss": 4,
+    "garnet_cost": 200000000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {
+      "amethyst": 5
+    }
+  },
+  {
+    "id": "HURRICANE_2",
+    "tab": "SKILL",
+    "parent": "HURRICANE_1",
+    "boss": 4,
+    "garnet_cost": 300000000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {
+      "amethyst": 10
+    }
+  },
+  {
+    "id": "HURRICANE_3",
+    "tab": "SKILL",
+    "parent": "HURRICANE_2",
+    "boss": 4,
+    "garnet_cost": 450000000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {
+      "amethyst": 15
+    }
+  },
+  {
+    "id": "HURRICANE_4",
+    "tab": "SKILL",
+    "parent": "HURRICANE_3",
+    "boss": 4,
+    "garnet_cost": 675000000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {
+      "amethyst": 20
+    }
+  },
+  {
+    "id": "HURRICANE_5",
+    "tab": "SKILL",
+    "parent": "HURRICANE_4",
+    "boss": 4,
+    "garnet_cost": 1012500000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {
+      "amethyst": 25
+    }
+  },
+  {
+    "id": "BREATH",
+    "tab": "SKILL",
+    "parent": "SKILL_ROOT",
+    "boss": 5,
+    "garnet_cost": 300000000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {
+      "diamond": 10
+    }
+  },
+  {
+    "id": "BREATH_1",
+    "tab": "SKILL",
+    "parent": "BREATH",
+    "boss": 5,
+    "garnet_cost": 5000000000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {
+      "diamond": 2
+    }
+  },
+  {
+    "id": "BREATH_2",
+    "tab": "SKILL",
+    "parent": "BREATH_1",
+    "boss": 5,
+    "garnet_cost": 7500000000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {
+      "diamond": 4
+    }
+  },
+  {
+    "id": "BREATH_3",
+    "tab": "SKILL",
+    "parent": "BREATH_2",
+    "boss": 5,
+    "garnet_cost": 11250000000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {
+      "diamond": 6
+    }
+  },
+  {
+    "id": "BREATH_4",
+    "tab": "SKILL",
+    "parent": "BREATH_3",
+    "boss": 5,
+    "garnet_cost": 16875000000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {
+      "diamond": 8
+    }
+  },
+  {
+    "id": "BREATH_5",
+    "tab": "SKILL",
+    "parent": "BREATH_4",
+    "boss": 5,
+    "garnet_cost": 25312500000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {
+      "diamond": 10
+    }
+  },
+  {
+    "id": "SLIME",
+    "tab": "MONSTER",
+    "parent": "MONSTER_ROOT",
+    "boss": 0,
+    "garnet_cost": 0,
+    "parts": 1,
+    "free": true,
+    "secondary_cost": {}
+  },
+  {
+    "id": "SLIME_SPAWN_1",
+    "tab": "MONSTER",
+    "parent": "SLIME",
+    "boss": 0,
+    "garnet_cost": 100,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "SLIME_SPAWN_2",
+    "tab": "MONSTER",
+    "parent": "SLIME_SPAWN_1",
+    "boss": 0,
+    "garnet_cost": 200,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "SLIME_SPAWN_3",
+    "tab": "MONSTER",
+    "parent": "SLIME_SPAWN_2",
+    "boss": 0,
+    "garnet_cost": 400,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "SLIME_REWARD_1",
+    "tab": "MONSTER",
+    "parent": "SLIME",
+    "boss": 0,
+    "garnet_cost": 150,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "SLIME_REWARD_2",
+    "tab": "MONSTER",
+    "parent": "SLIME_REWARD_1",
+    "boss": 0,
+    "garnet_cost": 300,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "SLIME_REWARD_3",
+    "tab": "MONSTER",
+    "parent": "SLIME_REWARD_2",
+    "boss": 0,
+    "garnet_cost": 600,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "GOBLIN",
+    "tab": "MONSTER",
+    "parent": "MONSTER_ROOT",
+    "boss": 1,
+    "garnet_cost": 120,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "GOBLIN_SPAWN_1",
+    "tab": "MONSTER",
+    "parent": "GOBLIN",
+    "boss": 1,
+    "garnet_cost": 2000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "GOBLIN_SPAWN_2",
+    "tab": "MONSTER",
+    "parent": "GOBLIN_SPAWN_1",
+    "boss": 1,
+    "garnet_cost": 4000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "GOBLIN_SPAWN_3",
+    "tab": "MONSTER",
+    "parent": "GOBLIN_SPAWN_2",
+    "boss": 1,
+    "garnet_cost": 8000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "GOBLIN_REWARD_1",
+    "tab": "MONSTER",
+    "parent": "GOBLIN",
+    "boss": 1,
+    "garnet_cost": 3000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "GOBLIN_REWARD_2",
+    "tab": "MONSTER",
+    "parent": "GOBLIN_REWARD_1",
+    "boss": 1,
+    "garnet_cost": 6000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "GOBLIN_REWARD_3",
+    "tab": "MONSTER",
+    "parent": "GOBLIN_REWARD_2",
+    "boss": 1,
+    "garnet_cost": 12000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "ORC",
+    "tab": "MONSTER",
+    "parent": "MONSTER_ROOT",
+    "boss": 2,
+    "garnet_cost": 250,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {
+      "topaz": 10
+    }
+  },
+  {
+    "id": "ORC_SPAWN_1",
+    "tab": "MONSTER",
+    "parent": "ORC",
+    "boss": 2,
+    "garnet_cost": 80000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "ORC_SPAWN_2",
+    "tab": "MONSTER",
+    "parent": "ORC_SPAWN_1",
+    "boss": 2,
+    "garnet_cost": 160000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "ORC_SPAWN_3",
+    "tab": "MONSTER",
+    "parent": "ORC_SPAWN_2",
+    "boss": 2,
+    "garnet_cost": 320000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "ORC_REWARD_1",
+    "tab": "MONSTER",
+    "parent": "ORC",
+    "boss": 2,
+    "garnet_cost": 120000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "ORC_REWARD_2",
+    "tab": "MONSTER",
+    "parent": "ORC_REWARD_1",
+    "boss": 2,
+    "garnet_cost": 240000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "ORC_REWARD_3",
+    "tab": "MONSTER",
+    "parent": "ORC_REWARD_2",
+    "boss": 2,
+    "garnet_cost": 480000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "GOLEM",
+    "tab": "MONSTER",
+    "parent": "MONSTER_ROOT",
+    "boss": 3,
+    "garnet_cost": 450,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {
+      "amethyst": 15
+    }
+  },
+  {
+    "id": "GOLEM_SPAWN_1",
+    "tab": "MONSTER",
+    "parent": "GOLEM",
+    "boss": 3,
+    "garnet_cost": 5000000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "GOLEM_SPAWN_2",
+    "tab": "MONSTER",
+    "parent": "GOLEM_SPAWN_1",
+    "boss": 3,
+    "garnet_cost": 10000000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "GOLEM_SPAWN_3",
+    "tab": "MONSTER",
+    "parent": "GOLEM_SPAWN_2",
+    "boss": 3,
+    "garnet_cost": 20000000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "GOLEM_REWARD_1",
+    "tab": "MONSTER",
+    "parent": "GOLEM",
+    "boss": 3,
+    "garnet_cost": 7500000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "GOLEM_REWARD_2",
+    "tab": "MONSTER",
+    "parent": "GOLEM_REWARD_1",
+    "boss": 3,
+    "garnet_cost": 15000000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "GOLEM_REWARD_3",
+    "tab": "MONSTER",
+    "parent": "GOLEM_REWARD_2",
+    "boss": 3,
+    "garnet_cost": 30000000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "WYVERN",
+    "tab": "MONSTER",
+    "parent": "MONSTER_ROOT",
+    "boss": 4,
+    "garnet_cost": 800,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {
+      "sapphire": 15
+    }
+  },
+  {
+    "id": "WYVERN_SPAWN_1",
+    "tab": "MONSTER",
+    "parent": "WYVERN",
+    "boss": 4,
+    "garnet_cost": 200000000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "WYVERN_SPAWN_2",
+    "tab": "MONSTER",
+    "parent": "WYVERN_SPAWN_1",
+    "boss": 4,
+    "garnet_cost": 400000000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "WYVERN_SPAWN_3",
+    "tab": "MONSTER",
+    "parent": "WYVERN_SPAWN_2",
+    "boss": 4,
+    "garnet_cost": 800000000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "WYVERN_REWARD_1",
+    "tab": "MONSTER",
+    "parent": "WYVERN",
+    "boss": 4,
+    "garnet_cost": 300000000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "WYVERN_REWARD_2",
+    "tab": "MONSTER",
+    "parent": "WYVERN_REWARD_1",
+    "boss": 4,
+    "garnet_cost": 600000000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "WYVERN_REWARD_3",
+    "tab": "MONSTER",
+    "parent": "WYVERN_REWARD_2",
+    "boss": 4,
+    "garnet_cost": 1200000000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "DRAGON",
+    "tab": "MONSTER",
+    "parent": "MONSTER_ROOT",
+    "boss": 5,
+    "garnet_cost": 1200,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {
+      "diamond": 5
+    }
+  },
+  {
+    "id": "DRAGON_SPAWN_1",
+    "tab": "MONSTER",
+    "parent": "DRAGON",
+    "boss": 5,
+    "garnet_cost": 5000000000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "DRAGON_SPAWN_2",
+    "tab": "MONSTER",
+    "parent": "DRAGON_SPAWN_1",
+    "boss": 5,
+    "garnet_cost": 10000000000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "DRAGON_SPAWN_3",
+    "tab": "MONSTER",
+    "parent": "DRAGON_SPAWN_2",
+    "boss": 5,
+    "garnet_cost": 20000000000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "DRAGON_REWARD_1",
+    "tab": "MONSTER",
+    "parent": "DRAGON",
+    "boss": 5,
+    "garnet_cost": 7500000000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "DRAGON_REWARD_2",
+    "tab": "MONSTER",
+    "parent": "DRAGON_REWARD_1",
+    "boss": 5,
+    "garnet_cost": 15000000000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {}
+  },
+  {
+    "id": "DRAGON_REWARD_3",
+    "tab": "MONSTER",
+    "parent": "DRAGON_REWARD_2",
+    "boss": 5,
+    "garnet_cost": 30000000000,
+    "parts": 1,
+    "free": false,
+    "secondary_cost": {}
+  }
+]

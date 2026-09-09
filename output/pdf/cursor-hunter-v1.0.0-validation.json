@@ -1,0 +1,302 @@
+{
+  "status": "passed",
+  "pages": 64,
+  "screen_states": 48,
+  "screen_routes_reachable": 48,
+  "pdf_links": 348,
+  "trait_nodes": 118,
+  "purchasable_nodes": 114,
+  "partial_upgrade_checks": [
+    {
+      "level": 0,
+      "parts": 1,
+      "total_cost": 30,
+      "partial_min": 30,
+      "partial_max": 30,
+      "attack_before": 10,
+      "attack_after": 12
+    },
+    {
+      "level": 1,
+      "parts": 1,
+      "total_cost": 36,
+      "partial_min": 36,
+      "partial_max": 36,
+      "attack_before": 12,
+      "attack_after": 13
+    },
+    {
+      "level": 2,
+      "parts": 1,
+      "total_cost": 42,
+      "partial_min": 42,
+      "partial_max": 42,
+      "attack_before": 13,
+      "attack_after": 16
+    },
+    {
+      "level": 3,
+      "parts": 1,
+      "total_cost": 50,
+      "partial_min": 50,
+      "partial_max": 50,
+      "attack_before": 16,
+      "attack_after": 18
+    },
+    {
+      "level": 4,
+      "parts": 1,
+      "total_cost": 59,
+      "partial_min": 59,
+      "partial_max": 59,
+      "attack_before": 18,
+      "attack_after": 21
+    },
+    {
+      "level": 5,
+      "parts": 5,
+      "total_cost": 2000,
+      "partial_min": 400,
+      "partial_max": 400,
+      "attack_before": 21,
+      "attack_after": 29
+    },
+    {
+      "level": 6,
+      "parts": 5,
+      "total_cost": 2700,
+      "partial_min": 540,
+      "partial_max": 540,
+      "attack_before": 29,
+      "attack_after": 39
+    },
+    {
+      "level": 7,
+      "parts": 5,
+      "total_cost": 3645,
+      "partial_min": 729,
+      "partial_max": 729,
+      "attack_before": 39,
+      "attack_after": 54
+    },
+    {
+      "level": 8,
+      "parts": 5,
+      "total_cost": 4921,
+      "partial_min": 984,
+      "partial_max": 985,
+      "attack_before": 54,
+      "attack_after": 73
+    },
+    {
+      "level": 9,
+      "parts": 5,
+      "total_cost": 6644,
+      "partial_min": 1328,
+      "partial_max": 1329,
+      "attack_before": 73,
+      "attack_after": 100
+    },
+    {
+      "level": 10,
+      "parts": 10,
+      "total_cost": 80000,
+      "partial_min": 8000,
+      "partial_max": 8000,
+      "attack_before": 100,
+      "attack_after": 158
+    },
+    {
+      "level": 11,
+      "parts": 10,
+      "total_cost": 108000,
+      "partial_min": 10800,
+      "partial_max": 10800,
+      "attack_before": 158,
+      "attack_after": 251
+    },
+    {
+      "level": 12,
+      "parts": 10,
+      "total_cost": 145800,
+      "partial_min": 14580,
+      "partial_max": 14580,
+      "attack_before": 251,
+      "attack_after": 398
+    },
+    {
+      "level": 13,
+      "parts": 10,
+      "total_cost": 196830,
+      "partial_min": 19683,
+      "partial_max": 19683,
+      "attack_before": 398,
+      "attack_after": 631
+    },
+    {
+      "level": 14,
+      "parts": 10,
+      "total_cost": 265721,
+      "partial_min": 26572,
+      "partial_max": 26573,
+      "attack_before": 631,
+      "attack_after": 1000
+    },
+    {
+      "level": 15,
+      "parts": 10,
+      "total_cost": 5000000,
+      "partial_min": 500000,
+      "partial_max": 500000,
+      "attack_before": 1000,
+      "attack_after": 1821
+    },
+    {
+      "level": 16,
+      "parts": 10,
+      "total_cost": 6750000,
+      "partial_min": 675000,
+      "partial_max": 675000,
+      "attack_before": 1821,
+      "attack_after": 3314
+    },
+    {
+      "level": 17,
+      "parts": 10,
+      "total_cost": 9112500,
+      "partial_min": 911250,
+      "partial_max": 911250,
+      "attack_before": 3314,
+      "attack_after": 6034
+    },
+    {
+      "level": 18,
+      "parts": 10,
+      "total_cost": 12301875,
+      "partial_min": 1230187,
+      "partial_max": 1230188,
+      "attack_before": 6034,
+      "attack_after": 10986
+    },
+    {
+      "level": 19,
+      "parts": 10,
+      "total_cost": 16607532,
+      "partial_min": 1660753,
+      "partial_max": 1660754,
+      "attack_before": 10986,
+      "attack_after": 20000
+    },
+    {
+      "level": 20,
+      "parts": 10,
+      "total_cost": 200000000,
+      "partial_min": 20000000,
+      "partial_max": 20000000,
+      "attack_before": 20000,
+      "attack_after": 43734
+    },
+    {
+      "level": 21,
+      "parts": 10,
+      "total_cost": 270000000,
+      "partial_min": 27000000,
+      "partial_max": 27000000,
+      "attack_before": 43734,
+      "attack_after": 95635
+    },
+    {
+      "level": 22,
+      "parts": 10,
+      "total_cost": 364500000,
+      "partial_min": 36450000,
+      "partial_max": 36450000,
+      "attack_before": 95635,
+      "attack_after": 209128
+    },
+    {
+      "level": 23,
+      "parts": 10,
+      "total_cost": 492075000,
+      "partial_min": 49207500,
+      "partial_max": 49207500,
+      "attack_before": 209128,
+      "attack_after": 457305
+    },
+    {
+      "level": 24,
+      "parts": 10,
+      "total_cost": 664301250,
+      "partial_min": 66430125,
+      "partial_max": 66430125,
+      "attack_before": 457305,
+      "attack_after": 1000000
+    },
+    {
+      "level": 25,
+      "parts": 10,
+      "total_cost": 5000000000,
+      "partial_min": 500000000,
+      "partial_max": 500000000,
+      "attack_before": 1000000,
+      "attack_after": 2511886
+    },
+    {
+      "level": 26,
+      "parts": 10,
+      "total_cost": 6750000000,
+      "partial_min": 675000000,
+      "partial_max": 675000000,
+      "attack_before": 2511886,
+      "attack_after": 6309573
+    },
+    {
+      "level": 27,
+      "parts": 10,
+      "total_cost": 9112500000,
+      "partial_min": 911250000,
+      "partial_max": 911250000,
+      "attack_before": 6309573,
+      "attack_after": 15848932
+    },
+    {
+      "level": 28,
+      "parts": 10,
+      "total_cost": 12301875000,
+      "partial_min": 1230187500,
+      "partial_max": 1230187500,
+      "attack_before": 15848932,
+      "attack_after": 39810717
+    },
+    {
+      "level": 29,
+      "parts": 10,
+      "total_cost": 16607531250,
+      "partial_min": 1660753125,
+      "partial_max": 1660753125,
+      "attack_before": 39810717,
+      "attack_after": 100000000
+    }
+  ],
+  "late_upgrade_wait": [
+    {
+      "level": 19,
+      "assumed_garnet_per_minute": 1647000.0,
+      "old_minutes": 10.083504553734063,
+      "new_partial_seconds": 60.50105646630237
+    },
+    {
+      "level": 24,
+      "assumed_garnet_per_minute": 72432000.0,
+      "old_minutes": 9.171377982107355,
+      "new_partial_seconds": 55.02826789264414
+    }
+  ],
+  "source_sha256": "9bdc0a86f103a0e27b560169214b24094f57618517cf18a614e6f607a31a868c",
+  "pdf_sha256": "880bb97b376ad552f73d2b54f962f7bd0e8ac4083ff929bba88334f7fb3bd1da",
+  "limitations": [
+    "Not a Unity build or gameplay simulation",
+    "2-hour completion and 60% income yield remain playtest targets",
+    "Visual review reported separately"
+  ]
+}
