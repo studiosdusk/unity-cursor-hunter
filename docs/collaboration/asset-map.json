@@ -1,0 +1,135 @@
+[
+  {
+    "design_id": "gem.garnet",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/IconPack/2D Minimal-IconPack/Icons/256/Economy_Gem_01_Red.png",
+    "guid": "d3e2801dd1d674da4add6c4b8737c94e",
+    "status": "candidate-not-runtime-verified"
+  },
+  {
+    "design_id": "gem.topaz",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/IconPack/2D Minimal-IconPack/Icons/256/Economy_Gem_01_Yellow.png",
+    "guid": "d1237a87c861d4921af57b7aea67a35a",
+    "status": "candidate-not-runtime-verified"
+  },
+  {
+    "design_id": "gem.amethyst",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/IconPack/2D Minimal-IconPack/Icons/256/Economy_Gem_01_Purple.png",
+    "guid": "287d3126d62af4d64aa9d99e175e52e4",
+    "status": "candidate-not-runtime-verified"
+  },
+  {
+    "design_id": "gem.sapphire",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/IconPack/2D Minimal-IconPack/Icons/256/Economy_Gem_01_Blue.png",
+    "guid": "0a2f94238763246cb88c6bb36c9e76d3",
+    "status": "candidate-not-runtime-verified"
+  },
+  {
+    "design_id": "ui.trait.node",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/GUI-CasualFantasy/Prefabs/Prefabs_Component_Buttons/Button_Square01_White.prefab",
+    "guid": "00de8ce5d92c345ed8119fc25751ca62",
+    "status": "candidate-not-runtime-verified"
+  },
+  {
+    "design_id": "ui.trait.tabs",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/GUI-CasualFantasy/Prefabs/Prefabs_Component_UI_Etc/TabMenu_Top_White.prefab",
+    "guid": "000dd032c9e014f1da97dd4e0848a21b",
+    "status": "candidate-not-runtime-verified"
+  },
+  {
+    "design_id": "ui.boss.hp",
+    "owner": "Combat",
+    "path": "Assets/DownLoadAssets/GUI-CasualFantasy/Prefabs/Prefabs_Component_UI_Etc/StatusBar_White.prefab",
+    "guid": "eb0b9bba8101e4683943ee77ce7b9ab8",
+    "status": "candidate-not-runtime-verified"
+  },
+  {
+    "design_id": "field.normal",
+    "owner": "Combat",
+    "path": "Assets/DownLoadAssets/Map/2D Maps - Age Battle Stages/Prefabs/Landscape/Map/Map_3_Jungle Age.prefab",
+    "guid": "15a77c474c9974c2aa39dd2e7eaf8e51",
+    "status": "candidate-not-runtime-verified"
+  },
+  {
+    "design_id": "field.boss",
+    "owner": "Combat",
+    "path": "Assets/DownLoadAssets/Map/2D Maps - Age Battle Stages/Prefabs/Landscape/Map/Map_13_Medieval Age.prefab",
+    "guid": "10e2b6d958def4d08bca19e65e8cd978",
+    "status": "candidate-not-runtime-verified"
+  },
+  {
+    "design_id": "monster.golem",
+    "owner": "Combat",
+    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/Prefabs/Golem/Golem_Iron.prefab",
+    "guid": "84ccd47ae94098f489358e7e865939be",
+    "status": "candidate-not-runtime-verified"
+  },
+  {
+    "design_id": "boss.v4",
+    "owner": "Combat",
+    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/Prefabs/Golem/Golem_Iron.prefab",
+    "guid": "84ccd47ae94098f489358e7e865939be",
+    "status": "candidate-not-runtime-verified"
+  },
+  {
+    "design_id": "skill.fireball",
+    "owner": "Combat",
+    "path": "Assets/DownLoadAssets/Eric VFX Studio/Game VFX - Stylized AOE Bundle/Prefabs/URP/FX_AOE_Fireball.prefab",
+    "guid": "c5a47c8dc65465b40a4c478e3ddf898b",
+    "status": "candidate-not-runtime-verified"
+  },
+  {
+    "design_id": "skill.hurricane",
+    "owner": "Combat",
+    "path": "Assets/DownLoadAssets/Eric VFX Studio/Game VFX - Tornado Collection/Prefab/URP/FX_AirTornado_Loop.prefab",
+    "guid": "b2bfb7aa01401b547a0029a83fb89f61",
+    "status": "candidate-not-runtime-verified"
+  },
+  {
+    "design_id": "skill.lightning",
+    "owner": "Combat",
+    "path": "Assets/DownLoadAssets/Casual_VFX/Cartoon Casual VFX Pack/Textures/lightning1_yellow.png",
+    "guid": "8a4703c9f3c124f709f62a5e7fda7f9d",
+    "status": "candidate-not-runtime-verified"
+  },
+  {
+    "design_id": "skill.freezing",
+    "owner": "Combat",
+    "path": "Assets/DownLoadAssets/Eric VFX Studio/Game VFX - Tornado Collection/Prefab/URP/FX_SnowTornado_Loop.prefab",
+    "guid": "2c00aae28c77fcd47ba0036f2a5a4865",
+    "status": "candidate-not-runtime-verified"
+  },
+  {
+    "design_id": "skill.dragon-breath",
+    "owner": "Combat",
+    "path": "Assets/DownLoadAssets/Casual_VFX/Cartoon Casual VFX Pack/Textures/fire2.png",
+    "guid": "04d9eb54dd1a4477eaf77c15e32cfa69",
+    "status": "candidate-not-runtime-verified"
+  },
+  {
+    "design_id": "hit.basic",
+    "owner": "Combat",
+    "path": "Assets/DownLoadAssets/Casual_VFX/Cartoon Casual VFX Pack/Textures/hit5_white.png",
+    "guid": "08da4336e7dbc48fda8c2bca9c2e5082",
+    "status": "candidate-not-runtime-verified"
+  },
+  {
+    "design_id": "hit.triple",
+    "owner": "Combat",
+    "path": "Assets/DownLoadAssets/Casual_VFX/Cartoon Casual VFX Pack/Textures/hit1_purple.png",
+    "guid": "ab5b897b9d38b45089fa214e585732e1",
+    "status": "candidate-not-runtime-verified"
+  },
+  {
+    "design_id": "parry.marker",
+    "owner": "Combat",
+    "path": "Assets/DownLoadAssets/Casual_VFX/Cartoon Casual VFX Pack/Textures/magic_circle6_white.png",
+    "guid": "186ba7f6347fe41cabac77cc214efd08",
+    "status": "candidate-not-runtime-verified"
+  }
+]

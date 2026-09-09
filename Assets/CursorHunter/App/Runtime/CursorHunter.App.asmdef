@@ -1,0 +1,12 @@
+{
+  "name": "CursorHunter.App",
+  "rootNamespace": "CursorHunter.App",
+  "references": [
+    "CursorHunter.Contracts",
+    "CursorHunter.Data",
+    "CursorHunter.Progression",
+    "CursorHunter.Combat"
+  ],
+  "autoReferenced": false,
+  "noEngineReferences": false
+}
