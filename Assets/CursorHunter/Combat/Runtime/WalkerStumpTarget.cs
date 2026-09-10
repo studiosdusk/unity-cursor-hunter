@@ -1,14 +1,12 @@
-using System.Collections.Generic;
+using CursorHunter.Contracts;
 using UnityEngine;
 
 namespace CursorHunter.Combat
 {
     /// <summary>
-    /// Prototype combat state for a Walker_Stump instance.
-    ///
-    /// The component is intentionally independent from the cursor and UI. The
-    /// cursor attack sends one hit at a time, while this component owns hit
-    /// counting, Animator parameters, and the final destruction event.
+    /// Runtime combat state for the Walker_Stump visual used as the prototype
+    /// slime. The definition and run snapshot provide max HP and rewards;
+    /// this component owns only the instance's mutable health and animation.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class WalkerStumpTarget : MonoBehaviour
@@ -16,26 +14,23 @@ namespace CursorHunter.Combat
         public const string HitParameterName = "hit";
         public const string DeadParameterName = "dead";
 
-        private static readonly List<WalkerStumpTarget> ActiveTargets =
-            new List<WalkerStumpTarget>();
-
         [SerializeField] private Animator animator;
-        [SerializeField, Min(1)] private int maxHits = 3;
 
         private bool _hasHitParameter;
         private bool _hasDeadParameter;
+        private bool _isInitialized;
         private bool _isDead;
-        private int _hitCount;
+        private string _monsterId;
+        private long _maxHealth;
+        private long _currentHealth;
+        private long _garnetReward;
 
-        public static int ActiveCount => ActiveTargets.Count;
-
+        public bool IsInitialized => _isInitialized;
         public bool IsDead => _isDead;
-        public int HitCount => _hitCount;
-
-        public static WalkerStumpTarget GetActiveAt(int index)
-        {
-            return ActiveTargets[index];
-        }
+        public string MonsterId => _monsterId;
+        public long MaxHealth => _maxHealth;
+        public long CurrentHealth => _currentHealth;
+        public long GarnetReward => _garnetReward;
 
         private void Awake()
         {
@@ -44,16 +39,20 @@ namespace CursorHunter.Combat
                 animator = GetComponent<Animator>();
             }
 
-            maxHits = Mathf.Max(1, maxHits);
-
             if (animator == null)
             {
-                Debug.LogWarning("WalkerStumpTarget requires an Animator on the Walker_Stump root.", this);
+                Debug.LogWarning(
+                    "WalkerStumpTarget requires an Animator on the Walker_Stump root.",
+                    this);
                 return;
             }
 
-            _hasHitParameter = HasParameter(HitParameterName, AnimatorControllerParameterType.Trigger);
-            _hasDeadParameter = HasParameter(DeadParameterName, AnimatorControllerParameterType.Bool);
+            _hasHitParameter = HasParameter(
+                HitParameterName,
+                AnimatorControllerParameterType.Trigger);
+            _hasDeadParameter = HasParameter(
+                DeadParameterName,
+                AnimatorControllerParameterType.Bool);
 
             if (!_hasHitParameter || !_hasDeadParameter)
             {
@@ -63,40 +62,73 @@ namespace CursorHunter.Combat
             }
         }
 
-        private void OnEnable()
+        /// <summary>
+        /// Initializes one spawned instance from the immutable run snapshot.
+        /// </summary>
+        public void Initialize(SpawnSnapshot snapshot)
         {
-            if (!ActiveTargets.Contains(this))
+            _monsterId = snapshot.MonsterId;
+            _maxHealth = snapshot.MaxHealth;
+            _currentHealth = snapshot.MaxHealth;
+            _garnetReward = snapshot.GarnetReward;
+            _isDead = false;
+            _isInitialized = true;
+
+            if (animator == null)
             {
-                ActiveTargets.Add(this);
+                return;
+            }
+
+            if (_hasDeadParameter)
+            {
+                animator.SetBool(DeadParameterName, false);
+            }
+
+            if (_hasHitParameter)
+            {
+                animator.ResetTrigger(HitParameterName);
             }
         }
 
-        private void OnDisable()
-        {
-            ActiveTargets.Remove(this);
-        }
-
         /// <summary>
-        /// Applies exactly one click hit. Additional clicks are accepted while
-        /// the Hit animation is playing; animation timing does not gate damage.
+        /// Applies one logical hit. Damage is accepted while the Hit animation
+        /// is playing; animation timing never gates health changes.
         /// </summary>
-        public bool ReceiveHit()
+        public bool ApplyDamage(
+            long damage,
+            out long effectiveDamage,
+            out bool killed)
         {
-            if (_isDead || animator == null || !_hasHitParameter || !_hasDeadParameter)
+            effectiveDamage = 0;
+            killed = false;
+
+            if (!_isInitialized || _isDead || damage <= 0 || _currentHealth <= 0)
             {
                 return false;
             }
 
-            _hitCount++;
+            effectiveDamage = damage < _currentHealth ? damage : _currentHealth;
+            _currentHealth -= effectiveDamage;
 
-            if (_hitCount >= maxHits)
+            if (_currentHealth <= 0)
             {
+                _currentHealth = 0;
                 _isDead = true;
-                animator.SetBool(DeadParameterName, true);
+                killed = true;
+
+                if (animator != null && _hasDeadParameter)
+                {
+                    animator.SetBool(DeadParameterName, true);
+                }
+
                 return true;
             }
 
-            animator.SetTrigger(HitParameterName);
+            if (animator != null && _hasHitParameter)
+            {
+                animator.SetTrigger(HitParameterName);
+            }
+
             return true;
         }
 
@@ -113,7 +145,9 @@ namespace CursorHunter.Combat
             Destroy(gameObject);
         }
 
-        private bool HasParameter(string parameterName, AnimatorControllerParameterType parameterType)
+        private bool HasParameter(
+            string parameterName,
+            AnimatorControllerParameterType parameterType)
         {
             foreach (AnimatorControllerParameter parameter in animator.parameters)
             {

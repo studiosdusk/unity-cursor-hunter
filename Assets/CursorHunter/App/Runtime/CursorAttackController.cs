@@ -1,22 +1,22 @@
-using System;
 using CursorHunter.Combat;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
 namespace CursorHunter.App
 {
     /// <summary>
-    /// Routes one left-click from the world cursor to every Walker_Stump whose
-    /// world position is inside the cursor's world-space Collider2D.
+    /// Routes one left-click from the world cursor to the active combat run.
+    /// CombatRunController owns cooldown, overlap resolution, and damage.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class CursorAttackController : MonoBehaviour
     {
-        private const string WalkerStumpName = "Walker_Stump";
         private const string CursorObjectName = "cursor_image";
         private const string LegacyCursorObjectName = "cursor_Image";
 
         [SerializeField] private MainCursorController cursorController;
+        [SerializeField] private CombatRunController combatRunController;
         [SerializeField] private Collider2D hitBox;
 
         private void Awake()
@@ -24,6 +24,21 @@ namespace CursorHunter.App
             if (cursorController == null)
             {
                 cursorController = GetComponent<MainCursorController>();
+            }
+
+            if (cursorController == null)
+            {
+                cursorController = FindFirstObjectByType<MainCursorController>();
+            }
+
+            if (combatRunController == null)
+            {
+                combatRunController = GetComponent<CombatRunController>();
+            }
+
+            if (combatRunController == null)
+            {
+                combatRunController = FindFirstObjectByType<CombatRunController>();
             }
 
             if (hitBox == null)
@@ -40,17 +55,19 @@ namespace CursorHunter.App
                 }
             }
 
-            if (cursorController == null || hitBox == null)
+            if (cursorController == null ||
+                combatRunController == null ||
+                hitBox == null)
             {
                 Debug.LogWarning(
-                    "CursorAttackController requires MainCursorController and a world-space cursor Collider2D.",
+                    "CursorAttackController requires cursor, combat, and cursor Collider2D references.",
                     this);
             }
         }
 
         private void Update()
         {
-            if (cursorController == null || !cursorController.IsCustomCursorActive)
+            if (!CanAttack())
             {
                 return;
             }
@@ -61,12 +78,40 @@ namespace CursorHunter.App
                 return;
             }
 
-            AttackAtCursor();
+            TryPerformAttack(false);
         }
 
-        private void AttackAtCursor()
+        /// <summary>
+        /// Performs one attack from the current cursor position when invoked by
+        /// the prototype test button. UI pointer blocking is bypassed because
+        /// the button itself is intentionally the test input.
+        /// </summary>
+        public void TestAttack()
         {
-            if (hitBox == null || !hitBox.enabled || !hitBox.gameObject.activeInHierarchy)
+            TryPerformAttack(true);
+        }
+
+        private bool CanAttack()
+        {
+            return cursorController != null &&
+                   combatRunController != null &&
+                   hitBox != null &&
+                   cursorController.IsCustomCursorActive &&
+                   combatRunController.IsRunning;
+        }
+
+        private void TryPerformAttack(bool allowUiPointer)
+        {
+            if (!CanAttack())
+            {
+                return;
+            }
+
+            // Normal mouse attacks must not pass through UI controls. The test
+            // button explicitly opts out of this guard above.
+            if (!allowUiPointer &&
+                EventSystem.current != null &&
+                EventSystem.current.IsPointerOverGameObject())
             {
                 return;
             }
@@ -76,47 +121,7 @@ namespace CursorHunter.App
                 return;
             }
 
-            RegisterWalkerStumpsInScene();
-            Physics2D.SyncTransforms();
-
-            for (int index = WalkerStumpTarget.ActiveCount - 1; index >= 0; index--)
-            {
-                WalkerStumpTarget target = WalkerStumpTarget.GetActiveAt(index);
-                if (target == null || target.IsDead)
-                {
-                    continue;
-                }
-
-                if (hitBox.OverlapPoint(target.transform.position))
-                {
-                    target.ReceiveHit();
-                }
-            }
-        }
-
-        private void RegisterWalkerStumpsInScene()
-        {
-            Animator[] animators = FindObjectsByType<Animator>(
-                FindObjectsInactive.Exclude,
-                FindObjectsSortMode.None);
-
-            foreach (Animator animator in animators)
-            {
-                if (animator == null || !IsWalkerStumpName(animator.gameObject.name))
-                {
-                    continue;
-                }
-
-                if (animator.GetComponent<WalkerStumpTarget>() == null)
-                {
-                    animator.gameObject.AddComponent<WalkerStumpTarget>();
-                }
-            }
-        }
-
-        private static bool IsWalkerStumpName(string objectName)
-        {
-            return objectName.StartsWith(WalkerStumpName, StringComparison.Ordinal);
+            combatRunController.TryAttack(hitBox);
         }
     }
 }

@@ -19,9 +19,12 @@ namespace CursorHunter.App
         [SerializeField] private Transform cursorImage;
         [SerializeField] private Camera worldCamera;
         [SerializeField] private float cursorPlaneZ;
+        [SerializeField] private Vector3 baseCursorScale;
+        [SerializeField, Min(0.01f)] private float rangeMultiplier = 1f;
 
         private Transform _cursorTransform;
         private GameObject _cursorObject;
+        private Vector3 _baseCursorScale;
         private bool _customCursorActive;
 
         public bool IsCustomCursorActive => _customCursorActive;
@@ -31,10 +34,20 @@ namespace CursorHunter.App
 
         public Transform CursorTransform => _cursorTransform;
 
+        public float RangeMultiplier => rangeMultiplier;
+
         private void Awake()
         {
             _cursorTransform = cursorImage != null ? cursorImage : FindCursorTransform();
             _cursorObject = _cursorTransform != null ? _cursorTransform.gameObject : null;
+
+            if (_cursorTransform != null)
+            {
+                _baseCursorScale = baseCursorScale == Vector3.zero
+                    ? _cursorTransform.localScale
+                    : baseCursorScale;
+                ApplyRangeMultiplier();
+            }
 
             if (worldCamera == null)
             {
@@ -73,12 +86,24 @@ namespace CursorHunter.App
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = false;
 
+            ApplyRangeMultiplier();
+
             if (_cursorObject != null)
             {
                 _cursorObject.SetActive(true);
             }
 
             RefreshCursorPosition();
+        }
+
+        /// <summary>
+        /// Changes the logical range multiplier while preserving the authored
+        /// cursor scale. A multiplier of 1 uses the current base scale.
+        /// </summary>
+        public void SetRangeMultiplier(float multiplier)
+        {
+            rangeMultiplier = Mathf.Max(0.01f, multiplier);
+            ApplyRangeMultiplier();
         }
 
         /// <summary>
@@ -145,6 +170,21 @@ namespace CursorHunter.App
         {
             Transform found = transform.Find(CursorObjectName);
             return found != null ? found : transform.Find(LegacyCursorObjectName);
+        }
+
+        private void ApplyRangeMultiplier()
+        {
+            if (_cursorTransform == null)
+            {
+                return;
+            }
+
+            if (_baseCursorScale == Vector3.zero)
+            {
+                _baseCursorScale = _cursorTransform.localScale;
+            }
+
+            _cursorTransform.localScale = _baseCursorScale * rangeMultiplier;
         }
 
         private void OnDestroy()
