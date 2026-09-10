@@ -1,6 +1,9 @@
 using System.Collections.Generic;
 using CursorHunter.Contracts;
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace CursorHunter.Combat
 {
@@ -11,6 +14,10 @@ namespace CursorHunter.Combat
     [DisallowMultipleComponent]
     public sealed class MonsterSpawner : MonoBehaviour
     {
+        private const string WalkerStumpPrefabAssetPath =
+            "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/" +
+            "EnemyMonster 2/Prefabs/Walker/Walker_Stump.prefab";
+
         [SerializeField] private CombatRunController combatRunController;
         [SerializeField] private GameObject walkerStumpPrefab;
         [SerializeField] private Transform spawnedEnemyRoot;
@@ -57,7 +64,8 @@ namespace CursorHunter.Combat
 
             if (combatRunController == null)
             {
-                combatRunController = FindFirstObjectByType<CombatRunController>();
+                combatRunController = FindFirstObjectByType<CombatRunController>(
+                    FindObjectsInactive.Include);
             }
 
             if (worldCamera == null)
@@ -323,6 +331,21 @@ namespace CursorHunter.Combat
                 _sceneSpawnTemplate = null;
                 return true;
             }
+
+#if UNITY_EDITOR
+            // A Play Mode backup can outlive a scene reference change. In the
+            // editor, recover the authored prototype asset by path so testing
+            // is not blocked by that stale serialized state. Player builds use
+            // the serialized prefab reference above.
+            GameObject editorPrefab =
+                AssetDatabase.LoadAssetAtPath<GameObject>(WalkerStumpPrefabAssetPath);
+            if (IsUsableSpawnSource(editorPrefab))
+            {
+                walkerStumpPrefab = editorPrefab;
+                _sceneSpawnTemplate = null;
+                return true;
+            }
+#endif
 
             // Last-resort editor prototype fallback. The source is protected
             // from StopRun because it belongs to the scene rather than to the

@@ -38,6 +38,11 @@ namespace CursorHunter.App
 
         private void Awake()
         {
+            ResolveReferences();
+        }
+
+        private void ResolveReferences()
+        {
             if (cursorController == null)
             {
                 cursorController = GetComponent<MainCursorController>();
@@ -45,7 +50,8 @@ namespace CursorHunter.App
 
             if (cursorController == null)
             {
-                cursorController = FindFirstObjectByType<MainCursorController>();
+                cursorController = FindFirstObjectByType<MainCursorController>(
+                    FindObjectsInactive.Include);
             }
 
             if (combatRunController == null)
@@ -55,7 +61,8 @@ namespace CursorHunter.App
 
             if (combatRunController == null)
             {
-                combatRunController = FindFirstObjectByType<CombatRunController>();
+                combatRunController = FindFirstObjectByType<CombatRunController>(
+                    FindObjectsInactive.Include);
             }
 
             if (monsterSpawner == null)
@@ -65,7 +72,8 @@ namespace CursorHunter.App
 
             if (monsterSpawner == null)
             {
-                monsterSpawner = FindFirstObjectByType<MonsterSpawner>();
+                monsterSpawner = FindFirstObjectByType<MonsterSpawner>(
+                    FindObjectsInactive.Include);
             }
 
             if (runHud == null)
@@ -75,13 +83,15 @@ namespace CursorHunter.App
 
             if (runHud == null)
             {
-                runHud = FindFirstObjectByType<PrototypeRunHud>();
+                runHud = FindFirstObjectByType<PrototypeRunHud>(
+                    FindObjectsInactive.Include);
             }
 
             if (testPanelToggleController == null)
             {
                 testPanelToggleController =
-                    FindFirstObjectByType<TestPanelToggleController>();
+                    FindFirstObjectByType<TestPanelToggleController>(
+                        FindObjectsInactive.Include);
             }
         }
 
@@ -99,6 +109,8 @@ namespace CursorHunter.App
         /// </summary>
         public void BeginPrototypeRun()
         {
+            ResolveReferences();
+
             if (_runStarted ||
                 (combatRunController != null && combatRunController.IsRunning))
             {

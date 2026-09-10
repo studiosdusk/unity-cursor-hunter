@@ -21,6 +21,11 @@ namespace CursorHunter.App
 
         private void Awake()
         {
+            ResolveReferences();
+        }
+
+        private void ResolveReferences()
+        {
             if (cursorController == null)
             {
                 cursorController = GetComponent<MainCursorController>();
@@ -28,7 +33,8 @@ namespace CursorHunter.App
 
             if (cursorController == null)
             {
-                cursorController = FindFirstObjectByType<MainCursorController>();
+                cursorController = FindFirstObjectByType<MainCursorController>(
+                    FindObjectsInactive.Include);
             }
 
             if (combatRunController == null)
@@ -38,7 +44,8 @@ namespace CursorHunter.App
 
             if (combatRunController == null)
             {
-                combatRunController = FindFirstObjectByType<CombatRunController>();
+                combatRunController = FindFirstObjectByType<CombatRunController>(
+                    FindObjectsInactive.Include);
             }
 
             if (hitBox == null)
@@ -49,24 +56,27 @@ namespace CursorHunter.App
                     cursorTransform = transform.Find(LegacyCursorObjectName);
                 }
 
+                if (cursorTransform == null && cursorController != null)
+                {
+                    cursorTransform = cursorController.CursorTransform;
+                }
+
                 if (cursorTransform != null)
                 {
                     hitBox = cursorTransform.GetComponent<Collider2D>();
                 }
             }
 
-            if (cursorController == null ||
-                combatRunController == null ||
-                hitBox == null)
+            if (hitBox == null)
             {
-                Debug.LogWarning(
-                    "CursorAttackController requires cursor, combat, and cursor Collider2D references.",
-                    this);
+                hitBox = GetComponentInChildren<Collider2D>(true);
             }
         }
 
         private void Update()
         {
+            ResolveReferences();
+
             if (!CanAttack())
             {
                 return;
@@ -102,6 +112,8 @@ namespace CursorHunter.App
 
         private void TryPerformAttack(bool allowUiPointer)
         {
+            ResolveReferences();
+
             if (!CanAttack())
             {
                 return;
