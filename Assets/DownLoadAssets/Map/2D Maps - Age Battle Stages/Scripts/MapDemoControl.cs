@@ -183,7 +183,7 @@ public sealed class MapDemoControl : MonoBehaviour
             return null;
         }
 
-        Transform[] transforms = FindObjectsOfType<Transform>(true);
+        Transform[] transforms = FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None);
         GameObject exactMatch = FindSceneMap(transforms, true);
         return exactMatch != null ? exactMatch : FindSceneMap(transforms, false);
     }

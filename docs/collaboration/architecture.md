@@ -27,6 +27,8 @@ App이 Data/Progression에서 런 입력을 만들어 Combat에 전달한다. Pr
 공급사 스크립트는 기존 기본 어셈블리에 남긴다. 신규 asmdef에서 Assembly-CSharp 타입을 직접 참조하지 않는다. 외형 자식 오브젝트를 감싸는 게임 전용 프리팹을 사용한다.
 
 ## 씬·프리팹 경계
+- 런타임 씬 전략은 **One Scene + 개발용 Sandbox 씬**으로 고정한다. 실제 런타임·빌드 진입점은 `App/Scenes/Bootstrap.unity` 단일 씬이며, Main·전투·정산·특성·설정 화면은 이 씬 안에서 App가 화면 수명주기와 활성 상태를 관리한다.
+- `Combat/Scenes/CombatSandbox.unity`와 `Progression/Scenes/ProgressionSandbox.unity`는 각 모듈의 단독 개발·검증용 씬이다. 런타임에서 `LoadSceneMode.Additive`로 함께 로드하지 않으며, 통합 씬의 빌드 목록에도 넣지 않는다.
 - 사용자: Progression/Scenes/ProgressionSandbox.unity를 Unity에서 생성.
 - 친구: Combat/Scenes/CombatSandbox.unity를 Unity에서 생성.
 - 통합 담당: App/Scenes/Bootstrap.unity를 Unity에서 생성하고 빌드 목록 등록.
