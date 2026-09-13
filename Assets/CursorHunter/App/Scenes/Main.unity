@@ -28057,6 +28057,8 @@ MonoBehaviour:
   monsterDefinition: {fileID: 11400000, guid: 69e0bb2cc4d74a7585347d52af6c3238, type: 2}
   aliveLimit: 80
   durationSeconds: 15
+  schemaVersion: 1
+  balanceVersion: 1
 --- !u!114 &2188000013
 MonoBehaviour:
   m_ObjectHideFlags: 0

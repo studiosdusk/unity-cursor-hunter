@@ -7,14 +7,13 @@ namespace CursorHunter.Combat
 {
     /// <summary>
     /// Owns one normal-field run's combat clock, attack cooldown, collider
-    /// resolution, damage accounting, and result creation.
+    /// resolution, damage accounting, and result creation. Cross-module
+    /// lifecycle transitions are coordinated by App.RunCoordinator.
     /// </summary>
     [DefaultExecutionOrder(-100)]
     [DisallowMultipleComponent]
     public sealed class CombatRunController : MonoBehaviour
     {
-        private const string TimeExpiredReason = "time_expired";
-
         [SerializeField] private LayerMask enemyLayers = -1;
         [SerializeField, Min(32)] private int overlapBufferCapacity = 256;
 
@@ -30,10 +29,18 @@ namespace CursorHunter.Combat
         private long _garnetEarned;
         private long _effectiveDamage;
         private bool _isRunning;
+        private bool _isPaused;
+        private bool _completionRequested;
+        private bool _abortRequested;
 
-        public event Action<RunResult> Completed;
+        public event Action<RunEndReason> CompletionRequested;
+        public event Action<RunEndReason> AbortRequested;
 
-        public bool IsRunning => _isRunning;
+        public bool IsRunning =>
+            _isRunning && !_isPaused && !_completionRequested && !_abortRequested;
+        public bool IsRunActive =>
+            _isRunning && !_completionRequested && !_abortRequested;
+        public bool IsPaused => _isPaused;
         public float ElapsedSeconds => _elapsedSeconds;
         public float RemainingSeconds =>
             _isRunning
@@ -52,22 +59,42 @@ namespace CursorHunter.Combat
 
         private void Update()
         {
-            if (!_isRunning)
+            AdvanceTime(Time.deltaTime);
+        }
+
+        /// <summary>
+        /// Advances the combat clock. Keeping this small seam public makes the
+        /// duration boundary deterministic in tests without changing the
+        /// production Update loop.
+        /// </summary>
+        public void AdvanceTime(float deltaSeconds)
+        {
+            if (!_isRunning || _isPaused || _completionRequested || _abortRequested ||
+                deltaSeconds <= 0f || float.IsNaN(deltaSeconds) ||
+                float.IsInfinity(deltaSeconds))
             {
                 return;
             }
 
-            _elapsedSeconds += Time.deltaTime;
+            _elapsedSeconds += deltaSeconds;
 
             if (_elapsedSeconds >= _runRequest.DurationSeconds)
             {
                 _elapsedSeconds = _runRequest.DurationSeconds;
-                CompleteRun(TimeExpiredReason);
+                _completionRequested = true;
+                CompletionRequested?.Invoke(RunEndReason.TimeExpired);
             }
         }
 
-        public void StartRun(RunRequest request, CombatSnapshot combatSnapshot)
+        public bool StartRun(
+            RunRequest request,
+            CombatSnapshot combatSnapshot)
         {
+            if (_isRunning || !request.IsValid)
+            {
+                return false;
+            }
+
             _runRequest = request;
             _combatSnapshot = combatSnapshot;
             _elapsedSeconds = 0f;
@@ -76,6 +103,32 @@ namespace CursorHunter.Combat
             _garnetEarned = 0;
             _effectiveDamage = 0;
             _isRunning = true;
+            _isPaused = false;
+            _completionRequested = false;
+            _abortRequested = false;
+            return true;
+        }
+
+        public bool PauseRun()
+        {
+            if (!_isRunning || _isPaused || _completionRequested || _abortRequested)
+            {
+                return false;
+            }
+
+            _isPaused = true;
+            return true;
+        }
+
+        public bool ResumeRun()
+        {
+            if (!_isRunning || !_isPaused || _completionRequested || _abortRequested)
+            {
+                return false;
+            }
+
+            _isPaused = false;
+            return true;
         }
 
         /// <summary>
@@ -84,7 +137,7 @@ namespace CursorHunter.Combat
         /// </summary>
         public bool TryAttack(Collider2D attackCollider)
         {
-            if (!_isRunning || attackCollider == null || !attackCollider.enabled)
+            if (!IsRunning || attackCollider == null || !attackCollider.enabled)
             {
                 return false;
             }
@@ -132,30 +185,73 @@ namespace CursorHunter.Combat
 
             foreach (WalkerStumpTarget target in _uniqueTargets)
             {
+                if (!IsRunning)
+                {
+                    break;
+                }
+
                 ApplyBundle(target);
             }
 
             return true;
         }
 
-        public void CompleteRun(string endReason)
+        public bool TryCompleteRun(
+            RunEndReason endReason,
+            RunSettlementPolicy settlementPolicy,
+            out RunResult result)
         {
             if (!_isRunning)
             {
-                return;
+                result = default;
+                return false;
             }
 
             _isRunning = false;
+            _isPaused = false;
+            _completionRequested = false;
+            _abortRequested = false;
 
-            RunResult result = new RunResult(
-                _runRequest.RunId,
+            result = CreateResult(
                 endReason,
+                settlementPolicy);
+            return true;
+        }
+
+        public bool TryAbortRun(
+            RunEndReason endReason,
+            RunSettlementPolicy settlementPolicy,
+            out RunResult result)
+        {
+            if (!_isRunning)
+            {
+                result = default;
+                return false;
+            }
+
+            _isRunning = false;
+            _isPaused = false;
+            _completionRequested = false;
+            _abortRequested = false;
+
+            result = CreateResult(
+                endReason,
+                settlementPolicy);
+            return true;
+        }
+
+        private RunResult CreateResult(
+            RunEndReason endReason,
+            RunSettlementPolicy settlementPolicy)
+        {
+            return new RunResult(
+                _runRequest,
+                endReason,
+                settlementPolicy,
                 _elapsedSeconds,
                 _defeatedCount,
                 _garnetEarned,
                 _effectiveDamage);
-
-            Completed?.Invoke(result);
         }
 
         private void ApplyBundle(WalkerStumpTarget target)
@@ -174,17 +270,62 @@ namespace CursorHunter.Combat
                     return;
                 }
 
-                _effectiveDamage += effectiveDamage;
+                if (!TryAddNonNegative(
+                        _effectiveDamage,
+                        effectiveDamage,
+                        out long nextEffectiveDamage))
+                {
+                    RequestAbort(RunEndReason.NumericOverflow);
+                    return;
+                }
+
+                _effectiveDamage = nextEffectiveDamage;
 
                 if (!killed)
                 {
                     continue;
                 }
 
+                if (_defeatedCount == int.MaxValue ||
+                    !TryAddNonNegative(
+                        _garnetEarned,
+                        target.GarnetReward,
+                        out long nextGarnetEarned))
+                {
+                    RequestAbort(RunEndReason.NumericOverflow);
+                    return;
+                }
+
                 _defeatedCount++;
-                _garnetEarned += target.GarnetReward;
+                _garnetEarned = nextGarnetEarned;
                 return;
             }
+        }
+
+        private void RequestAbort(RunEndReason reason)
+        {
+            if (_abortRequested || !_isRunning)
+            {
+                return;
+            }
+
+            _abortRequested = true;
+            AbortRequested?.Invoke(reason);
+        }
+
+        private static bool TryAddNonNegative(
+            long current,
+            long amount,
+            out long result)
+        {
+            if (current < 0L || amount < 0L || long.MaxValue - current < amount)
+            {
+                result = 0L;
+                return false;
+            }
+
+            result = current + amount;
+            return true;
         }
     }
 }

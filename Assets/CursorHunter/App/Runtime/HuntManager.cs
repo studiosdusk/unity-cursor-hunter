@@ -1,3 +1,4 @@
+using System;
 using CursorHunter.Combat;
 using CursorHunter.Contracts;
 using CursorHunter.Data;
@@ -33,12 +34,16 @@ namespace CursorHunter.App
         [SerializeField] private MonsterDefinition monsterDefinition;
         [SerializeField, Min(1)] private int aliveLimit = 80;
         [SerializeField, Min(1f)] private float durationSeconds = 60f;
+        [SerializeField, Min(1)] private int schemaVersion = 1;
+        [SerializeField, Min(1)] private int balanceVersion = 1;
 
-        private bool _runStarted;
+        private RunCoordinator _runCoordinator;
+        private bool _coordinatorEventsSubscribed;
 
         private void Awake()
         {
             ResolveReferences();
+            EnsureRunCoordinator();
         }
 
         private void ResolveReferences()
@@ -97,10 +102,9 @@ namespace CursorHunter.App
 
         private void OnEnable()
         {
-            if (combatRunController != null)
-            {
-                combatRunController.Completed += HandleRunCompleted;
-            }
+            ResolveReferences();
+            EnsureRunCoordinator();
+            SubscribeToCoordinator();
         }
 
         /// <summary>
@@ -110,9 +114,10 @@ namespace CursorHunter.App
         public void BeginPrototypeRun()
         {
             ResolveReferences();
+            EnsureRunCoordinator();
+            SubscribeToCoordinator();
 
-            if (_runStarted ||
-                (combatRunController != null && combatRunController.IsRunning))
+            if (_runCoordinator == null || _runCoordinator.IsActive)
             {
                 return;
             }
@@ -137,6 +142,8 @@ namespace CursorHunter.App
             hitsPerBundle = Mathf.Max(1, hitsPerBundle);
             aliveLimit = Mathf.Max(1, aliveLimit);
             durationSeconds = Mathf.Max(1f, durationSeconds);
+            schemaVersion = Mathf.Max(1, schemaVersion);
+            balanceVersion = Mathf.Max(1, balanceVersion);
 
             CombatSnapshot combatSnapshot = new CombatSnapshot(
                 attackPower,
@@ -145,8 +152,26 @@ namespace CursorHunter.App
                 hitsPerBundle);
             SpawnSnapshot spawnSnapshot = CreateSpawnSnapshot();
             RunRequest runRequest = new RunRequest(
-                $"prototype-{GetInstanceID()}",
+                RunId.Create(),
+                schemaVersion,
+                balanceVersion,
+                RunMode.NormalField,
+                string.Empty,
+                CreateRunSeed(),
                 durationSeconds);
+
+            if (!_runCoordinator.Start(
+                    runRequest,
+                    combatSnapshot,
+                    spawnSnapshot,
+                    out string failureReason))
+            {
+                Debug.LogWarning(
+                    $"HuntManager could not start run '{runRequest.RunId}': " +
+                    failureReason,
+                    this);
+                return;
+            }
 
             cursorController.SetRangeMultiplier(combatSnapshot.RangeMultiplier);
             cursorController.ShowCursorImage();
@@ -156,9 +181,6 @@ namespace CursorHunter.App
                 testPanelToggleController.HideTestPanel();
             }
 
-            combatRunController.StartRun(runRequest, combatSnapshot);
-            monsterSpawner.StartRun(spawnSnapshot);
-
             if (runHud != null)
             {
                 runHud.Initialize();
@@ -167,8 +189,6 @@ namespace CursorHunter.App
                     combatRunController.DefeatedCount,
                     combatRunController.GarnetEarned);
             }
-
-            _runStarted = true;
         }
 
         /// <summary>
@@ -176,12 +196,14 @@ namespace CursorHunter.App
         /// </summary>
         public void EndPrototypeRun()
         {
-            if (combatRunController == null || !combatRunController.IsRunning)
+            if (_runCoordinator == null || !_runCoordinator.IsActive)
             {
                 return;
             }
 
-            combatRunController.CompleteRun("manual_test");
+            _runCoordinator.Abort(
+                RunEndReason.UserExit,
+                RunSettlementPolicy.Eligible);
         }
 
         /// <summary>
@@ -190,16 +212,13 @@ namespace CursorHunter.App
         /// </summary>
         public void ResetPrototypeRun()
         {
-            _runStarted = false;
-
-            if (combatRunController != null && combatRunController.IsRunning)
+            if (_runCoordinator != null && _runCoordinator.IsActive)
             {
-                // Disable this controller's completion handling first so a
-                // reset does not present a normal result screen.
-                combatRunController.CompleteRun("manual_reset");
+                _runCoordinator.Abort(
+                    RunEndReason.Reset,
+                    RunSettlementPolicy.Discard);
             }
-
-            if (monsterSpawner != null)
+            else if (monsterSpawner != null)
             {
                 monsterSpawner.StopRun();
             }
@@ -217,7 +236,10 @@ namespace CursorHunter.App
 
         private void Update()
         {
-            if (!_runStarted || combatRunController == null || !combatRunController.IsRunning)
+            if (_runCoordinator == null ||
+                !_runCoordinator.IsActive ||
+                combatRunController == null ||
+                !combatRunController.IsRunActive)
             {
                 return;
             }
@@ -233,14 +255,10 @@ namespace CursorHunter.App
 
         private void HandleRunCompleted(RunResult result)
         {
-            if (!_runStarted)
+            if (cursorController != null)
             {
-                return;
+                cursorController.HideCursorImage();
             }
-
-            _runStarted = false;
-            monsterSpawner.StopRun();
-            cursorController.HideCursorImage();
 
             if (runHud != null)
             {
@@ -248,11 +266,73 @@ namespace CursorHunter.App
             }
         }
 
+        private void HandleRunAborted(RunResult result)
+        {
+            if (cursorController != null)
+            {
+                cursorController.HideCursorImage();
+            }
+
+            if (runHud != null &&
+                result.SettlementPolicy == RunSettlementPolicy.Eligible)
+            {
+                runHud.ShowResult(result);
+            }
+        }
+
         private void OnDisable()
         {
-            if (combatRunController != null)
+            if (_runCoordinator != null && _runCoordinator.IsActive)
             {
-                combatRunController.Completed -= HandleRunCompleted;
+                _runCoordinator.Abort(
+                    RunEndReason.Reset,
+                    RunSettlementPolicy.Discard);
+            }
+
+            if (_coordinatorEventsSubscribed && _runCoordinator != null)
+            {
+                _runCoordinator.Completed -= HandleRunCompleted;
+                _runCoordinator.Aborted -= HandleRunAborted;
+                _coordinatorEventsSubscribed = false;
+            }
+
+            if (_runCoordinator != null)
+            {
+                _runCoordinator.Dispose();
+                _runCoordinator = null;
+            }
+        }
+
+        private void EnsureRunCoordinator()
+        {
+            if (_runCoordinator == null &&
+                combatRunController != null &&
+                monsterSpawner != null)
+            {
+                _runCoordinator = new RunCoordinator(
+                    combatRunController,
+                    monsterSpawner);
+            }
+        }
+
+        private void SubscribeToCoordinator()
+        {
+            if (_runCoordinator == null || _coordinatorEventsSubscribed)
+            {
+                return;
+            }
+
+            _runCoordinator.Completed += HandleRunCompleted;
+            _runCoordinator.Aborted += HandleRunAborted;
+            _coordinatorEventsSubscribed = true;
+        }
+
+        private static ulong CreateRunSeed()
+        {
+            unchecked
+            {
+                return (ulong)DateTime.UtcNow.Ticks ^
+                       ((ulong)Time.frameCount << 32);
             }
         }
 

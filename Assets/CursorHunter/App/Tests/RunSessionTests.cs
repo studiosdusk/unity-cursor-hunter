@@ -1,0 +1,398 @@
+using System;
+using CursorHunter.Combat;
+using CursorHunter.Contracts;
+using NUnit.Framework;
+using UnityEngine;
+
+namespace CursorHunter.App.Tests
+{
+    public sealed class RunSessionTests
+    {
+        [Test]
+        public void NewSessionStartsIdle()
+        {
+            RunSession session = new RunSession();
+
+            Assert.That(session.State, Is.EqualTo(RunState.Idle));
+            Assert.That(session.IsActive, Is.False);
+        }
+
+        [Test]
+        public void StartEntersStartingUntilRuntimeParticipantsCommit()
+        {
+            RunSession session = new RunSession();
+
+            Assert.That(session.Start(CreateRequest("run-start")), Is.True);
+            Assert.That(session.State, Is.EqualTo(RunState.Starting));
+            Assert.That(session.IsActive, Is.True);
+
+            Assert.That(session.CommitStart(), Is.True);
+            Assert.That(session.State, Is.EqualTo(RunState.Running));
+        }
+
+        [Test]
+        public void StartCannotBeCalledTwiceForOneSession()
+        {
+            RunSession session = new RunSession();
+            RunRequest request = CreateRequest("run-duplicate");
+
+            Assert.That(session.Start(request), Is.True);
+            Assert.That(session.Start(request), Is.False);
+            Assert.That(session.CommitStart(), Is.True);
+            Assert.That(session.Start(request), Is.False);
+        }
+
+        [Test]
+        public void PauseAndResumeOnlyWorkFromTheirMatchingStates()
+        {
+            RunSession session = StartRunning("run-pause");
+
+            Assert.That(session.Pause(), Is.True);
+            Assert.That(session.State, Is.EqualTo(RunState.Paused));
+            Assert.That(session.Pause(), Is.False);
+
+            Assert.That(session.Resume(), Is.True);
+            Assert.That(session.State, Is.EqualTo(RunState.Running));
+            Assert.That(session.Resume(), Is.False);
+        }
+
+        [Test]
+        public void CompleteAndAbortAreMutuallyExclusive()
+        {
+            RunSession completed = StartRunning("run-complete");
+            int completedEvents = 0;
+            int abortedEvents = 0;
+            completed.Completed += () => completedEvents++;
+            completed.Aborted += () => abortedEvents++;
+
+            Assert.That(
+                completed.Complete(
+                    RunEndReason.TimeExpired,
+                    RunSettlementPolicy.Eligible),
+                Is.True);
+            Assert.That(completed.State, Is.EqualTo(RunState.Completed));
+            Assert.That(completed.Abort(
+                    RunEndReason.UserExit,
+                    RunSettlementPolicy.Eligible),
+                Is.False);
+            Assert.That(completedEvents, Is.EqualTo(1));
+            Assert.That(abortedEvents, Is.EqualTo(0));
+
+            RunSession aborted = StartRunning("run-abort");
+            completedEvents = 0;
+            abortedEvents = 0;
+            aborted.Completed += () => completedEvents++;
+            aborted.Aborted += () => abortedEvents++;
+
+            Assert.That(
+                aborted.Abort(
+                    RunEndReason.UserExit,
+                    RunSettlementPolicy.Eligible),
+                Is.True);
+            Assert.That(aborted.State, Is.EqualTo(RunState.Aborted));
+            Assert.That(aborted.Complete(
+                    RunEndReason.TimeExpired,
+                    RunSettlementPolicy.Eligible),
+                Is.False);
+            Assert.That(completedEvents, Is.EqualTo(0));
+            Assert.That(abortedEvents, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void ResetAbortsWithoutPublishingCompleted()
+        {
+            RunSession session = StartRunning("run-reset");
+            int completedEvents = 0;
+            int abortedEvents = 0;
+            session.Completed += () => completedEvents++;
+            session.Aborted += () => abortedEvents++;
+
+            Assert.That(
+                session.Abort(
+                    RunEndReason.Reset,
+                    RunSettlementPolicy.Discard),
+                Is.True);
+
+            Assert.That(session.State, Is.EqualTo(RunState.Aborted));
+            Assert.That(session.EndReason, Is.EqualTo(RunEndReason.Reset));
+            Assert.That(
+                session.SettlementPolicy,
+                Is.EqualTo(RunSettlementPolicy.Discard));
+            Assert.That(completedEvents, Is.EqualTo(0));
+            Assert.That(abortedEvents, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void TerminalSessionCannotBeStartedAgain()
+        {
+            RunSession session = StartRunning("run-terminal");
+            Assert.That(
+                session.Complete(
+                    RunEndReason.ManualComplete,
+                    RunSettlementPolicy.Eligible),
+                Is.True);
+
+            Assert.That(session.Start(CreateRequest("run-new")), Is.False);
+        }
+
+        [Test]
+        public void RequestCarriesIdentityVersionsModeBossAndSeed()
+        {
+            RunId runId = new RunId("run-contract");
+            RunRequest request = new RunRequest(
+                runId,
+                3,
+                11,
+                RunMode.Boss,
+                "boss.first",
+                123456789UL,
+                60f);
+
+            Assert.That(request.IsValid, Is.True);
+            Assert.That(request.RunId, Is.EqualTo(runId));
+            Assert.That(request.SchemaVersion, Is.EqualTo(3));
+            Assert.That(request.BalanceVersion, Is.EqualTo(11));
+            Assert.That(request.Mode, Is.EqualTo(RunMode.Boss));
+            Assert.That(request.BossId, Is.EqualTo("boss.first"));
+            Assert.That(request.Seed, Is.EqualTo(123456789UL));
+            Assert.That(request.DurationSeconds, Is.EqualTo(60f));
+        }
+
+        [Test]
+        public void RunIdFactoryProducesDistinctIds()
+        {
+            RunId first = RunId.Create();
+            RunId second = RunId.Create();
+
+            Assert.That(first.IsValid, Is.True);
+            Assert.That(second.IsValid, Is.True);
+            Assert.That(first, Is.Not.EqualTo(second));
+        }
+
+        [Test]
+        public void RunIdRegistryRejectsDuplicateLogicalRuns()
+        {
+            RunIdRegistry registry = new RunIdRegistry();
+            RunId runId = new RunId("run-registry");
+
+            Assert.That(registry.TryClaim(runId), Is.True);
+            Assert.That(registry.TryClaim(runId), Is.False);
+            Assert.That(registry.Contains(runId), Is.True);
+        }
+
+        [Test]
+        public void CoordinatorRollsBackCombatWhenSpawnerCannotStart()
+        {
+            GameObject gameObject = new GameObject("RunCoordinatorRollbackTest");
+            RunCoordinator coordinator = null;
+            try
+            {
+                CombatRunController combat =
+                    gameObject.AddComponent<CombatRunController>();
+                MonsterSpawner spawner =
+                    gameObject.AddComponent<MonsterSpawner>();
+                coordinator = new RunCoordinator(combat, spawner);
+
+                RunRequest request = CreateRequest("run-rollback");
+                bool started = coordinator.Start(
+                    request,
+                    new CombatSnapshot(10L, 1f, 0f, 1),
+                    new SpawnSnapshot(
+                        "monster.slime",
+                        "missing-prefab",
+                        30L,
+                        1.5f,
+                        1,
+                        1,
+                        3L),
+                    out string failureReason);
+
+                Assert.That(started, Is.False);
+                Assert.That(failureReason, Is.Not.Empty);
+                Assert.That(combat.IsRunActive, Is.False);
+                Assert.That(coordinator.State, Is.EqualTo(RunState.Aborted));
+
+                Assert.That(
+                    coordinator.Start(
+                        request,
+                        new CombatSnapshot(10L, 1f, 0f, 1),
+                        new SpawnSnapshot(
+                            "monster.slime",
+                            "missing-prefab",
+                            30L,
+                            1.5f,
+                            1,
+                            1,
+                            3L),
+                        out failureReason),
+                    Is.False);
+                Assert.That(failureReason, Does.Contain("already been used"));
+            }
+            finally
+            {
+                coordinator?.Dispose();
+                UnityEngine.Object.DestroyImmediate(gameObject);
+            }
+        }
+
+        [Test]
+        public void RunResultRejectsNegativeCountersInsteadOfNormalizingThem()
+        {
+            RunRequest request = CreateRequest("run-counter");
+
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+                new RunResult(
+                    request,
+                    RunEndReason.NumericOverflow,
+                    RunSettlementPolicy.Discard,
+                    1f,
+                    0,
+                    -1L,
+                    0L));
+
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+                new RunResult(
+                    request,
+                    RunEndReason.NumericOverflow,
+                    RunSettlementPolicy.Discard,
+                    1f,
+                    0,
+                    0L,
+                    -1L));
+        }
+
+        [Test]
+        public void ExactDurationRequestsCompletionAndStopsRunning()
+        {
+            GameObject gameObject = new GameObject("CombatRunControllerTest");
+            try
+            {
+                CombatRunController controller =
+                    gameObject.AddComponent<CombatRunController>();
+                int completionRequests = 0;
+                RunEndReason requestedReason = RunEndReason.Unknown;
+                controller.CompletionRequested += reason =>
+                {
+                    completionRequests++;
+                    requestedReason = reason;
+                };
+
+                RunRequest request = CreateRequest("run-boundary", 1f);
+                Assert.That(
+                    controller.StartRun(
+                        request,
+                        new CombatSnapshot(10L, 1f, 0f, 1)),
+                    Is.True);
+
+                controller.AdvanceTime(0.999f);
+                Assert.That(controller.IsRunning, Is.True);
+                Assert.That(completionRequests, Is.EqualTo(0));
+
+                controller.AdvanceTime(0.001f);
+                Assert.That(controller.IsRunning, Is.False);
+                Assert.That(completionRequests, Is.EqualTo(1));
+                Assert.That(
+                    requestedReason,
+                    Is.EqualTo(RunEndReason.TimeExpired));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(gameObject);
+            }
+        }
+
+        [Test]
+        public void PausedCombatClockDoesNotAdvanceUntilResumed()
+        {
+            GameObject gameObject = new GameObject("CombatPauseTest");
+            try
+            {
+                CombatRunController controller =
+                    gameObject.AddComponent<CombatRunController>();
+                int completionRequests = 0;
+                controller.CompletionRequested += _ => completionRequests++;
+
+                RunRequest request = CreateRequest("run-pause-clock", 1f);
+                Assert.That(
+                    controller.StartRun(
+                        request,
+                        new CombatSnapshot(10L, 1f, 0f, 1)),
+                    Is.True);
+
+                controller.AdvanceTime(0.5f);
+                Assert.That(controller.ElapsedSeconds, Is.EqualTo(0.5f).Within(0.0001f));
+                Assert.That(controller.PauseRun(), Is.True);
+
+                controller.AdvanceTime(1f);
+                Assert.That(controller.ElapsedSeconds, Is.EqualTo(0.5f).Within(0.0001f));
+                Assert.That(completionRequests, Is.EqualTo(0));
+
+                Assert.That(controller.ResumeRun(), Is.True);
+                controller.AdvanceTime(0.5f);
+                Assert.That(completionRequests, Is.EqualTo(1));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(gameObject);
+            }
+        }
+
+        private static RunSession StartRunning(string runId)
+        {
+            RunSession session = new RunSession();
+            Assert.That(session.Start(CreateRequest(runId)), Is.True);
+            Assert.That(session.CommitStart(), Is.True);
+            return session;
+        }
+
+        private static RunRequest CreateRequest(
+            string runId,
+            float durationSeconds = 60f)
+        {
+            return new RunRequest(
+                new RunId(runId),
+                1,
+                1,
+                RunMode.NormalField,
+                string.Empty,
+                42UL,
+                durationSeconds);
+        }
+    }
+
+    public sealed class SeededRandomTests
+    {
+        [Test]
+        public void SameSeedProducesTheSameSequence()
+        {
+            SeededRandom first = new SeededRandom(99UL);
+            SeededRandom second = new SeededRandom(99UL);
+
+            for (int index = 0; index < 20; index++)
+            {
+                Assert.That(
+                    first.NextFloat(-1f, 1f),
+                    Is.EqualTo(second.NextFloat(-1f, 1f)));
+            }
+        }
+
+        [Test]
+        public void DifferentSeedsProduceDifferentSequences()
+        {
+            SeededRandom first = new SeededRandom(99UL);
+            SeededRandom second = new SeededRandom(100UL);
+            bool anyDifferent = false;
+
+            for (int index = 0; index < 20; index++)
+            {
+                if (first.NextFloat(0f, 1f) != second.NextFloat(0f, 1f))
+                {
+                    anyDifferent = true;
+                    break;
+                }
+            }
+
+            Assert.That(anyDifferent, Is.True);
+        }
+    }
+}

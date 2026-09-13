@@ -31,6 +31,7 @@ namespace CursorHunter.Combat
             new List<WalkerStumpTarget>();
 
         private SpawnSnapshot _spawnSnapshot;
+        private SeededRandom _random;
         private float _nextSpawnAt;
         private bool _isSpawning;
         private bool _spawnFailureLogged;
@@ -95,9 +96,14 @@ namespace CursorHunter.Combat
                 return;
             }
 
-            if (!combatRunController.IsRunning)
+            if (!combatRunController.IsRunActive)
             {
                 _isSpawning = false;
+                return;
+            }
+
+            if (combatRunController.IsPaused)
+            {
                 return;
             }
 
@@ -121,34 +127,42 @@ namespace CursorHunter.Combat
             _nextSpawnAt = elapsedSeconds + _spawnSnapshot.SpawnIntervalSeconds;
         }
 
-        public void StartRun(SpawnSnapshot spawnSnapshot)
+        public bool StartRun(RunRequest request, SpawnSnapshot spawnSnapshot)
         {
-            StopRun();
+            if (_isSpawning || _spawnedTargets.Count > 0)
+            {
+                Debug.LogWarning(
+                    "MonsterSpawner cannot start while a previous spawn set is active.",
+                    this);
+                return false;
+            }
 
             if (combatRunController == null)
             {
                 Debug.LogWarning("MonsterSpawner requires a CombatRunController.", this);
-                return;
+                return false;
             }
 
             if (!TryResolveWalkerStumpPrefab())
             {
                 Debug.LogWarning("MonsterSpawner requires a Walker_Stump prefab.", this);
-                return;
+                return false;
             }
 
             _spawnSnapshot = spawnSnapshot;
+            _random = new SeededRandom(request.Seed);
             _nextSpawnAt = 0f;
             _spawnFailureLogged = false;
             _isSpawning = true;
 
             if (!SpawnPack())
             {
-                _isSpawning = false;
-                return;
+                StopRun();
+                return false;
             }
 
             _nextSpawnAt = spawnSnapshot.SpawnIntervalSeconds;
+            return true;
         }
 
         public void StopRun()
@@ -174,16 +188,21 @@ namespace CursorHunter.Combat
             int spawnCount = Mathf.Min(
                 _spawnSnapshot.PackSize,
                 Mathf.Max(0, remainingCapacity));
+            int firstNewTargetIndex = _spawnedTargets.Count;
 
             for (int index = 0; index < spawnCount; index++)
             {
                 if (!TryGetSpawnPosition(out Vector3 spawnPosition))
                 {
-                    continue;
+                    LogSpawnFailure(
+                        "MonsterSpawner could not find a valid spawn position.");
+                    RollbackPack(firstNewTargetIndex);
+                    return false;
                 }
 
                 if (!TryInstantiateWalkerStump(spawnPosition, out GameObject instance))
                 {
+                    RollbackPack(firstNewTargetIndex);
                     return false;
                 }
 
@@ -199,7 +218,24 @@ namespace CursorHunter.Combat
                 _spawnedTargets.Add(target);
             }
 
-            return true;
+            return spawnCount == 0 ||
+                   _spawnedTargets.Count - firstNewTargetIndex == spawnCount;
+        }
+
+        private void RollbackPack(int firstNewTargetIndex)
+        {
+            for (int index = _spawnedTargets.Count - 1;
+                 index >= firstNewTargetIndex;
+                 index--)
+            {
+                WalkerStumpTarget target = _spawnedTargets[index];
+                if (target != null && target.gameObject != _sceneSpawnTemplate)
+                {
+                    Destroy(target.gameObject);
+                }
+
+                _spawnedTargets.RemoveAt(index);
+            }
         }
 
         private bool TryInstantiateWalkerStump(
@@ -284,8 +320,8 @@ namespace CursorHunter.Combat
             float cameraDistance = Mathf.Abs(
                 spawnPlaneZ - worldCamera.transform.position.z);
             Vector3 viewportPosition = new Vector3(
-                Random.Range(minX, maxX),
-                Random.Range(minY, maxY),
+                _random.NextFloat(minX, maxX),
+                _random.NextFloat(minY, maxY),
                 cameraDistance);
 
             spawnPosition = worldCamera.ViewportToWorldPoint(viewportPosition);

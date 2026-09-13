@@ -1,28 +1,67 @@
 namespace CursorHunter.Contracts
 {
     /// <summary>
-    /// Result of a completed prototype combat run.
+    /// Immutable facts produced when a run reaches a terminal state. It does
+    /// not perform settlement or mutate a profile.
     /// </summary>
     public readonly struct RunResult
     {
         public RunResult(
-            string runId,
-            string endReason,
+            RunRequest request,
+            RunEndReason endReason,
+            RunSettlementPolicy settlementPolicy,
             float elapsedSeconds,
             int defeatedCount,
             long garnetEarned,
             long effectiveDamage)
         {
-            RunId = runId ?? string.Empty;
-            EndReason = endReason ?? string.Empty;
-            ElapsedSeconds = elapsedSeconds >= 0f ? elapsedSeconds : 0f;
-            DefeatedCount = defeatedCount >= 0 ? defeatedCount : 0;
-            GarnetEarned = garnetEarned >= 0 ? garnetEarned : 0;
-            EffectiveDamage = effectiveDamage >= 0 ? effectiveDamage : 0;
+            if (!request.IsValid)
+            {
+                throw new System.ArgumentException(
+                    "RunResult requires a valid RunRequest.",
+                    nameof(request));
+            }
+
+            if (elapsedSeconds < 0f ||
+                float.IsNaN(elapsedSeconds) ||
+                float.IsInfinity(elapsedSeconds))
+            {
+                throw new System.ArgumentOutOfRangeException(nameof(elapsedSeconds));
+            }
+
+            if (defeatedCount < 0)
+            {
+                throw new System.ArgumentOutOfRangeException(nameof(defeatedCount));
+            }
+
+            if (garnetEarned < 0L)
+            {
+                throw new System.ArgumentOutOfRangeException(nameof(garnetEarned));
+            }
+
+            if (effectiveDamage < 0L)
+            {
+                throw new System.ArgumentOutOfRangeException(nameof(effectiveDamage));
+            }
+
+            RunId = request.RunId;
+            SchemaVersion = request.SchemaVersion;
+            BalanceVersion = request.BalanceVersion;
+            Mode = request.Mode;
+            EndReason = endReason;
+            SettlementPolicy = settlementPolicy;
+            ElapsedSeconds = elapsedSeconds;
+            DefeatedCount = defeatedCount;
+            GarnetEarned = garnetEarned;
+            EffectiveDamage = effectiveDamage;
         }
 
-        public string RunId { get; }
-        public string EndReason { get; }
+        public RunId RunId { get; }
+        public int SchemaVersion { get; }
+        public int BalanceVersion { get; }
+        public RunMode Mode { get; }
+        public RunEndReason EndReason { get; }
+        public RunSettlementPolicy SettlementPolicy { get; }
         public float ElapsedSeconds { get; }
         public int DefeatedCount { get; }
         public long GarnetEarned { get; }

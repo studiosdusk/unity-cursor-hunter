@@ -107,8 +107,15 @@ namespace CursorHunter.App
                 return;
             }
 
+            bool wasAborted = result.EndReason == RunEndReason.UserExit ||
+                              result.EndReason == RunEndReason.StartFailed ||
+                              result.EndReason == RunEndReason.NumericOverflow;
+            string resultTitle = wasAborted
+                ? "HUNT ABORTED"
+                : "HUNT COMPLETE";
+
             _resultText.text =
-                "HUNT COMPLETE\n\n" +
+                resultTitle + "\n\n" +
                 $"TIME {result.ElapsedSeconds:0.0}s\n" +
                 $"KILLS {result.DefeatedCount}\n" +
                 $"GARNET +{result.GarnetEarned}\n" +
