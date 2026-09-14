@@ -1,8 +1,12 @@
 using System;
 using CursorHunter.Combat;
 using CursorHunter.Contracts;
+using CursorHunter.Data;
 using NUnit.Framework;
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace CursorHunter.App.Tests
 {
@@ -197,14 +201,16 @@ namespace CursorHunter.App.Tests
                 bool started = coordinator.Start(
                     request,
                     new CombatSnapshot(10L, 1f, 0f, 1),
-                    new SpawnSnapshot(
-                        "monster.slime",
-                        "missing-prefab",
-                        30L,
-                        1.5f,
-                        1,
-                        1,
-                        3L),
+                    new SpawnPlan(
+                        new SpawnSnapshot(
+                            "monster.slime",
+                            "missing-prefab",
+                            30L,
+                            1.5f,
+                            1,
+                            1,
+                            3L),
+                        null),
                     out string failureReason);
 
                 Assert.That(started, Is.False);
@@ -217,14 +223,16 @@ namespace CursorHunter.App.Tests
                     coordinator.Start(
                         request,
                         new CombatSnapshot(10L, 1f, 0f, 1),
-                        new SpawnSnapshot(
-                            "monster.slime",
-                            "missing-prefab",
-                            30L,
-                            1.5f,
-                            1,
-                            1,
-                            3L),
+                        new SpawnPlan(
+                            new SpawnSnapshot(
+                                "monster.slime",
+                                "missing-prefab",
+                                30L,
+                                1.5f,
+                                1,
+                                1,
+                                3L),
+                            null),
                         out failureReason),
                     Is.False);
                 Assert.That(failureReason, Does.Contain("already been used"));
@@ -310,7 +318,7 @@ namespace CursorHunter.App.Tests
 
                 SpawnStartResult result = spawner.StartRun(
                     CreateRequest("run-invalid-spawn"),
-                    default);
+                    null);
 
                 Assert.That(result.Succeeded, Is.False);
                 Assert.That(
@@ -323,6 +331,129 @@ namespace CursorHunter.App.Tests
                 UnityEngine.Object.DestroyImmediate(gameObject);
             }
         }
+
+        [Test]
+        public void TargetAdapterSupportsNestedAnimatorAndMissingCollider()
+        {
+            GameObject root = new GameObject("GenericMonsterRoot");
+            GameObject visual = new GameObject("Visual");
+            visual.transform.SetParent(root.transform);
+            visual.AddComponent<SpriteRenderer>();
+            visual.AddComponent<Animator>();
+
+            try
+            {
+                WalkerStumpTarget target =
+                    root.AddComponent<WalkerStumpTarget>();
+                target.Initialize(
+                    new SpawnSnapshot(
+                        "monster.generic",
+                        "generic_prefab",
+                        30L,
+                        1f,
+                        1,
+                        1,
+                        1L),
+                    new RunId("run-generic-target"));
+
+                Collider2D collider = target.EnsureCombatCollider();
+
+                Assert.That(collider, Is.Not.Null);
+                Assert.That(collider.gameObject, Is.SameAs(root));
+                Assert.That(target.IsActive, Is.True);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
+#if UNITY_EDITOR
+        [Test]
+        public void AuthoredMonsterPrefabsCanUseTheGenericTargetAdapter()
+        {
+            MonsterDefinition slimeDefinition =
+                AssetDatabase.LoadAssetAtPath<MonsterDefinition>(
+                    "Assets/CursorHunter/Data/Resources/MonsterDefinitions/SlimeDefinition.asset");
+            if (slimeDefinition == null)
+            {
+                Assert.Ignore("Slime MonsterDefinition is not imported.");
+            }
+
+            Assert.That(slimeDefinition.Prefab, Is.Not.Null);
+
+            const string prefabRoot =
+                "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/" +
+                "EnemyMonster 2/Prefabs";
+            string[] prefabGuids = AssetDatabase.FindAssets(
+                "t:Prefab",
+                new[] { prefabRoot });
+            Array.Sort(prefabGuids, StringComparer.Ordinal);
+
+            if (prefabGuids.Length == 0)
+            {
+                Assert.Ignore("Authored monster prefabs are not imported.");
+            }
+
+            foreach (string prefabGuid in prefabGuids)
+            {
+                string prefabPath = AssetDatabase.GUIDToAssetPath(prefabGuid);
+                GameObject prefab =
+                    AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+                if (prefab == null)
+                {
+                    Assert.Ignore(
+                        $"Authored monster prefab is not imported: {prefabPath}");
+                }
+
+                GameObject instance = UnityEngine.Object.Instantiate(prefab);
+                try
+                {
+                    WalkerStumpTarget target =
+                        instance.AddComponent<WalkerStumpTarget>();
+                    RunId runId = new RunId("run-prefab-adapter");
+                    target.Initialize(
+                        new SpawnSnapshot(
+                            "monster.generic",
+                            "generic_prefab",
+                            30L,
+                            1f,
+                            1,
+                            1,
+                            1L),
+                        runId);
+
+                    Assert.That(target.IsActive, Is.True, prefabPath);
+                    Assert.That(
+                        target.EnsureCombatCollider(),
+                        Is.Not.Null,
+                        prefabPath);
+                    Assert.That(
+                        target.ApplyDamage(
+                            runId,
+                            1L,
+                            out _,
+                            out bool hitKilled),
+                        Is.True,
+                        prefabPath);
+                    Assert.That(hitKilled, Is.False, prefabPath);
+                    Assert.That(
+                        target.ApplyDamage(
+                            runId,
+                            29L,
+                            out _,
+                            out bool killed),
+                        Is.True,
+                        prefabPath);
+                    Assert.That(killed, Is.True, prefabPath);
+                }
+                finally
+                {
+                    UnityEngine.Object.DestroyImmediate(instance);
+                }
+            }
+        }
+#endif
 
         [Test]
         public void RunResultRejectsNegativeCountersInsteadOfNormalizingThem()

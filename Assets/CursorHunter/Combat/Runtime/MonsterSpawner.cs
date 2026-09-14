@@ -1,25 +1,17 @@
 using System.Collections.Generic;
 using CursorHunter.Contracts;
 using UnityEngine;
-#if UNITY_EDITOR
-using UnityEditor;
-#endif
 
 namespace CursorHunter.Combat
 {
     /// <summary>
-    /// Prototype normal-field spawner. It receives a run snapshot rather than
-    /// reading Data assets, then creates the configured visual prefab.
+    /// Prototype normal-field spawner. It receives an immutable SpawnPlan
+    /// rather than reading Data assets, then creates its authored prefab.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class MonsterSpawner : MonoBehaviour
     {
-        private const string WalkerStumpPrefabAssetPath =
-            "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/" +
-            "EnemyMonster 2/Prefabs/Walker/Walker_Stump.prefab";
-
         [SerializeField] private CombatRunController combatRunController;
-        [SerializeField] private GameObject walkerStumpPrefab;
         [SerializeField] private Transform spawnedEnemyRoot;
         [SerializeField] private Camera worldCamera;
         [SerializeField] private float spawnPlaneZ;
@@ -32,11 +24,11 @@ namespace CursorHunter.Combat
 
         private RunId _runId;
         private SpawnSnapshot _spawnSnapshot;
+        private GameObject _spawnPrefab;
         private SeededRandom _random;
         private float _nextSpawnAt;
         private bool _isSpawning;
         private bool _spawnFailureLogged;
-        private GameObject _sceneSpawnTemplate;
 
         public int ActiveSpawnedCount
         {
@@ -83,8 +75,6 @@ namespace CursorHunter.Combat
                     : transform;
             }
 
-            TryResolveWalkerStumpPrefab();
-
             horizontalPadding = Mathf.Clamp01(horizontalPadding);
             bottomPadding = Mathf.Clamp01(bottomPadding);
             topPadding = Mathf.Clamp01(topPadding);
@@ -130,7 +120,7 @@ namespace CursorHunter.Combat
 
         public SpawnStartResult StartRun(
             RunRequest request,
-            SpawnSnapshot spawnSnapshot)
+            SpawnPlan spawnPlan)
         {
             if (_isSpawning || _spawnedTargets.Count > 0)
             {
@@ -142,11 +132,26 @@ namespace CursorHunter.Combat
                     "MonsterSpawner already owns an active spawn set.");
             }
 
-            if (!request.IsValid || !spawnSnapshot.IsValid)
+            if (!request.IsValid ||
+                spawnPlan == null ||
+                !spawnPlan.HasEntries ||
+                spawnPlan.Entries.Count != 1 ||
+                !spawnPlan.Entries[0].HasValidSnapshot)
             {
                 return new SpawnStartResult(
                     SpawnStartStatus.InvalidRequest,
-                    "RunRequest or SpawnSnapshot is invalid.");
+                    "RunRequest or single-entry SpawnPlan is invalid.");
+            }
+
+            SpawnPlanEntry planEntry = spawnPlan.Entries[0];
+            if (!planEntry.HasPrefab)
+            {
+                Debug.LogWarning(
+                    "MonsterSpawner could not start because the SpawnPlan prefab is missing.",
+                    this);
+                return new SpawnStartResult(
+                    SpawnStartStatus.MissingPrefab,
+                    "MonsterDefinition does not reference a prefab.");
             }
 
             if (combatRunController == null)
@@ -157,16 +162,9 @@ namespace CursorHunter.Combat
                     "MonsterSpawner requires a CombatRunController.");
             }
 
-            if (!TryResolveWalkerStumpPrefab())
-            {
-                Debug.LogWarning("MonsterSpawner requires a Walker_Stump prefab.", this);
-                return new SpawnStartResult(
-                    SpawnStartStatus.MissingPrefab,
-                    "Walker_Stump prefab could not be resolved.");
-            }
-
             _runId = request.RunId;
-            _spawnSnapshot = spawnSnapshot;
+            _spawnSnapshot = planEntry.Snapshot;
+            _spawnPrefab = planEntry.Prefab;
             _random = new SeededRandom(request.Seed);
             _nextSpawnAt = 0f;
             _spawnFailureLogged = false;
@@ -182,7 +180,7 @@ namespace CursorHunter.Combat
                         : "The initial spawn pack could not be created.");
             }
 
-            _nextSpawnAt = spawnSnapshot.SpawnIntervalSeconds;
+            _nextSpawnAt = _spawnSnapshot.SpawnIntervalSeconds;
             return new SpawnStartResult(
                 SpawnStartStatus.Started,
                 "Initial spawn pack prepared.");
@@ -201,14 +199,12 @@ namespace CursorHunter.Combat
                 }
 
                 target.Unregister();
-                if (target.gameObject != _sceneSpawnTemplate)
-                {
-                    Destroy(target.gameObject);
-                }
+                Destroy(target.gameObject);
             }
 
             _spawnedTargets.Clear();
             _runId = default;
+            _spawnPrefab = null;
         }
 
         private bool SpawnPack(out SpawnStartStatus failureStatus)
@@ -233,7 +229,9 @@ namespace CursorHunter.Combat
                     return false;
                 }
 
-                if (!TryInstantiateWalkerStump(spawnPosition, out GameObject instance))
+                if (!TryInstantiateSpawnPrefab(
+                        spawnPosition,
+                        out GameObject instance))
                 {
                     failureStatus = SpawnStartStatus.InitialSpawnFailed;
                     RollbackPack(firstNewTargetIndex);
@@ -250,7 +248,7 @@ namespace CursorHunter.Combat
                         target.Unregister();
                     }
 
-                    if (instance != null && instance != _sceneSpawnTemplate)
+                    if (instance != null)
                     {
                         Destroy(instance);
                     }
@@ -281,7 +279,12 @@ namespace CursorHunter.Combat
                 }
 
                 target.Initialize(_spawnSnapshot, _runId);
-                return target.IsActive;
+                if (!target.IsActive)
+                {
+                    return false;
+                }
+
+                return target.EnsureCombatCollider() != null;
             }
             catch (System.Exception exception)
             {
@@ -306,25 +309,22 @@ namespace CursorHunter.Combat
                 }
 
                 target.Unregister();
-                if (target.gameObject != _sceneSpawnTemplate)
-                {
-                    Destroy(target.gameObject);
-                }
+                Destroy(target.gameObject);
 
                 _spawnedTargets.RemoveAt(index);
             }
         }
 
-        private bool TryInstantiateWalkerStump(
+        private bool TryInstantiateSpawnPrefab(
             Vector3 spawnPosition,
             out GameObject instance)
         {
             instance = null;
 
-            if (!TryResolveWalkerStumpPrefab())
+            if (_spawnPrefab == null)
             {
                 LogSpawnFailure(
-                    "MonsterSpawner could not create a Walker_Stump because the spawn source is missing.");
+                    "MonsterSpawner could not create a target because the spawn prefab is missing.");
                 return false;
             }
 
@@ -336,7 +336,7 @@ namespace CursorHunter.Combat
                 // Keeping the requested type as Transform avoids the invalid
                 // GameObject cast while preserving the complete prefab tree.
                 Transform cloneTransform = UnityEngine.Object.Instantiate(
-                    walkerStumpPrefab.transform,
+                    _spawnPrefab.transform,
                     spawnPosition,
                     Quaternion.identity,
                     spawnedEnemyRoot);
@@ -347,16 +347,16 @@ namespace CursorHunter.Combat
             catch (System.Exception exception)
             {
                 LogSpawnFailure(
-                    $"MonsterSpawner failed to instantiate Walker_Stump from " +
-                    $"'{walkerStumpPrefab.name}'. {exception.GetType().Name}: {exception.Message}");
+                    $"MonsterSpawner failed to instantiate spawn prefab " +
+                    $"'{_spawnPrefab.name}'. {exception.GetType().Name}: {exception.Message}");
                 return false;
             }
 
             if (instance == null)
             {
                 LogSpawnFailure(
-                    "MonsterSpawner could not resolve the cloned Walker_Stump root GameObject. " +
-                    $"Source type: {walkerStumpPrefab.GetType().Name}.");
+                    "MonsterSpawner could not resolve the cloned spawn prefab root GameObject. " +
+                    $"Source type: {_spawnPrefab.GetType().Name}.");
                 return false;
             }
 
@@ -420,113 +420,6 @@ namespace CursorHunter.Combat
         private void OnDisable()
         {
             StopRun();
-        }
-
-        private bool TryResolveWalkerStumpPrefab()
-        {
-            if (IsUsableSpawnSource(walkerStumpPrefab))
-            {
-                if (walkerStumpPrefab.scene.IsValid())
-                {
-                    _sceneSpawnTemplate = walkerStumpPrefab;
-                }
-
-                return true;
-            }
-
-            // Prefer the imported prefab asset. This path repairs a stale
-            // serialized reference without borrowing a scene object that may
-            // later be removed by a reset or scene reload.
-            GameObject loadedPrefab = FindLoadedWalkerStumpPrefab();
-            if (IsUsableSpawnSource(loadedPrefab))
-            {
-                walkerStumpPrefab = loadedPrefab;
-                _sceneSpawnTemplate = null;
-                return true;
-            }
-
-#if UNITY_EDITOR
-            // A Play Mode backup can outlive a scene reference change. In the
-            // editor, recover the authored prototype asset by path so testing
-            // is not blocked by that stale serialized state. Player builds use
-            // the serialized prefab reference above.
-            GameObject editorPrefab =
-                AssetDatabase.LoadAssetAtPath<GameObject>(WalkerStumpPrefabAssetPath);
-            if (IsUsableSpawnSource(editorPrefab))
-            {
-                walkerStumpPrefab = editorPrefab;
-                _sceneSpawnTemplate = null;
-                return true;
-            }
-#endif
-
-            // Last-resort editor prototype fallback. The source is protected
-            // from StopRun because it belongs to the scene rather than to the
-            // current run's spawned-target list.
-            GameObject sceneTemplate = FindSceneWalkerStumpTemplate();
-            if (!IsUsableSpawnSource(sceneTemplate))
-            {
-                return false;
-            }
-
-            walkerStumpPrefab = sceneTemplate;
-            _sceneSpawnTemplate = sceneTemplate;
-            return true;
-        }
-
-        private bool IsUsableSpawnSource(GameObject candidate)
-        {
-            if (candidate == null)
-            {
-                return false;
-            }
-
-            try
-            {
-                return candidate.transform != null;
-            }
-            catch (MissingReferenceException)
-            {
-                return false;
-            }
-        }
-
-        private GameObject FindLoadedWalkerStumpPrefab()
-        {
-            GameObject[] loadedObjects =
-                Resources.FindObjectsOfTypeAll<GameObject>();
-            foreach (GameObject loadedObject in loadedObjects)
-            {
-                if (!IsUsableSpawnSource(loadedObject) ||
-                    loadedObject.name != "Walker_Stump" ||
-                    loadedObject.scene.IsValid() ||
-                    loadedObject.transform.parent != null)
-                {
-                    continue;
-                }
-
-                return loadedObject;
-            }
-
-            return null;
-        }
-
-        private GameObject FindSceneWalkerStumpTemplate()
-        {
-            GameObject[] sceneObjects = Resources.FindObjectsOfTypeAll<GameObject>();
-            foreach (GameObject sceneObject in sceneObjects)
-            {
-                if (sceneObject == null ||
-                    sceneObject.name != "Walker_Stump" ||
-                    !sceneObject.scene.IsValid())
-                {
-                    continue;
-                }
-
-                return sceneObject;
-            }
-
-            return null;
         }
     }
 }

@@ -1,27 +1,42 @@
+using System;
 using CursorHunter.Contracts;
 using UnityEngine;
 
 namespace CursorHunter.Combat
 {
     /// <summary>
-    /// Runtime combat state for the Walker_Stump visual used as the prototype
-    /// slime. The definition and run snapshot provide max HP and rewards;
-    /// this component owns only the instance's mutable health and animation.
+    /// Legacy component name retained for the prototype. It is now a generic
+    /// combat adapter: the authored prefab may have any visual hierarchy,
+    /// Animator location, and supported animation state set.
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class WalkerStumpTarget : MonoBehaviour
+    public sealed class WalkerStumpTarget : MonoBehaviour, ICombatTarget
     {
-        public const string HitParameterName = "hit";
-        public const string DeadParameterName = "dead";
+        private static readonly string[] HitStateCandidates =
+        {
+            "Hit",
+            "Hurt",
+            "Damage",
+            "hit"
+        };
+
+        private static readonly string[] DeadStateCandidates =
+        {
+            "Dead",
+            "Death",
+            "dead",
+            "death"
+        };
 
         [SerializeField] private Animator animator;
 
-        private bool _hasHitParameter;
-        private bool _hasDeadParameter;
         private bool _isInitialized;
         private bool _isRegistered;
         private bool _isDead;
         private RunId _runId;
+        private RunId _deathRunId;
+        private float _destroyAt;
+        private bool _destroyScheduled;
         private string _monsterId;
         private long _maxHealth;
         private long _currentHealth;
@@ -39,31 +54,20 @@ namespace CursorHunter.Combat
 
         private void Awake()
         {
-            if (animator == null)
-            {
-                animator = GetComponent<Animator>();
-            }
+            ResolveAnimator();
+        }
 
-            if (animator == null)
+        private void Update()
+        {
+            if (!_destroyScheduled || !_isDead || Time.time < _destroyAt)
             {
-                Debug.LogWarning(
-                    "WalkerStumpTarget requires an Animator on the Walker_Stump root.",
-                    this);
                 return;
             }
 
-            _hasHitParameter = HasParameter(
-                HitParameterName,
-                AnimatorControllerParameterType.Trigger);
-            _hasDeadParameter = HasParameter(
-                DeadParameterName,
-                AnimatorControllerParameterType.Bool);
-
-            if (!_hasHitParameter || !_hasDeadParameter)
+            _destroyScheduled = false;
+            if (_runId == _deathRunId)
             {
-                Debug.LogWarning(
-                    "Walker_Stump Animator must contain hit (Trigger) and dead (Bool) parameters.",
-                    this);
+                DestroySelf();
             }
         }
 
@@ -83,6 +87,8 @@ namespace CursorHunter.Combat
                 return;
             }
 
+            _destroyScheduled = false;
+            _deathRunId = default;
             _runId = runId;
             _monsterId = snapshot.MonsterId;
             _maxHealth = snapshot.MaxHealth;
@@ -97,15 +103,8 @@ namespace CursorHunter.Combat
                 return;
             }
 
-            if (_hasDeadParameter)
-            {
-                animator.SetBool(DeadParameterName, false);
-            }
-
-            if (_hasHitParameter)
-            {
-                animator.ResetTrigger(HitParameterName);
-            }
+            animator.Rebind();
+            animator.Update(0f);
         }
 
         /// <summary>
@@ -116,6 +115,7 @@ namespace CursorHunter.Combat
         public void Unregister()
         {
             _isRegistered = false;
+            _destroyScheduled = false;
         }
 
         public bool BelongsTo(RunId runId)
@@ -124,7 +124,46 @@ namespace CursorHunter.Combat
         }
 
         /// <summary>
-        /// Applies one logical hit. Damage is accepted while the Hit animation
+        /// Creates a fallback collider only when the authored prefab has no
+        /// Collider2D. Existing child colliders are preserved.
+        /// </summary>
+        public Collider2D EnsureCombatCollider()
+        {
+            Collider2D existingCollider =
+                GetComponentInChildren<Collider2D>(true);
+            if (existingCollider != null)
+            {
+                return existingCollider;
+            }
+
+            BoxCollider2D generatedCollider = gameObject.AddComponent<BoxCollider2D>();
+            SpriteRenderer[] renderers =
+                GetComponentsInChildren<SpriteRenderer>(true);
+
+            if (renderers.Length == 0)
+            {
+                generatedCollider.size = Vector2.one;
+                return generatedCollider;
+            }
+
+            Bounds worldBounds = renderers[0].bounds;
+            for (int index = 1; index < renderers.Length; index++)
+            {
+                worldBounds.Encapsulate(renderers[index].bounds);
+            }
+
+            Vector3 localMin = transform.InverseTransformPoint(worldBounds.min);
+            Vector3 localMax = transform.InverseTransformPoint(worldBounds.max);
+            Vector3 localCenter = transform.InverseTransformPoint(worldBounds.center);
+            generatedCollider.offset = new Vector2(localCenter.x, localCenter.y);
+            generatedCollider.size = new Vector2(
+                Mathf.Max(0.1f, Mathf.Abs(localMax.x - localMin.x)),
+                Mathf.Max(0.1f, Mathf.Abs(localMax.y - localMin.y)));
+            return generatedCollider;
+        }
+
+        /// <summary>
+        /// Applies one logical hit. Damage is accepted while the hit animation
         /// is playing; animation timing never gates health changes.
         /// </summary>
         public bool ApplyDamage(
@@ -150,51 +189,145 @@ namespace CursorHunter.Combat
                 _currentHealth = 0;
                 _isDead = true;
                 _isRegistered = false;
+                _deathRunId = _runId;
                 killed = true;
-
-                if (animator != null && _hasDeadParameter)
-                {
-                    animator.SetBool(DeadParameterName, true);
-                }
-
+                StartDeathAnimation();
                 return true;
             }
 
-            if (animator != null && _hasHitParameter)
-            {
-                animator.SetTrigger(HitParameterName);
-            }
-
+            PlayHitAnimation();
             return true;
         }
 
         /// <summary>
-        /// Called by the final Animation Event on the Dead clip.
+        /// Kept for the existing Walker animation event. Generic prefabs do
+        /// not need an event because the adapter schedules a guarded fallback.
         /// </summary>
         public void DestroySelf()
         {
-            if (!_isDead)
+            if (!_isDead || !_deathRunId.IsValid)
             {
                 return;
             }
 
+            _destroyScheduled = false;
             Unregister();
-            Destroy(gameObject);
+            if (Application.isPlaying)
+            {
+                Destroy(gameObject);
+            }
+            else
+            {
+                DestroyImmediate(gameObject);
+            }
         }
 
-        private bool HasParameter(
-            string parameterName,
-            AnimatorControllerParameterType parameterType)
+        private void ResolveAnimator()
         {
-            foreach (AnimatorControllerParameter parameter in animator.parameters)
+            if (animator == null)
             {
-                if (parameter.name == parameterName && parameter.type == parameterType)
+                animator = GetComponent<Animator>();
+            }
+
+            if (animator == null)
+            {
+                animator = GetComponentInChildren<Animator>(true);
+            }
+        }
+
+        private void StartDeathAnimation()
+        {
+            if (animator == null)
+            {
+                DestroySelf();
+                return;
+            }
+
+            bool hasAnimation = false;
+            float animationDuration = 0f;
+
+            if (TryPlayState(
+                    DeadStateCandidates,
+                    out float stateDuration))
+            {
+                hasAnimation = true;
+                animationDuration = stateDuration;
+            }
+
+            if (!hasAnimation)
+            {
+                DestroySelf();
+                return;
+            }
+
+            _destroyAt = Time.time +
+                         Mathf.Max(0.25f, animationDuration);
+            _destroyScheduled = true;
+        }
+
+        private void PlayHitAnimation()
+        {
+            if (animator == null)
+            {
+                return;
+            }
+
+            TryPlayState(HitStateCandidates, out _);
+        }
+
+        private bool TryPlayState(
+            string[] stateCandidates,
+            out float duration)
+        {
+            duration = 0f;
+            if (animator == null || animator.runtimeAnimatorController == null)
+            {
+                return false;
+            }
+
+            for (int layer = 0; layer < animator.layerCount; layer++)
+            {
+                string layerName = animator.GetLayerName(layer);
+                foreach (string stateCandidate in stateCandidates)
                 {
+                    int stateHash = Animator.StringToHash(
+                        layerName + "." + stateCandidate);
+                    if (!animator.HasState(layer, stateHash))
+                    {
+                        continue;
+                    }
+
+                    animator.Play(stateHash, layer, 0f);
+                    duration = FindClipLength(stateCandidate);
                     return true;
                 }
             }
 
             return false;
+        }
+
+        private float FindClipLength(string stateName)
+        {
+            RuntimeAnimatorController controller =
+                animator.runtimeAnimatorController;
+            if (controller == null)
+            {
+                return 0.25f;
+            }
+
+            foreach (AnimationClip clip in controller.animationClips)
+            {
+                if (clip != null &&
+                    string.Equals(
+                        clip.name,
+                        stateName,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    return clip.length;
+                }
+            }
+
+            return 0.25f;
         }
     }
 }

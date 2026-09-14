@@ -18,8 +18,8 @@ namespace CursorHunter.Combat
         [SerializeField, Min(32)] private int overlapBufferCapacity = 256;
 
         private Collider2D[] _overlapBuffer;
-        private readonly HashSet<WalkerStumpTarget> _uniqueTargets =
-            new HashSet<WalkerStumpTarget>();
+        private readonly HashSet<ICombatTarget> _uniqueTargets =
+            new HashSet<ICombatTarget>();
 
         private RunRequest _runRequest;
         private CombatSnapshot _combatSnapshot;
@@ -232,10 +232,11 @@ namespace CursorHunter.Combat
                     continue;
                 }
 
-                WalkerStumpTarget target =
+                WalkerStumpTarget targetAdapter =
                     collider.GetComponentInParent<WalkerStumpTarget>();
 
-                if (target != null &&
+                if (targetAdapter != null &&
+                    targetAdapter is ICombatTarget target &&
                     target.RunId == _runRequest.RunId &&
                     target.IsActive &&
                     target.IsRegistered)
@@ -244,7 +245,7 @@ namespace CursorHunter.Combat
                 }
             }
 
-            foreach (WalkerStumpTarget target in _uniqueTargets)
+            foreach (ICombatTarget target in _uniqueTargets)
             {
                 if (!IsRunning)
                 {
@@ -315,7 +316,7 @@ namespace CursorHunter.Combat
                 _effectiveDamage);
         }
 
-        private void ApplyBundle(WalkerStumpTarget target)
+        private void ApplyBundle(ICombatTarget target)
         {
             for (int hitIndex = 0;
                  hitIndex < _combatSnapshot.HitsPerBundle;

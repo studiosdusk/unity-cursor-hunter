@@ -15,6 +15,7 @@ MonoBehaviour:
   monsterId: monster.slime
   displayName: Slime
   prefabKey: walker_stump
+  prefab: {fileID: 3296661359835857684, guid: 84ccd47ae94098f489358e7e865939be, type: 3}
   maxHealth: 30
   spawnIntervalSeconds: 1.5
   packSize: 1

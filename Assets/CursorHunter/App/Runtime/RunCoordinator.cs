@@ -45,7 +45,7 @@ namespace CursorHunter.App
         public bool Start(
             RunRequest request,
             CombatSnapshot combatSnapshot,
-            SpawnSnapshot spawnSnapshot,
+            SpawnPlan spawnPlan,
             out string failureReason)
         {
             failureReason = string.Empty;
@@ -108,7 +108,7 @@ namespace CursorHunter.App
                 combatPrepared = true;
 
                 SpawnStartResult spawnStartResult =
-                    _monsterSpawner.StartRun(request, spawnSnapshot);
+                    _monsterSpawner.StartRun(request, spawnPlan);
                 if (!spawnStartResult.Succeeded)
                 {
                     return FailStart(

@@ -38,6 +38,7 @@ namespace CursorHunter.App
         [SerializeField, Min(1)] private int balanceVersion = 1;
         [Tooltip("Test-only escape hatch. Production runs must fail when the authored definition is missing.")]
         [SerializeField] private bool allowPrototypeFallback;
+        [SerializeField] private GameObject prototypeFallbackPrefab;
 
         private RunCoordinator _runCoordinator;
         private bool _coordinatorEventsSubscribed;
@@ -152,13 +153,13 @@ namespace CursorHunter.App
                 rangeMultiplier,
                 attackCooldownSeconds,
                 hitsPerBundle);
-            if (!TryCreateSpawnSnapshot(
-                    out SpawnSnapshot spawnSnapshot,
-                    out SpawnStartResult snapshotStartResult))
+            if (!TryCreateSpawnPlan(
+                    out SpawnPlan spawnPlan,
+                    out SpawnStartResult spawnPlanStartResult))
             {
                 Debug.LogError(
                     $"HuntManager could not prepare the monster definition: " +
-                    snapshotStartResult.Message,
+                    spawnPlanStartResult.Message,
                     this);
                 return;
             }
@@ -175,7 +176,7 @@ namespace CursorHunter.App
             if (!_runCoordinator.Start(
                     runRequest,
                     combatSnapshot,
-                    spawnSnapshot,
+                    spawnPlan,
                     out string failureReason))
             {
                 Debug.LogWarning(
@@ -348,27 +349,21 @@ namespace CursorHunter.App
             }
         }
 
-        private bool TryCreateSpawnSnapshot(
-            out SpawnSnapshot snapshot,
+        private bool TryCreateSpawnPlan(
+            out SpawnPlan spawnPlan,
             out SpawnStartResult failureResult)
         {
-            snapshot = default;
+            spawnPlan = null;
             failureResult = new SpawnStartResult(
                 SpawnStartStatus.Started,
                 "Monster definition snapshot is ready.");
 
             if (monsterDefinition != null)
             {
-                snapshot = monsterDefinition.CreateSnapshot(aliveLimit);
-                if (snapshot.IsValid)
-                {
-                    return true;
-                }
-
-                failureResult = new SpawnStartResult(
-                    SpawnStartStatus.MissingDefinition,
-                    $"MonsterDefinition '{monsterDefinition.name}' produced an invalid snapshot.");
-                return false;
+                return TryCreateSpawnPlan(
+                    monsterDefinition,
+                    out spawnPlan,
+                    out failureResult);
             }
 
             // Scene references can be temporarily empty while Unity reloads
@@ -381,16 +376,10 @@ namespace CursorHunter.App
                 resourceDefinition.MonsterId == "monster.slime")
             {
                 monsterDefinition = resourceDefinition;
-                snapshot = monsterDefinition.CreateSnapshot(aliveLimit);
-                if (snapshot.IsValid)
-                {
-                    return true;
-                }
-
-                failureResult = new SpawnStartResult(
-                    SpawnStartStatus.MissingDefinition,
-                    $"MonsterDefinition '{monsterDefinition.name}' produced an invalid snapshot.");
-                return false;
+                return TryCreateSpawnPlan(
+                    monsterDefinition,
+                    out spawnPlan,
+                    out failureResult);
             }
 
             MonsterDefinition[] loadedDefinitions =
@@ -404,16 +393,10 @@ namespace CursorHunter.App
                 }
 
                 monsterDefinition = loadedDefinition;
-                snapshot = monsterDefinition.CreateSnapshot(aliveLimit);
-                if (snapshot.IsValid)
-                {
-                    return true;
-                }
-
-                failureResult = new SpawnStartResult(
-                    SpawnStartStatus.MissingDefinition,
-                    $"MonsterDefinition '{monsterDefinition.name}' produced an invalid snapshot.");
-                return false;
+                return TryCreateSpawnPlan(
+                    monsterDefinition,
+                    out spawnPlan,
+                    out failureResult);
             }
 
             if (!allowPrototypeFallback)
@@ -431,7 +414,7 @@ namespace CursorHunter.App
             Debug.LogWarning(
                 "MonsterDefinition reference is missing. Using the explicitly enabled prototype Slime fallback snapshot.",
                 this);
-            snapshot = new SpawnSnapshot(
+            SpawnSnapshot fallbackSnapshot = new SpawnSnapshot(
                 "monster.slime",
                 "walker_stump",
                 30,
@@ -439,15 +422,40 @@ namespace CursorHunter.App
                 1,
                 aliveLimit,
                 3);
-            if (snapshot.IsValid)
+            if (!fallbackSnapshot.IsValid)
             {
-                return true;
+                failureResult = new SpawnStartResult(
+                    SpawnStartStatus.MissingDefinition,
+                    "The explicitly enabled prototype fallback snapshot is invalid.");
+                return false;
             }
 
+            spawnPlan = new SpawnPlan(
+                fallbackSnapshot,
+                prototypeFallbackPrefab);
+            return true;
+        }
+
+        private bool TryCreateSpawnPlan(
+            MonsterDefinition definition,
+            out SpawnPlan spawnPlan,
+            out SpawnStartResult failureResult)
+        {
+            spawnPlan = null;
+            SpawnSnapshot snapshot = definition.CreateSnapshot(aliveLimit);
+            if (!snapshot.IsValid)
+            {
+                failureResult = new SpawnStartResult(
+                    SpawnStartStatus.MissingDefinition,
+                    $"MonsterDefinition '{definition.name}' produced an invalid snapshot.");
+                return false;
+            }
+
+            spawnPlan = new SpawnPlan(snapshot, definition.Prefab);
             failureResult = new SpawnStartResult(
-                SpawnStartStatus.MissingDefinition,
-                "The explicitly enabled prototype fallback snapshot is invalid.");
-            return false;
+                SpawnStartStatus.Started,
+                "Monster definition snapshot and prefab are ready.");
+            return true;
         }
     }
 }

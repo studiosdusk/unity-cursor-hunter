@@ -28026,7 +28026,6 @@ MonoBehaviour:
   m_Name: MonsterSpawner
   m_EditorClassIdentifier: CursorHunter.Combat::CursorHunter.Combat.MonsterSpawner
   combatRunController: {fileID: 2188000010}
-  walkerStumpPrefab: {fileID: 100100000, guid: 76b40faaa9f5b364486f174c85bc38f5, type: 3}
   spawnedEnemyRoot: {fileID: 2188000107}
   worldCamera: {fileID: 1273511514}
   spawnPlaneZ: 0
@@ -28060,6 +28059,7 @@ MonoBehaviour:
   schemaVersion: 1
   balanceVersion: 1
   allowPrototypeFallback: 0
+  prototypeFallbackPrefab: {fileID: 0}
 --- !u!114 &2188000013
 MonoBehaviour:
   m_ObjectHideFlags: 0

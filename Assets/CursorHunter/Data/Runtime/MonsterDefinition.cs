@@ -16,6 +16,7 @@ namespace CursorHunter.Data
         [SerializeField] private string monsterId = "monster.slime";
         [SerializeField] private string displayName = "Slime";
         [SerializeField] private string prefabKey = "walker_stump";
+        [SerializeField] private GameObject prefab;
 
         [Header("Combat")]
         [SerializeField, Min(1)] private long maxHealth = 20;
@@ -26,6 +27,7 @@ namespace CursorHunter.Data
         public string MonsterId => monsterId;
         public string DisplayName => displayName;
         public string PrefabKey => prefabKey;
+        public GameObject Prefab => prefab;
         public long MaxHealth => maxHealth;
         public float SpawnIntervalSeconds => spawnIntervalSeconds;
         public int PackSize => packSize;
