@@ -23,6 +23,7 @@ namespace CursorHunter.App
         [SerializeField] private MonsterSpawner monsterSpawner;
         [SerializeField] private PrototypeRunHud runHud;
         [SerializeField] private TestPanelToggleController testPanelToggleController;
+        [SerializeField] private AppUiRootController uiRootController;
 
         [Header("Hunt combat parameters")]
         [SerializeField, Min(1)] private long attackPower = 10;
@@ -100,6 +101,12 @@ namespace CursorHunter.App
                 testPanelToggleController =
                     FindFirstObjectByType<TestPanelToggleController>(
                         FindObjectsInactive.Include);
+            }
+
+            if (uiRootController == null)
+            {
+                uiRootController = FindFirstObjectByType<AppUiRootController>(
+                    FindObjectsInactive.Include);
             }
         }
 
@@ -186,6 +193,11 @@ namespace CursorHunter.App
                 return;
             }
 
+            if (uiRootController != null)
+            {
+                uiRootController.EnterCombat();
+            }
+
             cursorController.SetRangeMultiplier(combatSnapshot.RangeMultiplier);
             cursorController.ShowCursorImage();
 
@@ -244,6 +256,26 @@ namespace CursorHunter.App
             if (runHud != null)
             {
                 runHud.Reset();
+            }
+        }
+
+        /// <summary>
+        /// Assign this parameterless method to the main-menu return button.
+        /// It aborts an active run without settlement, clears the prototype
+        /// HUD, and restores the main menu button group.
+        /// </summary>
+        public void ReturnToMainMenu()
+        {
+            ResetPrototypeRun();
+
+            if (testPanelToggleController != null)
+            {
+                testPanelToggleController.HideTestPanel();
+            }
+
+            if (uiRootController != null)
+            {
+                uiRootController.ShowMainMenu();
             }
         }
 
