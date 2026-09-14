@@ -210,6 +210,7 @@ namespace CursorHunter.App.Tests
                 Assert.That(started, Is.False);
                 Assert.That(failureReason, Is.Not.Empty);
                 Assert.That(combat.IsRunActive, Is.False);
+                Assert.That(combat.IsRunning, Is.False);
                 Assert.That(coordinator.State, Is.EqualTo(RunState.Aborted));
 
                 Assert.That(
@@ -231,6 +232,94 @@ namespace CursorHunter.App.Tests
             finally
             {
                 coordinator?.Dispose();
+                UnityEngine.Object.DestroyImmediate(gameObject);
+            }
+        }
+
+        [Test]
+        public void TargetRejectsForeignRunDamageAndUnregistersImmediately()
+        {
+            GameObject gameObject = new GameObject("RunTargetOwnershipTest");
+            try
+            {
+                WalkerStumpTarget target =
+                    gameObject.AddComponent<WalkerStumpTarget>();
+                RunId ownerRunId = new RunId("run-owner");
+                RunId foreignRunId = new RunId("run-foreign");
+
+                target.Initialize(
+                    new SpawnSnapshot(
+                        "monster.slime",
+                        "walker_stump",
+                        30L,
+                        1.5f,
+                        1,
+                        1,
+                        3L),
+                    ownerRunId);
+
+                Assert.That(target.IsRegistered, Is.True);
+                Assert.That(target.IsActive, Is.True);
+                Assert.That(target.BelongsTo(ownerRunId), Is.True);
+                Assert.That(target.BelongsTo(foreignRunId), Is.False);
+
+                Assert.That(
+                    target.ApplyDamage(
+                        foreignRunId,
+                        10L,
+                        out _,
+                        out _),
+                    Is.False);
+                Assert.That(target.CurrentHealth, Is.EqualTo(30L));
+
+                Assert.That(
+                    target.ApplyDamage(
+                        ownerRunId,
+                        10L,
+                        out long effectiveDamage,
+                        out bool killed),
+                    Is.True);
+                Assert.That(effectiveDamage, Is.EqualTo(10L));
+                Assert.That(killed, Is.False);
+
+                target.Unregister();
+                Assert.That(target.IsRegistered, Is.False);
+                Assert.That(target.IsActive, Is.False);
+                Assert.That(
+                    target.ApplyDamage(
+                        ownerRunId,
+                        10L,
+                        out _,
+                        out _),
+                    Is.False);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(gameObject);
+            }
+        }
+
+        [Test]
+        public void SpawnerReturnsAStableStatusForAnInvalidRequest()
+        {
+            GameObject gameObject = new GameObject("SpawnerStartResultTest");
+            try
+            {
+                gameObject.AddComponent<CombatRunController>();
+                MonsterSpawner spawner = gameObject.AddComponent<MonsterSpawner>();
+
+                SpawnStartResult result = spawner.StartRun(
+                    CreateRequest("run-invalid-spawn"),
+                    default);
+
+                Assert.That(result.Succeeded, Is.False);
+                Assert.That(
+                    result.Status,
+                    Is.EqualTo(SpawnStartStatus.InvalidRequest));
+                Assert.That(result.Message, Is.Not.Empty);
+            }
+            finally
+            {
                 UnityEngine.Object.DestroyImmediate(gameObject);
             }
         }

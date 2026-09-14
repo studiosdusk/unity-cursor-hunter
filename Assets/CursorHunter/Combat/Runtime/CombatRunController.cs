@@ -28,6 +28,7 @@ namespace CursorHunter.Combat
         private int _defeatedCount;
         private long _garnetEarned;
         private long _effectiveDamage;
+        private bool _isPrepared;
         private bool _isRunning;
         private bool _isPaused;
         private bool _completionRequested;
@@ -90,7 +91,31 @@ namespace CursorHunter.Combat
             RunRequest request,
             CombatSnapshot combatSnapshot)
         {
-            if (_isRunning || !request.IsValid)
+            if (!PrepareRun(request, combatSnapshot))
+            {
+                return false;
+            }
+
+            if (CommitStart())
+            {
+                return true;
+            }
+
+            CancelPreparedRun();
+            return false;
+        }
+
+        /// <summary>
+        /// Captures the immutable run data without opening the attack clock.
+        /// RunCoordinator commits this only after the initial spawn pack is
+        /// ready, so a spawn failure cannot expose a half-started combat run.
+        /// </summary>
+        public bool PrepareRun(
+            RunRequest request,
+            CombatSnapshot combatSnapshot)
+        {
+            if (_isPrepared || _isRunning ||
+                !request.IsValid || !combatSnapshot.IsValid)
             {
                 return false;
             }
@@ -102,7 +127,40 @@ namespace CursorHunter.Combat
             _defeatedCount = 0;
             _garnetEarned = 0;
             _effectiveDamage = 0;
+            _isPrepared = true;
+            _isRunning = false;
+            _isPaused = false;
+            _completionRequested = false;
+            _abortRequested = false;
+            return true;
+        }
+
+        /// <summary>
+        /// Opens the combat clock after all other run participants prepared.
+        /// </summary>
+        public bool CommitStart()
+        {
+            if (!_isPrepared || _isRunning)
+            {
+                return false;
+            }
+
+            _isPrepared = false;
             _isRunning = true;
+            return true;
+        }
+
+        /// <summary>
+        /// Clears a prepared-but-not-committed run during start rollback.
+        /// </summary>
+        public bool CancelPreparedRun()
+        {
+            if (!_isPrepared || _isRunning)
+            {
+                return false;
+            }
+
+            _isPrepared = false;
             _isPaused = false;
             _completionRequested = false;
             _abortRequested = false;
@@ -177,7 +235,10 @@ namespace CursorHunter.Combat
                 WalkerStumpTarget target =
                     collider.GetComponentInParent<WalkerStumpTarget>();
 
-                if (target != null && target.IsInitialized && !target.IsDead)
+                if (target != null &&
+                    target.RunId == _runRequest.RunId &&
+                    target.IsActive &&
+                    target.IsRegistered)
                 {
                     _uniqueTargets.Add(target);
                 }
@@ -261,6 +322,7 @@ namespace CursorHunter.Combat
                  hitIndex++)
             {
                 bool applied = target.ApplyDamage(
+                    _runRequest.RunId,
                     _combatSnapshot.AttackPower,
                     out long effectiveDamage,
                     out bool killed);

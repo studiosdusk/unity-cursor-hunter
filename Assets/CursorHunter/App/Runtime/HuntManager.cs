@@ -36,6 +36,8 @@ namespace CursorHunter.App
         [SerializeField, Min(1f)] private float durationSeconds = 60f;
         [SerializeField, Min(1)] private int schemaVersion = 1;
         [SerializeField, Min(1)] private int balanceVersion = 1;
+        [Tooltip("Test-only escape hatch. Production runs must fail when the authored definition is missing.")]
+        [SerializeField] private bool allowPrototypeFallback;
 
         private RunCoordinator _runCoordinator;
         private bool _coordinatorEventsSubscribed;
@@ -150,7 +152,17 @@ namespace CursorHunter.App
                 rangeMultiplier,
                 attackCooldownSeconds,
                 hitsPerBundle);
-            SpawnSnapshot spawnSnapshot = CreateSpawnSnapshot();
+            if (!TryCreateSpawnSnapshot(
+                    out SpawnSnapshot spawnSnapshot,
+                    out SpawnStartResult snapshotStartResult))
+            {
+                Debug.LogError(
+                    $"HuntManager could not prepare the monster definition: " +
+                    snapshotStartResult.Message,
+                    this);
+                return;
+            }
+
             RunRequest runRequest = new RunRequest(
                 RunId.Create(),
                 schemaVersion,
@@ -336,11 +348,27 @@ namespace CursorHunter.App
             }
         }
 
-        private SpawnSnapshot CreateSpawnSnapshot()
+        private bool TryCreateSpawnSnapshot(
+            out SpawnSnapshot snapshot,
+            out SpawnStartResult failureResult)
         {
+            snapshot = default;
+            failureResult = new SpawnStartResult(
+                SpawnStartStatus.Started,
+                "Monster definition snapshot is ready.");
+
             if (monsterDefinition != null)
             {
-                return monsterDefinition.CreateSnapshot(aliveLimit);
+                snapshot = monsterDefinition.CreateSnapshot(aliveLimit);
+                if (snapshot.IsValid)
+                {
+                    return true;
+                }
+
+                failureResult = new SpawnStartResult(
+                    SpawnStartStatus.MissingDefinition,
+                    $"MonsterDefinition '{monsterDefinition.name}' produced an invalid snapshot.");
+                return false;
             }
 
             // Scene references can be temporarily empty while Unity reloads
@@ -353,7 +381,16 @@ namespace CursorHunter.App
                 resourceDefinition.MonsterId == "monster.slime")
             {
                 monsterDefinition = resourceDefinition;
-                return monsterDefinition.CreateSnapshot(aliveLimit);
+                snapshot = monsterDefinition.CreateSnapshot(aliveLimit);
+                if (snapshot.IsValid)
+                {
+                    return true;
+                }
+
+                failureResult = new SpawnStartResult(
+                    SpawnStartStatus.MissingDefinition,
+                    $"MonsterDefinition '{monsterDefinition.name}' produced an invalid snapshot.");
+                return false;
             }
 
             MonsterDefinition[] loadedDefinitions =
@@ -367,16 +404,34 @@ namespace CursorHunter.App
                 }
 
                 monsterDefinition = loadedDefinition;
-                return monsterDefinition.CreateSnapshot(aliveLimit);
+                snapshot = monsterDefinition.CreateSnapshot(aliveLimit);
+                if (snapshot.IsValid)
+                {
+                    return true;
+                }
+
+                failureResult = new SpawnStartResult(
+                    SpawnStartStatus.MissingDefinition,
+                    $"MonsterDefinition '{monsterDefinition.name}' produced an invalid snapshot.");
+                return false;
             }
 
-            // Keep the scene playable if a manually edited scene reference was
-            // lost while Unity was reloading assemblies. The authored SO is
-            // still the normal path; these values mirror SlimeDefinition.asset.
+            if (!allowPrototypeFallback)
+            {
+                failureResult = new SpawnStartResult(
+                    SpawnStartStatus.MissingDefinition,
+                    "MonsterDefinition reference is missing. " +
+                    "Assign an authored definition or explicitly enable the test-only fallback.");
+                return false;
+            }
+
+            // This branch is intentionally opt-in for tests only. A missing
+            // authored definition must never become a successful production
+            // run with silently invented balance values.
             Debug.LogWarning(
-                "MonsterDefinition reference is missing. Using the prototype Slime fallback snapshot.",
+                "MonsterDefinition reference is missing. Using the explicitly enabled prototype Slime fallback snapshot.",
                 this);
-            return new SpawnSnapshot(
+            snapshot = new SpawnSnapshot(
                 "monster.slime",
                 "walker_stump",
                 30,
@@ -384,6 +439,15 @@ namespace CursorHunter.App
                 1,
                 aliveLimit,
                 3);
+            if (snapshot.IsValid)
+            {
+                return true;
+            }
+
+            failureResult = new SpawnStartResult(
+                SpawnStartStatus.MissingDefinition,
+                "The explicitly enabled prototype fallback snapshot is invalid.");
+            return false;
         }
     }
 }

@@ -22,5 +22,15 @@ namespace CursorHunter.Contracts
         public float RangeMultiplier { get; }
         public float AttackCooldownSeconds { get; }
         public int HitsPerBundle { get; }
+
+        public bool IsValid =>
+            AttackPower > 0L &&
+            RangeMultiplier > 0f &&
+            !float.IsNaN(RangeMultiplier) &&
+            !float.IsInfinity(RangeMultiplier) &&
+            AttackCooldownSeconds >= 0f &&
+            !float.IsNaN(AttackCooldownSeconds) &&
+            !float.IsInfinity(AttackCooldownSeconds) &&
+            HitsPerBundle > 0;
     }
 }

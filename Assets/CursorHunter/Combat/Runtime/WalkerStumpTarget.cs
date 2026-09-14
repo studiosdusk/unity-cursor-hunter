@@ -19,14 +19,19 @@ namespace CursorHunter.Combat
         private bool _hasHitParameter;
         private bool _hasDeadParameter;
         private bool _isInitialized;
+        private bool _isRegistered;
         private bool _isDead;
+        private RunId _runId;
         private string _monsterId;
         private long _maxHealth;
         private long _currentHealth;
         private long _garnetReward;
 
         public bool IsInitialized => _isInitialized;
+        public bool IsRegistered => _isRegistered;
+        public bool IsActive => _isInitialized && _isRegistered && !_isDead;
         public bool IsDead => _isDead;
+        public RunId RunId => _runId;
         public string MonsterId => _monsterId;
         public long MaxHealth => _maxHealth;
         public long CurrentHealth => _currentHealth;
@@ -65,14 +70,27 @@ namespace CursorHunter.Combat
         /// <summary>
         /// Initializes one spawned instance from the immutable run snapshot.
         /// </summary>
-        public void Initialize(SpawnSnapshot snapshot)
+        public void Initialize(
+            SpawnSnapshot snapshot,
+            RunId runId)
         {
+            if (!runId.IsValid || !snapshot.IsValid)
+            {
+                Unregister();
+                Debug.LogError(
+                    "WalkerStumpTarget requires a valid RunId and SpawnSnapshot.",
+                    this);
+                return;
+            }
+
+            _runId = runId;
             _monsterId = snapshot.MonsterId;
             _maxHealth = snapshot.MaxHealth;
             _currentHealth = snapshot.MaxHealth;
             _garnetReward = snapshot.GarnetReward;
             _isDead = false;
             _isInitialized = true;
+            _isRegistered = true;
 
             if (animator == null)
             {
@@ -91,10 +109,26 @@ namespace CursorHunter.Combat
         }
 
         /// <summary>
+        /// Removes this instance from the current run immediately. Unity's
+        /// Destroy is deferred, so this guard is required before pooled or
+        /// stale animation callbacks can run.
+        /// </summary>
+        public void Unregister()
+        {
+            _isRegistered = false;
+        }
+
+        public bool BelongsTo(RunId runId)
+        {
+            return _isRegistered && _runId == runId;
+        }
+
+        /// <summary>
         /// Applies one logical hit. Damage is accepted while the Hit animation
         /// is playing; animation timing never gates health changes.
         /// </summary>
         public bool ApplyDamage(
+            RunId runId,
             long damage,
             out long effectiveDamage,
             out bool killed)
@@ -102,7 +136,8 @@ namespace CursorHunter.Combat
             effectiveDamage = 0;
             killed = false;
 
-            if (!_isInitialized || _isDead || damage <= 0 || _currentHealth <= 0)
+            if (!IsActive || !BelongsTo(runId) ||
+                damage <= 0 || _currentHealth <= 0)
             {
                 return false;
             }
@@ -114,6 +149,7 @@ namespace CursorHunter.Combat
             {
                 _currentHealth = 0;
                 _isDead = true;
+                _isRegistered = false;
                 killed = true;
 
                 if (animator != null && _hasDeadParameter)
@@ -142,6 +178,7 @@ namespace CursorHunter.Combat
                 return;
             }
 
+            Unregister();
             Destroy(gameObject);
         }
 

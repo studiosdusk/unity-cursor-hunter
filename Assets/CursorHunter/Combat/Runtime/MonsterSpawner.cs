@@ -30,6 +30,7 @@ namespace CursorHunter.Combat
         private readonly List<WalkerStumpTarget> _spawnedTargets =
             new List<WalkerStumpTarget>();
 
+        private RunId _runId;
         private SpawnSnapshot _spawnSnapshot;
         private SeededRandom _random;
         private float _nextSpawnAt;
@@ -115,7 +116,7 @@ namespace CursorHunter.Combat
 
             if (ActiveSpawnedCount < _spawnSnapshot.AliveLimit)
             {
-                if (!SpawnPack())
+                if (!SpawnPack(out _))
                 {
                     _isSpawning = false;
                     return;
@@ -127,42 +128,64 @@ namespace CursorHunter.Combat
             _nextSpawnAt = elapsedSeconds + _spawnSnapshot.SpawnIntervalSeconds;
         }
 
-        public bool StartRun(RunRequest request, SpawnSnapshot spawnSnapshot)
+        public SpawnStartResult StartRun(
+            RunRequest request,
+            SpawnSnapshot spawnSnapshot)
         {
             if (_isSpawning || _spawnedTargets.Count > 0)
             {
                 Debug.LogWarning(
                     "MonsterSpawner cannot start while a previous spawn set is active.",
                     this);
-                return false;
+                return new SpawnStartResult(
+                    SpawnStartStatus.AlreadyRunning,
+                    "MonsterSpawner already owns an active spawn set.");
+            }
+
+            if (!request.IsValid || !spawnSnapshot.IsValid)
+            {
+                return new SpawnStartResult(
+                    SpawnStartStatus.InvalidRequest,
+                    "RunRequest or SpawnSnapshot is invalid.");
             }
 
             if (combatRunController == null)
             {
                 Debug.LogWarning("MonsterSpawner requires a CombatRunController.", this);
-                return false;
+                return new SpawnStartResult(
+                    SpawnStartStatus.InvalidRequest,
+                    "MonsterSpawner requires a CombatRunController.");
             }
 
             if (!TryResolveWalkerStumpPrefab())
             {
                 Debug.LogWarning("MonsterSpawner requires a Walker_Stump prefab.", this);
-                return false;
+                return new SpawnStartResult(
+                    SpawnStartStatus.MissingPrefab,
+                    "Walker_Stump prefab could not be resolved.");
             }
 
+            _runId = request.RunId;
             _spawnSnapshot = spawnSnapshot;
             _random = new SeededRandom(request.Seed);
             _nextSpawnAt = 0f;
             _spawnFailureLogged = false;
             _isSpawning = true;
 
-            if (!SpawnPack())
+            if (!SpawnPack(out SpawnStartStatus failureStatus))
             {
                 StopRun();
-                return false;
+                return new SpawnStartResult(
+                    failureStatus,
+                    failureStatus == SpawnStartStatus.NoSpawnPosition
+                        ? "No valid spawn position is available."
+                        : "The initial spawn pack could not be created.");
             }
 
             _nextSpawnAt = spawnSnapshot.SpawnIntervalSeconds;
-            return true;
+            return new SpawnStartResult(
+                SpawnStartStatus.Started,
+                "Initial spawn pack prepared.");
         }
 
         public void StopRun()
@@ -172,17 +195,26 @@ namespace CursorHunter.Combat
             for (int index = _spawnedTargets.Count - 1; index >= 0; index--)
             {
                 WalkerStumpTarget target = _spawnedTargets[index];
-                if (target != null && target.gameObject != _sceneSpawnTemplate)
+                if (target == null)
+                {
+                    continue;
+                }
+
+                target.Unregister();
+                if (target.gameObject != _sceneSpawnTemplate)
                 {
                     Destroy(target.gameObject);
                 }
             }
 
             _spawnedTargets.Clear();
+            _runId = default;
         }
 
-        private bool SpawnPack()
+        private bool SpawnPack(out SpawnStartStatus failureStatus)
         {
+            failureStatus = SpawnStartStatus.Started;
+
             int remainingCapacity =
                 _spawnSnapshot.AliveLimit - ActiveSpawnedCount;
             int spawnCount = Mathf.Min(
@@ -196,30 +228,68 @@ namespace CursorHunter.Combat
                 {
                     LogSpawnFailure(
                         "MonsterSpawner could not find a valid spawn position.");
+                    failureStatus = SpawnStartStatus.NoSpawnPosition;
                     RollbackPack(firstNewTargetIndex);
                     return false;
                 }
 
                 if (!TryInstantiateWalkerStump(spawnPosition, out GameObject instance))
                 {
+                    failureStatus = SpawnStartStatus.InitialSpawnFailed;
                     RollbackPack(firstNewTargetIndex);
                     return false;
                 }
 
-                WalkerStumpTarget target =
-                    instance.GetComponent<WalkerStumpTarget>();
-
-                if (target == null)
+                if (!TryInitializeTarget(
+                        instance,
+                        out WalkerStumpTarget target))
                 {
-                    target = instance.AddComponent<WalkerStumpTarget>();
+                    failureStatus = SpawnStartStatus.InitialSpawnFailed;
+                    if (target != null)
+                    {
+                        target.Unregister();
+                    }
+
+                    if (instance != null && instance != _sceneSpawnTemplate)
+                    {
+                        Destroy(instance);
+                    }
+
+                    RollbackPack(firstNewTargetIndex);
+                    return false;
                 }
 
-                target.Initialize(_spawnSnapshot);
                 _spawnedTargets.Add(target);
             }
 
             return spawnCount == 0 ||
                    _spawnedTargets.Count - firstNewTargetIndex == spawnCount;
+        }
+
+        private bool TryInitializeTarget(
+            GameObject instance,
+            out WalkerStumpTarget target)
+        {
+            target = null;
+
+            try
+            {
+                target = instance.GetComponent<WalkerStumpTarget>();
+                if (target == null)
+                {
+                    target = instance.AddComponent<WalkerStumpTarget>();
+                }
+
+                target.Initialize(_spawnSnapshot, _runId);
+                return target.IsActive;
+            }
+            catch (System.Exception exception)
+            {
+                LogSpawnFailure(
+                    $"MonsterSpawner failed to initialize a spawned target. " +
+                    $"{exception.GetType().Name}: {exception.Message}");
+                return false;
+            }
         }
 
         private void RollbackPack(int firstNewTargetIndex)
@@ -229,7 +299,14 @@ namespace CursorHunter.Combat
                  index--)
             {
                 WalkerStumpTarget target = _spawnedTargets[index];
-                if (target != null && target.gameObject != _sceneSpawnTemplate)
+                if (target == null)
+                {
+                    _spawnedTargets.RemoveAt(index);
+                    continue;
+                }
+
+                target.Unregister();
+                if (target.gameObject != _sceneSpawnTemplate)
                 {
                     Destroy(target.gameObject);
                 }

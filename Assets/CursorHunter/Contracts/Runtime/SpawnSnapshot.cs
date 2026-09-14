@@ -30,5 +30,16 @@ namespace CursorHunter.Contracts
         public int PackSize { get; }
         public int AliveLimit { get; }
         public long GarnetReward { get; }
+
+        public bool IsValid =>
+            !string.IsNullOrWhiteSpace(MonsterId) &&
+            !string.IsNullOrWhiteSpace(PrefabKey) &&
+            MaxHealth > 0L &&
+            SpawnIntervalSeconds > 0f &&
+            !float.IsNaN(SpawnIntervalSeconds) &&
+            !float.IsInfinity(SpawnIntervalSeconds) &&
+            PackSize > 0 &&
+            AliveLimit > 0 &&
+            GarnetReward >= 0L;
     }
 }

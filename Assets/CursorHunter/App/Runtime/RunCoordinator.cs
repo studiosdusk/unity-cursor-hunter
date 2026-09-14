@@ -85,38 +85,64 @@ namespace CursorHunter.App
                     session,
                     "RunSession rejected the start request.",
                     false,
+                    false,
+                    false,
                     out failureReason);
             }
 
+            bool combatPrepared = false;
             bool combatStarted = false;
             try
             {
-                if (!_combatRunController.StartRun(request, combatSnapshot))
+                if (!_combatRunController.PrepareRun(request, combatSnapshot))
                 {
                     return FailStart(
                         session,
-                        "CombatRunController rejected the start request.",
+                        "CombatRunController rejected run preparation.",
+                        false,
+                        false,
                         false,
                         out failureReason);
                 }
 
-                combatStarted = true;
+                combatPrepared = true;
 
-                if (!_monsterSpawner.StartRun(request, spawnSnapshot))
+                SpawnStartResult spawnStartResult =
+                    _monsterSpawner.StartRun(request, spawnSnapshot);
+                if (!spawnStartResult.Succeeded)
                 {
                     return FailStart(
                         session,
-                        "MonsterSpawner could not start the initial spawn.",
-                        combatStarted,
+                        spawnStartResult.Message,
+                        combatPrepared,
+                        false,
+                        spawnStartResult.Status !=
+                        SpawnStartStatus.AlreadyRunning,
                         out failureReason);
                 }
+
+                if (!_combatRunController.CommitStart())
+                {
+                    return FailStart(
+                        session,
+                        "CombatRunController could not commit the start.",
+                        combatPrepared,
+                        false,
+                        true,
+                        out failureReason);
+                }
+
+                combatPrepared = false;
+                combatStarted = true;
 
                 if (!session.CommitStart())
                 {
                     return FailStart(
                         session,
                         "RunSession could not commit the start.",
+                        combatPrepared,
                         combatStarted,
+                        true,
                         out failureReason);
                 }
 
@@ -127,7 +153,9 @@ namespace CursorHunter.App
                 return FailStart(
                     session,
                     $"Run start threw {exception.GetType().Name}: {exception.Message}",
+                    combatPrepared,
                     combatStarted,
+                    combatPrepared || combatStarted,
                     out failureReason);
             }
         }
@@ -244,12 +272,17 @@ namespace CursorHunter.App
         private bool FailStart(
             RunSession session,
             string reason,
+            bool combatPrepared,
             bool combatStarted,
+            bool cleanupSpawner,
             out string failureReason)
         {
             failureReason = reason;
 
-            _monsterSpawner.StopRun();
+            if (cleanupSpawner)
+            {
+                _monsterSpawner.StopRun();
+            }
 
             if (combatStarted)
             {
@@ -257,6 +290,10 @@ namespace CursorHunter.App
                     RunEndReason.StartFailed,
                     RunSettlementPolicy.Discard,
                     out _);
+            }
+            else if (combatPrepared)
+            {
+                _combatRunController.CancelPreparedRun();
             }
 
             session.Abort(
