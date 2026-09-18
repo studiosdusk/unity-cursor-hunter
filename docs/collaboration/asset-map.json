@@ -2,30 +2,79 @@
   {
     "design_id": "gem.garnet",
     "owner": "Progression",
-    "path": "Assets/DownLoadAssets/IconPack/2D Minimal-IconPack/Icons/256/Economy_Gem_01_Red.png",
-    "guid": "d3e2801dd1d674da4add6c4b8737c94e",
-    "status": "candidate-not-runtime-verified"
+    "path": "Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Icon_ItemIcons/512/ItemIcon_Gem_Pentagon_Red.png",
+    "guid": "6f40e5d50d0934e45aac02171a570c88",
+    "status": "runtime-applied"
   },
   {
     "design_id": "gem.topaz",
     "owner": "Progression",
-    "path": "Assets/DownLoadAssets/IconPack/2D Minimal-IconPack/Icons/256/Economy_Gem_01_Yellow.png",
-    "guid": "d1237a87c861d4921af57b7aea67a35a",
-    "status": "candidate-not-runtime-verified"
+    "path": "Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Icon_ItemIcons/512/ItemIcon_Gem_Pentagon_Yellow.png",
+    "guid": "e7456ed055303479fa545fea773f4bf1",
+    "status": "runtime-applied"
   },
   {
     "design_id": "gem.amethyst",
     "owner": "Progression",
-    "path": "Assets/DownLoadAssets/IconPack/2D Minimal-IconPack/Icons/256/Economy_Gem_01_Purple.png",
-    "guid": "287d3126d62af4d64aa9d99e175e52e4",
-    "status": "candidate-not-runtime-verified"
+    "path": "Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Icon_ItemIcons/512/ItemIcon_Gem_Pentagon_Purple.png",
+    "guid": "e74fb0eb39fbd4d94ab0f7601df612ca",
+    "status": "runtime-applied"
   },
   {
     "design_id": "gem.sapphire",
     "owner": "Progression",
-    "path": "Assets/DownLoadAssets/IconPack/2D Minimal-IconPack/Icons/256/Economy_Gem_01_Blue.png",
-    "guid": "0a2f94238763246cb88c6bb36c9e76d3",
-    "status": "candidate-not-runtime-verified"
+    "path": "Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Icon_ItemIcons/512/ItemIcon_Gem_Pentagon_Blue.png",
+    "guid": "db445bdb34cc34ec78fc713c3278d6db",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "gem.diamond",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Icon_ItemIcons/512/ItemIcon_Gem_Pentagon_Green.png",
+    "guid": "f0ec595ceb4954cb58e8a1acec6720c5",
+    "status": "runtime-applied-prototype-color"
+  },
+  {
+    "design_id": "trait.stat.attack.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Icon_ItemIcons/512/ItemIcon_Weapon_Sword.png",
+    "guid": "12c58e25a645d4bf9808e3e5b47cd280",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "trait.stat.radius.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Icon_ItemIcons/512/ItemIcon_Weapon_Shield.png",
+    "guid": "d57fcc99df0714fa8b5dc8e3e3132f14",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "trait.stat.multi-click.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Icon_ItemIcons/512/ItemIcon_Weapon_Bow.png",
+    "guid": "41a812f0b7e094dde92f3f5fe64429e5",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "trait.stat.critical.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Icon_ItemIcons/512/ItemIcon_Star.png",
+    "guid": "2cc5e317ec48f435aac4bb12606baa4f",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "trait.stat.gem-collection.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Icon_ItemIcons/512/ItemIcon_Bag01.png",
+    "guid": "58f1b94daaf3b4b06b098c42546e19d4",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "trait.stat.boss-damage.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Icon_ItemIcons/512/ItemIcon_Skull02.png",
+    "guid": "5a893ec9b0d664a2ca122e47efbf71f8",
+    "status": "runtime-applied"
   },
   {
     "design_id": "ui.trait.node",
@@ -112,6 +161,76 @@
     "status": "candidate-not-runtime-verified"
   },
   {
+    "design_id": "trait.skill.fireball.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/IconMisc/Icon_Fire01_512.png",
+    "guid": "393781675fedf45caa73b42273c43781",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "trait.skill.lightning.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Icon_ItemIcons/512/ItemIcon_Badge_Energy.png",
+    "guid": "38d138f4bd4964678b146f843d742bd8",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "trait.skill.freezing.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/IconMisc/Icon_Shield05_512.png",
+    "guid": "1e4f2d388537b4ac6a27a560d6dce4d0",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "trait.skill.hurricane.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/IconMisc/Skill1.png",
+    "guid": "c96f62a4ab65749128908e5360e39126",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "trait.skill.meteor.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Icon_ItemIcons/512/ItemIcon_Weapon_Hammer.png",
+    "guid": "671e13c2a7e8a4415adcc42790d2be55",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "trait.skill.chain-lightning.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/IconMisc/Skill2.png",
+    "guid": "13756a141b0b84db08f0c80f06bb5d45",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "trait.skill.blizzard.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/IconMisc/Icon_Shield01_512.png",
+    "guid": "a46687af72a9a46c6b4abdcdb124292d",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "trait.skill.arcane-burst.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Icon_ItemIcons/512/ItemIcon_Book02_Teal.png",
+    "guid": "8f756722bce404cbc9d04307acec2e27",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "trait.skill.starfall.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/IconMisc/Icon_Star03_l.png",
+    "guid": "bb40abbe6aba34274a8ecf7298f767a2",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "trait.skill.dragon-breath.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/IconPack/2D Minimal-IconPack/Icons/512/Misc_Dragon_01_Red.png",
+    "guid": "3c616b140805d4445b62ce619eb60e08",
+    "status": "runtime-applied"
+  },
+  {
     "design_id": "hit.basic",
     "owner": "Combat",
     "path": "Assets/DownLoadAssets/Casual_VFX/Cartoon Casual VFX Pack/Textures/hit5_white.png",
@@ -131,5 +250,180 @@
     "path": "Assets/DownLoadAssets/Casual_VFX/Cartoon Casual VFX Pack/Textures/magic_circle6_white.png",
     "guid": "186ba7f6347fe41cabac77cc214efd08",
     "status": "candidate-not-runtime-verified"
+  },
+  {
+    "design_id": "gem.dragon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Icon_ItemIcons/512/ItemIcon_Gem_Pentagon_Gray.png",
+    "guid": "80437da613ef64ecab96530c087df0f0",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "trait.skill.freeze.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/IconMisc/Icon_Shield05_512.png",
+    "guid": "1e4f2d388537b4ac6a27a560d6dce4d0",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "trait.loot.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Icon_ItemIcons/512/ItemIcon_Bag02.png",
+    "guid": "fb085fb8221d544d1ae2034012b82eff",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "trait.loot.coin.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Icon_ItemIcons/512/ItemIcon_Coin.png",
+    "guid": "9b2bc0b2a45c14f1cad7b6f4a7dbcaca",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "trait.pet.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Icon_ItemIcons/512/ItemIcon_Fox.png",
+    "guid": "7668aef2c90f84f47b9b9c0650bce440",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "trait.monster.monster1.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Alien/Alien_Vampire/Body.png",
+    "guid": "fb2ef077ca7cff145b786fe98437bf42",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "trait.monster.monster2.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Alien/Alien_Wizard/Body.png",
+    "guid": "863055b0be7845c4c9fe5ed6128d71ca",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "trait.monster.monster3.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Ant/Ant_Honey/Body.png",
+    "guid": "c3bf373112f13f84781320a242b98ea4",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "trait.monster.monster4.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Ant/Ant_Jelly/Body.png",
+    "guid": "03c0e6605a068dd44be0e8acfacc7e78",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "trait.monster.monster5.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Ant/Ant_Worker/Body.png",
+    "guid": "2f2ad165d952a0d47b3b0fb791b29c57",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "trait.monster.monster6.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Ant/Ant_Yellow/Body.png",
+    "guid": "59c0f7c9aada0f0469067a6ba9637d19",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "trait.monster.monster7.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Bat/Bat_Cave/Body.png",
+    "guid": "46fa022d7d7f6e741ab54b2481f73084",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "trait.monster.monster8.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Bat/Bat_Pig/Body.png",
+    "guid": "f7ff0a60f8b2284478d474ca5e6d8c41",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "trait.monster.monster9.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Bat/Bat_Skull/Body.png",
+    "guid": "256f074a3954fb14088c5d6d5db033d7",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "trait.monster.monster10.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Bee/Bee_Devil/Body.png",
+    "guid": "ac72a2601552a614280a43d67400cd69",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "trait.monster.monster11.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Bee/Bee_Honey/Body.png",
+    "guid": "c8edaa838a2f690478e6a94b72bf8edd",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "trait.monster.monster12.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Bee/Bee_Hornet/Body.png",
+    "guid": "1cac9fc649c8de94c82b7fa50fc3b544",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "trait.monster.monster13.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Bud/Bud_Bomb/Body.png",
+    "guid": "2aeed26c834255b4db3c84af7e965b90",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "trait.monster.monster14.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Bud/Bud_Fire/Body_Fire.png",
+    "guid": "6c63eea5ac3d47f41a4ada2581ce61f3",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "trait.monster.monster15.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Bud/Bud_Flower/Body.png",
+    "guid": "11423ae1222abae4fa91a1617389ebdb",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "trait.monster.monster16.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Cactus/Cactus_Green/Body.png",
+    "guid": "01df721c56acdc94e959b5034a953d65",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "trait.monster.monster17.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Cactus/Cactus_Snow/Body.png",
+    "guid": "0760c09a431bc7243a8a3895187b7ea1",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "trait.monster.monster18.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Dragonfly/Dragonfly_Armor/Body.png",
+    "guid": "f68ddf6470272634f9b883530c1265e7",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "trait.monster.monster19.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Dragonfly/Dragonfly_Bot/Body.png",
+    "guid": "bc7cf6f4144c3d548bc1973be6c1a79f",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "trait.monster.monster20.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Dragonfly/Dragonfly_Green/Body.png",
+    "guid": "1580648748480d84bae2ecac3a388aae",
+    "status": "runtime-applied"
   }
 ]
