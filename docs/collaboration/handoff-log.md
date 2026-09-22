@@ -18,7 +18,7 @@
 | 공통 합류 | App 화면 전환, 읽기 전용 스냅샷 계약, 빌드 설정 |
 
 특성 화면은 카탈로그 데이터로 행과 노드를 동적으로 만든다. 스탯은 공격력 10,
-반경 11, 다중 클릭 5, 치명타 8, 젬 수집 6, 보스 공격력 5와 젬 해금·발견 15개로
+반경 11, 다중 클릭 5, 치명타 8, 젬 수집 5, 보스 공격력 5와 젬 해금·발견 15개로
 구성한다. 스킬은 파이어볼·라이트닝 볼트·프리즈닝·허리케인·메테오·드래곤 브레스
 6종×4노드(24개), 몬스터는 `Monster1`~`Monster20` 해금 20개와 종별 생산량 강화
 60개다. 모든 행은 인접 노드를 런타임 선으로 연결하고, 노드 셀은 동일한 정사각형으로 그린다.
@@ -140,7 +140,7 @@
 - 담당: 준영. 영향 파일: `Assets/CursorHunter/Progression/Runtime/TraitCatalog.cs`,
   `TraitScreenController.cs`, `Main.unity`, `docs/cursor-hunter-game-design-v0.0.4.md`,
   `docs/collaboration/contracts.md`, `trait-ui-assets.md`.
-- Stat을 공격력 10, 반경 11, 다중 클릭 5, 치명타 8, 젬 수집 6, 보스 공격력 5와
+- Stat을 공격력 10, 반경 11, 다중 클릭 5, 치명타 8, 젬 수집 5, 보스 공격력 5와
   젬스톤 해금·발견 15개로 재구성했다. 자동 무한 클릭은 마지막 노드이며 8회·16회와
   초당 횟수 분기는 제거했다. 반경은 미세 확대 5단계 뒤 1/32·1/16·1/8·1/4·전체로
   이어지고, 치명타는 5·10·20·30·50·75·100%를 사용한다.
@@ -168,3 +168,223 @@
   `1,300 → 12,000 → 180,000 → 18,000,000 → 2,700,000,000`, 스킬 기본 계수는
   `4A / 8A / 12A / 6A×6 / 40A / 250A` 순서다. 실제 전투 연결 후 60초 런 로그로
   `balanceVersion`을 올려 재조정한다.
+
+### 2026-09-21 · 해상도·저장·테스트 해금·전투 스냅샷 연결
+
+- 담당: 준영. 영향 파일: `TraitScreenController.cs`, `TraitCatalog.cs`,
+  `TraitProgressionStore.cs`, `ProgressionCombatSnapshot.cs`, `CombatSnapshot.cs`,
+  `HuntManager.cs`, `DisplayQualityBootstrap.cs`, `Main.unity`, ProjectSettings 및
+  최신 기획서.
+- 특성 UI의 모든 노드를 테스트 모드에서 선행 조건·보스 조건 없이 확인하도록 열었다.
+  기본 테스트 플래그는 `testModeUnlockAll=true`, `testModeFreeUpgrades=true`이며 출시
+  전 일반 모드에서 끈다. 상세 패널에 `강화/해금` 옆 `취소`를 추가했고, 연결된 다음
+  노드가 구매된 경우 역순 취소만 허용한다.
+- 구매·취소·초기화 결과를 `PlayerPrefs` JSON 프로토타입 저장소에 기록한다. 저장 실패는
+  메모리 변경을 유지하되 경고를 남기며, 정식 출시 전 파일/클라우드 저장 서비스로 교체한다.
+  `전체 정보` 팝업은 현재 구매 노드와 전투 스냅샷을 스크롤로 보여준다.
+- 스킬 강화 노드는 해금·피해량·범위·쿨타임 모두 해당 스킬 기본 아이콘을 재사용한다.
+  Monster1~20은 각각 `해금 → 생산량 I → II → III` 한 행으로 묶었고 생산량 노드는
+  같은 몬스터 아이콘과 주황색 테두리를 사용한다. 노드는 5개 단위로 자동 개행하고
+  세로 커넥터를 이어 붙인다.
+- `Contracts/Runtime/ProgressionCombatSnapshot.cs`에 읽기 전용 스킬·몬스터 배열과
+  `CombatSnapshot` 확장을 추가했다. Progression은 런 시작 시 공격력·반경·다중 타격·
+  치명타·보스 배율·스킬·몬스터 값을 복사하고, App/HuntManager는 Combat과 SpawnPlan에
+  전달한다. Combat은 Progression UI·저장 파일을 직접 참조하지 않는다. 현재 단일
+  MonsterDefinition을 먼저 연결하며 다중 종 SpawnPlan은 다음 전투 작업에서 확장한다.
+- Standalone 기본 해상도를 1920×1080으로 올리고 Ultra 품질의 4x MSAA, 비등방성 필터,
+  수직 동기화를 적용했다. Canvas는 1920×1080 기준 중간 스케일과 비픽셀 스냅으로
+  창 크기 변경 시 동적 텍스트가 뭉개지는 현상을 줄인다.
+- 정적 검증: `python3 tools/validate_collaboration.py` 통과, `git diff --check` 통과.
+  Unity import/compile/Play Mode는 이 환경의 정적 검증 범위에 포함되지 않아 Editor에서
+  재생 후 Console과 1920×1080/1280×720 캡처를 다시 확인해야 한다.
+
+### 2026-09-21 · 후속 UI·품질 정합성 보정
+
+- 젬 수집 원장을 최신 요청에 맞춰 5상태로 통일했다: `접촉 클릭 → 접촉 자동 → 자석
+  → 자석 반경 확대 1~2 → 화면 전체 자동 수집`. 카탈로그 ID는
+  `stat.gemstone.01~05`이며 스탯 총 노드는 69개(기본 54 + 젬 해금·발견 15)다.
+- `전체 정보` 팝업의 ContentSizeFitter에 세로 레이아웃을 추가해 구매 항목이 많아져도
+  내용 높이를 계산하고 ScrollRect로 끝까지 읽을 수 있게 했다.
+- QualitySettings의 기본 품질 인덱스를 Ultra(5)로 맞추고, 런타임 부트스트랩의 4x MSAA·
+  비등방성 필터·수직 동기화와 함께 Editor의 낮은 품질 기본값이 남지 않게 했다.
+- Unity Play Mode에서 Main → 특성 → Skill/Monster 탭과 `전체 정보` 오버레이를 확인했다.
+  Game View 축소 미리보기 자체는 실제 빌드 해상도 판정이 아니므로 1920×1080 Standalone과
+  1280×720 창에서 별도 캡처를 진행한다.
+
+### 2026-09-21 · 전체 정보 Key/Value 정리
+
+- `TraitScreenController`의 `전체 정보` 팝업을 단일 줄바꿈 Text에서 동적 레이아웃으로
+  변경했다. `현재 전투 적용값 → 탭 → 카테고리 → Key | Value 행 → 젬스톤 보유·드롭` 순서로
+  구성하며, 각 노드는 `적용됨`, `미적용`, `잠김`, `전투 중 확률 획득` 상태를 Value 열에
+  표시한다.
+- 스킬은 스킬 종류 아래에 해금·피해량·범위·쿨타임을, 몬스터는 Monster1~20 아래에
+  해금·생산량 I/II/III을 각각 Key/Value로 노출한다. 팝업은 기존 ScrollRect 안에서
+  동적으로 높이를 계산하므로 항목 수가 늘어도 잘리지 않는다.
+
+### 2026-09-21 · 실제 렌더링 화질 보정
+
+- `field_a.png`는 원본이 202×111인 단색 필드 타일이므로 `Main.unity`의 `field_a`
+  `SpriteRenderer`를 원본 크기 기준 `Tiled` 모드(48×28)로 변경했다. 기존처럼
+  100배로 한 장을 늘리지 않아 카메라가 보는 영역에서 텍스처를 불필요하게 확대하지 않는다.
+- Main 씬에서 사용하는 PNG 68개의 `DefaultTexturePlatform`·`Standalone` 텍스처 압축을
+  끄고 압축 품질을 100으로 맞췄다. 원본 픽셀 수가 낮은 에셋의 디테일을 새로 만들 수는
+  없지만, UI 아이콘·몬스터·맵 장식의 JPEG 계열 압축 번짐은 줄어든다. 모바일·WebGL
+  플랫폼 설정은 기존 값을 유지해 메모리 사용량을 불필요하게 늘리지 않는다.
+- `UniversalRP.asset`을 4x MSAA로 설정하고 `DisplayQualityBootstrap`에서 전역 mipmap
+  제한을 0으로 강제한다. 품질 설정은 렌더링 샘플링을 보정하며, 에디터 Game View의
+  축소 미리보기 자체는 품질 측정에서 제외한다. 검증 시 Game View를 `Full HD (1920×1080)`
+  또는 `WXGA (1366×768)`로 선택하고 Scale을 Fit/1x로 맞춘다.
+
+### 2026-09-21 · 특성 액션 UX·전투 정보 접근·HP 바·밸런스 검증
+
+- 담당: 준영. 영향 파일: `TraitScreenController.cs`, `PrototypeRunHud.cs`,
+  `MonsterHealthBarView.cs`, `WalkerStumpTarget.cs`, `TraitCatalog.cs`,
+  `docs/cursor-hunter-game-design-v0.0.4.md`.
+- 특성 상세 패널의 액션을 중앙 행으로 재배치했다. 왼쪽은 `강화/해금`, 오른쪽은
+  `노드 초기화`이며, 하단 전역 액션은 `전체 초기화`로 구분한다. 노드 초기화는
+  다음 구매 노드가 남아 있으면 역순을 요구하고, 전체 초기화는 테스트 구매분을 모두
+  환불한 뒤 시작 상태를 다시 구성한다. 코드 메서드도 `ResetSelectedNode`로 명시했다.
+- `TraitScreenController`의 `전체 정보` 팝업을 TraitPanel 하위가 아니라 활성 Canvas
+  하위에 만들도록 바꿨다. 따라서 Trait 화면을 닫은 일반·보스 Field에서도 HUD의
+  `전체 정보` 버튼이 같은 팝업을 열 수 있다. 팝업은 `Key | Value` 표를 유지하고,
+  열려 있는 동안 Canvas 레이캐스트가 전투 클릭을 가린다. 런 시작 시 App이 전달한
+  `ProgressionCombatSnapshot`을 결과 화면까지 고정해, 전투 중 UI 상태가 바뀌어도
+  팝업의 적용값이 실제 런과 달라지지 않게 했다.
+- `PrototypeRunHud`에 우측 상단 `전체 정보` 버튼을 동적으로 추가했다. 시작 시
+  `TraitScreenController`를 비활성 오브젝트까지 검색하고, 버튼 클릭 때 최신 스냅샷·
+  해금·젬스톤 데이터를 다시 구성한다. 보스 HUD가 같은 HUD를 사용해도 같은 접근
+  경로를 재사용한다.
+- 일반 몬스터 `WalkerStumpTarget`에 `MonsterHealthBarView`를 붙였다. 생성·피격 후
+  1.25초 동안 월드 공간 HP 바를 표시하고, 남은 비율에 따라 초록·노랑·빨강으로
+  바뀐다. 체력바 SpriteRenderer는 전투 콜라이더 bounds에서 제외해 공격 판정이
+  넓어지지 않도록 했다. 정적 흰 픽셀 Sprite 1개를 공유해 개체별 텍스처 할당과
+  per-frame 메모리 할당을 피한다.
+- 설계 시뮬레이션에서 2클릭/초·치명타 2배·스킬 강화 완료·자동 10회/초를 가정했다.
+  보스 초안 HP를 `1,300 → 12,000 → 90,000 → 240,000 → 1,800,000`으로 조정했고,
+  예상 처치 시간은 약 30초·43초·51초·40초·55초다. 이는 Combat 스킬·치명타·자동화
+  연결 전의 설계 계산이며, 실제 60초 런 로그가 쌓이면 `balanceVersion`만 올려 한 축씩
+  조정한다. 자동 무한 노드는 v4 처치 후 사용할 수 있도록 카탈로그 요구 티어를 4로
+  맞췄다.
+- 기획서 `B08`에 펫 원장(기본 1마리, 반경·피해·주기·대상 수), 일반/보스 전리품
+  확률·중복 변환·Key/Value 표기, 수확량·스킬 충전·전리품 행운 확장 Stat 후보와
+  150분 시뮬레이션 가정을 누적했다. 새 확장 Stat은 아직 Combat 계약에 필드를
+  추가하지 않았으므로 설계 후보로만 유지하며, 현재 런 스냅샷 값은 기존 필드와
+  동일하게 불변 복사한다.
+- 검증 시 확인할 항목: Unity Console의 `error CS`, `NullReferenceException`,
+  `LogAssemblyErrors`, 일반 Field에서 HP 바가 콜라이더를 확장하지 않는지, Field HUD
+  `전체 정보`가 팝업을 열고 닫은 클릭이 공격으로 전달되지 않는지, Trait 상세에서
+  두 버튼이 겹치지 않는지.
+- `DisplayQualityBootstrap`에서 고정 DPI 계수와 `ScalableBufferManager` 버퍼를 1:1로
+  맞춰 낮은 동적 해상도 버퍼가 Play Mode에 남지 않도록 했다. Game View 축소 배율은
+  실제 빌드 해상도와 다르므로 Full HD/창모드 캡처로 별도 확인한다.
+
+### 2026-09-21 · 현재 상태·인수인계 통합본
+
+- `docs/collaboration/current-state-handoff-v0.0.4.md`를 추가했다. 최신 Stat·Skill·Monster·
+  젬스톤·전리품·펫 규칙, 150분 밸런스 표, 화면 UX, 구현 완료/부분/미착수 범위,
+  Progression→App→Combat 계약, 담당별 다음 작업을 한 문서로 묶었다.
+- `docs/collaboration/README.md`에서 새 문서를 첫 읽기 문서로 연결했다. 기존 기획서와
+  누적 로그는 상세 원문·변경 이력으로 유지한다.
+
+### 2026-09-21 · 일반 필드 시간·치명타·드롭·전리품 조각 계약
+
+- 담당: 준영. 영향 파일: `TraitCatalog.cs`, `TraitScreenController.cs`,
+  `ProgressionCombatSnapshot.cs`, `HuntManager.cs`, `CombatRunController.cs`,
+  `RunResult.cs`, `SpawnSnapshot.cs`, `MonsterDefinition.cs`, `WalkerStumpTarget.cs`,
+  `TraitProgressionStore.cs`, `PrototypeRunHud.cs`.
+- 일반 필드 시간을 `15초 → 20/25/30/35/40/45/50/55/60초` 10상태로 추가했다. 노드 비용은
+  `0/15/35/65/110/180/280/420/600/850 가넷`이며 `ProgressionCombatSnapshot`의
+  `NormalFieldDurationSeconds`로 런 시작에 고정된다. `HuntManager.GetRunDuration`은
+  일반 필드에만 이 값을 적용하고 보스는 항상 60초를 반환한다.
+- Main 씬의 현재 일반 필드 반경 초안(`cursor_image` 스케일 2, 원형 콜라이더 반경
+  0.86269045, RangeMultiplier 1)을 기본값으로 명시했다. 반경 Stat은 이 기준에 배율만
+  적용하며 원본 씬 콜라이더를 덮어쓰지 않는다.
+- `CombatRunController`가 SeededRandom으로 타격마다 치명타를 판정하고, 보스 모드에는
+  `BossDamageMultiplier`, 치명타에는 2배 피해를 적용한다. `CriticalHit` 이벤트와 HUD의
+  `치명타! ×2` 알림으로 발동 사실을 확인할 수 있다. 이벤트 리스너는 OnDisable에서
+  해제해 중복 구독을 막는다.
+- `ResourceRewardSnapshot`·`RunResult.Rewards`를 추가해 가넷·보너스 젬스톤·전리품
+  조각을 한 결과에 기록한다. Monster balance와 SpawnSnapshot에는 HP·젠 주기·가넷
+  보상·보너스 젬스톤 확률·전리품 조각 확률을 함께 복사한다. `HuntManager`는 Eligible
+  결과를 `TraitScreenController.GrantResourceRewards()`로 저장하고 같은 `RunId`를
+  메모리에서 두 번 정산하지 않는다.
+- 전리품은 `fragment.loot.*` 전용 잔액을 사용하고 최초 1, 이후 2/3/5/10 조각 비용의
+  노드를 카탈로그에 추가했다. `TraitProgressionStore`가 조각 지갑을 JSON으로 저장하며,
+  정산은 `GrantResourceRewards`를 중복 이벤트 검증 뒤 한 번만 호출한다. 개별
+  `GrantLootFragments`는 외부 정산 서비스가 특정 조각만 지급할 때 사용하는 보조 API다.
+- `TraitBossRewardDefinition`에 v1~v5 기본 가넷·보너스 젬스톤·조각 확률·최초 조각
+  보너스를 추가했다. 상세 수치는 통합 인수인계 문서와 게임 기획서의 보상 원장을 따른다.
+- `docs/collaboration/current-state-handoff-v0.0.4.md`, `architecture.md`,
+  `docs/cursor-hunter-game-design-v0.0.4.md`에 비용 원장, 몬스터 드롭/젠, 보스 보상,
+  승기용 스냅샷 읽기 코드와 15~60초 정책을 반영했다.
+- 검증: `git diff --check`, `python3 tools/validate_collaboration.py` PASS. Unity 에디터의
+  다음 스크립트 리컴파일 후 Console에서 `error CS`, `NullReferenceException`,
+  `LogAssemblyErrors`가 없는지 확인한다.
+
+### 2026-09-21 · 비용 원장·전리품 UI 수량·치명타 표시 보정
+
+- `current-state-handoff-v0.0.4.md`에 젬스톤 해금/발견, 스킬 6종, Monster 생산량,
+  전리품 1/2/3/5/10, 펫까지 모든 노드의 비용과 결제 재화를 한 표로 추가했다.
+- `trait-ui-assets.md`의 Stat 노드 수를 일반 필드 시간 행까지 포함한 69개로 정정하고,
+  젬 수집 기본 행을 5개로 맞췄다. 전리품은 25개 도감이 아니라 일반 20개와 보스 5개의
+  해금·4단계 강화 125개 노드이며, 구매 버튼이 있는 조각 트리로 문서와 카탈로그를
+  일치시켰다.
+- `contracts.md`에서 폐기된 v5 HP 예시를 제거하고 Int64 경계 규칙을 현재 보스/몬스터
+  원장에 맞게 일반화했다. 핵심 Contracts 타입이 이미 구현됐다는 상태도 명시했다.
+- `PrototypeRunHud.ShowRunning()`이 매 프레임 치명타 알림을 숨기던 문제를 수정했다.
+  이제 새 런 초기화·정산·리셋 때만 알림을 숨기고, `CriticalHit` 알림은 0.45초 동안
+  유지된다.
+- 설계 문서 B08의 시뮬레이션 문구를 치명타·보스 배율·HUD는 연결되고 스킬·자동 공격은
+  아직 미연결이라는 현재 구현 상태로 정정했다.
+- `tools/render_current_design_pdf.py`를 추가해 최신 Markdown을 단일 원본으로 PDF에
+  재생성한다. 1·36·72페이지를 렌더링해 표·와이어프레임·마지막 페이지에 잘림이 없는지
+  확인했다. PDF의 역사적 예시는 최신 확정 범위 표보다 우선하지 않는다.
+
+### 2026-09-21 · 인수인계 핵심본·요약 PDF 정리 및 Unity 검증
+
+- `current-state-handoff-v0.0.4.md`를 220줄의 핵심본으로 재작성했다. 소유권, 런타임 계약,
+  15~60초 일반 필드·60초 보스, Stat/Skill/Monster/젬스톤/전리품/Pet 규칙,
+  비용·보상 기준, 승기 구현 순서, 병합·테스트 방법, 남은 작업만 남겼다.
+- `tools/render_current_design_pdf.py`의 입력을 핵심 인수인계 문서로 변경했다. 최신 PDF는
+  72페이지 상세 기획서가 아니라 5페이지 핵심본을 출력하며, 1·5페이지를 렌더링해 잘림과
+  겹침이 없는 것을 확인했다.
+- 원본 `cursor-hunter-game-design-v0.0.4.md`는 상세 수치·와이어프레임 참조 문서로 유지하고,
+  README와 v0.0.4 안내문에서 핵심본과 상세 원문의 역할을 구분했다.
+- `git diff --check`, `python3 tools/validate_collaboration.py`, Contracts 독립 컴파일은 PASS.
+- 원본 Unity Editor 로그에서 최신 Tundra 컴파일 성공과 어셈블리 로드를 확인했다. 원본 프로젝트가
+  열려 있어 같은 경로 Batch Mode는 프로젝트 잠금으로 거부됐고, 별도 임시 Batch Mode는 Unity
+  Package Manager 소켓·라이선스 채널 초기화에서 중단되어 Play Mode PASS 판정은 보류했다.
+
+### 2026-09-21 · 통합 인수인계 원장 재통합
+
+- 지정 기준 문서 `docs/collaboration/current-state-handoff-v0.0.4.md`에 기존 요약 내용과
+  최신 상세 원장을 다시 통합했다. 보스 구간별 접근권, Stat 비용, 스킬 기본값,
+  Monster1~20 HP·젠·드롭, 보스 보상, 화면 UX, 구현 상태를 한 파일에서 확인할 수 있다.
+- 요약 PDF도 같은 인수인계 파일을 다시 읽도록 갱신했다. 현재 10페이지이며, 상세
+  와이어프레임 원문은 `docs/cursor-hunter-game-design-v0.0.4.md`에 유지한다.
+- Unity Editor가 원본 프로젝트를 점유하고 있어 별도 Batch Mode는 프로젝트 잠금으로
+  실행되지 않았다. 임시 Batch Mode는 Package Manager/라이선스 채널 초기화에서 중단됐다.
+  Editor.log의 최신 Tundra 빌드와 어셈블리 로드는 확인했지만 Play Mode 성공 판정은
+  Unity Editor를 저장 후 닫고 재실행할 때 수행한다.
+
+### 2026-09-21 · 젬스톤 다중 재화 결제 원장 적용
+
+- `TraitCatalog.CreateRuntimeDemo()`의 Stat 유료 노드에 `CostGemstoneId`를 구간별로
+  명시했다. 공격력·반경·다중 클릭·치명타·젬 수집·일반 필드 시간은 가넷에서 시작해
+  토파즈·자수정·사파이어·다이아몬드·드래곤 젬으로 이동하며, 보스 피해는 v1~v5의
+  티어 젬을 그대로 사용한다.
+- 스킬은 파이어볼=가넷, 라이트닝 볼트=토파즈, 프리즈닝=자수정, 허리케인=사파이어,
+  메테오=다이아몬드, 드래곤 브레스=드래곤 젬의 전용 재화를 유지한다. Monster 생산량은
+  해금 티어의 젬스톤, 전리품은 기존 `fragment.loot.*` 전용 조각을 사용한다.
+- `TraitScreenController`가 이미 `CostGemstoneId`를 기준으로 비용명·잔액·지출·초기화를
+  처리하므로 별도 지갑 로직을 만들지 않았다. 테스트 모드 무료 구매에서도 상세 패널에
+  실제 젬스톤 비용을 표시한다.
+- `current-state-handoff-v0.0.4.md`와 상세 기획서의 Stat 원장, 젬스톤별 역할, 공격력
+  비용표를 런타임 카탈로그와 일치시켰다.
+- 요약 PDF를 다시 생성해 11페이지로 갱신했다. `git diff --check`,
+  `python3 tools/validate_collaboration.py`, 젬스톤 비용 마커 정적 검사를 통과했고,
+  Unity Editor.log에서 `CursorHunter.Progression.dll` 포함 Tundra build success를 확인했다.
+- 초기화 시 현재 노드의 재화로 환불하지 않고 구매 당시 저장된 `spentCurrencyIds`를
+  우선 사용하도록 `TraitScreenController`를 보정했다. 따라서 가넷 단일 재화 시절의
+  저장 데이터도 기록된 결제 재화를 기준으로 복구하고, 새 다중 젬 구매의 환불도 같은
+  지갑으로 돌아간다.

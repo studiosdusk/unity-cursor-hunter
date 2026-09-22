@@ -1,3 +1,4 @@
+using System;
 using CursorHunter.Contracts;
 using UnityEngine;
 
@@ -24,6 +25,13 @@ namespace CursorHunter.Data
         [SerializeField, Min(1)] private int packSize = 1;
         [SerializeField, Min(0)] private long garnetReward = 3;
 
+        [Header("Bonus drop")]
+        [SerializeField] private string bonusDropCurrencyId = string.Empty;
+        [SerializeField, Min(0)] private long bonusDropAmount;
+        [SerializeField, Range(0f, 100f)] private float bonusDropChancePercent;
+        [SerializeField] private string lootFragmentCurrencyId = string.Empty;
+        [SerializeField, Range(0f, 100f)] private float lootFragmentChancePercent;
+
         public string MonsterId => monsterId;
         public string DisplayName => displayName;
         public string PrefabKey => prefabKey;
@@ -32,6 +40,11 @@ namespace CursorHunter.Data
         public float SpawnIntervalSeconds => spawnIntervalSeconds;
         public int PackSize => packSize;
         public long GarnetReward => garnetReward;
+        public string BonusDropCurrencyId => bonusDropCurrencyId ?? string.Empty;
+        public long BonusDropAmount => Math.Max(0L, bonusDropAmount);
+        public float BonusDropChancePercent => Mathf.Clamp(bonusDropChancePercent, 0f, 100f);
+        public string LootFragmentCurrencyId => lootFragmentCurrencyId ?? string.Empty;
+        public float LootFragmentChancePercent => Mathf.Clamp(lootFragmentChancePercent, 0f, 100f);
 
         public SpawnSnapshot CreateSnapshot(int aliveLimit)
         {
@@ -42,7 +55,12 @@ namespace CursorHunter.Data
                 spawnIntervalSeconds,
                 packSize,
                 aliveLimit,
-                garnetReward);
+                garnetReward,
+                BonusDropCurrencyId,
+                BonusDropAmount,
+                BonusDropChancePercent,
+                LootFragmentCurrencyId,
+                LootFragmentChancePercent);
         }
 
         private void OnValidate()
@@ -58,6 +76,30 @@ namespace CursorHunter.Data
             if (garnetReward < 0L)
             {
                 garnetReward = 0L;
+            }
+
+            bonusDropCurrencyId = bonusDropCurrencyId == null
+                ? string.Empty
+                : bonusDropCurrencyId.Trim();
+            if (bonusDropAmount < 0L)
+            {
+                bonusDropAmount = 0L;
+            }
+
+            bonusDropChancePercent = Mathf.Clamp(bonusDropChancePercent, 0f, 100f);
+            if (bonusDropAmount == 0L || string.IsNullOrEmpty(bonusDropCurrencyId))
+            {
+                bonusDropAmount = 0L;
+                bonusDropChancePercent = 0f;
+            }
+
+            lootFragmentCurrencyId = lootFragmentCurrencyId == null
+                ? string.Empty
+                : lootFragmentCurrencyId.Trim();
+            lootFragmentChancePercent = Mathf.Clamp(lootFragmentChancePercent, 0f, 100f);
+            if (string.IsNullOrEmpty(lootFragmentCurrencyId))
+            {
+                lootFragmentChancePercent = 0f;
             }
         }
     }

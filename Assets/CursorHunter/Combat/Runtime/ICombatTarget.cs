@@ -12,6 +12,11 @@ namespace CursorHunter.Combat
         bool IsRegistered { get; }
         bool IsActive { get; }
         long GarnetReward { get; }
+        string BonusDropCurrencyId { get; }
+        long BonusDropAmount { get; }
+        float BonusDropChancePercent { get; }
+        string LootFragmentCurrencyId { get; }
+        float LootFragmentChancePercent { get; }
 
         bool ApplyDamage(
             RunId runId,

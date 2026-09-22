@@ -242,12 +242,24 @@ namespace CursorHunter.Progression
         [SerializeField, Min(1)] private long hitPoints = 1L;
         [SerializeField, Min(0.1f)] private float spawnInterval = 1f;
         [SerializeField, Min(1)] private int baseBatch = 1;
+        [SerializeField, Min(0)] private long garnetReward = 3L;
+        [SerializeField] private string bonusDropCurrencyId;
+        [SerializeField, Min(0)] private long bonusDropAmount;
+        [SerializeField, Range(0f, 100f)] private float bonusDropChancePercent;
+        [SerializeField] private string lootFragmentCurrencyId;
+        [SerializeField, Range(0f, 100f)] private float lootFragmentChancePercent;
 
         public string Id => id;
         public string FeatureLabel => featureLabel;
         public long HitPoints => Math.Max(1L, hitPoints);
         public float SpawnInterval => Mathf.Max(0.1f, spawnInterval);
         public int BaseBatch => Mathf.Max(1, baseBatch);
+        public long GarnetReward => Math.Max(0L, garnetReward);
+        public string BonusDropCurrencyId => bonusDropCurrencyId ?? string.Empty;
+        public long BonusDropAmount => Math.Max(0L, bonusDropAmount);
+        public float BonusDropChancePercent => Mathf.Clamp(bonusDropChancePercent, 0f, 100f);
+        public string LootFragmentCurrencyId => lootFragmentCurrencyId ?? string.Empty;
+        public float LootFragmentChancePercent => Mathf.Clamp(lootFragmentChancePercent, 0f, 100f);
 
         public TraitMonsterBalanceDefinition()
         {
@@ -259,12 +271,87 @@ namespace CursorHunter.Progression
             long hp,
             float interval,
             int batch)
+            : this(
+                monsterId,
+                feature,
+                hp,
+                interval,
+                batch,
+                3L,
+                string.Empty,
+                0L,
+                0f,
+                string.Empty,
+                0f)
+        {
+        }
+
+        public TraitMonsterBalanceDefinition(
+            string monsterId,
+            string feature,
+            long hp,
+            float interval,
+            int batch,
+            long reward,
+            string dropCurrencyId,
+            long dropAmount,
+            float dropChancePercent,
+            string fragmentCurrencyId,
+            float fragmentChancePercent)
         {
             id = monsterId;
             featureLabel = feature;
             hitPoints = Math.Max(1L, hp);
             spawnInterval = Mathf.Max(0.1f, interval);
             baseBatch = Mathf.Max(1, batch);
+            garnetReward = Math.Max(0L, reward);
+            bonusDropCurrencyId = dropCurrencyId ?? string.Empty;
+            bonusDropAmount = Math.Max(0L, dropAmount);
+            bonusDropChancePercent = Mathf.Clamp(dropChancePercent, 0f, 100f);
+            lootFragmentCurrencyId = fragmentCurrencyId ?? string.Empty;
+            lootFragmentChancePercent = Mathf.Clamp(fragmentChancePercent, 0f, 100f);
+        }
+    }
+
+    /// <summary>
+    /// Fixed first-pass boss settlement values. Combat owns the encounter;
+    /// App/Progression owns applying these immutable rewards after success.
+    /// </summary>
+    [Serializable]
+    public sealed class TraitBossRewardDefinition
+    {
+        [SerializeField] private int bossTier;
+        [SerializeField, Min(0)] private long guaranteedGarnet;
+        [SerializeField] private string bonusGemstoneId;
+        [SerializeField, Min(0)] private long bonusGemstoneAmount;
+        [SerializeField, Range(0f, 100f)] private float lootFragmentChancePercent;
+        [SerializeField, Min(0)] private int firstClearFragmentAmount;
+
+        public int BossTier => Mathf.Clamp(bossTier, 1, 5);
+        public long GuaranteedGarnet => Math.Max(0L, guaranteedGarnet);
+        public string BonusGemstoneId => bonusGemstoneId ?? string.Empty;
+        public long BonusGemstoneAmount => Math.Max(0L, bonusGemstoneAmount);
+        public float LootFragmentChancePercent => Mathf.Clamp(lootFragmentChancePercent, 0f, 100f);
+        public int FirstClearFragmentAmount => Mathf.Max(0, firstClearFragmentAmount);
+
+        public TraitBossRewardDefinition()
+        {
+        }
+
+        public TraitBossRewardDefinition(
+            int tier,
+            long garnet,
+            string gemstoneId,
+            long gemstoneAmount,
+            float fragmentChancePercent,
+            int firstClearFragments)
+        {
+            bossTier = Mathf.Clamp(tier, 1, 5);
+            guaranteedGarnet = Math.Max(0L, garnet);
+            bonusGemstoneId = gemstoneId ?? string.Empty;
+            bonusGemstoneAmount = Math.Max(0L, gemstoneAmount);
+            lootFragmentChancePercent = Mathf.Clamp(fragmentChancePercent, 0f, 100f);
+            firstClearFragmentAmount = Mathf.Max(0, firstClearFragments);
         }
     }
 
@@ -287,6 +374,8 @@ namespace CursorHunter.Progression
             new List<TraitMonsterBalanceDefinition>();
         [SerializeField] private List<TraitGemstoneDefinition> gemstones =
             new List<TraitGemstoneDefinition>();
+        [SerializeField] private List<TraitBossRewardDefinition> bossRewards =
+            new List<TraitBossRewardDefinition>();
 
         public IReadOnlyList<TraitCategoryDefinition> StatCategories => statCategories;
         public IReadOnlyList<TraitCategoryDefinition> SkillCategories => skillCategories;
@@ -295,12 +384,13 @@ namespace CursorHunter.Progression
         public IReadOnlyList<TraitCategoryDefinition> PetCategories => petCategories;
         public IReadOnlyList<TraitMonsterBalanceDefinition> MonsterBalances => monsterBalances;
         public IReadOnlyList<TraitGemstoneDefinition> Gemstones => gemstones;
+        public IReadOnlyList<TraitBossRewardDefinition> BossRewards => bossRewards;
 
         public bool HasAnyCategory =>
             HasEntries(statCategories) || HasEntries(skillCategories) ||
             HasEntries(monsterCategories) || HasEntries(lootCategories) ||
             HasEntries(petCategories) || HasEntries(monsterBalances) ||
-            HasEntries(gemstones);
+            HasEntries(gemstones) || HasEntries(bossRewards);
 
         public void Replace(
             IEnumerable<TraitCategoryDefinition> stats,
@@ -389,6 +479,21 @@ namespace CursorHunter.Progression
                     attackCosts[i],
                     attackTiers[i],
                     i == 0);
+                // 공격력은 초반 가넷에서 시작해 보스 구간별 젬스톤으로
+                // 결제 재화를 넘긴다. 후반 노드가 다시 가넷으로 돌아가지
+                // 않도록 비용 ID를 노드에 명시한다.
+                string attackCurrency = i < 2
+                    ? "gem.garnet"
+                    : i < 4
+                        ? "gem.topaz"
+                        : i < 6
+                            ? "gem.amethyst"
+                            : i < 8
+                                ? "gem.sapphire"
+                                : i < 9
+                                    ? "gem.diamond"
+                                    : "gem.dragon";
+                node.WithCostGemstone(attackCurrency);
                 if (i > 0)
                 {
                     node.WithPrerequisite("stat.attack." + i.ToString("00"));
@@ -398,49 +503,52 @@ namespace CursorHunter.Progression
 
             TraitCategoryDefinition radius =
                 new TraitCategoryDefinition("stat.radius", "반경", sky);
-            AddRadiusNode(radius, "01", "작은 원", "기본 커서 반경입니다.", "기본", 0, 0, true);
-            AddRadiusNode(radius, "02", "커서 영역 증가 1", "작은 원에서 조금 넓어집니다.", "+1", 12, 0, false);
-            AddRadiusNode(radius, "03", "커서 영역 증가 2", "커서 판정이 한 단계 넓어집니다.", "+2", 24, 0, false);
-            AddRadiusNode(radius, "04", "커서 영역 증가 3", "커서 판정이 한 단계 넓어집니다.", "+3", 42, 1, false);
-            AddRadiusNode(radius, "05", "커서 영역 증가 4", "커서 판정이 한 단계 넓어집니다.", "+4", 65, 1, false);
-            AddRadiusNode(radius, "06", "커서 영역 증가 5", "커서 판정이 한 단계 넓어집니다.", "+5", 95, 2, false);
-            AddRadiusNode(radius, "07", "필드의 1/32", "원형 판정이 필드의 1/32까지 닿습니다.", "1/32", 130, 2, false);
-            AddRadiusNode(radius, "08", "필드의 1/16", "원형 판정이 필드의 1/16까지 닿습니다.", "1/16", 185, 3, false);
-            AddRadiusNode(radius, "09", "필드의 1/8", "원형 판정이 필드의 1/8까지 닿습니다.", "1/8", 255, 3, false);
-            AddRadiusNode(radius, "10", "필드의 1/4", "원형 판정이 필드의 1/4까지 닿습니다.", "1/4", 350, 4, false);
-            AddRadiusNode(radius, "11", "화면 전체", "원형 판정이 화면 전체를 덮습니다.", "전체", 500, 5, false);
+            AddRadiusNode(radius, "01", "작은 원", "기본 커서 반경입니다.", "기본", 0, 0, true, "gem.garnet");
+            AddRadiusNode(radius, "02", "커서 영역 증가 1", "작은 원에서 조금 넓어집니다.", "+1", 12, 0, false, "gem.garnet");
+            AddRadiusNode(radius, "03", "커서 영역 증가 2", "커서 판정이 한 단계 넓어집니다.", "+2", 24, 0, false, "gem.garnet");
+            AddRadiusNode(radius, "04", "커서 영역 증가 3", "커서 판정이 한 단계 넓어집니다.", "+3", 42, 1, false, "gem.topaz");
+            AddRadiusNode(radius, "05", "커서 영역 증가 4", "커서 판정이 한 단계 넓어집니다.", "+4", 65, 1, false, "gem.topaz");
+            AddRadiusNode(radius, "06", "커서 영역 증가 5", "커서 판정이 한 단계 넓어집니다.", "+5", 95, 2, false, "gem.amethyst");
+            AddRadiusNode(radius, "07", "필드의 1/32", "원형 판정이 필드의 1/32까지 닿습니다.", "1/32", 130, 2, false, "gem.amethyst");
+            AddRadiusNode(radius, "08", "필드의 1/16", "원형 판정이 필드의 1/16까지 닿습니다.", "1/16", 185, 3, false, "gem.sapphire");
+            AddRadiusNode(radius, "09", "필드의 1/8", "원형 판정이 필드의 1/8까지 닿습니다.", "1/8", 255, 3, false, "gem.sapphire");
+            AddRadiusNode(radius, "10", "필드의 1/4", "원형 판정이 필드의 1/4까지 닿습니다.", "1/4", 350, 4, false, "gem.diamond");
+            AddRadiusNode(radius, "11", "화면 전체", "원형 판정이 화면 전체를 덮습니다.", "전체", 500, 5, false, "gem.dragon");
             ChainNodes(radius);
 
             TraitCategoryDefinition multiClick =
                 new TraitCategoryDefinition("stat.multiClick", "다중 클릭", yellow);
             AddNode(multiClick, "stat.multiClick.01", "1회 클릭", "한 번 입력하면 한 번 타격합니다.", "1회", 0, 0, true);
-            AddNode(multiClick, "stat.multiClick.02", "더블 클릭", "한 번 입력하면 두 번 병렬 타격합니다. 반복 입력과 중첩됩니다.", "2회", 40, 0, false);
-            AddNode(multiClick, "stat.multiClick.03", "트리플 클릭", "한 번 입력하면 세 번 병렬 타격합니다.", "3회", 90, 2, false);
-            AddNode(multiClick, "stat.multiClick.04", "쿼드 클릭", "한 번 입력하면 네 번 병렬 타격합니다.", "4회", 180, 3, false);
-            AddNode(multiClick, "stat.multiClick.05", "자동 무한 클릭", "한 번 입력하면 자동 타격이 계속 이어집니다.", "무한", 360, 5, false);
+            AddNode(multiClick, "stat.multiClick.02", "더블 클릭", "한 번 입력하면 두 번 병렬 타격합니다. 반복 입력과 중첩됩니다.", "2회", 40, 1, false).WithCostGemstone("gem.topaz");
+            AddNode(multiClick, "stat.multiClick.03", "트리플 클릭", "한 번 입력하면 세 번 병렬 타격합니다.", "3회", 90, 2, false).WithCostGemstone("gem.amethyst");
+            AddNode(multiClick, "stat.multiClick.04", "쿼드 클릭", "한 번 입력하면 네 번 병렬 타격합니다.", "4회", 180, 3, false).WithCostGemstone("gem.sapphire");
+            // The v4 clear is the turning point into the late-game auto
+            // build. Keeping this at tier 4 lets the player use automatic
+            // clicking while learning the v5 fight, instead of making the
+            // final unlock require the ending itself.
+            AddNode(multiClick, "stat.multiClick.05", "자동 무한 클릭", "한 번 입력하면 자동 타격이 계속 이어집니다.", "무한", 360, 4, false).WithCostGemstone("gem.dragon");
             ChainNodes(multiClick);
 
             TraitCategoryDefinition critical =
                 new TraitCategoryDefinition("stat.critical", "치명타", pink);
             AddNode(critical, "stat.critical.01", "치명타 0%", "치명타가 발생하지 않는 기본 확률입니다.", "0%", 0, 0, true);
-            AddNode(critical, "stat.critical.02", "치명타 5%", "치명타 확률이 5%가 됩니다.", "5%", 20, 0, false);
-            AddNode(critical, "stat.critical.03", "치명타 10%", "치명타 확률이 10%가 됩니다.", "10%", 40, 0, false);
-            AddNode(critical, "stat.critical.04", "치명타 20%", "치명타 확률이 20%가 됩니다.", "20%", 75, 1, false);
-            AddNode(critical, "stat.critical.05", "치명타 30%", "치명타 확률이 30%가 됩니다.", "30%", 120, 2, false);
-            AddNode(critical, "stat.critical.06", "치명타 50%", "치명타 확률이 50%가 됩니다.", "50%", 190, 3, false);
-            AddNode(critical, "stat.critical.07", "치명타 75%", "치명타 확률이 75%가 됩니다.", "75%", 300, 4, false);
-            AddNode(critical, "stat.critical.08", "치명타 100%", "모든 유효 타격이 치명타가 됩니다.", "100%", 480, 5, false);
+            AddNode(critical, "stat.critical.02", "치명타 5%", "치명타 확률이 5%가 됩니다.", "5%", 20, 0, false).WithCostGemstone("gem.garnet");
+            AddNode(critical, "stat.critical.03", "치명타 10%", "치명타 확률이 10%가 됩니다.", "10%", 40, 1, false).WithCostGemstone("gem.topaz");
+            AddNode(critical, "stat.critical.04", "치명타 20%", "치명타 확률이 20%가 됩니다.", "20%", 75, 2, false).WithCostGemstone("gem.amethyst");
+            AddNode(critical, "stat.critical.05", "치명타 30%", "치명타 확률이 30%가 됩니다.", "30%", 120, 2, false).WithCostGemstone("gem.amethyst");
+            AddNode(critical, "stat.critical.06", "치명타 50%", "치명타 확률이 50%가 됩니다.", "50%", 190, 3, false).WithCostGemstone("gem.sapphire");
+            AddNode(critical, "stat.critical.07", "치명타 75%", "치명타 확률이 75%가 됩니다.", "75%", 300, 4, false).WithCostGemstone("gem.diamond");
+            AddNode(critical, "stat.critical.08", "치명타 100%", "모든 유효 타격이 치명타가 됩니다.", "100%", 480, 5, false).WithCostGemstone("gem.dragon");
             ChainNodes(critical);
 
             TraitCategoryDefinition gemstone =
                 new TraitCategoryDefinition("stat.gemstone", "젬 수집", mint);
             AddNode(gemstone, "stat.gemstone.01", "접촉 클릭", "젬스톤에 커서를 닿게 한 뒤 클릭해야 수집합니다.", "접촉", 0, 0, true);
-            AddNode(gemstone, "stat.gemstone.02", "접촉 자동 획득", "젬스톤이 커서에 닿으면 자동으로 획득합니다.", "자동 접촉", 35, 0, false);
-            AddNode(gemstone, "stat.gemstone.03", "자석 효과", "커서 주변의 자석 반경 안에 들어온 젬스톤을 끌어옵니다.", "자석", 90, 1, false);
-            AddNode(gemstone, "stat.gemstone.04", "자석 반경 확대 1", "젬스톤 자석 반경을 한 단계 확대합니다.", "자석 I", 150, 2, false);
-            AddNode(gemstone, "stat.gemstone.05", "자석 반경 확대 2", "젬스톤 자석 반경을 한 단계 더 확대합니다.", "자석 II", 240, 3, false);
-            AddNode(gemstone, "stat.gemstone.06", "화면 전체 자동 수집", "전장에 생성된 젬스톤을 자동으로 수집합니다.", "전체 자동", 420, 5, false);
-            ChainNodes(gemstone, 6);
+            AddNode(gemstone, "stat.gemstone.02", "접촉 자동 획득", "젬스톤이 커서에 닿으면 자동으로 획득합니다.", "자동 접촉", 35, 1, false).WithCostGemstone("gem.topaz");
+            AddNode(gemstone, "stat.gemstone.03", "자석 효과", "커서 주변의 자석 반경 안에 들어온 젬스톤을 끌어옵니다.", "자석", 90, 2, false).WithCostGemstone("gem.amethyst");
+            AddNode(gemstone, "stat.gemstone.04", "자석 반경 확대 1~2", "젬스톤 자석 반경을 두 단계 확대합니다.", "자석 +2", 240, 3, false).WithCostGemstone("gem.sapphire");
+            AddNode(gemstone, "stat.gemstone.05", "화면 전체 자동 수집", "전장에 생성된 젬스톤을 자동으로 수집합니다.", "전체 자동", 420, 5, false).WithCostGemstone("gem.dragon");
+            ChainNodes(gemstone, 5);
 
             TraitNodeDefinition topazUnlock = AddGemstoneChain(
                 gemstone, "topaz", "토파즈", 1, 55, 20, 5, "토파즈", "gem.garnet");
@@ -462,12 +570,37 @@ namespace CursorHunter.Progression
             AddBossNode(boss, "05", "보스 공격력 5", "+300%", 300, 5, "gem.dragon");
             ChainNodes(boss);
 
+            TraitCategoryDefinition fieldDuration =
+                new TraitCategoryDefinition("stat.fieldDuration", "일반 필드 시간", sky);
+            int[] durationCosts = { 0, 15, 35, 65, 110, 180, 280, 420, 600, 850 };
+            int[] durationTiers = { 0, 0, 1, 1, 2, 2, 3, 3, 4, 5 };
+            string[] durationCurrencies =
+            {
+                "gem.garnet", "gem.garnet", "gem.topaz", "gem.topaz", "gem.amethyst",
+                "gem.amethyst", "gem.sapphire", "gem.sapphire", "gem.diamond", "gem.dragon"
+            };
+            for (int i = 0; i < 10; i++)
+            {
+                int seconds = 15 + i * 5;
+                AddNode(
+                    fieldDuration,
+                    "stat.fieldDuration." + (i + 1).ToString("00"),
+                    "일반 필드 " + seconds + "초",
+                    "일반 필드 제한 시간을 " + seconds + "초로 설정합니다. 보스 필드는 항상 60초입니다.",
+                    seconds + "초",
+                    durationCosts[i],
+                    durationTiers[i],
+                    i == 0).WithCostGemstone(durationCurrencies[i]);
+            }
+            ChainNodes(fieldDuration);
+
             catalog.statCategories.Add(attack);
             catalog.statCategories.Add(radius);
             catalog.statCategories.Add(multiClick);
             catalog.statCategories.Add(critical);
             catalog.statCategories.Add(gemstone);
             catalog.statCategories.Add(boss);
+            catalog.statCategories.Add(fieldDuration);
 
             catalog.skillCategories.Add(CreateSkillCategory(
                 "skill.fireball", "파이어볼", coral, 0, 0, "gem.garnet", true));
@@ -490,15 +623,13 @@ namespace CursorHunter.Progression
                 "이동 방향 급변", "원형 이동", "처치 시 분리", "잔상 생성", "이동 중 크기 변화",
                 "화면 가장자리 재등장", "여러 겹 방패", "특정 구간에서 급가속", "무리를 지어 이동", "특징 무작위 조합"
             };
-            TraitCategoryDefinition monsterCollection =
-                new TraitCategoryDefinition("monster.collection", "몬스터 해금", mint);
-            TraitCategoryDefinition monsterProduction =
-                new TraitCategoryDefinition("monster.production", "몬스터 생산량", yellow);
             for (int i = 0; i < monsterFeatures.Length; i++)
             {
                 string number = (i + 1).ToString("00");
                 string monsterId = "monster." + number;
                 string title = "Monster" + (i + 1);
+                TraitCategoryDefinition monsterCategory =
+                    new TraitCategoryDefinition(monsterId, title, mint);
                 TraitNodeDefinition monsterNode = new TraitNodeDefinition(
                     monsterId,
                     title,
@@ -507,7 +638,7 @@ namespace CursorHunter.Progression
                     0,
                     monsterTiers[i],
                     i == 0);
-                monsterCollection.AddNode(monsterNode);
+                monsterCategory.AddNode(monsterNode);
 
                 string previous = monsterId;
                 for (int level = 1; level <= 3; level++)
@@ -521,9 +652,14 @@ namespace CursorHunter.Progression
                         20 + level * 25 + monsterTiers[i] * 10,
                         monsterTiers[i],
                         false).WithPrerequisite(previous).WithCostGemstone(GemstoneForTier(monsterTiers[i]));
-                    monsterProduction.AddNode(production);
+                    monsterCategory.AddNode(production);
                     previous = productionId;
                 }
+
+                // Production levels live immediately after their monster's
+                // unlock node. The UI can therefore use one icon and a
+                // different border color for the three follow-up upgrades.
+                catalog.monsterCategories.Add(monsterCategory);
             }
             long[] monsterHp =
             {
@@ -531,52 +667,122 @@ namespace CursorHunter.Progression
                 6000L, 8000L, 12000L, 50000L, 70000L, 90000L, 400000L,
                 650000L, 900000L, 2200000L
             };
+            long[] monsterGarnetRewards =
+            {
+                3L, 5L, 7L, 9L, 12L, 18L, 22L, 28L, 35L, 50L,
+                65L, 80L, 110L, 160L, 200L, 260L, 380L, 450L, 520L, 600L
+            };
             float[] monsterIntervals =
             {
                 1.2f, 1.4f, 1.6f, 1.8f, 2.0f, 2.2f, 1.7f, 2.5f, 2.4f, 2.8f,
                 2.6f, 3.0f, 3.2f, 3.5f, 3.2f, 3.8f, 4.0f, 3.6f, 4.2f, 4.8f
             };
+            string[] monsterDropCurrencies =
+            {
+                string.Empty,
+                "gem.topaz", "gem.topaz", "gem.topaz", "gem.topaz",
+                "gem.amethyst", "gem.amethyst", "gem.amethyst", "gem.amethyst",
+                "gem.sapphire", "gem.sapphire", "gem.sapphire", "gem.sapphire",
+                "gem.diamond", "gem.diamond", "gem.diamond",
+                "gem.dragon", "gem.dragon", "gem.dragon", "gem.dragon"
+            };
+            long[] monsterDropAmounts =
+            {
+                0L, 1L, 1L, 2L, 2L, 1L, 1L, 2L, 2L, 1L,
+                1L, 2L, 2L, 1L, 1L, 2L, 1L, 1L, 2L, 3L
+            };
+            float[] monsterDropChances =
+            {
+                0f, 12f, 14f, 16f, 18f, 10f, 12f, 14f, 16f, 9f,
+                11f, 13f, 15f, 8f, 10f, 12f, 7f, 9f, 11f, 15f
+            };
+            float[] monsterFragmentChances =
+            {
+                1.5f, 1.5f, 1.7f, 1.9f, 2.1f, 1.5f, 1.7f, 1.9f, 2.1f, 1.5f,
+                1.7f, 1.9f, 2.1f, 1.6f, 1.8f, 2.0f, 1.7f, 1.9f, 2.1f, 2.5f
+            };
             for (int i = 0; i < monsterFeatures.Length; i++)
             {
+                string fragmentCurrency = "fragment.loot.monster." + (i + 1).ToString("00");
                 catalog.monsterBalances.Add(new TraitMonsterBalanceDefinition(
                     "monster." + (i + 1).ToString("00"),
                     monsterFeatures[i],
                     monsterHp[i],
                     monsterIntervals[i],
-                    1));
+                    1,
+                    monsterGarnetRewards[i],
+                    monsterDropCurrencies[i],
+                    monsterDropAmounts[i],
+                    monsterDropChances[i],
+                    fragmentCurrency,
+                    monsterFragmentChances[i]));
             }
-            catalog.monsterCategories.Add(monsterCollection);
-            catalog.monsterCategories.Add(monsterProduction);
-
             TraitCategoryDefinition monsterLoot =
                 new TraitCategoryDefinition("loot.monster", "일반 몬스터 전리품", coral);
             for (int i = 0; i < monsterFeatures.Length; i++)
             {
                 int tier = monsterTiers[i];
-                string effect = i % 3 == 0
-                    ? "대상 피해 +10%"
-                    : i % 3 == 1 ? "생산량 +15%" : "수확량 +20%";
-                monsterLoot.AddNode(new TraitNodeDefinition(
-                    "loot.monster." + (i + 1).ToString("00"),
-                    "Monster" + (i + 1) + " 전리품",
-                    "Monster" + (i + 1) + " 처치 시 확률로 획득합니다. 획득하면 " + effect + " 효과를 줍니다.",
+                string lootId = "loot.monster." + (i + 1).ToString("00");
+                string target = "Monster" + (i + 1);
+                string effect = LootEffectForIndex(i, 0, target);
+                TraitNodeDefinition unlock = new TraitNodeDefinition(
+                    lootId,
+                    target + " 전리품 해금",
+                    target + " 전리품 조각 1개로 효과를 해금합니다. " + effect,
                     effect,
-                    0,
+                    1,
                     tier,
-                    i == 0).AsDropOnly());
+                    false).WithCostGemstone("fragment.loot.monster." + (i + 1).ToString("00"));
+                monsterLoot.AddNode(unlock);
+                string previous = unlock.Id;
+                int[] fragmentCosts = { 2, 3, 5, 10 };
+                for (int level = 1; level <= fragmentCosts.Length; level++)
+                {
+                    TraitNodeDefinition upgrade = new TraitNodeDefinition(
+                        lootId + ".level." + level.ToString("00"),
+                        target + " 전리품 Lv." + level,
+                        "전리품 효과를 강화합니다. " + LootEffectForIndex(i, level, target),
+                        LootEffectForIndex(i, level, target),
+                        fragmentCosts[level - 1],
+                        tier,
+                        false).WithPrerequisite(previous)
+                        .WithCostGemstone("fragment.loot.monster." + (i + 1).ToString("00"));
+                    monsterLoot.AddNode(upgrade);
+                    previous = upgrade.Id;
+                }
             }
             TraitCategoryDefinition bossLoot =
                 new TraitCategoryDefinition("loot.boss", "보스 전리품", violet);
             for (int tier = 1; tier <= 5; tier++)
             {
-                bossLoot.AddNode(new TraitNodeDefinition(
-                    "loot.boss." + tier.ToString("00"),
-                    "보스 v" + tier + " 전리품",
-                    "보스 v" + tier + " 반복 도전 중 확률로 획득합니다. 보스 피해와 보상 수확량을 강화합니다.",
-                    "확률 드롭",
-                    0,
+                string lootId = "loot.boss." + tier.ToString("00");
+                string fragmentCurrency = "fragment.loot.boss." + tier.ToString("00");
+                TraitNodeDefinition unlock = new TraitNodeDefinition(
+                    lootId,
+                    "보스 v" + tier + " 전리품 해금",
+                    "보스 v" + tier + " 전리품 조각 1개로 효과를 해금합니다. 보스 피해 +5%.",
+                    "보스 피해 +5%",
+                    1,
                     tier,
-                    false).AsDropOnly());
+                    false).WithCostGemstone(fragmentCurrency);
+                bossLoot.AddNode(unlock);
+                string previous = unlock.Id;
+                int[] fragmentCosts = { 2, 3, 5, 10 };
+                string[] effects = { "보스 피해 +10%", "보스 정산 +10%", "보스 보너스 드롭 +5%", "보스 피해 +20%" };
+                for (int level = 1; level <= effects.Length; level++)
+                {
+                    TraitNodeDefinition upgrade = new TraitNodeDefinition(
+                        lootId + ".level." + level.ToString("00"),
+                        "보스 v" + tier + " 전리품 Lv." + level,
+                        "보스 전리품 효과를 강화합니다. " + effects[level - 1],
+                        effects[level - 1],
+                        fragmentCosts[level - 1],
+                        tier,
+                        false).WithPrerequisite(previous)
+                        .WithCostGemstone(fragmentCurrency);
+                    bossLoot.AddNode(upgrade);
+                    previous = upgrade.Id;
+                }
             }
             catalog.lootCategories.Add(monsterLoot);
             catalog.lootCategories.Add(bossLoot);
@@ -608,6 +814,17 @@ namespace CursorHunter.Progression
             catalog.gemstones.Add(new TraitGemstoneDefinition(
                 "gem.dragon", "드래곤 젬", "보스 v4 이후 드래곤 브레스와 함께 등장합니다.",
                 dragonUnlock.Id, 2, 1, 1000, "stat.gemstone.rate.dragon."));
+
+            catalog.bossRewards.Add(new TraitBossRewardDefinition(
+                1, 100, "gem.topaz", 20, 8f, 1));
+            catalog.bossRewards.Add(new TraitBossRewardDefinition(
+                2, 500, "gem.amethyst", 20, 10f, 2));
+            catalog.bossRewards.Add(new TraitBossRewardDefinition(
+                3, 3000, "gem.sapphire", 15, 12f, 3));
+            catalog.bossRewards.Add(new TraitBossRewardDefinition(
+                4, 20000, "gem.diamond", 8, 15f, 5));
+            catalog.bossRewards.Add(new TraitBossRewardDefinition(
+                5, 100000, "gem.dragon", 5, 20f, 10));
 
             return catalog;
         }
@@ -657,9 +874,27 @@ namespace CursorHunter.Progression
             string value,
             int cost,
             int tier,
-            bool startsUnlocked)
+            bool startsUnlocked,
+            string currencyId)
         {
-            AddNode(category, "stat.radius." + number, title, description, value, cost, tier, startsUnlocked);
+            AddNode(category, "stat.radius." + number, title, description, value, cost, tier, startsUnlocked)
+                .WithCostGemstone(currencyId);
+        }
+
+        private static string LootEffectForIndex(int monsterIndex, int level, string target)
+        {
+            int pattern = monsterIndex % 4;
+            switch (pattern)
+            {
+                case 0:
+                    return target + " 대상 피해 +" + (5 + level * 5) + "%";
+                case 1:
+                    return target + " 생산량 +" + (10 + level * 5) + "%";
+                case 2:
+                    return target + " 수확량 +" + (10 + level * 5) + "%";
+                default:
+                    return target + " 전리품 확률 +" + (2 + level * 2) + "%";
+            }
         }
 
         private static TraitNodeDefinition AddGemstoneChain(

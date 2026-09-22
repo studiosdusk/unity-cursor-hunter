@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using CursorHunter.Contracts;
 using UnityEngine;
 
@@ -41,6 +42,12 @@ namespace CursorHunter.Combat
         private long _maxHealth;
         private long _currentHealth;
         private long _garnetReward;
+        private string _bonusDropCurrencyId;
+        private long _bonusDropAmount;
+        private float _bonusDropChancePercent;
+        private string _lootFragmentCurrencyId;
+        private float _lootFragmentChancePercent;
+        private MonsterHealthBarView _healthBar;
 
         public bool IsInitialized => _isInitialized;
         public bool IsRegistered => _isRegistered;
@@ -51,6 +58,11 @@ namespace CursorHunter.Combat
         public long MaxHealth => _maxHealth;
         public long CurrentHealth => _currentHealth;
         public long GarnetReward => _garnetReward;
+        public string BonusDropCurrencyId => _bonusDropCurrencyId ?? string.Empty;
+        public long BonusDropAmount => _bonusDropAmount;
+        public float BonusDropChancePercent => _bonusDropChancePercent;
+        public string LootFragmentCurrencyId => _lootFragmentCurrencyId ?? string.Empty;
+        public float LootFragmentChancePercent => _lootFragmentChancePercent;
 
         private void Awake()
         {
@@ -94,9 +106,18 @@ namespace CursorHunter.Combat
             _maxHealth = snapshot.MaxHealth;
             _currentHealth = snapshot.MaxHealth;
             _garnetReward = snapshot.GarnetReward;
+            _bonusDropCurrencyId = snapshot.BonusDropCurrencyId;
+            _bonusDropAmount = snapshot.BonusDropAmount;
+            _bonusDropChancePercent = snapshot.BonusDropChancePercent;
+            _lootFragmentCurrencyId = snapshot.LootFragmentCurrencyId;
+            _lootFragmentChancePercent = snapshot.LootFragmentChancePercent;
             _isDead = false;
             _isInitialized = true;
             _isRegistered = true;
+
+            EnsureHealthBar();
+            _healthBar.Initialize(_maxHealth);
+            _healthBar.Configure(CalculateVisualBounds());
 
             if (animator == null)
             {
@@ -116,6 +137,10 @@ namespace CursorHunter.Combat
         {
             _isRegistered = false;
             _destroyScheduled = false;
+            if (_healthBar != null)
+            {
+                _healthBar.Hide();
+            }
         }
 
         public bool BelongsTo(RunId runId)
@@ -137,8 +162,22 @@ namespace CursorHunter.Combat
             }
 
             BoxCollider2D generatedCollider = gameObject.AddComponent<BoxCollider2D>();
-            SpriteRenderer[] renderers =
+            SpriteRenderer[] allRenderers =
                 GetComponentsInChildren<SpriteRenderer>(true);
+            List<SpriteRenderer> visualRenderers =
+                new List<SpriteRenderer>(allRenderers.Length);
+            foreach (SpriteRenderer renderer in allRenderers)
+            {
+                if (renderer == null ||
+                    renderer.GetComponentInParent<MonsterHealthBarView>() != null)
+                {
+                    continue;
+                }
+
+                visualRenderers.Add(renderer);
+            }
+
+            SpriteRenderer[] renderers = visualRenderers.ToArray();
 
             if (renderers.Length == 0)
             {
@@ -183,10 +222,18 @@ namespace CursorHunter.Combat
 
             effectiveDamage = damage < _currentHealth ? damage : _currentHealth;
             _currentHealth -= effectiveDamage;
+            if (_healthBar != null)
+            {
+                _healthBar.SetHealth(_currentHealth);
+            }
 
             if (_currentHealth <= 0)
             {
                 _currentHealth = 0;
+                if (_healthBar != null)
+                {
+                    _healthBar.Hide();
+                }
                 _isDead = true;
                 _isRegistered = false;
                 _deathRunId = _runId;
@@ -233,6 +280,51 @@ namespace CursorHunter.Combat
             {
                 animator = GetComponentInChildren<Animator>(true);
             }
+        }
+
+        private void EnsureHealthBar()
+        {
+            if (_healthBar == null)
+            {
+                _healthBar = GetComponentInChildren<MonsterHealthBarView>(true);
+            }
+
+            if (_healthBar == null)
+            {
+                GameObject healthBarObject = new GameObject("MonsterHealthBar");
+                healthBarObject.transform.SetParent(transform, false);
+                _healthBar = healthBarObject.AddComponent<MonsterHealthBarView>();
+            }
+        }
+
+        private Bounds CalculateVisualBounds()
+        {
+            SpriteRenderer[] renderers =
+                GetComponentsInChildren<SpriteRenderer>(true);
+            bool hasBounds = false;
+            Bounds bounds = default;
+            foreach (SpriteRenderer renderer in renderers)
+            {
+                if (renderer == null ||
+                    renderer.GetComponentInParent<MonsterHealthBarView>() != null)
+                {
+                    continue;
+                }
+
+                if (!hasBounds)
+                {
+                    bounds = renderer.bounds;
+                    hasBounds = true;
+                }
+                else
+                {
+                    bounds.Encapsulate(renderer.bounds);
+                }
+            }
+
+            return hasBounds
+                ? bounds
+                : new Bounds(transform.position, Vector3.one);
         }
 
         private void StartDeathAnimation()

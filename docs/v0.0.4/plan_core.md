@@ -1,3 +1,9 @@
+> **역사적 편집 원본 안내 (2026-09-21)**: 이 파일은 초기 v0.0.4 초안이다. 최신
+> 기획·밸런스·해금 기준은 [`../cursor-hunter-game-design-v0.0.4.md`](../cursor-hunter-game-design-v0.0.4.md)와
+> [`../collaboration/current-state-handoff-v0.0.4.md`](../collaboration/current-state-handoff-v0.0.4.md)를
+> 따른다. 이 파일의 60초 일반 Field, 과거 보스 이름·HP, 자동 속도 분기 등은 현재
+> 구현·PDF 기준이 아니다.
+
 # CURSOR HUNTER · v0.0.4
 ## 세부 기획 · 젬스톤 진행 · 전체 화면 설계
 

@@ -15403,6 +15403,9 @@ MonoBehaviour:
   - 0
   - 0
   unlockedBossTier: 0
+  loadSavedProgress: 1
+  testModeUnlockAll: 1
+  testModeFreeUpgrades: 1
   backRequested:
     m_PersistentCalls:
       m_Calls:
@@ -15514,6 +15517,7 @@ MonoBehaviour:
   connectorWidth: 22
   connectorThickness: 3
   categoryHeaderHeight: 28
+  maxNodesPerLine: 5
   textScale: 1.18
   backgroundColor: {r: 0.015, g: 0.045, b: 0.11, a: 0.98}
   panelColor: {r: 0.02, g: 0.06, b: 0.14, a: 0.84}
@@ -26575,7 +26579,7 @@ MonoBehaviour:
   m_ScaleFactor: 1
   m_ReferenceResolution: {x: 1920, y: 1080}
   m_ScreenMatchMode: 0
-  m_MatchWidthOrHeight: 0
+  m_MatchWidthOrHeight: 0.5
   m_PhysicalUnit: 3
   m_FallbackScreenDPI: 96
   m_DefaultSpriteDPI: 96
@@ -26593,7 +26597,7 @@ Canvas:
   m_RenderMode: 0
   m_Camera: {fileID: 0}
   m_PlaneDistance: 100
-  m_PixelPerfect: 1
+  m_PixelPerfect: 0
   m_ReceivesEvents: 1
   m_OverrideSorting: 0
   m_OverridePixelPerfect: 0
@@ -30825,6 +30829,7 @@ MonoBehaviour:
   runHud: {fileID: 2188000013}
   testPanelToggleController: {fileID: 1836197417}
   uiRootController: {fileID: 2188000111}
+  progressionController: {fileID: 760100001}
   attackPower: 10
   rangeMultiplier: 1
   attackCooldownSeconds: 0.5
@@ -30849,6 +30854,8 @@ MonoBehaviour:
   m_Name: PrototypeRunHud
   m_EditorClassIdentifier: CursorHunter.App::CursorHunter.App.PrototypeRunHud
   canvas: {fileID: 1836197415}
+  progressionController: {fileID: 760100001}
+  uiFont: {fileID: 12800000, guid: 76d037539f56c45a1ba293f2dff49672, type: 3}
 --- !u!1 &2188000100
 GameObject:
   m_ObjectHideFlags: 0
@@ -31563,8 +31570,8 @@ SpriteRenderer:
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
-  m_DrawMode: 0
-  m_Size: {x: 2.02, y: 1.11}
+  m_DrawMode: 2
+  m_Size: {x: 48, y: 28}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
@@ -35061,7 +35068,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 100, y: 100, z: 1}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 6449283120639045059}
