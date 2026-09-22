@@ -13,6 +13,35 @@ namespace CursorHunter.Contracts
             int packSize,
             int aliveLimit,
             long garnetReward)
+            : this(
+                monsterId,
+                prefabKey,
+                maxHealth,
+                spawnIntervalSeconds,
+                packSize,
+                aliveLimit,
+                garnetReward,
+                string.Empty,
+                0L,
+                0f,
+                string.Empty,
+                0f)
+        {
+        }
+
+        public SpawnSnapshot(
+            string monsterId,
+            string prefabKey,
+            long maxHealth,
+            float spawnIntervalSeconds,
+            int packSize,
+            int aliveLimit,
+            long garnetReward,
+            string bonusDropCurrencyId,
+            long bonusDropAmount,
+            float bonusDropChancePercent,
+            string lootFragmentCurrencyId,
+            float lootFragmentChancePercent)
         {
             MonsterId = monsterId ?? string.Empty;
             PrefabKey = prefabKey ?? string.Empty;
@@ -21,6 +50,11 @@ namespace CursorHunter.Contracts
             PackSize = packSize > 0 ? packSize : 1;
             AliveLimit = aliveLimit > 0 ? aliveLimit : 1;
             GarnetReward = garnetReward >= 0 ? garnetReward : 0;
+            BonusDropCurrencyId = bonusDropCurrencyId ?? string.Empty;
+            BonusDropAmount = bonusDropAmount > 0L ? bonusDropAmount : 0L;
+            BonusDropChancePercent = SanitizePercent(bonusDropChancePercent);
+            LootFragmentCurrencyId = lootFragmentCurrencyId ?? string.Empty;
+            LootFragmentChancePercent = SanitizePercent(lootFragmentChancePercent);
         }
 
         public string MonsterId { get; }
@@ -30,6 +64,11 @@ namespace CursorHunter.Contracts
         public int PackSize { get; }
         public int AliveLimit { get; }
         public long GarnetReward { get; }
+        public string BonusDropCurrencyId { get; }
+        public long BonusDropAmount { get; }
+        public float BonusDropChancePercent { get; }
+        public string LootFragmentCurrencyId { get; }
+        public float LootFragmentChancePercent { get; }
 
         public bool IsValid =>
             !string.IsNullOrWhiteSpace(MonsterId) &&
@@ -40,6 +79,22 @@ namespace CursorHunter.Contracts
             !float.IsInfinity(SpawnIntervalSeconds) &&
             PackSize > 0 &&
             AliveLimit > 0 &&
-            GarnetReward >= 0L;
+            GarnetReward >= 0L &&
+            BonusDropAmount >= 0L &&
+            (BonusDropAmount == 0L ||
+             (!string.IsNullOrWhiteSpace(BonusDropCurrencyId) &&
+              BonusDropChancePercent > 0f)) &&
+            (LootFragmentChancePercent <= 0f ||
+             !string.IsNullOrWhiteSpace(LootFragmentCurrencyId));
+
+        private static float SanitizePercent(float value)
+        {
+            if (float.IsNaN(value) || float.IsInfinity(value))
+            {
+                return 0f;
+            }
+
+            return value < 0f ? 0f : value > 100f ? 100f : value;
+        }
     }
 }

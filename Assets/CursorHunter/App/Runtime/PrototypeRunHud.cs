@@ -1,4 +1,7 @@
 using CursorHunter.Contracts;
+using CursorHunter.Combat;
+using CursorHunter.Progression;
+using System.Text;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -12,11 +15,18 @@ namespace CursorHunter.App
     public sealed class PrototypeRunHud : MonoBehaviour
     {
         [SerializeField] private Canvas canvas;
+        [SerializeField] private TraitScreenController progressionController;
+        [SerializeField] private Font uiFont;
 
+        private CombatRunController _combatController;
         private Text _timerText;
+        private Text _criticalNotice;
+        private Button _progressionInfoButton;
         private GameObject _resultPanel;
         private Text _resultText;
         private Font _runtimeFont;
+        private float _criticalNoticeUntil;
+        private bool _criticalSubscribed;
 
         public void Initialize()
         {
@@ -40,9 +50,25 @@ namespace CursorHunter.App
                 return;
             }
 
+            if (progressionController == null)
+            {
+                progressionController = FindFirstObjectByType<TraitScreenController>(
+                    FindObjectsInactive.Include);
+            }
+
+            if (_combatController == null)
+            {
+                _combatController = FindFirstObjectByType<CombatRunController>(
+                    FindObjectsInactive.Include);
+            }
+
+            SubscribeCriticalFeedback();
+
             if (_runtimeFont == null)
             {
-                _runtimeFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+                _runtimeFont = uiFont != null
+                    ? uiFont
+                    : Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             }
 
             if (_timerText == null)
@@ -64,7 +90,42 @@ namespace CursorHunter.App
                 _resultPanel = CreateResultPanel();
             }
 
+            if (_criticalNotice == null)
+            {
+                _criticalNotice = CreateCriticalNotice();
+            }
+
+            if (_progressionInfoButton == null)
+            {
+                _progressionInfoButton = CreateProgressionInfoButton();
+            }
+
             _resultPanel.SetActive(false);
+            if (_criticalNotice != null)
+            {
+                _criticalNoticeUntil = 0f;
+                _criticalNotice.gameObject.SetActive(false);
+            }
+        }
+
+        private void Update()
+        {
+            if (_criticalNotice != null &&
+                _criticalNotice.gameObject.activeSelf &&
+                Time.unscaledTime >= _criticalNoticeUntil)
+            {
+                _criticalNotice.gameObject.SetActive(false);
+            }
+        }
+
+        private void OnDisable()
+        {
+            UnsubscribeCriticalFeedback();
+        }
+
+        private void OnDestroy()
+        {
+            UnsubscribeCriticalFeedback();
         }
 
         public void ShowRunning(float remainingSeconds, int defeatedCount, long garnetEarned)
@@ -84,10 +145,50 @@ namespace CursorHunter.App
                 $"TIME {displaySeconds:00}\nKILLS {defeatedCount}\nGARNET +{garnetEarned}";
             _timerText.gameObject.SetActive(true);
 
+            if (_progressionInfoButton != null)
+            {
+                _progressionInfoButton.gameObject.SetActive(true);
+            }
+
             if (_resultPanel != null)
             {
                 _resultPanel.SetActive(false);
             }
+
+        }
+
+        private void SubscribeCriticalFeedback()
+        {
+            if (_criticalSubscribed || _combatController == null)
+            {
+                return;
+            }
+
+            _combatController.CriticalHit += HandleCriticalHit;
+            _criticalSubscribed = true;
+        }
+
+        private void UnsubscribeCriticalFeedback()
+        {
+            if (!_criticalSubscribed || _combatController == null)
+            {
+                return;
+            }
+
+            _combatController.CriticalHit -= HandleCriticalHit;
+            _criticalSubscribed = false;
+        }
+
+        private void HandleCriticalHit(long effectiveDamage)
+        {
+            if (_criticalNotice == null)
+            {
+                return;
+            }
+
+            _criticalNotice.text = "치명타! ×2\n피해 " + effectiveDamage;
+            _criticalNoticeUntil = Time.unscaledTime + 0.45f;
+            _criticalNotice.gameObject.SetActive(true);
         }
 
         public void ShowResult(RunResult result)
@@ -114,13 +215,72 @@ namespace CursorHunter.App
                 ? "HUNT ABORTED"
                 : "HUNT COMPLETE";
 
+            StringBuilder rewardText = new StringBuilder();
+            int displayedRewardCount = 0;
+            if (result.Rewards != null)
+            {
+                for (int i = 0; i < result.Rewards.Count; i++)
+                {
+                    ResourceRewardSnapshot reward = result.Rewards[i];
+                    if (reward.CurrencyId == "gem.garnet")
+                    {
+                        continue;
+                    }
+
+                    if (displayedRewardCount == 0)
+                    {
+                        rewardText.Append("\nREWARDS ");
+                    }
+
+                    if (displayedRewardCount > 0)
+                    {
+                        rewardText.Append(", ");
+                    }
+
+                    rewardText.Append(reward.CurrencyId)
+                        .Append(" +")
+                        .Append(reward.Amount);
+                    displayedRewardCount++;
+                }
+            }
+
             _resultText.text =
                 resultTitle + "\n\n" +
                 $"TIME {result.ElapsedSeconds:0.0}s\n" +
                 $"KILLS {result.DefeatedCount}\n" +
                 $"GARNET +{result.GarnetEarned}\n" +
-                $"DAMAGE {result.EffectiveDamage}";
+                $"DAMAGE {result.EffectiveDamage}" +
+                rewardText;
             _resultPanel.SetActive(true);
+
+            if (_progressionInfoButton != null)
+            {
+                _progressionInfoButton.gameObject.SetActive(true);
+            }
+        }
+
+        /// <summary>
+        /// Opens the same key/value progression summary used by the trait
+        /// screen. Keeping this entry point in the field HUD lets normal and
+        /// boss combat inspect the applied build without leaving the run.
+        /// </summary>
+        public void ShowProgressionInfo()
+        {
+            if (progressionController == null)
+            {
+                progressionController = FindFirstObjectByType<TraitScreenController>(
+                    FindObjectsInactive.Include);
+            }
+
+            if (progressionController == null)
+            {
+                Debug.LogWarning(
+                    "PrototypeRunHud could not find the progression controller.",
+                    this);
+                return;
+            }
+
+            progressionController.ShowSummaryPopup();
         }
 
         /// <summary>
@@ -138,6 +298,79 @@ namespace CursorHunter.App
             {
                 _resultPanel.SetActive(false);
             }
+
+            if (_progressionInfoButton != null)
+            {
+                _progressionInfoButton.gameObject.SetActive(false);
+            }
+
+            if (_criticalNotice != null)
+            {
+                _criticalNotice.gameObject.SetActive(false);
+            }
+        }
+
+        private Button CreateProgressionInfoButton()
+        {
+            GameObject buttonObject = new GameObject(
+                "ProgressionInfoButton",
+                typeof(RectTransform),
+                typeof(Image),
+                typeof(Button));
+            buttonObject.transform.SetParent(canvas.transform, false);
+
+            RectTransform rect = buttonObject.GetComponent<RectTransform>();
+            rect.anchorMin = new Vector2(1f, 1f);
+            rect.anchorMax = new Vector2(1f, 1f);
+            rect.pivot = new Vector2(1f, 1f);
+            rect.anchoredPosition = new Vector2(-28f, -28f);
+            rect.sizeDelta = new Vector2(190f, 52f);
+
+            Image image = buttonObject.GetComponent<Image>();
+            image.color = new Color(0.10f, 0.32f, 0.48f, 0.96f);
+            image.raycastTarget = true;
+
+            Button button = buttonObject.GetComponent<Button>();
+            button.targetGraphic = image;
+            button.transition = Selectable.Transition.ColorTint;
+            ColorBlock colors = button.colors;
+            colors.normalColor = image.color;
+            colors.highlightedColor = new Color(0.18f, 0.46f, 0.64f, 0.98f);
+            colors.pressedColor = new Color(0.07f, 0.23f, 0.36f, 0.98f);
+            colors.disabledColor = new Color(0.10f, 0.16f, 0.26f, 0.68f);
+            colors.fadeDuration = 0.08f;
+            button.colors = colors;
+            button.onClick.AddListener(ShowProgressionInfo);
+
+            CreateText(
+                "Label",
+                buttonObject.transform,
+                Vector2.zero,
+                Vector2.one,
+                new Vector2(0.5f, 0.5f),
+                Vector2.zero,
+                new Vector2(-16f, -8f),
+                18,
+                TextAnchor.MiddleCenter).text = "전체 정보";
+            return button;
+        }
+
+        private Text CreateCriticalNotice()
+        {
+            Text notice = CreateText(
+                "CriticalHitNotice",
+                canvas.transform,
+                new Vector2(0.5f, 0.5f),
+                new Vector2(0.5f, 0.5f),
+                new Vector2(0.5f, 0.5f),
+                new Vector2(0f, 170f),
+                new Vector2(320f, 86f),
+                28,
+                TextAnchor.MiddleCenter);
+            notice.color = new Color(1f, 0.82f, 0.20f, 1f);
+            notice.fontStyle = FontStyle.Bold;
+            notice.gameObject.SetActive(false);
+            return notice;
         }
 
         private GameObject CreateResultPanel()

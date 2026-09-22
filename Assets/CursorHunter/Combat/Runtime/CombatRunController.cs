@@ -20,9 +20,12 @@ namespace CursorHunter.Combat
         private Collider2D[] _overlapBuffer;
         private readonly HashSet<ICombatTarget> _uniqueTargets =
             new HashSet<ICombatTarget>();
+        private readonly Dictionary<string, long> _resourceRewards =
+            new Dictionary<string, long>(StringComparer.Ordinal);
 
         private RunRequest _runRequest;
         private CombatSnapshot _combatSnapshot;
+        private SeededRandom _random;
         private float _elapsedSeconds;
         private float _nextAttackAvailableAt;
         private int _defeatedCount;
@@ -36,6 +39,12 @@ namespace CursorHunter.Combat
 
         public event Action<RunEndReason> CompletionRequested;
         public event Action<RunEndReason> AbortRequested;
+        /// <summary>
+        /// Raised once for each logical critical hit. The HUD uses this event
+        /// for an explicit visual callout; it carries no Unity object reference
+        /// so listeners cannot mutate combat state or retain target objects.
+        /// </summary>
+        public event Action<long> CriticalHit;
 
         public bool IsRunning =>
             _isRunning && !_isPaused && !_completionRequested && !_abortRequested;
@@ -122,11 +131,13 @@ namespace CursorHunter.Combat
 
             _runRequest = request;
             _combatSnapshot = combatSnapshot;
+            _random = new SeededRandom(request.Seed ^ 0xC17C17UL);
             _elapsedSeconds = 0f;
             _nextAttackAvailableAt = 0f;
             _defeatedCount = 0;
             _garnetEarned = 0;
             _effectiveDamage = 0;
+            _resourceRewards.Clear();
             _isPrepared = true;
             _isRunning = false;
             _isPaused = false;
@@ -313,7 +324,8 @@ namespace CursorHunter.Combat
                 _elapsedSeconds,
                 _defeatedCount,
                 _garnetEarned,
-                _effectiveDamage);
+                _effectiveDamage,
+                CreateResourceRewards());
         }
 
         private void ApplyBundle(ICombatTarget target)
@@ -322,9 +334,16 @@ namespace CursorHunter.Combat
                  hitIndex < _combatSnapshot.HitsPerBundle;
                  hitIndex++)
             {
+                bool wasCritical = RollCriticalHit();
+                if (!TryGetHitDamage(wasCritical, out long hitDamage))
+                {
+                    RequestAbort(RunEndReason.NumericOverflow);
+                    return;
+                }
+
                 bool applied = target.ApplyDamage(
                     _runRequest.RunId,
-                    _combatSnapshot.AttackPower,
+                    hitDamage,
                     out long effectiveDamage,
                     out bool killed);
 
@@ -344,6 +363,11 @@ namespace CursorHunter.Combat
 
                 _effectiveDamage = nextEffectiveDamage;
 
+                if (wasCritical && effectiveDamage > 0L)
+                {
+                    CriticalHit?.Invoke(effectiveDamage);
+                }
+
                 if (!killed)
                 {
                     continue;
@@ -361,8 +385,123 @@ namespace CursorHunter.Combat
 
                 _defeatedCount++;
                 _garnetEarned = nextGarnetEarned;
+                if (!TryRecordReward("gem.garnet", target.GarnetReward))
+                {
+                    RequestAbort(RunEndReason.NumericOverflow);
+                    return;
+                }
+
+                if (!TryRecordBonusDrop(
+                        target.BonusDropCurrencyId,
+                        target.BonusDropAmount,
+                        target.BonusDropChancePercent) ||
+                    !TryRecordBonusDrop(
+                        target.LootFragmentCurrencyId,
+                        1L,
+                        target.LootFragmentChancePercent))
+                {
+                    RequestAbort(RunEndReason.NumericOverflow);
+                    return;
+                }
                 return;
             }
+        }
+
+        private bool RollCriticalHit()
+        {
+            return _combatSnapshot.CriticalChancePercent > 0f &&
+                   _random != null &&
+                   _random.NextFloat(0f, 100f) < _combatSnapshot.CriticalChancePercent;
+        }
+
+        private bool TryGetHitDamage(bool critical, out long damage)
+        {
+            double scaled = _combatSnapshot.AttackPower;
+            if (_runRequest.Mode == RunMode.Boss)
+            {
+                scaled *= _combatSnapshot.BossDamageMultiplier;
+            }
+
+            if (critical)
+            {
+                scaled *= 2d;
+            }
+
+            if (double.IsNaN(scaled) || double.IsInfinity(scaled) || scaled <= 0d)
+            {
+                damage = 0L;
+                return false;
+            }
+
+            if (scaled >= long.MaxValue)
+            {
+                damage = long.MaxValue;
+                return true;
+            }
+
+            damage = Math.Max(1L, (long)Math.Round(scaled));
+            return true;
+        }
+
+        private bool TryRecordBonusDrop(
+            string currencyId,
+            long amount,
+            float chancePercent)
+        {
+            if (amount <= 0L || string.IsNullOrWhiteSpace(currencyId) ||
+                chancePercent <= 0f || _random == null)
+            {
+                return true;
+            }
+
+            if (_random.NextFloat(0f, 100f) >= chancePercent)
+            {
+                return true;
+            }
+
+            return TryRecordReward(
+                currencyId,
+                amount);
+        }
+
+        private bool TryRecordReward(string currencyId, long amount)
+        {
+            if (string.IsNullOrWhiteSpace(currencyId) || amount <= 0L)
+            {
+                return true;
+            }
+
+            if (_resourceRewards.TryGetValue(currencyId, out long current))
+            {
+                if (!TryAddNonNegative(current, amount, out long next))
+                {
+                    return false;
+                }
+
+                _resourceRewards[currencyId] = next;
+                return true;
+            }
+
+            _resourceRewards.Add(currencyId, amount);
+            return true;
+        }
+
+        private ResourceRewardSnapshot[] CreateResourceRewards()
+        {
+            if (_resourceRewards.Count == 0)
+            {
+                return Array.Empty<ResourceRewardSnapshot>();
+            }
+
+            ResourceRewardSnapshot[] rewards =
+                new ResourceRewardSnapshot[_resourceRewards.Count];
+            int index = 0;
+            foreach (KeyValuePair<string, long> pair in _resourceRewards)
+            {
+                rewards[index++] = new ResourceRewardSnapshot(pair.Key, pair.Value);
+            }
+
+            return rewards;
         }
 
         private void RequestAbort(RunEndReason reason)

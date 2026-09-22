@@ -3,7 +3,8 @@
   "rootNamespace": "CursorHunter.Progression",
   "references": [
     "CursorHunter.Contracts",
-    "CursorHunter.Data"
+    "CursorHunter.Data",
+    "UnityEngine.UI"
   ],
   "autoReferenced": false,
   "noEngineReferences": false

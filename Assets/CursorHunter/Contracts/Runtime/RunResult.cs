@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+
 namespace CursorHunter.Contracts
 {
     /// <summary>
@@ -14,6 +17,27 @@ namespace CursorHunter.Contracts
             int defeatedCount,
             long garnetEarned,
             long effectiveDamage)
+            : this(
+                request,
+                endReason,
+                settlementPolicy,
+                elapsedSeconds,
+                defeatedCount,
+                garnetEarned,
+                effectiveDamage,
+                null)
+        {
+        }
+
+        public RunResult(
+            RunRequest request,
+            RunEndReason endReason,
+            RunSettlementPolicy settlementPolicy,
+            float elapsedSeconds,
+            int defeatedCount,
+            long garnetEarned,
+            long effectiveDamage,
+            IReadOnlyList<ResourceRewardSnapshot> rewards)
         {
             if (!request.IsValid)
             {
@@ -54,6 +78,9 @@ namespace CursorHunter.Contracts
             DefeatedCount = defeatedCount;
             GarnetEarned = garnetEarned;
             EffectiveDamage = effectiveDamage;
+            Rewards = rewards == null
+                ? Array.Empty<ResourceRewardSnapshot>()
+                : CopyRewards(rewards);
         }
 
         public RunId RunId { get; }
@@ -66,5 +93,18 @@ namespace CursorHunter.Contracts
         public int DefeatedCount { get; }
         public long GarnetEarned { get; }
         public long EffectiveDamage { get; }
+        public IReadOnlyList<ResourceRewardSnapshot> Rewards { get; }
+
+        private static ResourceRewardSnapshot[] CopyRewards(
+            IReadOnlyList<ResourceRewardSnapshot> source)
+        {
+            ResourceRewardSnapshot[] copy = new ResourceRewardSnapshot[source.Count];
+            for (int i = 0; i < source.Count; i++)
+            {
+                copy[i] = source[i];
+            }
+
+            return copy;
+        }
     }
 }
