@@ -4,6 +4,8 @@ using CursorHunter.Progression;
 using System.Text;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
+using CursorHunter.Data;
 
 namespace CursorHunter.App
 {
@@ -19,12 +21,12 @@ namespace CursorHunter.App
         [SerializeField] private Font uiFont;
 
         private CombatRunController _combatController;
-        private Text _timerText;
-        private Text _criticalNotice;
+        private TextMeshProUGUI _timerText;
+        private TextMeshProUGUI _criticalNotice;
         private Button _progressionInfoButton;
         private GameObject _resultPanel;
-        private Text _resultText;
-        private Font _runtimeFont;
+        private TextMeshProUGUI _resultText;
+        private TMP_FontAsset _runtimeFont;
         private float _criticalNoticeUntil;
         private bool _criticalSubscribed;
 
@@ -66,9 +68,7 @@ namespace CursorHunter.App
 
             if (_runtimeFont == null)
             {
-                _runtimeFont = uiFont != null
-                    ? uiFont
-                    : Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+                _runtimeFont = LocalizedTypography.GetFont(uiFont);
             }
 
             if (_timerText == null)
@@ -351,13 +351,13 @@ namespace CursorHunter.App
                 Vector2.zero,
                 new Vector2(-16f, -8f),
                 18,
-                TextAnchor.MiddleCenter).text = "전체 정보";
+                TextAnchor.MiddleCenter).text = LocalizationCatalog.Get("ui.info.all", "전체 정보");
             return button;
         }
 
-        private Text CreateCriticalNotice()
+        private TextMeshProUGUI CreateCriticalNotice()
         {
-            Text notice = CreateText(
+            TextMeshProUGUI notice = CreateText(
                 "CriticalHitNotice",
                 canvas.transform,
                 new Vector2(0.5f, 0.5f),
@@ -368,7 +368,7 @@ namespace CursorHunter.App
                 28,
                 TextAnchor.MiddleCenter);
             notice.color = new Color(1f, 0.82f, 0.20f, 1f);
-            notice.fontStyle = FontStyle.Bold;
+            notice.fontStyle = FontStyles.Bold;
             notice.gameObject.SetActive(false);
             return notice;
         }
@@ -406,7 +406,7 @@ namespace CursorHunter.App
             return panelObject;
         }
 
-        private Text CreateText(
+        private TextMeshProUGUI CreateText(
             string objectName,
             Transform parent,
             Vector2 anchorMin,
@@ -417,7 +417,7 @@ namespace CursorHunter.App
             int fontSize,
             TextAnchor alignment)
         {
-            GameObject textObject = new GameObject(objectName, typeof(RectTransform), typeof(Text));
+            GameObject textObject = new GameObject(objectName, typeof(RectTransform), typeof(TextMeshProUGUI));
             textObject.transform.SetParent(parent, false);
 
             RectTransform rect = textObject.GetComponent<RectTransform>();
@@ -427,13 +427,13 @@ namespace CursorHunter.App
             rect.anchoredPosition = anchoredPosition;
             rect.sizeDelta = sizeDelta;
 
-            Text text = textObject.GetComponent<Text>();
+            TextMeshProUGUI text = textObject.GetComponent<TextMeshProUGUI>();
             text.font = _runtimeFont;
             text.fontSize = fontSize;
             text.color = Color.white;
-            text.alignment = alignment;
-            text.horizontalOverflow = HorizontalWrapMode.Wrap;
-            text.verticalOverflow = VerticalWrapMode.Overflow;
+            text.alignment = LocalizedTypography.Alignment(alignment);
+
+            text.overflowMode = TextOverflowModes.Overflow;
             text.raycastTarget = false;
             return text;
         }

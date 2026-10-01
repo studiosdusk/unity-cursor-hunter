@@ -23,8 +23,6 @@ namespace CursorHunter.Contracts
                 garnetReward,
                 string.Empty,
                 0L,
-                0f,
-                string.Empty,
                 0f)
         {
         }
@@ -40,8 +38,7 @@ namespace CursorHunter.Contracts
             string bonusDropCurrencyId,
             long bonusDropAmount,
             float bonusDropChancePercent,
-            string lootFragmentCurrencyId,
-            float lootFragmentChancePercent)
+            MonsterBehaviorType behaviorType = MonsterBehaviorType.None)
         {
             MonsterId = monsterId ?? string.Empty;
             PrefabKey = prefabKey ?? string.Empty;
@@ -53,8 +50,7 @@ namespace CursorHunter.Contracts
             BonusDropCurrencyId = bonusDropCurrencyId ?? string.Empty;
             BonusDropAmount = bonusDropAmount > 0L ? bonusDropAmount : 0L;
             BonusDropChancePercent = SanitizePercent(bonusDropChancePercent);
-            LootFragmentCurrencyId = lootFragmentCurrencyId ?? string.Empty;
-            LootFragmentChancePercent = SanitizePercent(lootFragmentChancePercent);
+            BehaviorType = behaviorType;
         }
 
         public string MonsterId { get; }
@@ -67,8 +63,7 @@ namespace CursorHunter.Contracts
         public string BonusDropCurrencyId { get; }
         public long BonusDropAmount { get; }
         public float BonusDropChancePercent { get; }
-        public string LootFragmentCurrencyId { get; }
-        public float LootFragmentChancePercent { get; }
+        public MonsterBehaviorType BehaviorType { get; }
 
         public bool IsValid =>
             !string.IsNullOrWhiteSpace(MonsterId) &&
@@ -84,8 +79,7 @@ namespace CursorHunter.Contracts
             (BonusDropAmount == 0L ||
              (!string.IsNullOrWhiteSpace(BonusDropCurrencyId) &&
               BonusDropChancePercent > 0f)) &&
-            (LootFragmentChancePercent <= 0f ||
-             !string.IsNullOrWhiteSpace(LootFragmentCurrencyId));
+            BehaviorType == MonsterBehaviorType.None;
 
         private static float SanitizePercent(float value)
         {

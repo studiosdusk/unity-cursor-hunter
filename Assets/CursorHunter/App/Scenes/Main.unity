@@ -15404,8 +15404,8 @@ MonoBehaviour:
   - 0
   unlockedBossTier: 0
   loadSavedProgress: 1
-  testModeUnlockAll: 1
-  testModeFreeUpgrades: 1
+  testModeUnlockAll: 0
+  testModeFreeUpgrades: 0
   backRequested:
     m_PersistentCalls:
       m_Calls:
@@ -15444,7 +15444,6 @@ MonoBehaviour:
   bossIcon: {fileID: 21300000, guid: 5a893ec9b0d664a2ca122e47efbf71f8, type: 3}
   skillIcon: {fileID: 21300000, guid: 13756a141b0b84db08f0c80f06bb5d45, type: 3}
   monsterIcon: {fileID: 21300000, guid: 6b3d80100f82a44bb8968db0ec8c98e3, type: 3}
-  lootIcon: {fileID: 21300000, guid: fb085fb8221d544d1ae2034012b82eff, type: 3}
   petIcon: {fileID: 21300000, guid: 7668aef2c90f84f47b9b9c0650bce440, type: 3}
   gemstoneIcons:
   - {fileID: 21300000, guid: 6f40e5d50d0934e45aac02171a570c88, type: 3}
@@ -15461,58 +15460,22 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 671e13c2a7e8a4415adcc42790d2be55, type: 3}
   - {fileID: 21300000, guid: 3c616b140805d4445b62ce619eb60e08, type: 3}
   monsterIcons:
-  - {fileID: 21300000, guid: fb2ef077ca7cff145b786fe98437bf42, type: 3}
-  - {fileID: 21300000, guid: 863055b0be7845c4c9fe5ed6128d71ca, type: 3}
-  - {fileID: 21300000, guid: c3bf373112f13f84781320a242b98ea4, type: 3}
-  - {fileID: 21300000, guid: 03c0e6605a068dd44be0e8acfacc7e78, type: 3}
-  - {fileID: 21300000, guid: 2f2ad165d952a0d47b3b0fb791b29c57, type: 3}
-  - {fileID: 21300000, guid: 59c0f7c9aada0f0469067a6ba9637d19, type: 3}
+  - {fileID: 21300000, guid: 81366e1f0ef95fb4ca021ff158c9bbd7, type: 3}
   - {fileID: 21300000, guid: 46fa022d7d7f6e741ab54b2481f73084, type: 3}
-  - {fileID: 21300000, guid: f7ff0a60f8b2284478d474ca5e6d8c41, type: 3}
-  - {fileID: 21300000, guid: 256f074a3954fb14088c5d6d5db033d7, type: 3}
-  - {fileID: 21300000, guid: ac72a2601552a614280a43d67400cd69, type: 3}
-  - {fileID: 21300000, guid: c8edaa838a2f690478e6a94b72bf8edd, type: 3}
-  - {fileID: 21300000, guid: 1cac9fc649c8de94c82b7fa50fc3b544, type: 3}
-  - {fileID: 21300000, guid: 2aeed26c834255b4db3c84af7e965b90, type: 3}
-  - {fileID: 21300000, guid: 6c63eea5ac3d47f41a4ada2581ce61f3, type: 3}
-  - {fileID: 21300000, guid: 11423ae1222abae4fa91a1617389ebdb, type: 3}
-  - {fileID: 21300000, guid: 01df721c56acdc94e959b5034a953d65, type: 3}
-  - {fileID: 21300000, guid: 0760c09a431bc7243a8a3895187b7ea1, type: 3}
-  - {fileID: 21300000, guid: f68ddf6470272634f9b883530c1265e7, type: 3}
-  - {fileID: 21300000, guid: bc7cf6f4144c3d548bc1973be6c1a79f, type: 3}
-  - {fileID: 21300000, guid: 1580648748480d84bae2ecac3a388aae, type: 3}
-  lootIcons:
-  - {fileID: 21300000, guid: fb085fb8221d544d1ae2034012b82eff, type: 3}
-  - {fileID: 21300000, guid: 9b2bc0b2a45c14f1cad7b6f4a7dbcaca, type: 3}
-  - {fileID: 21300000, guid: 58f1b94daaf3b4b06b098c42546e19d4, type: 3}
-  - {fileID: 21300000, guid: fb085fb8221d544d1ae2034012b82eff, type: 3}
-  - {fileID: 21300000, guid: 9b2bc0b2a45c14f1cad7b6f4a7dbcaca, type: 3}
-  - {fileID: 21300000, guid: 58f1b94daaf3b4b06b098c42546e19d4, type: 3}
-  - {fileID: 21300000, guid: fb085fb8221d544d1ae2034012b82eff, type: 3}
-  - {fileID: 21300000, guid: 9b2bc0b2a45c14f1cad7b6f4a7dbcaca, type: 3}
-  - {fileID: 21300000, guid: 58f1b94daaf3b4b06b098c42546e19d4, type: 3}
-  - {fileID: 21300000, guid: fb085fb8221d544d1ae2034012b82eff, type: 3}
-  - {fileID: 21300000, guid: 9b2bc0b2a45c14f1cad7b6f4a7dbcaca, type: 3}
-  - {fileID: 21300000, guid: 58f1b94daaf3b4b06b098c42546e19d4, type: 3}
-  - {fileID: 21300000, guid: fb085fb8221d544d1ae2034012b82eff, type: 3}
-  - {fileID: 21300000, guid: 9b2bc0b2a45c14f1cad7b6f4a7dbcaca, type: 3}
-  - {fileID: 21300000, guid: 58f1b94daaf3b4b06b098c42546e19d4, type: 3}
-  - {fileID: 21300000, guid: fb085fb8221d544d1ae2034012b82eff, type: 3}
-  - {fileID: 21300000, guid: 9b2bc0b2a45c14f1cad7b6f4a7dbcaca, type: 3}
-  - {fileID: 21300000, guid: 58f1b94daaf3b4b06b098c42546e19d4, type: 3}
-  - {fileID: 21300000, guid: fb085fb8221d544d1ae2034012b82eff, type: 3}
-  - {fileID: 21300000, guid: 9b2bc0b2a45c14f1cad7b6f4a7dbcaca, type: 3}
-  - {fileID: 21300000, guid: 58f1b94daaf3b4b06b098c42546e19d4, type: 3}
-  - {fileID: 21300000, guid: fb085fb8221d544d1ae2034012b82eff, type: 3}
-  - {fileID: 21300000, guid: 9b2bc0b2a45c14f1cad7b6f4a7dbcaca, type: 3}
-  - {fileID: 21300000, guid: 58f1b94daaf3b4b06b098c42546e19d4, type: 3}
-  - {fileID: 21300000, guid: fb085fb8221d544d1ae2034012b82eff, type: 3}
+  - {fileID: 21300000, guid: 9731bdc77bdd099499cd873c1fb95277, type: 3}
+  - {fileID: 21300000, guid: 05f79d22c8aa05941922a68b388ed9cd, type: 3}
+  - {fileID: 21300000, guid: 7e2cacd5ae582be4b8a01ec0292d35b7, type: 3}
+  - {fileID: 21300000, guid: d8527bbb0c6fabd4fa5a81df3a311acc, type: 3}
+  - {fileID: 21300000, guid: 27c7f323c4c073a419bda2ab90cc40ea, type: 3}
+  - {fileID: 21300000, guid: 58ecdefa4b1d13344a5d2d437e661188, type: 3}
+  - {fileID: 21300000, guid: 170b99d1e420c684a975dab96970ac8c, type: 3}
+  - {fileID: 21300000, guid: e8a4f1b855cceee4cb4ec88d35ca7636, type: 3}
   petIcons:
   - {fileID: 21300000, guid: 7668aef2c90f84f47b9b9c0650bce440, type: 3}
   uiFont: {fileID: 12800000, guid: 76d037539f56c45a1ba293f2dff49672, type: 3}
   initialTab: 0
   transitionSeconds: 0.22
-  nodeCellSize: {x: 84, y: 84}
+  nodeCellSize: {x: 106, y: 106}
   nodeGridSpacing: {x: 8, y: 8}
   connectorWidth: 22
   connectorThickness: 3
@@ -30833,8 +30796,7 @@ MonoBehaviour:
   attackPower: 10
   rangeMultiplier: 1
   attackCooldownSeconds: 0.5
-  hitsPerBundle: 1
-  monsterDefinition: {fileID: 11400000, guid: 69e0bb2cc4d74a7585347d52af6c3238, type: 2}
+  monsterDefinition: {fileID: 11400000, guid: 7afc7c4d89551704be3531d7298dc4c6, type: 2}
   aliveLimit: 80
   durationSeconds: 15
   schemaVersion: 1

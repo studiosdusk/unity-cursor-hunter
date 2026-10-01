@@ -45,8 +45,7 @@ namespace CursorHunter.Combat
         private string _bonusDropCurrencyId;
         private long _bonusDropAmount;
         private float _bonusDropChancePercent;
-        private string _lootFragmentCurrencyId;
-        private float _lootFragmentChancePercent;
+        private MonsterBehaviorType _behaviorType;
         private MonsterHealthBarView _healthBar;
 
         public bool IsInitialized => _isInitialized;
@@ -61,8 +60,7 @@ namespace CursorHunter.Combat
         public string BonusDropCurrencyId => _bonusDropCurrencyId ?? string.Empty;
         public long BonusDropAmount => _bonusDropAmount;
         public float BonusDropChancePercent => _bonusDropChancePercent;
-        public string LootFragmentCurrencyId => _lootFragmentCurrencyId ?? string.Empty;
-        public float LootFragmentChancePercent => _lootFragmentChancePercent;
+        public MonsterBehaviorType BehaviorType => _behaviorType;
 
         private void Awake()
         {
@@ -109,8 +107,7 @@ namespace CursorHunter.Combat
             _bonusDropCurrencyId = snapshot.BonusDropCurrencyId;
             _bonusDropAmount = snapshot.BonusDropAmount;
             _bonusDropChancePercent = snapshot.BonusDropChancePercent;
-            _lootFragmentCurrencyId = snapshot.LootFragmentCurrencyId;
-            _lootFragmentChancePercent = snapshot.LootFragmentChancePercent;
+            _behaviorType = snapshot.BehaviorType;
             _isDead = false;
             _isInitialized = true;
             _isRegistered = true;

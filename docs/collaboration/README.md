@@ -1,12 +1,26 @@
 # 두 사람 개발 인수인계
-기준 기획: [v0.0.4 최신 확정 반영본](../cursor-hunter-game-design-v0.0.4.md). Unity **6000.3.13f1**.
+
+현재 게임 버전: **0.0.5**. 전투 JSON의 schemaVersion=3과 저장 version=3은 게임 버전과 별개다.
+
+전투 정보의 구조·초기값은 [영어 JSON](../../Assets/CursorHunter/Data/Resources/GameData/game-data.en.json)이다.
+강화 비용·선행 조건·명칭은 [성장 화면 설정](../../Assets/CursorHunter/Data/Resources/GameData/progression-config.en.json)으로 분리했다.
+플레이어의 구매·지갑은 별도 PlayerPrefs에 저장하며, 전투 시작 때 둘을 합쳐 최종 정보를 만든다.
+[키 바로 뒤 한국어 번역 JSON](game-data.ko.keys.json)은 원본의 모든 값을 유지하고 영문키(한국어)만 병기한다.
+[상세 한국어 해설 JSON](game-data.ko.reference.json)은 원본값·단위·설명·ID의 뜻까지 제공한다.
+두 한국어 파일은 사람이 읽는 참고서이며 게임에서 읽지 않는다.
+
+전투 개발자: [실제 조회 API와 값 대응표](contracts.md#전투에서-값을-읽는-실제-api).
+유물 제거·몬스터 특성 자리·전투 데이터 분리 및 미완료 범위: [최신 인수인계](current-state-handoff-v0.0.4.md).
+
+현재 구현 기준: [전투 정보 v3 인수인계](current-state-handoff-v0.0.4.md). 이전 [v2 개편 기록](game-information-refactor-2026-10-01.md)은 과거 자료다. Unity **6000.3.13f1**.
 macOS 설치 확인: `python3 tools/open_unity.py --check`. 확인 후 같은 명령에서 `--check`를 빼면 지정 버전으로 프로젝트를 연다. 커스텀 경로는 `--editor /설치경로/Unity.app`으로 지정한다. Windows에서는 Hub에서 같은 버전을 선택한다.
-런타임 씬 전략: **One Scene + 개발용 Sandbox 씬**. `App/Scenes/Bootstrap.unity`가 실제 런타임 단일 진입점이며, `CombatSandbox.unity`와 `ProgressionSandbox.unity`는 통합 런타임에 로드하지 않는 모듈별 개발·검증 씬이다.
+런타임 씬 전략: **One Scene + 개발용 Sandbox 씬**. `App/Scenes/Main.unity`가 실제 런타임 단일 진입점이며, `CombatSandbox.unity`와 `ProgressionSandbox.unity`는 통합 런타임에 로드하지 않는 모듈별 개발·검증 씬이다.
 이 폴더는 개발 협업 문서다. 요약 PDF는 이 폴더의 핵심본을 기준으로 재생성하고,
 상세 기획 원문은 `docs/cursor-hunter-game-design-v0.0.4.md`에서 관리한다.
 
 현재 상태를 처음 읽는 사람은 [현재 상태·인수인계 핵심본](current-state-handoff-v0.0.4.md)을 먼저 읽는다.
-이 문서는 PDF와 동일한 짧은 기준본이며, 세부 화면·수치·에셋은 아래 상세 문서에서 확인한다.
+최신 안내를 문서 앞에 두고 옛 v0.0.4 원장은 뒤에 보존한다. 기존 PDF·캡처는 과거 자료이며
+이번에 재생성하지 않았다. 세부 화면·수치·에셋은 아래 상세 문서에서 확인한다.
 
 ## 누적 기록 읽기
 
@@ -17,7 +31,7 @@ macOS 설치 확인: `python3 tools/open_unity.py --check`. 확인 후 같은 �
 
 ## 승기에게 전달할 순서
 1. 이 문서와 [소유권·디렉토리](architecture.md)를 읽는다.
-2. [연결 계약](contracts.md)을 두 사람이 확인한다. 핵심 런타임 계약은 현재 구현되어 있고, 보스·스킬·펫 확장은 문서의 다음 작업 순서를 따른다.
+2. [연결 계약](contracts.md)을 두 사람이 확인한다. 핵심 런타임 계약은 현재 구현되어 있고, 보스·스킬 고유 동작은 후속 작업이다. 펫은 별도 영역 없이 커서 오라 스킬로 통합했다.
 3. [병합 절차](workflow.md)에 따라 각자 작업 브랜치와 별도 체크아웃을 사용한다.
 4. [에셋 매핑](assets.md)에서 자신의 원본 에셋을 찾아 전용 프리팹을 만든다.
 5. 특성 화면의 노드 수·아이콘·폰트 연결은 [특성 UI 에셋 매핑](trait-ui-assets.md)을 기준으로 확인한다.
@@ -30,35 +44,41 @@ macOS 설치 확인: `python3 tools/open_unity.py --check`. 확인 후 같은 �
 | 준영(초기 통합 담당) | App, 공통 계약 | Main·화면 전환·정산 UI·설정·엔딩, 연결 및 패키지/빌드 설정 |
 공통 변경은 양쪽 검토 대상으로 둔다. 담당은 작업 소유권이며 서로의 코드 열람을 제한하지 않는다.
 
-## 첫 번째 합류 목표
-- 준영: 고정 테스트 프로필 → 공격 수치 스냅샷, 시작 시 가넷만 보이는 특성 UI, Stat 젬 해금·발견 확률 갱신, 구매 전후 수치, 같은 정산 ID 두 번 지급 방지.
-- 승기: 임시 원형 적으로 15초에서 시작해 시간 Stat으로 최대 60초까지 늘어나는 일반 필드,
-  겹침 클릭 피해, 처치 집계, 만료 시 살아 있는 적 무보상 제거. 보스 필드는 60초 고정.
-- 함께: Main → 일반 필드 → 정산 저장 → 특성 구매 → 다음 런에서 새 공격력 적용.
-- 다음 합류: v1 보스 파훼·실패 무보상·최초 처치 해금 → 중첩 몬스터 → 자동/스킬 → 후반 물량 → 엔딩.
-모든 화면을 먼저 한 Scene에 조립하지 않는다. 첫 루프를 합친 후 모듈별 확장한다.
+## 현재 합류 기준
 
-## 현재 준비된 것과 개발할 것
-폴더·asmdef·소유권 지침·문서·에셋 목록과 특성 화면 런타임 프로토타입을 준비했다. 특성 구매·노드 초기화는 PlayerPrefs JSON 프로토타입 저장소에 기록되고, 런 시작 시 Progression이 Contracts의 읽기 전용 전투 스냅샷을 App에 제공한다. 전투 서비스의 다중 종 SpawnPlan, 정식 파일/클라우드 저장 서비스, ScriptableObject 인스턴스는 아직 구현하지 않았다.
-asmdef는 모듈 경계를 위한 설정이며 빈 폴더만 있을 때 Unity에서 빈 어셈블리 알림이 나올 수 있다.
-각자 Codex에서는 `$cursor-hunter-progression`, `$cursor-hunter-combat`을 사용할 수 있다.
-스킬은 `.agents/skills`에 등록했고 공유용 사본은 `docs/collaboration/skills`에 있다. 저장소를 받은 승기도 같은 스킬을 사용할 수 있다. 목록에 안 보이면 프로젝트를 다시 열거나 해당 SKILL.md를 직접 읽도록 요청한다. 수정 시 두 위치를 동기화하며 검증 스크립트가 불일치를 잡는다.
+- 플레이어 진행도를 합산한 GameInformation v3의 stats / rules / gemstones / monsters / skills를 전투 시작 입력으로 사용한다.
+- 일반 필드 15~30초, 자동 반경 공격·쿨타임, 일반 몬스터 10종 누적 생성.
+- 펫은 스킬의 커서 오라로 통합. 유물 관련 데이터·UI·드롭은 제거했으며 새 일반 유물 시스템은 추후 설계한다.
+- 몬스터 behaviorType은 enum 자리만 준비했다. 현재 None=0만 지원하며 행동은 미구현이다.
+- 젬 별도 해금 트리는 제거. 일반 몬스터가 해당 젬을 공급한다.
+- 노드 화면은 실제 선행 조건의 연결선, 드래그, 확대/축소를 지원한다.
+- 전체 정보와 전투는 같은 최종 정보를 사용한다. JSON 복사 버튼으로 전투 시작값을 확인한다. 원본 파일 기본값과 구분한다.
+- 런타임 UI는 TMP, 공용 한글 동적 SDF 폰트, 기본 ko/en UI 키를 사용한다.
+- 실제 런타임·빌드 진입점은 Main.unity다.
 
-## 젬스톤 현재 규칙
+## 데이터와 검증
 
-- 시작에는 가넷만 보인다. 토파즈·자수정·사파이어·다이아몬드·드래곤 젬은 보스 처치 보상이
-  아니라 `Stat → 젬 수집` 행의 해금 노드를 구매했을 때 보유 목록과 랜덤 드롭 표에 추가한다.
-- 해금 이후에는 `기본 가중치 + 발견 강화 횟수 × 강화당 가중치`를 사용하고, 해금된
-  종류의 가중치 합으로 100%를 정규화한다. 현재 값과 노드 ID는
-  [trait-ui-assets.md](trait-ui-assets.md)의 젬스톤 표에 고정한다.
-- UI 프로토타입은 `TraitScreenController.IsGemstoneUnlocked`,
-  `GetGemstoneDropChance`, `TryRollGemstoneDrop`으로 이 규칙을 보여준다. 전투 모듈은
-  UI를 참조하지 않고, 합류 시 Progression이 제공하는 읽기 전용 드롭 스냅샷을 사용한다.
+- 전투 초기 정보: Assets/CursorHunter/Data/Resources/GameData/game-data.en.json (최종 GameInformation과 동일 구조)
+- 성장 화면 설정: Assets/CursorHunter/Data/Resources/GameData/progression-config.en.json (Combat에는 전달하지 않음)
+- 한국어 키 번역: [game-data.ko.keys.json](game-data.ko.keys.json) (키만 번역 병기, 구조/값 유지)
+- 한국어 상세 해설: [game-data.ko.reference.json](game-data.ko.reference.json) (비실행 문서)
+- 원본 수정 후 python3 tools/build_korean_game_data_reference.py --patch 출력을 apply_patch로 적용해 두 참고본을 갱신한다.
+- python3 tools/test_korean_game_data_reference.py
+- python3 tools/test_combat_information_v3.py
+- 문서 스키마: [game-data-document.schema.json](game-data-document.schema.json)
+- 이전 balance-v2.json과 GameBalanceDefinition은 과거 호환 참고이며 런타임에서 사용하지 않는다.
+- python3 tools/validate_bilingual_game_data.py
+- 구조 예제: [game-information-v3.example.json](game-information-v3.example.json)
+- 스키마: [game-information-v3.schema.json](game-information-v3.schema.json)
+- 코드 경계: [contracts.md](contracts.md)
+- python3 tools/validate_collaboration.py
+- python3 tools/validate_game_information.py
 
-개발 중에는 `TraitScreenController.testModeUnlockAll`과
-`testModeFreeUpgrades`를 켜서 잠금·재화 조건을 확인하지 않고 모든 노드를 눌러볼 수
-있다. 이 예외는 테스트 전용이며 출시 프로필에서는 꺼야 한다. 상세 패널의 `노드 초기화`는
-구매한 노드를 되돌리고, 연결된 다음 노드가 있으면 역순 초기화를 안내한다. 하단의
-`전체 초기화`는 테스트 구매분을 한 번에 환불한다. `전체 정보` 버튼은 저장된 구매·강화와
-현재 전투 스냅샷을 Key/Value 팝업으로 보여주며, 특성 화면뿐 아니라 일반·보스 Field HUD에서도
-같은 오버레이를 연다. 일반 몬스터는 생성·피격 직후 월드 체력바를 표시한다.
+이번 변경은 게임을 실행하지 않고 수정·정적 검증만 진행했다.
+Unity 컴파일/Import/시각 검증은 수행하지 않았다.
+저장은 PlayerPrefs 프로토타입이며 영속 정산 journal과 파일/클라우드 저장은 후속 작업이다.
+보스 패턴·패링, 스킬별 투사체/빙결/고유 연출도 완성된 것으로 간주하지 않는다.
+
+테스트 플래그 testModeUnlockAll과 testModeFreeUpgrades는 Main에서 껐다.
+기존 저장은 정상 첫 v3 저장 직전에 .before-v3 키에 원문 백업한다. 유물은 현재 진행도에서 제외하고 일반 강화·젬 잔액은 유지한다.
+이전 캡처·v0.0.4 숫자 표·역할 스킬의 옛 규칙은 위 개편 기준과 충돌할 때 과거 기록으로 취급한다.

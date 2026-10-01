@@ -6,14 +6,14 @@ namespace CursorHunter.App
     /// Applies the project's high-fidelity baseline before the first scene is
     /// loaded. Unity can retain the editor's last low quality selection during
     /// Play Mode, so the prototype otherwise appears softer than a build.
-    /// Resolution remains user-controlled; this class only removes the
-    /// accidental low-quality render settings.
+    /// Standalone players use native borderless resolution; Editor sizing is
+    /// left unchanged. Full-resolution rendering also avoids low-quality presets.
     /// </summary>
     public static class DisplayQualityBootstrap
     {
         private const int PreferredQualityIndex = 5;
         private const int PreferredAntiAliasing = 4;
-        private const int PreferredFrameRate = 60;
+        private const int PreferredFrameRate = 120;
         private const int PreferredMipmapLimit = 0;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
@@ -39,7 +39,7 @@ namespace CursorHunter.App
                 // Keep full-resolution texture mips at run time. A quality
                 // preset can be changed by the editor or by a previous scene.
                 QualitySettings.globalTextureMipmapLimit = PreferredMipmapLimit;
-                QualitySettings.anisotropicFiltering = AnisotropicFiltering.Enable;
+                QualitySettings.anisotropicFiltering = AnisotropicFiltering.ForceEnable;
                 QualitySettings.resolutionScalingFixedDPIFactor = 1f;
                 // A previous Editor session or a platform quality preset can
                 // leave dynamic-resolution buffers below the native back
@@ -47,6 +47,13 @@ namespace CursorHunter.App
                 // window is not rendered into a smaller intermediate target.
                 ScalableBufferManager.ResizeBuffers(1f, 1f);
                 QualitySettings.vSyncCount = 1;
+                // Do not reduce a Retina/high-DPI window to the 1080p layout reference.
+                // The standalone player starts at native display resolution.
+                if (!Application.isEditor && !Application.isMobilePlatform)
+                {
+                    Resolution native = Screen.currentResolution;
+                    Screen.SetResolution(native.width, native.height, FullScreenMode.FullScreenWindow);
+                }
                 Application.targetFrameRate = PreferredFrameRate;
             }
             catch (System.Exception exception)

@@ -50,7 +50,7 @@ namespace CursorHunter.Contracts
             Mode = mode;
             BossId = bossId ?? string.Empty;
             Seed = seed;
-            DurationSeconds = durationSeconds;
+            DurationSeconds = mode == RunMode.NormalField ? System.Math.Min(30f, durationSeconds) : durationSeconds;
         }
 
         /// <summary>
@@ -82,6 +82,7 @@ namespace CursorHunter.Contracts
             SchemaVersion > 0 &&
             BalanceVersion > 0 &&
             DurationSeconds > 0f &&
+            (Mode != RunMode.NormalField || DurationSeconds <= 30f) &&
             !float.IsNaN(DurationSeconds) &&
             !float.IsInfinity(DurationSeconds) &&
             (Mode != RunMode.Boss || !string.IsNullOrEmpty(BossId));

@@ -14,19 +14,19 @@ namespace CursorHunter.Progression
     public static class TraitProgressionStore
     {
         private const string SaveKey = "cursor_hunter.progression.v1";
-        private const int CurrentVersion = 1;
+        private const int CurrentVersion = 3;
+        private const string LegacyBackupKey = SaveKey + ".before-v3";
 
         [Serializable]
         public sealed class SaveData
         {
-            public int version = CurrentVersion;
+            // Missing version must stay invalid when deserializing an incomplete save.
+            public int version;
             public long garnetBalance;
             public List<long> gemstoneBalances = new List<long>();
             public List<string> purchasedNodeIds = new List<string>();
             public List<int> spentCosts = new List<int>();
             public List<string> spentCurrencyIds = new List<string>();
-            public List<string> fragmentCurrencyIds = new List<string>();
-            public List<long> fragmentBalances = new List<long>();
         }
 
         public static bool TryLoad(out SaveData data)
@@ -46,7 +46,7 @@ namespace CursorHunter.Progression
             try
             {
                 SaveData loaded = JsonUtility.FromJson<SaveData>(json);
-                if (loaded == null || loaded.version <= 0)
+                if (loaded == null || loaded.version <= 0 || loaded.version > CurrentVersion)
                 {
                     return false;
                 }
@@ -58,10 +58,6 @@ namespace CursorHunter.Progression
                 loaded.spentCosts = loaded.spentCosts ?? new List<int>();
                 loaded.spentCurrencyIds = loaded.spentCurrencyIds ??
                     new List<string>();
-                loaded.fragmentCurrencyIds = loaded.fragmentCurrencyIds ??
-                    new List<string>();
-                loaded.fragmentBalances = loaded.fragmentBalances ??
-                    new List<long>();
                 data = loaded;
                 return true;
             }
@@ -72,30 +68,12 @@ namespace CursorHunter.Progression
                 return false;
             }
         }
-
         public static bool Save(
             long garnetBalance,
             IReadOnlyList<long> gemstoneBalances,
             IEnumerable<string> purchasedNodeIds,
             IReadOnlyDictionary<string, int> spentCosts,
             IReadOnlyDictionary<string, string> spentCurrencyIds)
-        {
-            return Save(
-                garnetBalance,
-                gemstoneBalances,
-                purchasedNodeIds,
-                spentCosts,
-                spentCurrencyIds,
-                null);
-        }
-
-        public static bool Save(
-            long garnetBalance,
-            IReadOnlyList<long> gemstoneBalances,
-            IEnumerable<string> purchasedNodeIds,
-            IReadOnlyDictionary<string, int> spentCosts,
-            IReadOnlyDictionary<string, string> spentCurrencyIds,
-            IReadOnlyDictionary<string, long> fragmentBalances)
         {
             SaveData data = new SaveData
             {
@@ -104,25 +82,8 @@ namespace CursorHunter.Progression
                 gemstoneBalances = CopyBalances(gemstoneBalances),
                 purchasedNodeIds = CopyIds(purchasedNodeIds),
                 spentCosts = new List<int>(),
-                spentCurrencyIds = new List<string>(),
-                fragmentCurrencyIds = new List<string>(),
-                fragmentBalances = new List<long>()
+                spentCurrencyIds = new List<string>()
             };
-
-            if (fragmentBalances != null)
-            {
-                foreach (KeyValuePair<string, long> pair in fragmentBalances)
-                {
-                    if (string.IsNullOrEmpty(pair.Key))
-                    {
-                        continue;
-                    }
-
-                    data.fragmentCurrencyIds.Add(pair.Key);
-                    data.fragmentBalances.Add(Math.Max(0L, pair.Value));
-                }
-            }
-
             // Keep both lists aligned with purchasedNodeIds so the DTO can be
             // restored without serializing dictionaries or relying on their
             // enumeration order.
@@ -148,6 +109,17 @@ namespace CursorHunter.Progression
                     return false;
                 }
 
+                // Preserve the exact old save (including retired data) before the first v3 write.
+                // Unknown/corrupt versions must not be silently overwritten.
+                if (PlayerPrefs.HasKey(SaveKey))
+                {
+                    if (!TryLoad(out SaveData previous)) return false;
+                    if (previous.version < CurrentVersion && !PlayerPrefs.HasKey(LegacyBackupKey))
+                    {
+                        PlayerPrefs.SetString(LegacyBackupKey, PlayerPrefs.GetString(SaveKey));
+                        PlayerPrefs.Save();
+                    }
+                }
                 PlayerPrefs.SetString(SaveKey, json);
                 PlayerPrefs.Save();
                 return true;

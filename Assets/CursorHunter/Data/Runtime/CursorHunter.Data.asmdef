@@ -2,7 +2,8 @@
   "name": "CursorHunter.Data",
   "rootNamespace": "CursorHunter.Data",
   "references": [
-    "CursorHunter.Contracts"
+    "CursorHunter.Contracts",
+    "Unity.TextMeshPro"
   ],
   "autoReferenced": false,
   "noEngineReferences": false

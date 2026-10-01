@@ -5,7 +5,7 @@
 정본은 [cursor-hunter-game-design-v0.0.4.md](../cursor-hunter-game-design-v0.0.4.md),
 현재 특성 화면의 실제 매핑은 [trait-ui-assets.md](trait-ui-assets.md)다.
 
-## 현재 기준
+## 이전 기준 (2026-09-21)
 
 | 항목 | 값 |
 |---|---|
@@ -388,3 +388,64 @@
   우선 사용하도록 `TraitScreenController`를 보정했다. 따라서 가넷 단일 재화 시절의
   저장 데이터도 기록된 결제 재화를 기준으로 복구하고, 새 다중 젬 구매의 환불도 같은
   지갑으로 돌아간다.
+
+### 2026-10-01 · JSON v2 / 노드 UI / 자동 반경 개편
+
+- 요청 10개 항목의 구현 기준: [game-information-refactor-2026-10-01.md](game-information-refactor-2026-10-01.md).
+- Contracts: GameInformation DTO, 유효성 검사, SourceJson 보관, 최종 스킬/몬스터 생산량 전달.
+- Progression: 동일 JSON 전체 정보/복사, 노드 그래프, 젬 해금 제거, 펫→오라, 전리품→유물, v1 저장 이관.
+- App/Combat: JSON 역직렬화 후 런 생성, 자동 단일 타격/쿨타임, 다중 종 스폰, 최대 30초, 팝업/포커스 일시정지.
+- Data/Assets: 밸런스 JSON, 10종 몬스터 정의/아이콘, TMP/동적 한글 SDF/기본 로케일 키.
+- UI: 게임 소유 Text 생성 코드 전부 TMP로 전환. Main 씬은 기존 TMP 유지 + 공용 폰트 적용.
+- 문서: 현재 계약·아키텍처 정리. 구 v0.0.4 문서는 상단에 과거 기록임을 표시.
+- 검증: 협업 검사, JSON/재화 경로/에셋 검사, C# 구문, diff 공백 검사.
+- 실행 금지 준수: Unity, 게임, Play Mode, Unity Editor 테스트는 실행하지 않음.
+
+## 2026-10-01 후속: 한국어/영어 전체 JSON 실파일
+
+- game-data.ko.json / game-data.en.json 및 active-data.json 추가. 스탯/전투 규칙/젬 6/몬스터 10/스킬 7/유물 15/노드 186/보스 보상 5단계를 포함.
+- GameDataDocument → GameInformationBuilder → 공통 스냅샷으로 런타임 연결. 비용·선행 조건·효과의 코드 하드코딩 제거.
+- overlay/fileOnly 저장 정책 분리. fileOnly는 기존 저장을 읽거나 덮어쓰지 않음.
+- 한국어/영어 기계 값 동등성, 필수 필드, 스키마, 노드 참조·순서, 프리팹 키 정적 검사 추가.
+- 메모리 복사/배율 반올림/초기 지갑/상한/잘못된 참조 검토. Unity 실행 및 실제 컴파일/Editor 테스트는 하지 않음.
+
+## 2026-10-01 정정: 한국어 JSON은 실행 파일이 아닌 설명서
+
+- 사용자 의도를 정정: 영어 game-data.en.json만 실제 전투·성장 입력으로 고정.
+- 한국어는 docs/collaboration/game-data.ko.reference.json에 영문 키·한글명·원본값·설명을 담는 참고 문서로 생성.
+- Resources의 한국어 실행 복제본과 active-data 선택 파일 및 meta 제거. 기존 한국어 설명은 해설/재생성 도구로 보존.
+- 데이터 언어에 따른 UI 언어 강제 변경 제거. 기존 저장 정책과 전투 수치는 유지.
+- 전체 원본 복원·해설 일치·영어 단일 로더·스키마/GUID/구문 검사. 게임/Unity는 실행하지 않음.
+
+## 2026-10-01 후속: 키 직후 한국어 표기·전투 조회 안내·9항목 재확인
+
+- 요청: 모든 키를 영문키(한국어)로 병기하고, 친구가 전투 중 실제 값을 읽을 위치를 안내하며 기존 9개 요구의 반영 상태를 확인.
+- game-data.ko.keys.json 추가: 영어 원본 전체를 같은 구조·자료형·값으로 유지하고 키만 번역 병기. 기존 상세 해설도 보존. 두 파일 모두 docs 전용이며 런타임에서 읽지 않음.
+- build_korean_game_data_reference.py가 두 참고본을 생성/검증하도록 확장. 재생성 시 변경 없는 파일은 패치에서 제외. 누락 키는 오류 처리.
+- test_korean_game_data_reference.py 추가: 중첩·배열·미등록 키·Int64·bool·소수·null·빈 값·전체 원본 왕복 검증, 4개 테스트.
+- current-state-handoff-v0.0.4.md 앞에 최신 안내 추가. 오래된 v0.0.4 원장은 보존하고 과거 기준임을 명시. README/contracts/refactor 문서 연결 갱신.
+- 저장 파일과 밸런스 설정을 구분하고, 전투 시작 스냅샷/라이브 전투 상태/현재 지갑의 차이와 공개·비공개 API를 안내.
+- 9항목은 코드 반영/부분 반영/시각 검증 전을 구분. 전 문구 Localization, 스킬 고유 동작, 젬 공급원 결제 검사 등의 잔여 범위를 명시.
+- 기존 버그 확인: 전체 초기화의 유물 조각 덮어쓰기, 저장 실패 복구 부족, 비활성 공급 젬 잔액 구매 제한. 이번에는 기록만 하며 런타임 로직 변경 없음.
+- 검증: 한국어 두 참고본 동등성, Python 단위 테스트 4개, 영문 스키마·참조, 협업 경계, C# 구문 및 diff 공백 검사. Unity 컴파일·Editor 테스트·게임 실행·PlayerPrefs 변경 없음.
+- 안전 검토: 런타임 메모리/스레드/성능/참조 동작을 변경하지 않음. 참고본은 숫자·불리언 형식을 보존하고 실행 리소스에 추가하지 않음. 적용 범위는 문서·Python 도구뿐.
+
+## 2026-10-01 후속: 전투 정보 v3 / 유물 제거 / 몬스터 특성 자리
+
+- 요청: 유물 전체 제외, 몬스터 행동 enum용 필드만 추가, 전투에 필요한 현재 정보만 간결하게 유지.
+- game-data.en.json을 GameInformation v3 루트 구조로 축소. progression/entities는 별도 progression-config.en.json으로 분리하고 fieldHelp/implementation은 실행 문서에서 제거.
+- 유물 배열·조각·강화·효과·탭·드롭·보스 조각 보상 제거. 새 일반 유물 시스템은 미정으로 남김.
+- behaviorType=0과 MonsterBehaviorType.None 추가. DTO → 런 스냅샷 → 생성 스냅샷 → 몬스터 개체까지 전달만 구현. 이동/은신/무적 동작은 없음.
+- 저장 version=3. 정상 첫 저장 전에 기존 v1/v2 원문을 cursor_hunter.progression.v1.before-v3에 1회 백업. 유물 데이터는 플레이어 상태로 복원하지 않으며 젬으로 임의 환전하지 않음.
+- 일반 강화·지갑 유지. 기존 유물 보정이 제거되므로 최종 공격력·보스 배율·연동 스킬 피해가 낮아질 수 있음.
+- 한국어 두 참고본 재생성, v3 예제/스키마와 성장 설정 스키마 추가. 이전 v2 자료는 과거 기록임을 명시.
+- Python 12개 테스트와 JSON/노드/재화/에셋 연결/C# 구문/diff 검증. 저장 백업·분리 로더·enum 계약 Unity Editor 테스트는 추가만 하며 실행하지 않음.
+- 기존 저장 실패 시 메모리 롤백/영속 RunId journal의 한계는 유지. 이번 백업은 원자 저장을 의미하지 않음.
+- 실행 금지 준수: 게임/Unity/Editor 테스트를 실행하지 않았고 사용자 PlayerPrefs도 읽거나 변경하지 않음.
+
+## 2026-10-01 · 게임 버전 0.0.5
+
+- Unity PlayerSettings.bundleVersion을 0.0.5로 지정하고 협업 README·최신 인수인계에 게임 버전을 명시했다.
+- 노드형 성장 UI, 자동 반경/쿨타임, 몬스터 10종, TMP·화질 설정, 전투 정보/성장 설정 분리, 유물 제거와 behaviorType 예약 필드의 누적 변경을 함께 커밋한다.
+- 전투 JSON schemaVersion=3, 저장 version=3은 그대로 유지한다. 문서 파일명의 v0.0.4는 기존 링크와 역사적 본문 보존을 위해 변경하지 않는다.
+- 검증: Python 테스트 12개, 한영 참고본·스키마·참조·협업 경계·C# 구문·diff 검사. Unity/게임/Editor 테스트는 실행하지 않는다.

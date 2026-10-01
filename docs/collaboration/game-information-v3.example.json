@@ -1,0 +1,223 @@
+{
+  "schemaVersion": 3,
+  "balanceVersion": 3,
+  "stats": {
+    "attackPower": 1,
+    "attackRadiusWorldUnits": 1.7253809,
+    "attackCooldownSeconds": 0.8,
+    "criticalChancePercent": 0,
+    "bossDamageMultiplier": 1,
+    "normalFieldDurationSeconds": 15
+  },
+  "gemstones": [
+    {
+      "id": "gem.garnet",
+      "enabled": true,
+      "amount": 125
+    },
+    {
+      "id": "gem.topaz",
+      "enabled": false,
+      "amount": 0
+    },
+    {
+      "id": "gem.amethyst",
+      "enabled": false,
+      "amount": 0
+    },
+    {
+      "id": "gem.sapphire",
+      "enabled": false,
+      "amount": 0
+    },
+    {
+      "id": "gem.diamond",
+      "enabled": false,
+      "amount": 0
+    },
+    {
+      "id": "gem.dragon",
+      "enabled": false,
+      "amount": 0
+    }
+  ],
+  "monsters": [
+    {
+      "id": "monster.01",
+      "enabled": true,
+      "productionCount": 1,
+      "hitPoints": 8,
+      "spawnIntervalSeconds": 1.2,
+      "garnetReward": 3,
+      "gemstoneId": "gem.garnet",
+      "gemstoneAmount": 0,
+      "gemstoneChancePercent": 0,
+      "behaviorType": 0
+    },
+    {
+      "id": "monster.02",
+      "enabled": false,
+      "productionCount": 1,
+      "hitPoints": 20,
+      "spawnIntervalSeconds": 1.35,
+      "garnetReward": 4,
+      "gemstoneId": "gem.topaz",
+      "gemstoneAmount": 1,
+      "gemstoneChancePercent": 100,
+      "behaviorType": 0
+    },
+    {
+      "id": "monster.03",
+      "enabled": false,
+      "productionCount": 1,
+      "hitPoints": 35,
+      "spawnIntervalSeconds": 1.5,
+      "garnetReward": 5,
+      "gemstoneId": "gem.topaz",
+      "gemstoneAmount": 1,
+      "gemstoneChancePercent": 100,
+      "behaviorType": 0
+    },
+    {
+      "id": "monster.04",
+      "enabled": false,
+      "productionCount": 1,
+      "hitPoints": 55,
+      "spawnIntervalSeconds": 1.65,
+      "garnetReward": 6,
+      "gemstoneId": "gem.amethyst",
+      "gemstoneAmount": 1,
+      "gemstoneChancePercent": 100,
+      "behaviorType": 0
+    },
+    {
+      "id": "monster.05",
+      "enabled": false,
+      "productionCount": 1,
+      "hitPoints": 80,
+      "spawnIntervalSeconds": 1.8,
+      "garnetReward": 7,
+      "gemstoneId": "gem.amethyst",
+      "gemstoneAmount": 1,
+      "gemstoneChancePercent": 100,
+      "behaviorType": 0
+    },
+    {
+      "id": "monster.06",
+      "enabled": false,
+      "productionCount": 1,
+      "hitPoints": 120,
+      "spawnIntervalSeconds": 1.95,
+      "garnetReward": 8,
+      "gemstoneId": "gem.sapphire",
+      "gemstoneAmount": 1,
+      "gemstoneChancePercent": 100,
+      "behaviorType": 0
+    },
+    {
+      "id": "monster.07",
+      "enabled": false,
+      "productionCount": 1,
+      "hitPoints": 170,
+      "spawnIntervalSeconds": 2.1,
+      "garnetReward": 9,
+      "gemstoneId": "gem.sapphire",
+      "gemstoneAmount": 1,
+      "gemstoneChancePercent": 100,
+      "behaviorType": 0
+    },
+    {
+      "id": "monster.08",
+      "enabled": false,
+      "productionCount": 1,
+      "hitPoints": 230,
+      "spawnIntervalSeconds": 2.25,
+      "garnetReward": 10,
+      "gemstoneId": "gem.diamond",
+      "gemstoneAmount": 1,
+      "gemstoneChancePercent": 100,
+      "behaviorType": 0
+    },
+    {
+      "id": "monster.09",
+      "enabled": false,
+      "productionCount": 1,
+      "hitPoints": 320,
+      "spawnIntervalSeconds": 2.4,
+      "garnetReward": 11,
+      "gemstoneId": "gem.dragon",
+      "gemstoneAmount": 1,
+      "gemstoneChancePercent": 100,
+      "behaviorType": 0
+    },
+    {
+      "id": "monster.10",
+      "enabled": false,
+      "productionCount": 1,
+      "hitPoints": 450,
+      "spawnIntervalSeconds": 2.55,
+      "garnetReward": 12,
+      "gemstoneId": "gem.dragon",
+      "gemstoneAmount": 1,
+      "gemstoneChancePercent": 100,
+      "behaviorType": 0
+    }
+  ],
+  "skills": [
+    {
+      "id": "skill.fireball",
+      "enabled": true,
+      "damage": 4,
+      "radiusWorldUnits": 1.5,
+      "cooldownSeconds": 4.5
+    },
+    {
+      "id": "skill.lightning",
+      "enabled": false,
+      "damage": 8,
+      "radiusWorldUnits": 2,
+      "cooldownSeconds": 6
+    },
+    {
+      "id": "skill.freeze",
+      "enabled": false,
+      "damage": 12,
+      "radiusWorldUnits": 1.875,
+      "cooldownSeconds": 7
+    },
+    {
+      "id": "skill.hurricane",
+      "enabled": false,
+      "damage": 36,
+      "radiusWorldUnits": 2.8125,
+      "cooldownSeconds": 9
+    },
+    {
+      "id": "skill.meteor",
+      "enabled": false,
+      "damage": 40,
+      "radiusWorldUnits": 3.4375,
+      "cooldownSeconds": 12
+    },
+    {
+      "id": "skill.dragonBreath",
+      "enabled": false,
+      "damage": 250,
+      "radiusWorldUnits": 5.625,
+      "cooldownSeconds": 18
+    },
+    {
+      "id": "skill.cursorAura",
+      "enabled": false,
+      "damage": 1,
+      "radiusWorldUnits": 2,
+      "cooldownSeconds": 1.5
+    }
+  ],
+  "rules": {
+    "criticalDamageMultiplier": 2,
+    "globalAliveLimit": 80,
+    "perMonsterAliveLimit": 80,
+    "bossFieldDurationSeconds": 60
+  }
+}

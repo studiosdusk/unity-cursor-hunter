@@ -25,6 +25,8 @@ namespace CursorHunter.Combat
 
         private RunRequest _runRequest;
         private CombatSnapshot _combatSnapshot;
+        private SkillCombatSnapshot[] _skills = Array.Empty<SkillCombatSnapshot>();
+        private float[] _nextSkillAt = Array.Empty<float>();
         private SeededRandom _random;
         private float _elapsedSeconds;
         private float _nextAttackAvailableAt;
@@ -63,7 +65,7 @@ namespace CursorHunter.Combat
 
         private void Awake()
         {
-            overlapBufferCapacity = Mathf.Max(32, overlapBufferCapacity);
+            overlapBufferCapacity = Mathf.Max(512, overlapBufferCapacity);
             _overlapBuffer = new Collider2D[overlapBufferCapacity];
         }
 
@@ -131,6 +133,7 @@ namespace CursorHunter.Combat
 
             _runRequest = request;
             _combatSnapshot = combatSnapshot;
+            ConfigureSkills(null);
             _random = new SeededRandom(request.Seed ^ 0xC17C17UL);
             _elapsedSeconds = 0f;
             _nextAttackAvailableAt = 0f;
@@ -269,6 +272,48 @@ namespace CursorHunter.Combat
             return true;
         }
 
+        public void ConfigureSkills(IReadOnlyList<SkillCombatSnapshot> skills)
+        {
+            int count = skills == null ? 0 : skills.Count;
+            _skills = new SkillCombatSnapshot[count];
+            _nextSkillAt = new float[count];
+            for (int i = 0; i < count; i++)
+            {
+                if (!skills[i].IsValid) throw new ArgumentException("Invalid skill snapshot.");
+                _skills[i] = skills[i];
+                _nextSkillAt[i] = _elapsedSeconds + skills[i].CooldownSeconds;
+            }
+        }
+
+        public void TryUseSkills(Vector2 center)
+        {
+            if (!IsRunning || _elapsedSeconds >= _runRequest.DurationSeconds) return;
+            var filter = new ContactFilter2D { useLayerMask = true, useTriggers = true };
+            filter.SetLayerMask(enemyLayers);
+            bool transformsSynced = false;
+            for (int i = 0; i < _skills.Length && IsRunning; i++)
+            {
+                var skill = _skills[i];
+                if (!skill.Unlocked || _elapsedSeconds < _nextSkillAt[i]) continue;
+                if (!transformsSynced) { Physics2D.SyncTransforms(); transformsSynced = true; }
+                _nextSkillAt[i] = _elapsedSeconds + skill.CooldownSeconds;
+                int count = Physics2D.OverlapCircle(center, skill.RadiusWorldUnits, filter, _overlapBuffer);
+                _uniqueTargets.Clear();
+                for (int j = 0; j < count; j++)
+                {
+                    var collider = _overlapBuffer[j];
+                    var target = collider == null ? null : collider.GetComponentInParent<WalkerStumpTarget>();
+                    if (target != null && target.RunId == _runRequest.RunId && target.IsActive && target.IsRegistered)
+                        _uniqueTargets.Add(target);
+                }
+                foreach (var target in _uniqueTargets)
+                {
+                    if (!IsRunning) break;
+                    ApplyBundle(target, skill.Damage);
+                }
+            }
+        }
+
         public bool TryCompleteRun(
             RunEndReason endReason,
             RunSettlementPolicy settlementPolicy,
@@ -328,83 +373,74 @@ namespace CursorHunter.Combat
                 CreateResourceRewards());
         }
 
-        private void ApplyBundle(ICombatTarget target)
+        private void ApplyBundle(ICombatTarget target, long skillDamage = 0L)
         {
-            for (int hitIndex = 0;
-                 hitIndex < _combatSnapshot.HitsPerBundle;
-                 hitIndex++)
+            bool wasCritical = RollCriticalHit();
+            if (!TryGetHitDamage(wasCritical, out long hitDamage, skillDamage))
             {
-                bool wasCritical = RollCriticalHit();
-                if (!TryGetHitDamage(wasCritical, out long hitDamage))
-                {
-                    RequestAbort(RunEndReason.NumericOverflow);
-                    return;
-                }
-
-                bool applied = target.ApplyDamage(
-                    _runRequest.RunId,
-                    hitDamage,
-                    out long effectiveDamage,
-                    out bool killed);
-
-                if (!applied)
-                {
-                    return;
-                }
-
-                if (!TryAddNonNegative(
-                        _effectiveDamage,
-                        effectiveDamage,
-                        out long nextEffectiveDamage))
-                {
-                    RequestAbort(RunEndReason.NumericOverflow);
-                    return;
-                }
-
-                _effectiveDamage = nextEffectiveDamage;
-
-                if (wasCritical && effectiveDamage > 0L)
-                {
-                    CriticalHit?.Invoke(effectiveDamage);
-                }
-
-                if (!killed)
-                {
-                    continue;
-                }
-
-                if (_defeatedCount == int.MaxValue ||
-                    !TryAddNonNegative(
-                        _garnetEarned,
-                        target.GarnetReward,
-                        out long nextGarnetEarned))
-                {
-                    RequestAbort(RunEndReason.NumericOverflow);
-                    return;
-                }
-
-                _defeatedCount++;
-                _garnetEarned = nextGarnetEarned;
-                if (!TryRecordReward("gem.garnet", target.GarnetReward))
-                {
-                    RequestAbort(RunEndReason.NumericOverflow);
-                    return;
-                }
-
-                if (!TryRecordBonusDrop(
-                        target.BonusDropCurrencyId,
-                        target.BonusDropAmount,
-                        target.BonusDropChancePercent) ||
-                    !TryRecordBonusDrop(
-                        target.LootFragmentCurrencyId,
-                        1L,
-                        target.LootFragmentChancePercent))
-                {
-                    RequestAbort(RunEndReason.NumericOverflow);
-                    return;
-                }
+                RequestAbort(RunEndReason.NumericOverflow);
                 return;
             }
+
+            bool applied = target.ApplyDamage(
+                _runRequest.RunId,
+                hitDamage,
+                out long effectiveDamage,
+                out bool killed);
+
+            if (!applied)
+            {
+                return;
+            }
+
+            if (!TryAddNonNegative(
+                    _effectiveDamage,
+                    effectiveDamage,
+                    out long nextEffectiveDamage))
+            {
+                RequestAbort(RunEndReason.NumericOverflow);
+                return;
+            }
+
+            _effectiveDamage = nextEffectiveDamage;
+
+            if (wasCritical && effectiveDamage > 0L)
+            {
+                CriticalHit?.Invoke(effectiveDamage);
+            }
+
+            if (!killed)
+            {
+                return;
+            }
+
+            if (_defeatedCount == int.MaxValue ||
+                !TryAddNonNegative(
+                    _garnetEarned,
+                    target.GarnetReward,
+                    out long nextGarnetEarned))
+            {
+                RequestAbort(RunEndReason.NumericOverflow);
+                return;
+            }
+
+            _defeatedCount++;
+            _garnetEarned = nextGarnetEarned;
+            if (!TryRecordReward("gem.garnet", target.GarnetReward))
+            {
+                RequestAbort(RunEndReason.NumericOverflow);
+                return;
+            }
+
+            if (!TryRecordBonusDrop(
+                    target.BonusDropCurrencyId,
+                    target.BonusDropAmount,
+                    target.BonusDropChancePercent))
+            {
+                RequestAbort(RunEndReason.NumericOverflow);
+                return;
+            }
+            return;
         }
 
         private bool RollCriticalHit()
@@ -414,9 +450,9 @@ namespace CursorHunter.Combat
                    _random.NextFloat(0f, 100f) < _combatSnapshot.CriticalChancePercent;
         }
 
-        private bool TryGetHitDamage(bool critical, out long damage)
+        private bool TryGetHitDamage(bool critical, out long damage, long skillDamage = 0L)
         {
-            double scaled = _combatSnapshot.AttackPower;
+            double scaled = skillDamage > 0 ? skillDamage : _combatSnapshot.AttackPower;
             if (_runRequest.Mode == RunMode.Boss)
             {
                 scaled *= _combatSnapshot.BossDamageMultiplier;
@@ -424,7 +460,7 @@ namespace CursorHunter.Combat
 
             if (critical)
             {
-                scaled *= 2d;
+                scaled *= _combatSnapshot.CriticalDamageMultiplier;
             }
 
             if (double.IsNaN(scaled) || double.IsInfinity(scaled) || scaled <= 0d)
@@ -439,7 +475,7 @@ namespace CursorHunter.Combat
                 return true;
             }
 
-            damage = Math.Max(1L, (long)Math.Round(scaled));
+            damage = Math.Max(1L, (long)Math.Round(scaled, MidpointRounding.AwayFromZero));
             return true;
         }
 
