@@ -35,12 +35,15 @@ namespace CursorHunter.Contracts
             float criticalChancePercent,
             float bossDamageMultiplier,
             bool autoAttackEnabled,
-            float autoAttackIntervalSeconds)
+            float autoAttackIntervalSeconds,
+            float criticalDamageMultiplier = 2f)
         {
+            CriticalDamageMultiplier = SanitizeMultiplier(criticalDamageMultiplier);
             AttackPower = attackPower > 0 ? attackPower : 1;
             RangeMultiplier = rangeMultiplier > 0f ? rangeMultiplier : 1f;
             AttackCooldownSeconds = attackCooldownSeconds >= 0f ? attackCooldownSeconds : 0f;
-            HitsPerBundle = hitsPerBundle > 0 ? hitsPerBundle : 1;
+            // Kept as a compatibility property for old callers; multi-hit no longer exists.
+            HitsPerBundle = 1;
             CriticalChancePercent = SanitizePercent(criticalChancePercent);
             BossDamageMultiplier = SanitizeMultiplier(bossDamageMultiplier);
             AutoAttackEnabled = autoAttackEnabled;
@@ -51,6 +54,7 @@ namespace CursorHunter.Contracts
                 : 0f;
         }
 
+        public float CriticalDamageMultiplier { get; }
         public long AttackPower { get; }
         public float RangeMultiplier { get; }
         public float AttackCooldownSeconds { get; }

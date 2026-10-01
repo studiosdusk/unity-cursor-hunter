@@ -1,0 +1,260 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Cursor Hunter resolved combat information v3",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "balanceVersion",
+    "stats",
+    "gemstones",
+    "monsters",
+    "skills",
+    "rules"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 3
+    },
+    "balanceVersion": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "stats": {
+      "$ref": "#/$defs/stats"
+    },
+    "gemstones": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "items": {
+        "$ref": "#/$defs/gemstone"
+      }
+    },
+    "monsters": {
+      "type": "array",
+      "minItems": 10,
+      "maxItems": 10,
+      "items": {
+        "$ref": "#/$defs/monster"
+      }
+    },
+    "skills": {
+      "type": "array",
+      "minItems": 7,
+      "maxItems": 7,
+      "items": {
+        "$ref": "#/$defs/skill"
+      }
+    },
+    "rules": {
+      "$ref": "#/$defs/rules"
+    }
+  },
+  "$defs": {
+    "stats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "attackPower",
+        "attackRadiusWorldUnits",
+        "attackCooldownSeconds",
+        "criticalChancePercent",
+        "bossDamageMultiplier",
+        "normalFieldDurationSeconds"
+      ],
+      "properties": {
+        "attackPower": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9223372036854775807
+        },
+        "attackRadiusWorldUnits": {
+          "type": "number",
+          "minimum": 5e-324
+        },
+        "attackCooldownSeconds": {
+          "type": "number",
+          "minimum": 0.05
+        },
+        "criticalChancePercent": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "bossDamageMultiplier": {
+          "type": "number",
+          "minimum": 5e-324
+        },
+        "normalFieldDurationSeconds": {
+          "type": "number",
+          "minimum": 15,
+          "maximum": 30
+        }
+      }
+    },
+    "gemstone": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "enabled",
+        "amount"
+      ],
+      "properties": {
+        "id": {
+          "enum": [
+            "gem.garnet",
+            "gem.topaz",
+            "gem.amethyst",
+            "gem.sapphire",
+            "gem.diamond",
+            "gem.dragon"
+          ]
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "amount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        }
+      }
+    },
+    "monster": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "enabled",
+        "productionCount",
+        "hitPoints",
+        "spawnIntervalSeconds",
+        "garnetReward",
+        "gemstoneId",
+        "gemstoneAmount",
+        "gemstoneChancePercent",
+        "behaviorType"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^monster\\.(0[1-9]|10)$"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "productionCount": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 16
+        },
+        "hitPoints": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9223372036854775807
+        },
+        "spawnIntervalSeconds": {
+          "type": "number",
+          "minimum": 0.1
+        },
+        "garnetReward": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "gemstoneId": {
+          "$ref": "#/$defs/gemstone/properties/id"
+        },
+        "gemstoneAmount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "gemstoneChancePercent": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "behaviorType": {
+          "type": "integer",
+          "enum": [
+            0
+          ],
+          "description": "MonsterBehaviorType.None = 0. Reserved enum field; behavior is not implemented."
+        }
+      }
+    },
+    "skill": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "enabled",
+        "damage",
+        "radiusWorldUnits",
+        "cooldownSeconds"
+      ],
+      "properties": {
+        "id": {
+          "enum": [
+            "skill.fireball",
+            "skill.lightning",
+            "skill.freeze",
+            "skill.hurricane",
+            "skill.meteor",
+            "skill.dragonBreath",
+            "skill.cursorAura"
+          ]
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "damage": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9223372036854775807
+        },
+        "radiusWorldUnits": {
+          "type": "number",
+          "minimum": 5e-324
+        },
+        "cooldownSeconds": {
+          "type": "number",
+          "minimum": 0.05
+        }
+      }
+    },
+    "rules": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "criticalDamageMultiplier",
+        "globalAliveLimit",
+        "perMonsterAliveLimit",
+        "bossFieldDurationSeconds"
+      ],
+      "properties": {
+        "criticalDamageMultiplier": {
+          "type": "number",
+          "minimum": 1
+        },
+        "globalAliveLimit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 80
+        },
+        "perMonsterAliveLimit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 80
+        },
+        "bossFieldDurationSeconds": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      }
+    }
+  }
+}

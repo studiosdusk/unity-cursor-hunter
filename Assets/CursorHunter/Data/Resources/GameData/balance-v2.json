@@ -1,0 +1,267 @@
+{
+  "schemaVersion": 2,
+  "balanceVersion": 2,
+  "attackPower": [
+    1,
+    3,
+    6,
+    10,
+    16,
+    24,
+    35,
+    50,
+    70,
+    100
+  ],
+  "radiusMultiplier": [
+    1,
+    1.1,
+    1.2,
+    1.3,
+    1.4,
+    1.5,
+    2,
+    3,
+    5,
+    8,
+    20
+  ],
+  "attackCooldownSeconds": [
+    0.8,
+    0.65,
+    0.5,
+    0.35,
+    0.2
+  ],
+  "criticalChancePercent": [
+    0,
+    5,
+    10,
+    20,
+    30,
+    50,
+    75,
+    100
+  ],
+  "bossDamageMultiplier": [
+    1,
+    1.25,
+    1.6,
+    2.1,
+    2.8,
+    4
+  ],
+  "normalFieldDurationSeconds": [
+    15,
+    20,
+    25,
+    30
+  ],
+  "monsters": [
+    {
+      "id": "monster.01",
+      "displayName": "가넷 그루터기",
+      "concept": "숲에 남은 가넷 결정의 수호자",
+      "prefabKey": "Walker/Walker_Stump",
+      "hitPoints": 8,
+      "spawnIntervalSeconds": 1.2,
+      "gemstoneId": "gem.garnet",
+      "gemstoneAmount": 0,
+      "gemstoneChancePercent": 0,
+      "garnetReward": 3,
+      "unlockCost": 0,
+      "unlockCurrencyId": "gem.garnet"
+    },
+    {
+      "id": "monster.02",
+      "displayName": "토파즈 동굴박쥐",
+      "concept": "토파즈를 품은 동굴의 수집가",
+      "prefabKey": "Bat/Bat_Cave",
+      "hitPoints": 20,
+      "spawnIntervalSeconds": 1.35,
+      "gemstoneId": "gem.topaz",
+      "gemstoneAmount": 1,
+      "gemstoneChancePercent": 100,
+      "garnetReward": 4,
+      "unlockCost": 45,
+      "unlockCurrencyId": "gem.garnet"
+    },
+    {
+      "id": "monster.03",
+      "displayName": "호박 버섯",
+      "concept": "토파즈가 자라난 황금 포자 생물",
+      "prefabKey": "Walker/Walker_Mushroom",
+      "hitPoints": 35,
+      "spawnIntervalSeconds": 1.5,
+      "gemstoneId": "gem.topaz",
+      "gemstoneAmount": 1,
+      "gemstoneChancePercent": 100,
+      "garnetReward": 5,
+      "unlockCost": 60,
+      "unlockCurrencyId": "gem.topaz"
+    },
+    {
+      "id": "monster.04",
+      "displayName": "자수정 가면유령",
+      "concept": "자수정 가면에 깃든 잔령",
+      "prefabKey": "Ghost/Ghost_Mask",
+      "hitPoints": 55,
+      "spawnIntervalSeconds": 1.65,
+      "gemstoneId": "gem.amethyst",
+      "gemstoneAmount": 1,
+      "gemstoneChancePercent": 100,
+      "garnetReward": 6,
+      "unlockCost": 75,
+      "unlockCurrencyId": "gem.topaz"
+    },
+    {
+      "id": "monster.05",
+      "displayName": "수정 전갈",
+      "concept": "자수정 껍질을 두른 광맥 파수꾼",
+      "prefabKey": "Scorpion/Scorpion_Purple",
+      "hitPoints": 80,
+      "spawnIntervalSeconds": 1.8,
+      "gemstoneId": "gem.amethyst",
+      "gemstoneAmount": 1,
+      "gemstoneChancePercent": 100,
+      "garnetReward": 7,
+      "unlockCost": 90,
+      "unlockCurrencyId": "gem.amethyst"
+    },
+    {
+      "id": "monster.06",
+      "displayName": "사파이어 눈요정",
+      "concept": "사파이어 서리의 정령",
+      "prefabKey": "Fairy/Fairy_Snow",
+      "hitPoints": 120,
+      "spawnIntervalSeconds": 1.95,
+      "gemstoneId": "gem.sapphire",
+      "gemstoneAmount": 1,
+      "gemstoneChancePercent": 100,
+      "garnetReward": 8,
+      "unlockCost": 105,
+      "unlockCurrencyId": "gem.amethyst"
+    },
+    {
+      "id": "monster.07",
+      "displayName": "빙결 거미",
+      "concept": "사파이어 고치를 지키는 거미",
+      "prefabKey": "Spider/Spider_Frozen",
+      "hitPoints": 170,
+      "spawnIntervalSeconds": 2.1,
+      "gemstoneId": "gem.sapphire",
+      "gemstoneAmount": 1,
+      "gemstoneChancePercent": 100,
+      "garnetReward": 9,
+      "unlockCost": 120,
+      "unlockCurrencyId": "gem.sapphire"
+    },
+    {
+      "id": "monster.08",
+      "displayName": "다이아 철골렘",
+      "concept": "다이아 핵을 품은 철의 거인",
+      "prefabKey": "Golem/Golem_Iron",
+      "hitPoints": 230,
+      "spawnIntervalSeconds": 2.25,
+      "gemstoneId": "gem.diamond",
+      "gemstoneAmount": 1,
+      "gemstoneChancePercent": 100,
+      "garnetReward": 10,
+      "unlockCost": 135,
+      "unlockCurrencyId": "gem.sapphire"
+    },
+    {
+      "id": "monster.09",
+      "displayName": "드래곤 불꽃봉오리",
+      "concept": "드래곤 젬의 열기로 피어난 봉오리",
+      "prefabKey": "Bud/Bud_Fire",
+      "hitPoints": 320,
+      "spawnIntervalSeconds": 2.4,
+      "gemstoneId": "gem.dragon",
+      "gemstoneAmount": 1,
+      "gemstoneChancePercent": 100,
+      "garnetReward": 11,
+      "unlockCost": 150,
+      "unlockCurrencyId": "gem.diamond"
+    },
+    {
+      "id": "monster.10",
+      "displayName": "고대 해골군주",
+      "concept": "드래곤 젬으로 되살아난 고대 군주",
+      "prefabKey": "Skeleton/Skeleton_Warlord",
+      "hitPoints": 450,
+      "spawnIntervalSeconds": 2.55,
+      "gemstoneId": "gem.dragon",
+      "gemstoneAmount": 1,
+      "gemstoneChancePercent": 100,
+      "garnetReward": 12,
+      "unlockCost": 165,
+      "unlockCurrencyId": "gem.dragon"
+    }
+  ],
+  "skills": [
+    {
+      "id": "skill.fireball",
+      "displayName": "파이어볼",
+      "damageCoefficient": 4,
+      "radiusWorldUnits": 1.5,
+      "cooldownSeconds": 4.5,
+      "currencyId": "gem.garnet",
+      "unlockCost": 0
+    },
+    {
+      "id": "skill.lightning",
+      "displayName": "라이트닝 볼트",
+      "damageCoefficient": 8,
+      "radiusWorldUnits": 2,
+      "cooldownSeconds": 6,
+      "currencyId": "gem.topaz",
+      "unlockCost": 60
+    },
+    {
+      "id": "skill.freeze",
+      "displayName": "프리즈닝",
+      "damageCoefficient": 12,
+      "radiusWorldUnits": 1.875,
+      "cooldownSeconds": 7,
+      "currencyId": "gem.amethyst",
+      "unlockCost": 90
+    },
+    {
+      "id": "skill.hurricane",
+      "displayName": "허리케인",
+      "damageCoefficient": 36,
+      "radiusWorldUnits": 2.8125,
+      "cooldownSeconds": 9,
+      "currencyId": "gem.sapphire",
+      "unlockCost": 120
+    },
+    {
+      "id": "skill.meteor",
+      "displayName": "메테오",
+      "damageCoefficient": 40,
+      "radiusWorldUnits": 3.4375,
+      "cooldownSeconds": 12,
+      "currencyId": "gem.diamond",
+      "unlockCost": 150
+    },
+    {
+      "id": "skill.dragonBreath",
+      "displayName": "드래곤 브레스",
+      "damageCoefficient": 250,
+      "radiusWorldUnits": 5.625,
+      "cooldownSeconds": 18,
+      "currencyId": "gem.dragon",
+      "unlockCost": 180
+    },
+    {
+      "id": "skill.cursorAura",
+      "displayName": "커서 오라",
+      "damageCoefficient": 1,
+      "radiusWorldUnits": 2,
+      "cooldownSeconds": 1.5,
+      "currencyId": "gem.garnet",
+      "unlockCost": 210
+    }
+  ]
+}

@@ -6,7 +6,7 @@ using UnityEngine.InputSystem;
 namespace CursorHunter.App
 {
     /// <summary>
-    /// Routes one left-click from the world cursor to the active combat run.
+    /// Routes the cursor's automatic radius attack from the world cursor to the active combat run.
     /// CombatRunController owns cooldown, overlap resolution, and damage.
     /// </summary>
     [DisallowMultipleComponent]
@@ -83,7 +83,7 @@ namespace CursorHunter.App
             }
 
             Mouse mouse = Mouse.current;
-            if (mouse == null || !mouse.leftButton.wasPressedThisFrame)
+            if (mouse == null || !Application.isFocused)
             {
                 return;
             }
@@ -134,6 +134,7 @@ namespace CursorHunter.App
             }
 
             combatRunController.TryAttack(hitBox);
+            combatRunController.TryUseSkills(hitBox.bounds.center);
         }
     }
 }

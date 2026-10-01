@@ -238,7 +238,7 @@
     "status": "candidate-not-runtime-verified"
   },
   {
-    "design_id": "hit.triple",
+    "design_id": "hit.critical",
     "owner": "Combat",
     "path": "Assets/DownLoadAssets/Casual_VFX/Cartoon Casual VFX Pack/Textures/hit1_purple.png",
     "guid": "ab5b897b9d38b45089fa214e585732e1",
@@ -266,164 +266,157 @@
     "status": "runtime-applied"
   },
   {
-    "design_id": "trait.loot.icon",
+    "design_id": "trait.relic.icon",
     "owner": "Progression",
     "path": "Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Icon_ItemIcons/512/ItemIcon_Bag02.png",
     "guid": "fb085fb8221d544d1ae2034012b82eff",
     "status": "runtime-applied"
   },
   {
-    "design_id": "trait.loot.coin.icon",
+    "design_id": "trait.relic.coin.icon",
     "owner": "Progression",
     "path": "Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Icon_ItemIcons/512/ItemIcon_Coin.png",
     "guid": "9b2bc0b2a45c14f1cad7b6f4a7dbcaca",
     "status": "runtime-applied"
   },
   {
-    "design_id": "trait.pet.icon",
+    "design_id": "trait.monster.monster1.icon",
     "owner": "Progression",
-    "path": "Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Icon_ItemIcons/512/ItemIcon_Fox.png",
-    "guid": "7668aef2c90f84f47b9b9c0650bce440",
+    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Walker/Walker_Stump/Body.png",
+    "guid": "81366e1f0ef95fb4ca021ff158c9bbd7",
     "status": "runtime-applied"
   },
   {
-    "design_id": "trait.monster.monster1.icon",
-    "owner": "Progression",
-    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Alien/Alien_Vampire/Body.png",
-    "guid": "fb2ef077ca7cff145b786fe98437bf42",
+    "design_id": "monster.01.prefab",
+    "owner": "Combat",
+    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/Prefabs/Walker/Walker_Stump.prefab",
+    "guid": "76b40faaa9f5b364486f174c85bc38f5",
     "status": "runtime-applied"
   },
   {
     "design_id": "trait.monster.monster2.icon",
-    "owner": "Progression",
-    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Alien/Alien_Wizard/Body.png",
-    "guid": "863055b0be7845c4c9fe5ed6128d71ca",
-    "status": "runtime-applied"
-  },
-  {
-    "design_id": "trait.monster.monster3.icon",
-    "owner": "Progression",
-    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Ant/Ant_Honey/Body.png",
-    "guid": "c3bf373112f13f84781320a242b98ea4",
-    "status": "runtime-applied"
-  },
-  {
-    "design_id": "trait.monster.monster4.icon",
-    "owner": "Progression",
-    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Ant/Ant_Jelly/Body.png",
-    "guid": "03c0e6605a068dd44be0e8acfacc7e78",
-    "status": "runtime-applied"
-  },
-  {
-    "design_id": "trait.monster.monster5.icon",
-    "owner": "Progression",
-    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Ant/Ant_Worker/Body.png",
-    "guid": "2f2ad165d952a0d47b3b0fb791b29c57",
-    "status": "runtime-applied"
-  },
-  {
-    "design_id": "trait.monster.monster6.icon",
-    "owner": "Progression",
-    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Ant/Ant_Yellow/Body.png",
-    "guid": "59c0f7c9aada0f0469067a6ba9637d19",
-    "status": "runtime-applied"
-  },
-  {
-    "design_id": "trait.monster.monster7.icon",
     "owner": "Progression",
     "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Bat/Bat_Cave/Body.png",
     "guid": "46fa022d7d7f6e741ab54b2481f73084",
     "status": "runtime-applied"
   },
   {
+    "design_id": "monster.02.prefab",
+    "owner": "Combat",
+    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/Prefabs/Bat/Bat_Cave.prefab",
+    "guid": "00905adb4ac771b49845393f1de2b943",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "trait.monster.monster3.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Walker/Walker_Mushroom/Body.png",
+    "guid": "9731bdc77bdd099499cd873c1fb95277",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "monster.03.prefab",
+    "owner": "Combat",
+    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/Prefabs/Walker/Walker_Mushroom.prefab",
+    "guid": "5199f7f24931ec249be66cc4e940a24d",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "trait.monster.monster4.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Ghost/Ghost_Mask/Body.png",
+    "guid": "05f79d22c8aa05941922a68b388ed9cd",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "monster.04.prefab",
+    "owner": "Combat",
+    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/Prefabs/Ghost/Ghost_Mask.prefab",
+    "guid": "6ee1557c3a5461b4fa884bdd8d8b1a3a",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "trait.monster.monster5.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Scorpion/Scorpion_Purple/Body.png",
+    "guid": "7e2cacd5ae582be4b8a01ec0292d35b7",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "monster.05.prefab",
+    "owner": "Combat",
+    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/Prefabs/Scorpion/Scorpion_Purple.prefab",
+    "guid": "c6d4b2a09041c4444ac1b1e6cffc0c78",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "trait.monster.monster6.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Fairy/Fairy_Snow/Body.png",
+    "guid": "d8527bbb0c6fabd4fa5a81df3a311acc",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "monster.06.prefab",
+    "owner": "Combat",
+    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/Prefabs/Fairy/Fairy_Snow.prefab",
+    "guid": "1c1a3180575dcef419ba8e5dd252dc04",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "trait.monster.monster7.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Spider/Spider_Frozen/Body.png",
+    "guid": "27c7f323c4c073a419bda2ab90cc40ea",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "monster.07.prefab",
+    "owner": "Combat",
+    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/Prefabs/Spider/Spider_Frozen.prefab",
+    "guid": "17ea98e5ecd9de54ea50864524bea75e",
+    "status": "runtime-applied"
+  },
+  {
     "design_id": "trait.monster.monster8.icon",
     "owner": "Progression",
-    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Bat/Bat_Pig/Body.png",
-    "guid": "f7ff0a60f8b2284478d474ca5e6d8c41",
+    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Golem/Golem_Iron/Body.png",
+    "guid": "58ecdefa4b1d13344a5d2d437e661188",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "monster.08.prefab",
+    "owner": "Combat",
+    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/Prefabs/Golem/Golem_Iron.prefab",
+    "guid": "84ccd47ae94098f489358e7e865939be",
     "status": "runtime-applied"
   },
   {
     "design_id": "trait.monster.monster9.icon",
     "owner": "Progression",
-    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Bat/Bat_Skull/Body.png",
-    "guid": "256f074a3954fb14088c5d6d5db033d7",
+    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Bud/Bud_Fire/Leg.png",
+    "guid": "170b99d1e420c684a975dab96970ac8c",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "monster.09.prefab",
+    "owner": "Combat",
+    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/Prefabs/Bud/Bud_Fire.prefab",
+    "guid": "98aa1099a03998a459993b2dd6ca19a4",
     "status": "runtime-applied"
   },
   {
     "design_id": "trait.monster.monster10.icon",
     "owner": "Progression",
-    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Bee/Bee_Devil/Body.png",
-    "guid": "ac72a2601552a614280a43d67400cd69",
+    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Skeleton/Skeleton_Warlord/Body.png",
+    "guid": "e8a4f1b855cceee4cb4ec88d35ca7636",
     "status": "runtime-applied"
   },
   {
-    "design_id": "trait.monster.monster11.icon",
-    "owner": "Progression",
-    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Bee/Bee_Honey/Body.png",
-    "guid": "c8edaa838a2f690478e6a94b72bf8edd",
-    "status": "runtime-applied"
-  },
-  {
-    "design_id": "trait.monster.monster12.icon",
-    "owner": "Progression",
-    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Bee/Bee_Hornet/Body.png",
-    "guid": "1cac9fc649c8de94c82b7fa50fc3b544",
-    "status": "runtime-applied"
-  },
-  {
-    "design_id": "trait.monster.monster13.icon",
-    "owner": "Progression",
-    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Bud/Bud_Bomb/Body.png",
-    "guid": "2aeed26c834255b4db3c84af7e965b90",
-    "status": "runtime-applied"
-  },
-  {
-    "design_id": "trait.monster.monster14.icon",
-    "owner": "Progression",
-    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Bud/Bud_Fire/Body_Fire.png",
-    "guid": "6c63eea5ac3d47f41a4ada2581ce61f3",
-    "status": "runtime-applied"
-  },
-  {
-    "design_id": "trait.monster.monster15.icon",
-    "owner": "Progression",
-    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Bud/Bud_Flower/Body.png",
-    "guid": "11423ae1222abae4fa91a1617389ebdb",
-    "status": "runtime-applied"
-  },
-  {
-    "design_id": "trait.monster.monster16.icon",
-    "owner": "Progression",
-    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Cactus/Cactus_Green/Body.png",
-    "guid": "01df721c56acdc94e959b5034a953d65",
-    "status": "runtime-applied"
-  },
-  {
-    "design_id": "trait.monster.monster17.icon",
-    "owner": "Progression",
-    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Cactus/Cactus_Snow/Body.png",
-    "guid": "0760c09a431bc7243a8a3895187b7ea1",
-    "status": "runtime-applied"
-  },
-  {
-    "design_id": "trait.monster.monster18.icon",
-    "owner": "Progression",
-    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Dragonfly/Dragonfly_Armor/Body.png",
-    "guid": "f68ddf6470272634f9b883530c1265e7",
-    "status": "runtime-applied"
-  },
-  {
-    "design_id": "trait.monster.monster19.icon",
-    "owner": "Progression",
-    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Dragonfly/Dragonfly_Bot/Body.png",
-    "guid": "bc7cf6f4144c3d548bc1973be6c1a79f",
-    "status": "runtime-applied"
-  },
-  {
-    "design_id": "trait.monster.monster20.icon",
-    "owner": "Progression",
-    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Dragonfly/Dragonfly_Green/Body.png",
-    "guid": "1580648748480d84bae2ecac3a388aae",
+    "design_id": "monster.10.prefab",
+    "owner": "Combat",
+    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/Prefabs/Skeleton/Skeleton_Warlord.prefab",
+    "guid": "1fb07fcfb1fba2e46b61c34b043f72a0",
     "status": "runtime-applied"
   }
 ]

@@ -13,6 +13,7 @@ namespace CursorHunter.App
     /// It converts authored Data into immutable run snapshots and connects the
     /// cursor, combat session, spawner, and result HUD.
     /// </summary>
+    [DefaultExecutionOrder(-200)]
     [DisallowMultipleComponent]
     public sealed class HuntManager : MonoBehaviour
     {
@@ -34,7 +35,7 @@ namespace CursorHunter.App
         [SerializeField, Min(1)] private long attackPower = 10;
         [SerializeField, Min(0.01f)] private float rangeMultiplier = 1f;
         [SerializeField, Min(0f)] private float attackCooldownSeconds = 0.5f;
-        [SerializeField, Min(1)] private int hitsPerBundle = 1;
+
 
         [Header("Hunt run")]
         [SerializeField] private MonsterDefinition monsterDefinition;
@@ -48,6 +49,7 @@ namespace CursorHunter.App
 
         private RunCoordinator _runCoordinator;
         private bool _coordinatorEventsSubscribed;
+        private bool _pausedForInspection;
         private readonly HashSet<RunId> _settledRunIds =
             new HashSet<RunId>();
 
@@ -155,9 +157,30 @@ namespace CursorHunter.App
                 return;
             }
 
-            ProgressionCombatSnapshot progressionSnapshot = progressionController == null
-                ? null
-                : progressionController.CreateCombatSnapshot();
+            ProgressionCombatSnapshot progressionSnapshot = null;
+            if (progressionController != null)
+            {
+                string json;
+                try { json = progressionController.CreateGameInformationJson(); }
+                catch (Exception exception)
+                {
+                    Debug.LogError("Cannot prepare current player combat information: " + exception.Message, this);
+                    return;
+                }
+                if (!GameInformationJson.TryDeserialize(json, out var information, out string error))
+                {
+                    Debug.LogError("Combat JSON rejected: " + error, this);
+                    return;
+                }
+                progressionSnapshot = information.ToCombatSnapshot(json);
+                schemaVersion = information.schemaVersion;
+                balanceVersion = information.balanceVersion;
+            }
+            else if (!allowPrototypeFallback)
+            {
+                Debug.LogError("Game information producer is required.", this);
+                return;
+            }
             CombatSnapshot combatSnapshot = progressionSnapshot == null
                 ? CreateFallbackCombatSnapshot()
                 : progressionSnapshot.Combat;
@@ -225,6 +248,7 @@ namespace CursorHunter.App
                 uiRootController.EnterCombat();
             }
 
+            combatRunController.ConfigureSkills(progressionSnapshot == null ? null : progressionSnapshot.Skills);
             cursorController.SetRangeMultiplier(combatSnapshot.RangeMultiplier);
             cursorController.ShowCursorImage();
 
@@ -249,15 +273,14 @@ namespace CursorHunter.App
                 Math.Max(1L, attackPower),
                 Mathf.Max(0.01f, rangeMultiplier),
                 Mathf.Max(0f, attackCooldownSeconds),
-                Mathf.Max(1, hitsPerBundle));
+                1);
         }
 
         /// <summary>
         /// Resolves the duration at the App boundary. Normal fields use the
         /// progression snapshot (15 seconds at the start, +5 seconds per
-        /// purchased node, capped at 60). Boss fields always use 60 seconds;
-        /// a caller cannot accidentally shorten a boss attempt by passing a
-        /// stale serialized value.
+        /// purchased node, capped at 30). Boss duration comes from JSON rules
+        /// (60 seconds by default); legacy callers keep the 60-second fallback.
         /// </summary>
         public static float GetRunDuration(
             RunMode mode,
@@ -266,7 +289,7 @@ namespace CursorHunter.App
         {
             if (mode == RunMode.Boss)
             {
-                return BossFieldDurationSeconds;
+                return progressionSnapshot == null ? BossFieldDurationSeconds : progressionSnapshot.BossFieldDurationSeconds;
             }
 
             if (progressionSnapshot != null)
@@ -274,7 +297,7 @@ namespace CursorHunter.App
                 return Mathf.Clamp(
                     progressionSnapshot.NormalFieldDurationSeconds,
                     15f,
-                    60f);
+                    30f);
             }
 
             if (float.IsNaN(fallbackNormalDurationSeconds) ||
@@ -283,7 +306,7 @@ namespace CursorHunter.App
                 return 15f;
             }
 
-            return Mathf.Clamp(fallbackNormalDurationSeconds, 15f, 60f);
+            return Mathf.Clamp(fallbackNormalDurationSeconds, 15f, 30f);
         }
 
         /// <summary>
@@ -356,6 +379,7 @@ namespace CursorHunter.App
 
         private void Update()
         {
+            ReconcileInspectionPause();
             if (_runCoordinator == null ||
                 !_runCoordinator.IsActive ||
                 combatRunController == null ||
@@ -370,6 +394,29 @@ namespace CursorHunter.App
                     combatRunController.RemainingSeconds,
                     combatRunController.DefeatedCount,
                     combatRunController.GarnetEarned);
+            }
+        }
+
+        private void OnApplicationFocus(bool focused)
+        {
+            ReconcileInspectionPause();
+        }
+
+        private void ReconcileInspectionPause()
+        {
+            if (_runCoordinator == null || !_runCoordinator.IsActive)
+            {
+                _pausedForInspection = false;
+                return;
+            }
+            bool shouldPause = !Application.isFocused ||
+                (progressionController != null && progressionController.IsSummaryOpen);
+            if (shouldPause && _runCoordinator.State == RunState.Running)
+                _pausedForInspection = _runCoordinator.Pause();
+            else if (!shouldPause && _pausedForInspection)
+            {
+                _runCoordinator.Resume();
+                _pausedForInspection = false;
             }
         }
 
@@ -497,6 +544,38 @@ namespace CursorHunter.App
             failureResult = new SpawnStartResult(
                 SpawnStartStatus.Started,
                 "Monster definition snapshot is ready.");
+
+            if (progressionSnapshot != null && !string.IsNullOrEmpty(progressionSnapshot.SourceJson))
+            {
+                var definitions = Resources.LoadAll<MonsterDefinition>("MonsterDefinitions");
+                var entries = new List<SpawnPlanEntry>();
+                foreach (var monster in progressionSnapshot.Monsters)
+                {
+                    if (!monster.Unlocked) continue;
+                    MonsterDefinition definition = null;
+                    foreach (var candidate in definitions)
+                        if (candidate != null && candidate.MonsterId == monster.MonsterId) { definition = candidate; break; }
+                    if (definition == null || definition.Prefab == null)
+                    {
+                        failureResult = new SpawnStartResult(SpawnStartStatus.MissingDefinition,
+                            "Missing visual definition: " + monster.MonsterId);
+                        return false;
+                    }
+                    var snapshot = new SpawnSnapshot(monster.MonsterId, definition.PrefabKey,
+                        monster.HitPoints, monster.SpawnIntervalSeconds, monster.ProductionCount,
+                        progressionSnapshot.PerMonsterAliveLimit, monster.GarnetReward, monster.BonusDropCurrencyId,
+                        monster.BonusDropAmount, monster.BonusDropChancePercent,
+                        monster.BehaviorType);
+                    entries.Add(new SpawnPlanEntry(snapshot, definition.Prefab));
+                }
+                if (entries.Count == 0)
+                {
+                    failureResult = new SpawnStartResult(SpawnStartStatus.InvalidRequest, "No enabled monster.");
+                    return false;
+                }
+                spawnPlan = new SpawnPlan(entries, progressionSnapshot.GlobalAliveLimit);
+                return true;
+            }
 
             if (monsterDefinition != null)
             {
@@ -647,8 +726,7 @@ namespace CursorHunter.App
                     monster.BonusDropCurrencyId,
                     monster.BonusDropAmount,
                     monster.BonusDropChancePercent,
-                    monster.LootFragmentCurrencyId,
-                    monster.LootFragmentChancePercent);
+                    monster.BehaviorType);
             }
 
             return authored;

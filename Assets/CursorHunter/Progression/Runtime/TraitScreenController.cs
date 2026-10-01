@@ -3,10 +3,12 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using CursorHunter.Contracts;
+using CursorHunter.Data;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using TMPro;
 
 namespace CursorHunter.Progression
 {
@@ -25,8 +27,8 @@ namespace CursorHunter.Progression
             new long[] { 125L, 0L, 0L, 0L, 0L, 0L };
         [SerializeField, Range(0, 5)] private int unlockedBossTier;
         [SerializeField] private bool loadSavedProgress = true;
-        [SerializeField] private bool testModeUnlockAll = true;
-        [SerializeField] private bool testModeFreeUpgrades = true;
+        [SerializeField] private bool testModeUnlockAll = false;
+        [SerializeField] private bool testModeFreeUpgrades = false;
         [SerializeField] private UnityEvent backRequested = new UnityEvent();
 
         [Header("Casual Fantasy sprites")]
@@ -53,19 +55,17 @@ namespace CursorHunter.Progression
         [SerializeField] private Sprite bossIcon;
         [SerializeField] private Sprite skillIcon;
         [SerializeField] private Sprite monsterIcon;
-        [SerializeField] private Sprite lootIcon;
         [SerializeField] private Sprite petIcon;
         [SerializeField] private Sprite[] gemstoneIcons = new Sprite[0];
         [SerializeField] private Sprite[] skillIcons = new Sprite[0];
         [SerializeField] private Sprite[] monsterIcons = new Sprite[0];
-        [SerializeField] private Sprite[] lootIcons = new Sprite[0];
         [SerializeField] private Sprite[] petIcons = new Sprite[0];
         [SerializeField] private Font uiFont;
 
         [Header("Layout")]
         [SerializeField, Range(0, 4)] private int initialTab;
         [SerializeField, Min(0f)] private float transitionSeconds = 0.22f;
-        [SerializeField] private Vector2 nodeCellSize = new Vector2(84f, 84f);
+        [SerializeField] private Vector2 nodeCellSize = new Vector2(106f, 106f);
         [SerializeField] private Vector2 nodeGridSpacing = new Vector2(8f, 8f);
         [SerializeField, Min(12f)] private float connectorWidth = 22f;
         [SerializeField, Range(2f, 16f)] private float connectorThickness = 3f;
@@ -90,6 +90,8 @@ namespace CursorHunter.Progression
         private long _garnetBalance;
         private long[] _gemstoneBalances;
         private ProgressionCombatSnapshot _activeRunSnapshot;
+        private GameDataDocument _document;
+        private string _summaryJson;
 
         private readonly HashSet<string> _purchased =
             new HashSet<string>(StringComparer.Ordinal);
@@ -97,31 +99,29 @@ namespace CursorHunter.Progression
             new Dictionary<string, int>(StringComparer.Ordinal);
         private readonly Dictionary<string, string> _spentCurrencyByNode =
             new Dictionary<string, string>(StringComparer.Ordinal);
-        private readonly Dictionary<string, long> _fragmentBalances =
-            new Dictionary<string, long>(StringComparer.Ordinal);
         private RectTransform _runtimeRoot;
         private RectTransform _nodeContent;
         private RectTransform _gemstoneList;
-        private Text _gemstoneUnlockMessage;
+        private TextMeshProUGUI _gemstoneUnlockMessage;
         private CanvasGroup _runtimeGroup;
         private CanvasGroup _nodeGroup;
-        private Text _nodeHeading;
-        private Text _garnetValue;
-        private Text _selectedTitle;
-        private Text _selectedDescription;
-        private Text _selectedValue;
-        private Text _selectedCost;
-        private Text _selectedRequirement;
-        private Text _statusMessage;
+        private TextMeshProUGUI _nodeHeading;
+        private TextMeshProUGUI _garnetValue;
+        private TextMeshProUGUI _selectedTitle;
+        private TextMeshProUGUI _selectedDescription;
+        private TextMeshProUGUI _selectedValue;
+        private TextMeshProUGUI _selectedCost;
+        private TextMeshProUGUI _selectedRequirement;
+        private TextMeshProUGUI _statusMessage;
         private Button _upgradeButton;
         private Image _upgradeButtonImage;
-        private Text _upgradeButtonLabel;
+        private TextMeshProUGUI _upgradeButtonLabel;
         private Button _resetNodeButton;
         private Image _resetNodeButtonImage;
-        private Text _resetNodeButtonLabel;
+        private TextMeshProUGUI _resetNodeButtonLabel;
         private GameObject _summaryOverlay;
         private RectTransform _summaryOverlayContent;
-        private readonly List<Text> _summaryValues = new List<Text>();
+        private readonly List<TextMeshProUGUI> _summaryValues = new List<TextMeshProUGUI>();
         private Coroutine _transition;
         private Coroutine _nodeTransition;
 
@@ -146,11 +146,14 @@ namespace CursorHunter.Progression
         {
             HideAuthoredPlaceholders();
             EnsureCanvasScale();
-            _garnetBalance = startingGarnet;
-            ResolveCatalog();
-            InitializeGemstoneBalances();
-            InitializePurchasedState();
-            LoadSavedProgress();
+            if (_activeCatalog == null)
+            {
+                _garnetBalance = startingGarnet;
+                ResolveCatalog();
+                InitializeGemstoneBalances();
+                InitializePurchasedState();
+                LoadSavedProgress();
+            }
             BuildUi();
         }
 
@@ -182,6 +185,7 @@ namespace CursorHunter.Progression
 
         private void OnDestroy()
         {
+            if (_summaryOverlay != null) Destroy(_summaryOverlay);
             if (_ownsRuntimeCatalog && _runtimeCatalog != null)
             {
                 Destroy(_runtimeCatalog);
@@ -237,8 +241,6 @@ namespace CursorHunter.Progression
             AddStartingNodes(_activeCatalog == null ? null : _activeCatalog.StatCategories);
             AddStartingNodes(_activeCatalog == null ? null : _activeCatalog.SkillCategories);
             AddStartingNodes(_activeCatalog == null ? null : _activeCatalog.MonsterCategories);
-            AddStartingNodes(_activeCatalog == null ? null : _activeCatalog.LootCategories);
-            AddStartingNodes(_activeCatalog == null ? null : _activeCatalog.PetCategories);
             RefreshAll();
             SaveProgressionState();
         }
@@ -292,43 +294,10 @@ namespace CursorHunter.Progression
             ShowTab(TraitTab.Monster);
         }
 
-        public void ShowLootTab()
-        {
-            ShowTab(TraitTab.Loot);
-        }
 
         public void ShowPetTab()
         {
-            ShowTab(TraitTab.Pet);
-        }
-
-        /// <summary>
-        /// Adds loot fragments produced by Combat settlement. The currency ID
-        /// is intentionally explicit so a Monster1 fragment cannot be spent
-        /// on a Monster2 node by accident. Call this once after the run's
-        /// idempotent settlement event is accepted.
-        /// </summary>
-        public void GrantLootFragments(string fragmentCurrencyId, long amount)
-        {
-            if (!IsFragmentCurrency(fragmentCurrencyId) || amount <= 0L)
-            {
-                return;
-            }
-
-            if (_fragmentBalances.TryGetValue(fragmentCurrencyId, out long current))
-            {
-                _fragmentBalances[fragmentCurrencyId] =
-                    current > long.MaxValue - amount
-                        ? long.MaxValue
-                        : current + amount;
-            }
-            else
-            {
-                _fragmentBalances[fragmentCurrencyId] = amount;
-            }
-
-            RefreshDetail(FindNode(_selectedNodeId));
-            SaveProgressionState();
+            ShowTab(TraitTab.Skill);
         }
 
         /// <summary>
@@ -361,20 +330,12 @@ namespace CursorHunter.Progression
                     continue;
                 }
 
-                if (IsFragmentCurrency(reward.CurrencyId))
-                {
-                    long current = GetLootFragmentBalance(reward.CurrencyId);
-                    _fragmentBalances[reward.CurrencyId] = AddSaturating(
-                        current,
-                        reward.Amount);
-                    continue;
-                }
 
                 int gemstoneIndex = GetGemstoneIndexById(reward.CurrencyId);
                 TraitGemstoneDefinition gemstone =
                     GetGemstoneDefinition(gemstoneIndex);
                 if (gemstone == null || gemstone.Id != reward.CurrencyId ||
-                    !IsGemstoneUnlocked(gemstone) || gemstoneIndex <= 0 ||
+                    gemstoneIndex <= 0 ||
                     gemstoneIndex >= _gemstoneBalances.Length)
                 {
                     continue;
@@ -389,152 +350,37 @@ namespace CursorHunter.Progression
             return SaveProgressionState();
         }
 
-        public long GetLootFragmentBalance(string fragmentCurrencyId)
-        {
-            if (!IsFragmentCurrency(fragmentCurrencyId) ||
-                !_fragmentBalances.TryGetValue(fragmentCurrencyId, out long balance))
-            {
-                return 0L;
-            }
-
-            return Math.Max(0L, balance);
-        }
 
         /// <summary>
         /// Creates the immutable values that App copies into a new combat run.
         /// No live UI collection is handed to Combat; the arrays are copied by
         /// ProgressionCombatSnapshot before the next purchase can occur.
         /// </summary>
-        public ProgressionCombatSnapshot CreateCombatSnapshot()
+        public string CreateGameInformationJson()
         {
-            int attackLevel = CountPurchased("stat.attack");
-            int radiusLevel = CountPurchased("stat.radius");
-            int clickLevel = CountPurchased("stat.multiClick");
-            int criticalLevel = CountPurchased("stat.critical");
-            int bossLevel = CountPurchased("stat.boss");
-            int fieldDurationLevel = CountPurchased("stat.fieldDuration");
-
-            int[] attackValues = { 1, 3, 6, 10, 16, 24, 35, 50, 70, 100 };
-            float[] radiusMultipliers =
+            if (_activeCatalog == null)
             {
-                1f, 1.10f, 1.20f, 1.30f, 1.40f, 1.50f,
-                2f, 3f, 5f, 8f, 20f
-            };
-            int[] hits = { 1, 2, 3, 4, 1 };
-            float[] criticalChances = { 0f, 5f, 10f, 20f, 30f, 50f, 75f, 100f };
-            float[] bossMultipliers = { 1f, 1.25f, 1.60f, 2.10f, 2.80f, 4.00f };
-            float[] fieldDurations = { 15f, 20f, 25f, 30f, 35f, 40f, 45f, 50f, 55f, 60f };
-
-            int attackIndex = Mathf.Clamp(attackLevel - 1, 0, attackValues.Length - 1);
-            int radiusIndex = Mathf.Clamp(radiusLevel - 1, 0, radiusMultipliers.Length - 1);
-            int clickIndex = Mathf.Clamp(clickLevel - 1, 0, hits.Length - 1);
-            int criticalIndex = Mathf.Clamp(criticalLevel - 1, 0, criticalChances.Length - 1);
-            int bossIndex = Mathf.Clamp(bossLevel, 0, bossMultipliers.Length - 1);
-            int fieldDurationIndex = Mathf.Clamp(
-                fieldDurationLevel - 1,
-                0,
-                fieldDurations.Length - 1);
-            bool autoEnabled = clickIndex == hits.Length - 1 && clickLevel >= hits.Length;
-
-            CombatSnapshot combat = new CombatSnapshot(
-                attackValues[attackIndex],
-                radiusMultipliers[radiusIndex],
-                0.5f,
-                hits[clickIndex],
-                criticalChances[criticalIndex],
-                bossMultipliers[bossIndex],
-                autoEnabled,
-                autoEnabled ? 0.10f : 0f);
-
-            List<SkillCombatSnapshot> skills = new List<SkillCombatSnapshot>();
-            if (_activeCatalog != null && _activeCatalog.SkillCategories != null)
-            {
-                foreach (TraitCategoryDefinition category in _activeCatalog.SkillCategories)
-                {
-                    if (category == null || category.Nodes == null || category.Nodes.Count == 0)
-                    {
-                        continue;
-                    }
-
-                    TraitNodeDefinition unlock = category.Nodes[0];
-                    bool unlocked = IsPurchased(unlock);
-                    bool damage = category.Nodes.Count > 1 && IsPurchased(category.Nodes[1]);
-                    bool radius = category.Nodes.Count > 2 && IsPurchased(category.Nodes[2]);
-                    bool cooldown = category.Nodes.Count > 3 && IsPurchased(category.Nodes[3]);
-                    skills.Add(new SkillCombatSnapshot(
-                        category.Id,
-                        unlocked,
-                        damage ? 1.35f : 1f,
-                        radius ? 1.30f : 1f,
-                        cooldown ? 0.80f : 1f));
-                }
+                ResolveCatalog();
+                _garnetBalance = startingGarnet;
+                InitializeGemstoneBalances();
+                InitializePurchasedState();
+                LoadSavedProgress();
             }
-
-            List<MonsterCombatSnapshot> monsters = new List<MonsterCombatSnapshot>();
-            if (_activeCatalog != null && _activeCatalog.MonsterCategories != null)
-            {
-                foreach (TraitCategoryDefinition category in _activeCatalog.MonsterCategories)
-                {
-                    if (category == null || category.Nodes == null || category.Nodes.Count == 0)
-                    {
-                        continue;
-                    }
-
-                    TraitNodeDefinition unlock = category.Nodes[0];
-                    string monsterId = unlock == null ? category.Id : unlock.Id;
-                    TraitMonsterBalanceDefinition balance = FindMonsterBalance(monsterId);
-                    int productionLevels = 0;
-                    for (int i = 1; i < category.Nodes.Count; i++)
-                    {
-                        if (IsPurchased(category.Nodes[i]))
-                        {
-                            productionLevels++;
-                        }
-                    }
-
-                    string bonusDropCurrency = GetUnlockedBonusDropCurrency(balance);
-                    long bonusDropAmount = string.IsNullOrEmpty(bonusDropCurrency)
-                        ? 0L
-                        : balance.BonusDropAmount;
-                    float bonusDropChance = string.IsNullOrEmpty(bonusDropCurrency)
-                        ? 0f
-                        : balance.BonusDropChancePercent;
-
-                    monsters.Add(new MonsterCombatSnapshot(
-                        monsterId,
-                        IsPurchased(unlock),
-                        balance == null ? 1L : balance.HitPoints,
-                        balance == null ? 1f : balance.SpawnInterval,
-                        1f + productionLevels * 0.25f,
-                        balance == null ? 3L : balance.GarnetReward,
-                        bonusDropCurrency,
-                        bonusDropAmount,
-                        bonusDropChance,
-                        balance == null ? string.Empty : balance.LootFragmentCurrencyId,
-                        balance == null ? 0f : balance.LootFragmentChancePercent));
-                }
-            }
-
-            return new ProgressionCombatSnapshot(
-                combat,
-                skills.ToArray(),
-                monsters.ToArray(),
-                fieldDurations[fieldDurationIndex]);
+            return GameInformationJson.Serialize(CreateGameInformation());
         }
 
-        private string GetUnlockedBonusDropCurrency(
-            TraitMonsterBalanceDefinition balance)
+        public ProgressionCombatSnapshot CreateCombatSnapshot()
         {
-            if (balance == null || balance.BonusDropAmount <= 0L ||
-                string.IsNullOrEmpty(balance.BonusDropCurrencyId))
-            {
-                return string.Empty;
-            }
+            string json = CreateGameInformationJson();
+            if (!GameInformationJson.TryDeserialize(json, out var information, out string error))
+                throw new InvalidOperationException(error);
+            return information.ToCombatSnapshot(json);
+        }
 
-            return IsGemstoneUnlocked(
-                       GetGemstoneDefinitionById(balance.BonusDropCurrencyId))
-                ? balance.BonusDropCurrencyId
-                : string.Empty;
+        private GameInformation CreateGameInformation()
+        {
+            return GameInformationBuilder.Build(_document, _purchased,
+                id => GetGemstoneBalance(GetGemstoneIndexById(id)));
         }
 
         /// <summary>
@@ -564,13 +410,15 @@ namespace CursorHunter.Progression
 
         private void ResolveCatalog()
         {
-            if (catalog != null)
-            {
-                _activeCatalog = catalog;
-                return;
-            }
-
-            _runtimeCatalog = TraitCatalog.CreateRuntimeDemo();
+            _document = GameDataDocument.Load();
+            // Data-file language does not select the player's UI locale.
+            startingGarnet = _document.information.gemstones[0].amount;
+            _garnetBalance = startingGarnet;
+            startingGemstoneBalances = new long[_document.information.gemstones.Length];
+            for (int i = 0; i < startingGemstoneBalances.Length; i++)
+                startingGemstoneBalances[i] = _document.information.gemstones[i].amount;
+            unlockedBossTier = _document.progression.initialBossTier;
+            _runtimeCatalog = TraitCatalog.CreateFromDocument(_document);
             _activeCatalog = _runtimeCatalog;
             _ownsRuntimeCatalog = true;
         }
@@ -584,13 +432,12 @@ namespace CursorHunter.Progression
             AddStartingNodes(_activeCatalog.StatCategories);
             AddStartingNodes(_activeCatalog.SkillCategories);
             AddStartingNodes(_activeCatalog.MonsterCategories);
-            AddStartingNodes(_activeCatalog.LootCategories);
-            AddStartingNodes(_activeCatalog.PetCategories);
+
         }
 
         private void LoadSavedProgress()
         {
-            if (!loadSavedProgress ||
+            if (_document.progression.savedProgressPolicy == "fileOnly" || !loadSavedProgress ||
                 !TraitProgressionStore.TryLoad(out TraitProgressionStore.SaveData data))
             {
                 return;
@@ -610,17 +457,28 @@ namespace CursorHunter.Progression
             }
 
             _gemstoneBalances[0] = _garnetBalance;
-            if (data.purchasedNodeIds == null)
+            // A saved wallet replaces the file baseline; only migrated refunds are additive.
+            var loadedNodes = new HashSet<string>(StringComparer.Ordinal);
+            for (int i = 0; i < (data.purchasedNodeIds == null ? 0 : data.purchasedNodeIds.Count); i++)
             {
-                return;
-            }
-
-            for (int i = 0; i < data.purchasedNodeIds.Count; i++)
-            {
-                string nodeId = data.purchasedNodeIds[i];
+                string nodeId = data.version < 2 ? ProgressionMigration.NodeId(data.purchasedNodeIds[i]) : data.purchasedNodeIds[i];
+                if (ProgressionMigration.IsRetiredNode(data.purchasedNodeIds[i])) continue;
                 TraitNodeDefinition node = FindNode(nodeId);
-                if (node == null || string.IsNullOrEmpty(node.Id))
+                if (node == null || string.IsNullOrEmpty(node.Id) ||
+                    (data.version < 2 && !loadedNodes.Add(node.Id)))
                 {
+                    // Removed gemstone gates, extra monsters and duration levels are refunded.
+                    if (data.version < 2 && data.spentCosts != null && i < data.spentCosts.Count)
+                    {
+                        int refund = Math.Max(0, data.spentCosts[i]);
+                        string currency = data.spentCurrencyIds != null && i < data.spentCurrencyIds.Count
+                            ? ProgressionMigration.CurrencyId(data.spentCurrencyIds[i]) : "gem.garnet";
+                        {
+                            int index = GetGemstoneIndexById(currency);
+                            if (index >= 0 && index < _gemstoneBalances.Length)
+                                _gemstoneBalances[index] = AddSaturating(_gemstoneBalances[index], refund);
+                        }
+                    }
                     continue;
                 }
 
@@ -630,45 +488,32 @@ namespace CursorHunter.Progression
                     int cost = Mathf.Max(0, data.spentCosts[i]);
                     if (cost > 0)
                     {
-                        _spentByNode[node.Id] = cost;
+                        _spentByNode.TryGetValue(node.Id, out int previousCost);
+                        _spentByNode[node.Id] = (int)Math.Min(int.MaxValue, (long)previousCost + cost);
                     }
                 }
 
-            if (data.spentCurrencyIds != null &&
+                if (data.spentCurrencyIds != null &&
                     i < data.spentCurrencyIds.Count &&
-                    !string.IsNullOrEmpty(data.spentCurrencyIds[i]))
+                    GetGemstoneIndexById(data.spentCurrencyIds[i]) >= 0)
                 {
-                    _spentCurrencyByNode[node.Id] = data.spentCurrencyIds[i];
+                    _spentCurrencyByNode[node.Id] = ProgressionMigration.CurrencyId(data.spentCurrencyIds[i]);
                 }
             }
 
-            if (data.fragmentCurrencyIds != null && data.fragmentBalances != null)
-            {
-                int length = Mathf.Min(
-                    data.fragmentCurrencyIds.Count,
-                    data.fragmentBalances.Count);
-                for (int i = 0; i < length; i++)
-                {
-                    string currencyId = data.fragmentCurrencyIds[i];
-                    if (!string.IsNullOrEmpty(currencyId))
-                    {
-                        _fragmentBalances[currencyId] = Math.Max(
-                            0L,
-                            data.fragmentBalances[i]);
-                    }
-                }
-            }
+            _garnetBalance = _gemstoneBalances[0];
         }
 
         private bool SaveProgressionState()
         {
+            // File-only preview/prototyping must never overwrite the player's existing save.
+            if (_document != null && _document.progression.savedProgressPolicy == "fileOnly") return true;
             bool saved = TraitProgressionStore.Save(
                 _garnetBalance,
                 _gemstoneBalances,
                 _purchased,
                 _spentByNode,
-                _spentCurrencyByNode,
-                _fragmentBalances);
+                _spentCurrencyByNode);
             if (!saved)
             {
                 Debug.LogWarning(
@@ -787,7 +632,7 @@ namespace CursorHunter.Progression
             }
 
             _isBuilt = true;
-            ShowTab((TraitTab)Mathf.Clamp(initialTab, 0, 4), false);
+            ShowTab((TraitTab)Mathf.Clamp(initialTab, 0, 3), false);
             Canvas.ForceUpdateCanvases();
         }
 
@@ -820,8 +665,7 @@ namespace CursorHunter.Progression
             CreateTabButton(tabs, "STATTab", "스탯", TraitTab.Stat);
             CreateTabButton(tabs, "SKILLTab", "스킬", TraitTab.Skill);
             CreateTabButton(tabs, "MONSTERTab", "몬스터", TraitTab.Monster);
-            CreateTabButton(tabs, "LOOTTab", "전리품", TraitTab.Loot);
-            CreateTabButton(tabs, "PETTab", "펫", TraitTab.Pet);
+
         }
 
         private void BuildGemstonePanel()
@@ -909,7 +753,7 @@ namespace CursorHunter.Progression
                         continue;
                     }
 
-                    bool visible = IsGemstoneUnlocked(gemstone);
+                    bool visible = IsGemstoneAvailable(gemstone) || GetGemstoneBalance(i) > 0;
                     if (!visible)
                     {
                         hasLockedDefinition = true;
@@ -935,8 +779,8 @@ namespace CursorHunter.Progression
             if (_gemstoneUnlockMessage != null)
             {
                 _gemstoneUnlockMessage.text = hasLockedDefinition
-                    ? "스탯에서 해금 · 발견 강화로 등장 확률 증가"
-                    : "해금한 젬스톤은 랜덤으로 등장합니다";
+                    ? "일반 몬스터 처치로 획득"
+                    : "등장한 일반 몬스터가 해당 젬스톤을 공급합니다";
             }
 
             LayoutRebuilder.ForceRebuildLayoutImmediate(_gemstoneList);
@@ -982,7 +826,7 @@ namespace CursorHunter.Progression
                 iconImage.preserveAspect = true;
             }
 
-            Text label = CreateText(
+            TextMeshProUGUI label = CreateText(
                 CreateRect("Label", row, new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(44f, 0f), new Vector2(-172f, 0f), new Vector2(0f, 0.5f)),
                 gemstone.Title,
                 14,
@@ -992,7 +836,7 @@ namespace CursorHunter.Progression
             label.color = Color.Lerp(inkColor, accent, 0.25f);
 
             long balance = GetGemstoneBalance(gemstoneIndex);
-            Text value = CreateText(
+            TextMeshProUGUI value = CreateText(
                 CreateRect("Value", row, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-112f, 0f), new Vector2(62f, 30f), new Vector2(1f, 0.5f)),
                 balance.ToString(),
                 15,
@@ -1006,7 +850,7 @@ namespace CursorHunter.Progression
 
             CreateText(
                 CreateRect("Chance", row, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-12f, 0f), new Vector2(88f, 30f), new Vector2(1f, 0.5f)),
-                FormatGemstoneChance(GetGemstoneDropChance(gemstoneIndex)),
+                "몬스터 드롭",
                 12,
                 TextAnchor.MiddleRight,
                 accent,
@@ -1049,138 +893,25 @@ namespace CursorHunter.Progression
             return GemstoneColors[index];
         }
 
-        private bool IsGemstoneUnlocked(TraitGemstoneDefinition gemstone)
+        private bool IsGemstoneAvailable(TraitGemstoneDefinition gemstone)
         {
-            if (gemstone == null)
-            {
-                return false;
-            }
-
-            if (testModeUnlockAll)
-            {
-                return true;
-            }
-
-            if (gemstone.StartsUnlocked)
-            {
-                return true;
-            }
-
-            // New definitions are unlocked by a Stat node. The boss-tier
-            // check remains a compatibility fallback for older catalogs that
-            // do not yet contain an unlockNodeId.
-            if (!string.IsNullOrEmpty(gemstone.UnlockNodeId))
-            {
-                return _purchased.Contains(gemstone.UnlockNodeId);
-            }
-
-            return gemstone.RequiredBossTier <= unlockedBossTier;
-        }
-
-        /// <summary>
-        /// Returns whether the indexed gemstone is currently in the random
-        /// drop table. Combat can use this without knowing the UI layout.
-        /// </summary>
-        public bool IsGemstoneUnlocked(int gemstoneIndex)
-        {
-            TraitGemstoneDefinition gemstone = GetGemstoneDefinition(gemstoneIndex);
-            return IsGemstoneUnlocked(gemstone);
-        }
-
-        /// <summary>
-        /// Returns the current relative drop weight. A weight is normalized
-        /// against all unlocked gemstones, so adding a discovery upgrade for
-        /// one type raises its actual chance while keeping the table at 100%.
-        /// </summary>
-        public int GetGemstoneDropWeight(int gemstoneIndex)
-        {
-            TraitGemstoneDefinition gemstone = GetGemstoneDefinition(gemstoneIndex);
-            if (!IsGemstoneUnlocked(gemstone))
-            {
-                return 0;
-            }
-
-            int upgradeCount = CountGemstoneRateUpgrades(gemstone);
-            return gemstone.GetDropWeight(upgradeCount);
-        }
-
-        public float GetGemstoneDropChance(int gemstoneIndex)
-        {
-            int weight = GetGemstoneDropWeight(gemstoneIndex);
-            if (weight <= 0)
-            {
-                return 0f;
-            }
-
-            int totalWeight = GetTotalGemstoneDropWeight();
-            return totalWeight <= 0
-                ? 0f
-                : (float)weight / totalWeight * 100f;
-        }
-
-        /// <summary>
-        /// Rolls one unlocked gemstone from a caller-provided normalized
-        /// value. Supplying the random value from Combat keeps random state in
-        /// one owner and makes deterministic run seeds possible.
-        /// </summary>
-        public bool TryRollGemstoneDrop(float normalizedRoll, out int gemstoneIndex)
-        {
-            gemstoneIndex = -1;
-            int totalWeight = GetTotalGemstoneDropWeight();
-            if (totalWeight <= 0)
-            {
-                return false;
-            }
-
-            // A malformed caller value should not create a NaN cursor that
-            // silently falls through the weighted loop. Treat NaN as the
-            // first bucket; infinities are handled by Clamp01 below.
-            float safeRoll = float.IsNaN(normalizedRoll) ? 0f : normalizedRoll;
-            float clampedRoll = Mathf.Clamp01(safeRoll);
-            if (clampedRoll >= 1f)
-            {
-                clampedRoll = 0.99999994f;
-            }
-
-            float cursor = clampedRoll * totalWeight;
-            IReadOnlyList<TraitGemstoneDefinition> definitions = _activeCatalog == null
-                ? null
-                : _activeCatalog.Gemstones;
-            if (definitions == null)
-            {
-                return false;
-            }
-
-            for (int i = 0; i < definitions.Count; i++)
-            {
-                int weight = GetGemstoneDropWeight(i);
-                if (weight <= 0)
-                {
-                    continue;
-                }
-
-                if (cursor < weight)
-                {
-                    gemstoneIndex = i;
-                    return true;
-                }
-
-                cursor -= weight;
-            }
-
-            // Floating point rounding can leave a tiny remainder. Returning
-            // the final weighted entry keeps the method total and avoids a
-            // silent no-drop at the upper edge of the range.
-            for (int i = definitions.Count - 1; i >= 0; i--)
-            {
-                if (GetGemstoneDropWeight(i) > 0)
-                {
-                    gemstoneIndex = i;
-                    return true;
-                }
-            }
-
+            if (gemstone == null) return false;
+            if (gemstone.Id == "gem.garnet") return true;
+            if (_document == null) return false;
+            foreach (var monster in _document.information.monsters)
+                if (monster.gemstoneId == gemstone.Id && monster.gemstoneAmount > 0 && monster.gemstoneChancePercent > 0 &&
+                    (monster.enabled || _purchased.Contains(monster.id))) return true;
             return false;
+        }
+
+        /// <summary>
+        /// Returns whether an enabled ordinary monster supplies the gemstone.
+        /// Combat receives the same flag through the JSON snapshot.
+        /// </summary>
+        public bool IsGemstoneAvailable(int gemstoneIndex)
+        {
+            TraitGemstoneDefinition gemstone = GetGemstoneDefinition(gemstoneIndex);
+            return IsGemstoneAvailable(gemstone);
         }
 
         private TraitGemstoneDefinition GetGemstoneDefinition(int gemstoneIndex)
@@ -1226,7 +957,7 @@ namespace CursorHunter.Progression
                 : _activeCatalog.Gemstones;
             if (definitions == null || string.IsNullOrEmpty(gemstoneId))
             {
-                return 0;
+                return -1;
             }
 
             for (int i = 0; i < definitions.Count; i++)
@@ -1238,91 +969,7 @@ namespace CursorHunter.Progression
                 }
             }
 
-            return 0;
-        }
-
-        private int GetTotalGemstoneDropWeight()
-        {
-            IReadOnlyList<TraitGemstoneDefinition> definitions = _activeCatalog == null
-                ? null
-                : _activeCatalog.Gemstones;
-            if (definitions == null)
-            {
-                return 0;
-            }
-
-            int total = 0;
-            for (int i = 0; i < definitions.Count; i++)
-            {
-                total = AddClamped(total, GetGemstoneDropWeight(i));
-            }
-
-            return total;
-        }
-
-        private int CountGemstoneRateUpgrades(TraitGemstoneDefinition gemstone)
-        {
-            if (gemstone == null)
-            {
-                return 0;
-            }
-
-            string prefix = gemstone.DropRateNodePrefix;
-            if (string.IsNullOrEmpty(prefix))
-            {
-                return 0;
-            }
-
-            return CountPurchasedPrefix(prefix);
-        }
-
-        private int CountPurchasedPrefix(string prefix)
-        {
-            if (string.IsNullOrEmpty(prefix))
-            {
-                return 0;
-            }
-
-            int count = 0;
-            foreach (string id in _purchased)
-            {
-                if (id.StartsWith(prefix, StringComparison.Ordinal))
-                {
-                    count++;
-                }
-            }
-
-            return count;
-        }
-
-        private static int AddClamped(int current, int value)
-        {
-            if (value <= 0)
-            {
-                return current;
-            }
-
-            if (current > int.MaxValue - value)
-            {
-                return int.MaxValue;
-            }
-
-            return current + value;
-        }
-
-        private static string FormatGemstoneChance(float chance)
-        {
-            if (chance <= 0f)
-            {
-                return "0%";
-            }
-
-            if (chance >= 99.95f)
-            {
-                return "100%";
-            }
-
-            return chance.ToString("0.0", CultureInfo.InvariantCulture) + "%";
+            return -1;
         }
 
         private void BuildSummaryPanel()
@@ -1338,7 +985,7 @@ namespace CursorHunter.Progression
                 new Color(0.015f, 0.045f, 0.12f, 0.88f),
                 new Vector2(1f, 1f));
 
-            string[] labels = { "공격력", "반경", "클릭", "치명타", "보스 피해" };
+            string[] labels = { "공격력", "자동 반경", "쿨타임", "치명타", "보스 피해" };
             for (int i = 0; i < labels.Length; i++)
             {
                 RectTransform card = CreateRect(
@@ -1356,7 +1003,7 @@ namespace CursorHunter.Progression
                     TextAnchor.MiddleCenter,
                     mutedInkColor,
                     true);
-                Text value = CreateText(
+                TextMeshProUGUI value = CreateText(
                     CreateRect("Value", card, Vector2.zero, Vector2.one, new Vector2(0f, -15f), new Vector2(-8f, -36f), new Vector2(0.5f, 0.5f)),
                     "-",
                     23,
@@ -1380,8 +1027,8 @@ namespace CursorHunter.Progression
                 _runtimeRoot,
                 new Vector2(0f, 0f),
                 new Vector2(1f, 1f),
-                new Vector2(-170f, -51f),
-                new Vector2(-396f, -402f),
+                new Vector2(-10f, -51f),
+                new Vector2(-760f, -402f),
                 null,
                 new Color(0.012f, 0.038f, 0.10f, 0.48f),
                 new Vector2(0.5f, 0.5f));
@@ -1423,21 +1070,6 @@ namespace CursorHunter.Progression
                 Vector2.zero,
                 new Vector2(0f, 0f),
                 new Vector2(0f, 1f));
-            VerticalLayoutGroup layout = _nodeContent.gameObject.AddComponent<VerticalLayoutGroup>();
-            layout.spacing = Mathf.Max(6f, nodeGridSpacing.y);
-            layout.childAlignment = TextAnchor.UpperLeft;
-            layout.childControlWidth = false;
-            layout.childControlHeight = false;
-            layout.childForceExpandWidth = false;
-            layout.childForceExpandHeight = false;
-            // Leave a clear lane for the vertical gemstone inventory panel.
-            // The ScrollRect still exposes the full chain when a custom
-            // catalog has wider rows.
-            layout.padding = new RectOffset(340, 14, 12, 12);
-            ContentSizeFitter fitter = _nodeContent.gameObject.AddComponent<ContentSizeFitter>();
-            fitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
-            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-
             ScrollRect scroll = viewport.gameObject.AddComponent<ScrollRect>();
             scroll.viewport = viewport;
             scroll.content = _nodeContent;
@@ -1450,6 +1082,17 @@ namespace CursorHunter.Progression
             scroll.scrollSensitivity = 55f;
 
             _nodeGroup = viewport.gameObject.AddComponent<CanvasGroup>();
+            for (int i = 0; i < 3; i++)
+            {
+                int action = i;
+                var button = CreateButton("GraphZoom" + i, heading, new Vector2(1f, .5f),
+                    new Vector2(1f, .5f), new Vector2(-130f + i * 46f, 0f),
+                    new Vector2(42f, 32f), null, panelColor, i == 0 ? "−" : i == 1 ? "+" : "1:1", 14, inkColor);
+                button.onClick.AddListener(() => {
+                    float zoom = action == 2 ? 1f : Mathf.Clamp(_nodeContent.localScale.x + (action == 0 ? -.15f : .15f), .5f, 1.5f);
+                    _nodeContent.localScale = new Vector3(zoom, zoom, 1f);
+                });
+            }
         }
 
         private void BuildDetailPanel()
@@ -1496,8 +1139,8 @@ namespace CursorHunter.Progression
                 TextAnchor.UpperLeft,
                 mutedInkColor,
                 false);
-            _selectedDescription.horizontalOverflow = HorizontalWrapMode.Wrap;
-            _selectedDescription.verticalOverflow = VerticalWrapMode.Overflow;
+
+            _selectedDescription.overflowMode = TextOverflowModes.Overflow;
 
             _selectedCost = CreateText(
                 CreateRect("SelectedCost", panel, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0f, 120f), new Vector2(-36f, 32f), new Vector2(0.5f, 0f)),
@@ -1530,7 +1173,7 @@ namespace CursorHunter.Progression
                 19,
                 inkColor);
             _upgradeButtonImage = _upgradeButton.GetComponent<Image>();
-            _upgradeButtonLabel = _upgradeButton.GetComponentInChildren<Text>();
+            _upgradeButtonLabel = _upgradeButton.GetComponentInChildren<TextMeshProUGUI>();
             _upgradeButton.onClick.AddListener(UpgradeSelected);
 
             _resetNodeButton = CreateButton(
@@ -1546,7 +1189,7 @@ namespace CursorHunter.Progression
                 19,
                 inkColor);
             _resetNodeButtonImage = _resetNodeButton.GetComponent<Image>();
-            _resetNodeButtonLabel = _resetNodeButton.GetComponentInChildren<Text>();
+            _resetNodeButtonLabel = _resetNodeButton.GetComponentInChildren<TextMeshProUGUI>();
             _resetNodeButton.onClick.AddListener(ResetSelectedNode);
 
             _statusMessage = CreateText(
@@ -1717,6 +1360,8 @@ namespace CursorHunter.Progression
             _summaryOverlay.transform.SetAsLastSibling();
         }
 
+        public bool IsSummaryOpen => _summaryOverlay != null && _summaryOverlay.activeSelf;
+
         public void ShowSummaryPopup()
         {
             if (!_isBuilt)
@@ -1751,213 +1396,76 @@ namespace CursorHunter.Progression
 
         /// <summary>
         /// Rebuilds the summary as explicit sections and key/value rows. A
-        /// single Text blob made it difficult to tell a category, a node key,
+        /// single TextMeshProUGUI blob made it difficult to tell a category, a node key,
         /// and its current value apart, especially once Monster1~20 were
         /// added. The content is intentionally rebuilt only when the popup is
         /// opened, so ordinary tab changes do not allocate summary rows.
         /// </summary>
         private void BuildSummaryContent()
         {
-            if (_summaryOverlayContent == null)
+            if (_summaryOverlayContent == null) return;
+            DestroyChildren(_summaryOverlayContent);
+            _summaryJson = _activeRunSnapshot != null && !string.IsNullOrEmpty(_activeRunSnapshot.SourceJson)
+                ? _activeRunSnapshot.SourceJson : CreateGameInformationJson();
+            if (!GameInformationJson.TryDeserialize(_summaryJson, out var information, out string error))
             {
+                AddSummaryRow(_summaryOverlayContent, "error", error);
                 return;
             }
-
-            DestroyChildren(_summaryOverlayContent);
-
-            ProgressionCombatSnapshot snapshot = _activeRunSnapshot ??
-                CreateCombatSnapshot();
-            CreateSummarySection(_summaryOverlayContent, "현재 전투 적용값", Color.white);
-            CreateSummaryTableHeader(_summaryOverlayContent);
-            AddSummaryRow(
-                _summaryOverlayContent,
-                "공격력",
-                snapshot.Combat.AttackPower.ToString(CultureInfo.InvariantCulture));
-            AddSummaryRow(
-                _summaryOverlayContent,
-                "커서 반경",
-                snapshot.Combat.RangeMultiplier.ToString("0.##", CultureInfo.InvariantCulture) + "배");
-            AddSummaryRow(
-                _summaryOverlayContent,
-                "다중 클릭",
-                snapshot.Combat.AutoAttackEnabled
-                    ? "자동 무한 클릭"
-                    : snapshot.Combat.HitsPerBundle + "회");
-            AddSummaryRow(
-                _summaryOverlayContent,
-                "치명타 확률",
-                snapshot.Combat.CriticalChancePercent.ToString("0.#", CultureInfo.InvariantCulture) + "%");
-            AddSummaryRow(
-                _summaryOverlayContent,
-                "보스 피해 배율",
-                "×" + snapshot.Combat.BossDamageMultiplier.ToString("0.##", CultureInfo.InvariantCulture));
-            AddSummaryRow(
-                _summaryOverlayContent,
-                "일반 필드 시간",
-                snapshot.NormalFieldDurationSeconds.ToString("0", CultureInfo.InvariantCulture) + "초");
-            AddSummaryRow(
-                _summaryOverlayContent,
-                "젬스톤 재화",
-                _garnetBalance.ToString(CultureInfo.InvariantCulture) + " 가넷");
-            AddSummaryRow(
-                _summaryOverlayContent,
-                "저장 상태",
-                loadSavedProgress ? "PlayerPrefs 저장 사용" : "세션 임시 상태");
-
-            TraitTab[] tabs =
+            CreateSummaryNote(_summaryOverlayContent, _activeRunSnapshot == null
+                ? "현재 진행도 JSON · 전투 시작 시 이 값을 고정합니다."
+                : "현재 런이 읽은 JSON · 재화 수량도 시작 시점 기준입니다.");
+            var copy = CreateButton("CopyJson", _summaryOverlayContent, Vector2.zero, Vector2.zero,
+                Vector2.zero, new Vector2(180f, 40f), null, panelColor, "JSON 복사", 15, inkColor);
+            copy.gameObject.AddComponent<LayoutElement>().preferredHeight = 40f;
+            copy.onClick.AddListener(() => GUIUtility.systemCopyBuffer = _summaryJson);
+            CreateSummarySection(_summaryOverlayContent, "stats", Color.white);
+            AddInfo("schemaVersion", information.schemaVersion);
+            AddInfo("balanceVersion", information.balanceVersion);
+            AddInfo("attackPower", information.stats.attackPower);
+            AddInfo("attackRadiusWorldUnits", information.stats.attackRadiusWorldUnits);
+            AddInfo("attackCooldownSeconds", information.stats.attackCooldownSeconds);
+            AddInfo("criticalChancePercent", information.stats.criticalChancePercent);
+            AddInfo("bossDamageMultiplier", information.stats.bossDamageMultiplier);
+            AddInfo("normalFieldDurationSeconds", information.stats.normalFieldDurationSeconds);
+            CreateSummarySection(_summaryOverlayContent, "rules", Color.white);
+            AddInfo("criticalDamageMultiplier", information.rules.criticalDamageMultiplier);
+            AddInfo("globalAliveLimit", information.rules.globalAliveLimit);
+            AddInfo("perMonsterAliveLimit", information.rules.perMonsterAliveLimit);
+            AddInfo("bossFieldDurationSeconds", information.rules.bossFieldDurationSeconds);
+            CreateSummarySection(_summaryOverlayContent, "gemstones", Color.white);
+            foreach (var gem in information.gemstones)
             {
-                TraitTab.Stat, TraitTab.Skill, TraitTab.Monster,
-                TraitTab.Loot, TraitTab.Pet
-            };
-            foreach (TraitTab tab in tabs)
-            {
-                CreateSummarySection(
-                    _summaryOverlayContent,
-                    GetTabTitle(tab),
-                    GetTabAccent(tab));
-
-                IReadOnlyList<TraitCategoryDefinition> categories = GetCategories(tab);
-                if (categories == null || categories.Count == 0)
-                {
-                    AddSummaryRow(_summaryOverlayContent, "상태", "등록된 항목 없음");
-                    continue;
-                }
-
-                foreach (TraitCategoryDefinition category in categories)
-                {
-                    if (category == null || category.Nodes == null || category.Nodes.Count == 0)
-                    {
-                        continue;
-                    }
-
-                    CreateSummaryCategory(
-                        _summaryOverlayContent,
-                        category.Title,
-                        category.Accent);
-                    CreateSummaryTableHeader(_summaryOverlayContent);
-
-                    foreach (TraitNodeDefinition node in category.Nodes)
-                    {
-                        if (node == null)
-                        {
-                            continue;
-                        }
-
-                        AddSummaryRow(
-                            _summaryOverlayContent,
-                            node.Title,
-                            GetSummaryNodeValue(node));
-                    }
-                }
+                AddInfo(gem.id + ".enabled", gem.enabled);
+                AddInfo(gem.id + ".amount", gem.amount);
             }
-
-            CreateSummarySection(_summaryOverlayContent, "젬스톤 보유·드롭", Color.white);
-            CreateSummaryTableHeader(_summaryOverlayContent);
-            IReadOnlyList<TraitGemstoneDefinition> gemstones =
-                _activeCatalog == null ? null : _activeCatalog.Gemstones;
-            bool hasGemstone = false;
-            if (gemstones != null)
+            CreateSummarySection(_summaryOverlayContent, "monsters", Color.white);
+            foreach (var monster in information.monsters)
             {
-                for (int i = 0; i < gemstones.Count; i++)
-                {
-                    TraitGemstoneDefinition gemstone = gemstones[i];
-                    if (gemstone == null || !IsGemstoneUnlocked(gemstone))
-                    {
-                        continue;
-                    }
-
-                    hasGemstone = true;
-                    AddSummaryRow(
-                        _summaryOverlayContent,
-                        gemstone.Title,
-                        GetGemstoneBalance(i).ToString(CultureInfo.InvariantCulture) +
-                        " · 등장 " + FormatGemstoneChance(GetGemstoneDropChance(i)));
-                }
+                AddInfo(monster.id + ".enabled", monster.enabled);
+                AddInfo(monster.id + ".productionCount", monster.productionCount);
+                AddInfo(monster.id + ".hitPoints", monster.hitPoints);
+                AddInfo(monster.id + ".spawnIntervalSeconds", monster.spawnIntervalSeconds);
+                AddInfo(monster.id + ".garnetReward", monster.garnetReward);
+                AddInfo(monster.id + ".gemstoneId", monster.gemstoneId);
+                AddInfo(monster.id + ".gemstoneAmount", monster.gemstoneAmount);
+                AddInfo(monster.id + ".gemstoneChancePercent", monster.gemstoneChancePercent);
+                AddInfo(monster.id + ".behaviorType", (int)monster.behaviorType);
             }
-
-            if (!hasGemstone)
+            CreateSummarySection(_summaryOverlayContent, "skills", Color.white);
+            foreach (var skill in information.skills)
             {
-                AddSummaryRow(_summaryOverlayContent, "상태", "해금된 젬스톤 없음");
+                AddInfo(skill.id + ".enabled", skill.enabled);
+                AddInfo(skill.id + ".radiusWorldUnits", skill.radiusWorldUnits);
+                AddInfo(skill.id + ".damage", skill.damage);
+                AddInfo(skill.id + ".cooldownSeconds", skill.cooldownSeconds);
             }
-
-            CreateSummarySection(_summaryOverlayContent, "전리품 조각 지갑", new Color(1f, 0.66f, 0.28f, 1f));
-            CreateSummaryTableHeader(_summaryOverlayContent);
-            if (_fragmentBalances.Count == 0)
-            {
-                AddSummaryRow(_summaryOverlayContent, "상태", "획득한 전리품 조각 없음");
-            }
-            else
-            {
-                foreach (KeyValuePair<string, long> fragment in _fragmentBalances)
-                {
-                    AddSummaryRow(
-                        _summaryOverlayContent,
-                        fragment.Key,
-                        fragment.Value.ToString(CultureInfo.InvariantCulture) + "개");
-                }
-            }
-
-            CreateSummaryNote(
-                _summaryOverlayContent,
-                testModeUnlockAll
-                    ? "테스트 모드: 모든 선행 조건·보스 조건이 열려 있으며 비용이 면제됩니다."
-                    : "일반 모드: 보스 조건·선행 노드·재화 비용이 적용됩니다.");
-            Canvas.ForceUpdateCanvases();
         }
 
-        private string GetSummaryNodeValue(TraitNodeDefinition node)
+        private void AddInfo(string key, object value)
         {
-            if (IsPurchased(node))
-            {
-                string value = string.IsNullOrEmpty(node.ValueLabel)
-                    ? "적용됨"
-                    : node.ValueLabel + " · 적용됨";
-                return value + " · 비용 " + GetNodeCostKeyValue(node);
-            }
-
-            if (node.AcquisitionOnly)
-            {
-                return "미획득 · 전투 중 확률 획득";
-            }
-
-            if (!testModeUnlockAll && node.RequiredBossTier > unlockedBossTier)
-            {
-                return "잠김 · 보스 v" + node.RequiredBossTier + " 필요";
-            }
-
-            if (!testModeUnlockAll && !IsPrerequisiteMet(node))
-            {
-                TraitNodeDefinition prerequisite = FindNode(node.PrerequisiteNodeId);
-                return "잠김 · " +
-                    (prerequisite == null ? "선행 노드 필요" : prerequisite.Title + " 필요");
-            }
-
-            return (testModeUnlockAll ? "미적용 · 테스트에서 구매 가능" : "미적용 · 구매 가능") +
-                   " · 비용 " + GetNodeCostKeyValue(node);
-        }
-
-        private string GetNodeCostKeyValue(TraitNodeDefinition node)
-        {
-            if (node == null || node.Cost <= 0)
-            {
-                return "없음";
-            }
-
-            if (IsFragmentCurrency(node.CostGemstoneId))
-            {
-                return node.Cost + " 전리품 조각";
-            }
-
-            TraitGemstoneDefinition gemstone =
-                GetGemstoneDefinitionById(node.CostGemstoneId);
-            if (!testModeUnlockAll &&
-                (gemstone == null || !IsGemstoneUnlocked(gemstone)))
-            {
-                return node.Cost + " 해금된 재화";
-            }
-
-            return node.Cost + " " +
-                   (gemstone == null ? node.CostGemstoneId : gemstone.Title);
+            AddSummaryRow(_summaryOverlayContent, key, value is bool flag ? (flag ? "true" : "false") :
+                Convert.ToString(value, CultureInfo.InvariantCulture));
         }
 
         private void CreateSummarySection(
@@ -2048,7 +1556,7 @@ namespace CursorHunter.Progression
             layout.childControlHeight = true;
             layout.childForceExpandWidth = false;
             layout.childForceExpandHeight = true;
-            Text key = CreateText(
+            TextMeshProUGUI key = CreateText(
                 CreateRect("Key", row, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero, new Vector2(0.5f, 0.5f)),
                 "항목 (Key)",
                 11,
@@ -2058,7 +1566,7 @@ namespace CursorHunter.Progression
             LayoutElement keyElement = key.gameObject.AddComponent<LayoutElement>();
             keyElement.preferredWidth = 250f;
             keyElement.minWidth = 160f;
-            Text value = CreateText(
+            TextMeshProUGUI value = CreateText(
                 CreateRect("Value", row, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero, new Vector2(0.5f, 0.5f)),
                 "현재 값 (Value)",
                 11,
@@ -2093,7 +1601,7 @@ namespace CursorHunter.Progression
             layout.childControlHeight = true;
             layout.childForceExpandWidth = false;
             layout.childForceExpandHeight = true;
-            Text keyText = CreateText(
+            TextMeshProUGUI keyText = CreateText(
                 CreateRect("Key", row, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero, new Vector2(0.5f, 0.5f)),
                 key ?? "",
                 13,
@@ -2103,14 +1611,14 @@ namespace CursorHunter.Progression
             LayoutElement keyElement = keyText.gameObject.AddComponent<LayoutElement>();
             keyElement.preferredWidth = 250f;
             keyElement.minWidth = 160f;
-            Text valueText = CreateText(
+            TextMeshProUGUI valueText = CreateText(
                 CreateRect("Value", row, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero, new Vector2(0.5f, 0.5f)),
                 value ?? "",
                 13,
                 TextAnchor.MiddleLeft,
                 mutedInkColor,
                 false);
-            valueText.verticalOverflow = VerticalWrapMode.Truncate;
+            valueText.overflowMode = TextOverflowModes.Truncate;
             LayoutElement valueElement = valueText.gameObject.AddComponent<LayoutElement>();
             valueElement.flexibleWidth = 1f;
         }
@@ -2128,7 +1636,7 @@ namespace CursorHunter.Progression
             LayoutElement element = textRect.gameObject.AddComponent<LayoutElement>();
             element.preferredHeight = 44f;
             element.minHeight = 44f;
-            Text text = CreateText(
+            TextMeshProUGUI text = CreateText(
                 textRect,
                 note ?? "",
                 12,
@@ -2137,7 +1645,7 @@ namespace CursorHunter.Progression
                 false);
             text.rectTransform.offsetMin = new Vector2(10f, 0f);
             text.rectTransform.offsetMax = new Vector2(-10f, 0f);
-            text.verticalOverflow = VerticalWrapMode.Overflow;
+            text.overflowMode = TextOverflowModes.Overflow;
         }
 
         private Color GetTabAccent(TraitTab tab)
@@ -2148,10 +1656,6 @@ namespace CursorHunter.Progression
                     return new Color(0.34f, 0.72f, 1f, 1f);
                 case TraitTab.Monster:
                     return new Color(0.45f, 0.94f, 0.62f, 1f);
-                case TraitTab.Loot:
-                    return new Color(1f, 0.72f, 0.30f, 1f);
-                case TraitTab.Pet:
-                    return new Color(0.82f, 0.48f, 1f, 1f);
                 default:
                     return new Color(1f, 0.82f, 0.30f, 1f);
             }
@@ -2217,8 +1721,8 @@ namespace CursorHunter.Progression
                 new Vector2(0.5f, 0.5f));
             iconRect.GetComponent<Image>().preserveAspect = true;
 
-            Text[] texts = button.GetComponentsInChildren<Text>();
-            foreach (Text text in texts)
+            TextMeshProUGUI[] texts = button.GetComponentsInChildren<TextMeshProUGUI>();
+            foreach (TextMeshProUGUI text in texts)
             {
                 if (text.gameObject.name == "Label")
                 {
@@ -2232,80 +1736,72 @@ namespace CursorHunter.Progression
 
         private void BuildNodes(bool animate)
         {
-            if (_nodeContent == null)
-            {
-                return;
-            }
-
+            if (_nodeContent == null) return;
+            Vector2 previousPosition = _nodeContent.anchoredPosition;
             DestroyChildren(_nodeContent);
-            _selectedNodeId = null;
-
-            IReadOnlyList<TraitCategoryDefinition> categories = GetCategories(_activeTab);
-            int nodeCount = CountNodes(categories);
-
-            if (_nodeHeading != null)
+            var categories = GetCategories(_activeTab);
+            if (categories == null) return;
+            _nodeHeading.text = GetTabTitle(_activeTab) + " · 드래그로 이동";
+            var positions = new Dictionary<string, Vector2>(StringComparer.Ordinal);
+            var allNodes = new List<TraitNodeDefinition>();
+            TraitNodeDefinition selected = null;
+            int categoryIndex = 0, maxDepth = 1, flatIndex = 0;
+            foreach (var category in categories)
             {
-                _nodeHeading.text = GetTabTitle(_activeTab) + " · " + nodeCount + "개";
-            }
-
-            if (nodeCount == 0)
-            {
-                RefreshDetail(null);
-                return;
-            }
-
-            TraitNodeDefinition firstNode = null;
-            int flatIndex = 0;
-            int categoryIndex = 0;
-            if (categories != null)
-            {
-                foreach (TraitCategoryDefinition category in categories)
+                int nodeIndex = 0;
+                float lane = 110f + categoryIndex * 210f;
+                var title = CreateRect("Branch_" + category.Id, _nodeContent, new Vector2(0f, 1f),
+                    new Vector2(0f, 1f), new Vector2(32f, -lane + 70f), new Vector2(290f, 34f), new Vector2(0f, .5f));
+                CreateText(title, category.Title, 16, TextAnchor.MiddleLeft, category.Accent, true);
+                foreach (var node in category.Nodes)
                 {
-                    if (category == null || category.Nodes == null)
+                    bool purchased = IsPurchased(node);
+                    bool locked = !testModeUnlockAll &&
+                        (node.RequiredBossTier > unlockedBossTier || !IsPrerequisiteMet(node));
+                    float x = 90f + nodeIndex * 155f;
+                    float y = -lane;
+                    if (_activeTab == TraitTab.Skill && nodeIndex > 0)
                     {
-                        continue;
+                        x = 285f + (nodeIndex - 1) * 150f;
+                        y += (nodeIndex - 2) * 52f;
                     }
-
-                    List<TraitNodeDefinition> nodes = new List<TraitNodeDefinition>();
-                    foreach (TraitNodeDefinition node in category.Nodes)
-                    {
-                        if (node != null)
-                        {
-                            nodes.Add(node);
-                        }
-                    }
-
-                    if (nodes.Count == 0)
-                    {
-                        continue;
-                    }
-
-                    CreateCategoryRow(
-                        _nodeContent,
-                        category,
-                        categoryIndex,
-                        nodes,
-                        ref flatIndex);
-                    firstNode = firstNode ?? nodes[0];
-                    categoryIndex++;
+                    else if (nodeIndex > 0) y += nodeIndex % 2 == 0 ? -22f : 22f;
+                    positions[node.Id] = new Vector2(x, y);
+                    allNodes.Add(node);
+                    var button = CreateNodeButton(_nodeContent, category, node, categoryIndex, flatIndex++,
+                        purchased, locked, !purchased && !locked && !node.AcquisitionOnly);
+                    var rect = (RectTransform)button.transform;
+                    rect.anchorMin = rect.anchorMax = new Vector2(0f, 1f);
+                    rect.pivot = new Vector2(.5f, .5f);
+                    rect.anchoredPosition = positions[node.Id];
+                    TraitNodeDefinition captured = node;
+                    button.onClick.AddListener(() => SelectNode(captured));
+                    if (selected == null || node.Id == _selectedNodeId) selected = node;
+                    nodeIndex++;
                 }
+                maxDepth = Mathf.Max(maxDepth, nodeIndex);
+                categoryIndex++;
             }
-
-            LayoutRebuilder.ForceRebuildLayoutImmediate(_nodeContent);
-            Canvas.ForceUpdateCanvases();
-            ScrollRect scroll = _nodeContent.GetComponentInParent<ScrollRect>();
-            if (scroll != null)
+            foreach (var node in allNodes)
             {
-                scroll.horizontalNormalizedPosition = 0f;
-                scroll.verticalNormalizedPosition = 1f;
+                if (string.IsNullOrEmpty(node.PrerequisiteNodeId) ||
+                    !positions.TryGetValue(node.PrerequisiteNodeId, out Vector2 start)) continue;
+                Vector2 end = positions[node.Id], delta = end - start;
+                var line = CreateRect("Edge_" + node.Id, _nodeContent, new Vector2(0f, 1f),
+                    new Vector2(0f, 1f), (start + end) * .5f,
+                    new Vector2(delta.magnitude, 3f), new Vector2(.5f, .5f));
+                line.localRotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg);
+                var image = line.gameObject.AddComponent<Image>();
+                image.color = IsPurchased(node) ? PurchasedColor :
+                    IsPrerequisiteMet(node) ? AvailableColor : new Color(.16f, .23f, .33f);
+                image.raycastTarget = false;
+                line.SetAsFirstSibling();
             }
-
-            RefreshDetail(firstNode);
-
-            if (animate)
-            {
-                PlayNodeAnimation();
-            }
+            _nodeContent.sizeDelta = new Vector2(Mathf.Max(700f, maxDepth * 155f + 150f),
+                Mathf.Max(400f, categories.Count * 210f + 100f));
+            _nodeContent.anchoredPosition = previousPosition;
+            RefreshDetail(selected);
+            if (animate) PlayNodeAnimation();
         }
 
         private int CountNodes(IReadOnlyList<TraitCategoryDefinition> categories)
@@ -2333,278 +1829,6 @@ namespace CursorHunter.Progression
             }
 
             return count;
-        }
-
-        private RectTransform CreateCategoryRow(
-            Transform parent,
-            TraitCategoryDefinition category,
-            int categoryIndex,
-            List<TraitNodeDefinition> nodes,
-            ref int flatIndex)
-        {
-            float nodeWidth = GetSafeNodeCellSize().x;
-            float nodeHeight = GetSafeNodeCellSize().y;
-            int columns = Mathf.Clamp(
-                maxNodesPerLine,
-                2,
-                Mathf.Max(2, nodes.Count));
-            int lineCount = Mathf.Max(1, Mathf.CeilToInt((float)nodes.Count / columns));
-            float horizontalConnector = GetSafeConnectorWidth();
-            float verticalConnector = Mathf.Max(8f, nodeGridSpacing.y);
-            float chainWidth = 0f;
-            float chainHeight = 0f;
-
-            for (int lineIndex = 0; lineIndex < lineCount; lineIndex++)
-            {
-                int lineNodeCount = Mathf.Min(
-                    columns,
-                    nodes.Count - lineIndex * columns);
-                float lineWidth = lineNodeCount * nodeWidth +
-                    horizontalConnector * Mathf.Max(0, lineNodeCount - 1);
-                chainWidth = Mathf.Max(chainWidth, lineWidth);
-                chainHeight += nodeHeight;
-                if (lineIndex < lineCount - 1)
-                {
-                    chainHeight += verticalConnector;
-                }
-            }
-
-            float rowWidth = chainWidth + 28f;
-            float rowHeight = GetSafeCategoryHeaderHeight() + chainHeight + 18f;
-
-            RectTransform row = CreateRect(
-                "CategoryRow_" + (category.Id ?? categoryIndex.ToString()),
-                parent,
-                new Vector2(0f, 1f),
-                new Vector2(0f, 1f),
-                Vector2.zero,
-                new Vector2(rowWidth, rowHeight),
-                new Vector2(0f, 1f));
-            Image rowImage = row.gameObject.AddComponent<Image>();
-            rowImage.sprite = null;
-            rowImage.color = new Color(0.015f, 0.04f, 0.10f, 0.06f);
-            rowImage.raycastTarget = false;
-
-            LayoutElement rowElement = row.gameObject.AddComponent<LayoutElement>();
-            rowElement.preferredWidth = rowWidth;
-            rowElement.minWidth = rowWidth;
-            rowElement.preferredHeight = rowHeight;
-            rowElement.minHeight = rowHeight;
-
-            RectTransform header = CreateRect(
-                "CategoryHeader",
-                row,
-                new Vector2(0f, 1f),
-                new Vector2(0f, 1f),
-                new Vector2(14f, -8f),
-                new Vector2(rowWidth - 28f, GetSafeCategoryHeaderHeight()),
-                new Vector2(0f, 1f));
-            LayoutElement headerElement = header.gameObject.AddComponent<LayoutElement>();
-            headerElement.preferredHeight = GetSafeCategoryHeaderHeight();
-            headerElement.minHeight = GetSafeCategoryHeaderHeight();
-
-            Sprite headerIcon = GetCategoryHeaderIcon(_activeTab, category, categoryIndex);
-            if (headerIcon != null)
-            {
-                RectTransform icon = CreateImageRect(
-                    "CategoryIcon",
-                    header,
-                    new Vector2(0f, 0.5f),
-                    new Vector2(0f, 0.5f),
-                    new Vector2(4f, 0f),
-                    new Vector2(24f, 24f),
-                    headerIcon,
-                    Color.white,
-                    new Vector2(0.5f, 0.5f));
-                icon.GetComponent<Image>().preserveAspect = true;
-            }
-
-            RectTransform headerLabel = CreateRect(
-                "Label",
-                header,
-                Vector2.zero,
-                Vector2.one,
-                Vector2.zero,
-                Vector2.zero,
-                new Vector2(0.5f, 0.5f));
-            Text headerText = CreateText(
-                headerLabel,
-                BuildCategoryHeaderText(category, nodes.Count),
-                16,
-                TextAnchor.MiddleLeft,
-                inkColor,
-                true);
-            headerText.rectTransform.offsetMin = new Vector2(
-                headerIcon == null ? 4f : 36f,
-                0f);
-            headerText.rectTransform.offsetMax = new Vector2(-4f, 0f);
-
-            RectTransform chain = CreateRect(
-                "Chain",
-                row,
-                new Vector2(0f, 1f),
-                new Vector2(0f, 1f),
-                new Vector2(14f, -8f - GetSafeCategoryHeaderHeight() - 2f),
-                new Vector2(chainWidth, chainHeight),
-                new Vector2(0f, 1f));
-            LayoutElement chainElement = chain.gameObject.AddComponent<LayoutElement>();
-            chainElement.preferredWidth = chainWidth;
-            chainElement.minWidth = chainWidth;
-            chainElement.preferredHeight = chainHeight;
-            chainElement.minHeight = chainHeight;
-
-            VerticalLayoutGroup chainLayout = chain.gameObject.AddComponent<VerticalLayoutGroup>();
-            chainLayout.spacing = 0f;
-            chainLayout.childAlignment = TextAnchor.UpperLeft;
-            chainLayout.childControlWidth = false;
-            chainLayout.childControlHeight = false;
-            chainLayout.childForceExpandWidth = false;
-            chainLayout.childForceExpandHeight = false;
-
-            int nodeCursor = 0;
-            for (int lineIndex = 0; lineIndex < lineCount; lineIndex++)
-            {
-                int lineNodeCount = Mathf.Min(
-                    columns,
-                    nodes.Count - nodeCursor);
-                float lineWidth = lineNodeCount * nodeWidth +
-                    horizontalConnector * Mathf.Max(0, lineNodeCount - 1);
-                RectTransform line = CreateRect(
-                    "Line_" + lineIndex,
-                    chain,
-                    Vector2.zero,
-                    Vector2.zero,
-                    Vector2.zero,
-                    new Vector2(lineWidth, nodeHeight),
-                    new Vector2(0f, 0.5f));
-                LayoutElement lineElement = line.gameObject.AddComponent<LayoutElement>();
-                lineElement.preferredWidth = lineWidth;
-                lineElement.minWidth = lineWidth;
-                lineElement.preferredHeight = nodeHeight;
-                lineElement.minHeight = nodeHeight;
-
-                HorizontalLayoutGroup lineLayout = line.gameObject.AddComponent<HorizontalLayoutGroup>();
-                lineLayout.spacing = 0f;
-                lineLayout.childAlignment = TextAnchor.MiddleLeft;
-                lineLayout.childControlWidth = false;
-                lineLayout.childControlHeight = false;
-                lineLayout.childForceExpandWidth = false;
-                lineLayout.childForceExpandHeight = false;
-
-                for (int lineNodeIndex = 0; lineNodeIndex < lineNodeCount; lineNodeIndex++)
-                {
-                    if (lineNodeIndex > 0)
-                    {
-                        CreateConnector(line, category.Accent);
-                    }
-
-                    TraitNodeDefinition node = nodes[nodeCursor++];
-                    bool purchased = IsPurchased(node);
-                    bool lockedByBoss = !testModeUnlockAll &&
-                        node.RequiredBossTier > unlockedBossTier;
-                    bool lockedByPrerequisite = !testModeUnlockAll &&
-                        !IsPrerequisiteMet(node);
-                    // Drop-only loot is deliberately rendered as an
-                    // acquisition entry rather than a disabled purchase
-                    // button that looks spendable. The detail panel still
-                    // explains the combat drop rule when it is selected.
-                    bool lockedByAcquisition = node.AcquisitionOnly;
-                    bool lockedByRequirement = lockedByBoss ||
-                        lockedByPrerequisite ||
-                        lockedByAcquisition;
-                    bool available = !purchased && !lockedByRequirement;
-                    Button button = CreateNodeButton(
-                        line,
-                        category,
-                        node,
-                        categoryIndex,
-                        flatIndex,
-                        purchased,
-                        lockedByRequirement,
-                        available);
-                    TraitNodeDefinition capturedNode = node;
-                    button.onClick.AddListener(() => SelectNode(capturedNode));
-                    flatIndex++;
-                }
-
-                if (lineIndex < lineCount - 1)
-                {
-                    CreateVerticalConnector(chain, chainWidth, verticalConnector, category.Accent);
-                }
-            }
-
-            return row;
-        }
-
-        private string BuildCategoryHeaderText(
-            TraitCategoryDefinition category,
-            int nodeCount)
-        {
-            string title = category == null ? "목록" : category.Title;
-            if (_activeTab == TraitTab.Monster)
-            {
-                return title + "  ·  해금 + 생산량 " + Mathf.Max(0, nodeCount - 1) + "단계";
-            }
-
-            if (_activeTab == TraitTab.Loot)
-            {
-                return title + "  ·  확률 획득 " + nodeCount + "종";
-            }
-
-            if (_activeTab == TraitTab.Pet)
-            {
-                return title + "  ·  자동 공격 강화 " + nodeCount + "단계";
-            }
-
-            return title + "  ·  " + nodeCount + "단계";
-        }
-
-        private RectTransform CreateConnector(Transform parent, Color accent)
-        {
-            RectTransform connector = CreateRect(
-                "Connector",
-                parent,
-                Vector2.zero,
-                Vector2.zero,
-                Vector2.zero,
-                new Vector2(GetSafeConnectorWidth(), GetSafeConnectorThickness()),
-                new Vector2(0.5f, 0.5f));
-            Image image = connector.gameObject.AddComponent<Image>();
-            image.color = Color.Lerp(Color.white, accent, 0.14f);
-            image.raycastTarget = false;
-
-            LayoutElement element = connector.gameObject.AddComponent<LayoutElement>();
-            element.preferredWidth = GetSafeConnectorWidth();
-            element.minWidth = GetSafeConnectorWidth();
-            element.preferredHeight = GetSafeConnectorThickness();
-            element.minHeight = GetSafeConnectorThickness();
-            return connector;
-        }
-
-        private RectTransform CreateVerticalConnector(
-            Transform parent,
-            float width,
-            float height,
-            Color accent)
-        {
-            RectTransform connector = CreateRect(
-                "VerticalConnector",
-                parent,
-                Vector2.zero,
-                Vector2.zero,
-                new Vector2(width * 0.5f, 0f),
-                new Vector2(GetSafeConnectorThickness(), height),
-                new Vector2(0.5f, 0.5f));
-            Image image = connector.gameObject.AddComponent<Image>();
-            image.color = Color.Lerp(Color.white, accent, 0.14f);
-            image.raycastTarget = false;
-
-            LayoutElement element = connector.gameObject.AddComponent<LayoutElement>();
-            element.preferredWidth = width;
-            element.minWidth = width;
-            element.preferredHeight = height;
-            element.minHeight = height;
-            return connector;
         }
 
         private Button CreateNodeButton(
@@ -2856,10 +2080,6 @@ namespace CursorHunter.Progression
 
             if (testModeFreeUpgrades)
             {
-                if (IsFragmentCurrency(node.CostGemstoneId))
-                {
-                    return "테스트 무료  ·  원래 비용 " + node.Cost + " 전리품 조각";
-                }
 
                 TraitGemstoneDefinition testGemstone =
                     GetGemstoneDefinitionById(node.CostGemstoneId);
@@ -2869,16 +2089,9 @@ namespace CursorHunter.Progression
                 return "테스트 무료  ·  원래 비용 " + node.Cost + " " + testCurrencyTitle;
             }
 
-            if (IsFragmentCurrency(node.CostGemstoneId))
-            {
-                return "비용  " + node.Cost + "  전리품 조각  ·  보유 " +
-                       GetLootFragmentBalance(node.CostGemstoneId);
-            }
 
             TraitGemstoneDefinition gemstone = GetGemstoneDefinitionById(node.CostGemstoneId);
-            string currencyTitle = IsGemstoneUnlocked(gemstone)
-                ? gemstone.Title
-                : "해금된 젬스톤";
+            string currencyTitle = gemstone == null ? node.CostGemstoneId : gemstone.Title;
             return "비용  " + node.Cost + "  " + currencyTitle;
         }
 
@@ -2889,10 +2102,6 @@ namespace CursorHunter.Progression
                 return 0L;
             }
 
-            if (IsFragmentCurrency(node.CostGemstoneId))
-            {
-                return GetLootFragmentBalance(node.CostGemstoneId);
-            }
 
             int index = GetGemstoneIndexById(node.CostGemstoneId);
             return GetGemstoneBalance(index);
@@ -2905,14 +2114,6 @@ namespace CursorHunter.Progression
                 return;
             }
 
-            if (IsFragmentCurrency(node.CostGemstoneId))
-            {
-                long current = GetLootFragmentBalance(node.CostGemstoneId);
-                _fragmentBalances[node.CostGemstoneId] = Math.Max(
-                    0L,
-                    current - node.Cost);
-                return;
-            }
 
             int index = GetGemstoneIndexById(node.CostGemstoneId);
             if (index == 0)
@@ -2945,19 +2146,11 @@ namespace CursorHunter.Progression
             string effectiveCurrencyId = string.IsNullOrEmpty(currencyId)
                 ? node.CostGemstoneId
                 : currencyId;
-            if (IsFragmentCurrency(effectiveCurrencyId))
-            {
-                long current = GetLootFragmentBalance(effectiveCurrencyId);
-                _fragmentBalances[effectiveCurrencyId] = current > long.MaxValue - amount
-                    ? long.MaxValue
-                    : current + amount;
-                return;
-            }
 
             int index = GetGemstoneIndexById(effectiveCurrencyId);
             if (index == 0)
             {
-                _garnetBalance = Math.Max(0L, _garnetBalance + amount);
+                _garnetBalance = AddSaturating(_garnetBalance, amount);
                 EnsureGemstoneBalanceCapacity();
                 _gemstoneBalances[0] = _garnetBalance;
                 return;
@@ -2966,9 +2159,7 @@ namespace CursorHunter.Progression
             EnsureGemstoneBalanceCapacity();
             if (index >= 0 && index < _gemstoneBalances.Length)
             {
-                _gemstoneBalances[index] = Math.Max(
-                    0L,
-                    _gemstoneBalances[index] + amount);
+                _gemstoneBalances[index] = AddSaturating(_gemstoneBalances[index], amount);
             }
         }
 
@@ -3006,8 +2197,7 @@ namespace CursorHunter.Progression
             bool lockedByPrerequisite = !testModeUnlockAll &&
                 !IsPrerequisiteMet(node);
             bool currencyUnlocked = testModeUnlockAll || node.Cost <= 0 ||
-                IsFragmentCurrency(node.CostGemstoneId) ||
-                IsGemstoneUnlocked(GetGemstoneDefinitionById(node.CostGemstoneId));
+                GetGemstoneDefinitionById(node.CostGemstoneId) != null;
             bool hasCurrency = testModeFreeUpgrades ||
                 (currencyUnlocked && GetNodeBalance(node) >= node.Cost);
             bool canBuy = !purchased && !lockedByBoss && !lockedByPrerequisite &&
@@ -3052,9 +2242,7 @@ namespace CursorHunter.Progression
             }
             else if (!hasCurrency)
             {
-                _statusMessage.text = IsFragmentCurrency(node.CostGemstoneId)
-                    ? "전리품 조각이 부족합니다"
-                    : "젬스톤이 부족합니다";
+                _statusMessage.text = "젬스톤이 부족합니다";
             }
             else
             {
@@ -3066,8 +2254,7 @@ namespace CursorHunter.Progression
         {
             TraitNodeDefinition node = FindNode(_selectedNodeId);
             bool currencyUnlocked = testModeUnlockAll || node == null || node.Cost <= 0 ||
-                IsFragmentCurrency(node.CostGemstoneId) ||
-                IsGemstoneUnlocked(GetGemstoneDefinitionById(node.CostGemstoneId));
+                IsGemstoneAvailable(GetGemstoneDefinitionById(node.CostGemstoneId));
             if (node == null || IsPurchased(node) ||
                 (!testModeUnlockAll && node.RequiredBossTier > unlockedBossTier) ||
                 (!testModeUnlockAll && !IsPrerequisiteMet(node)) ||
@@ -3172,7 +2359,7 @@ namespace CursorHunter.Progression
                 return;
             }
 
-            string[] names = { "STATTab", "SKILLTab", "MONSTERTab", "LOOTTab", "PETTab" };
+            string[] names = { "STATTab", "SKILLTab", "MONSTERTab" };
             for (int i = 0; i < names.Length; i++)
             {
                 Transform child = _runtimeRoot.Find("Tabs/" + names[i]);
@@ -3197,61 +2384,14 @@ namespace CursorHunter.Progression
 
         private void RefreshSummary()
         {
-            if (_garnetValue != null)
-            {
-                _garnetValue.text = _garnetBalance.ToString();
-            }
-
-            if (_summaryValues.Count < 5)
-            {
-                return;
-            }
-
-            int attack = CountPurchased("stat.attack");
-            int radius = CountPurchased("stat.radius");
-            int clicks = CountPurchased("stat.multiClick");
-            int critical = CountPurchased("stat.critical");
-            int boss = CountPurchased("stat.boss");
-
-            _summaryValues[0].text = GetAttackSummary(attack);
-            _summaryValues[1].text = GetRadiusSummary(radius);
-            _summaryValues[2].text = GetClickSummary(clicks);
-            _summaryValues[3].text = GetCriticalSummary(critical);
-            _summaryValues[4].text = GetBossSummary(boss);
-        }
-
-        private string GetAttackSummary(int level)
-        {
-            int[] values = { 1, 3, 6, 10, 16, 24, 35, 50, 70, 100 };
-            return values[Mathf.Clamp(level - 1, 0, values.Length - 1)].ToString();
-        }
-
-        private string GetRadiusSummary(int level)
-        {
-            string[] values =
-            {
-                "작은 원", "+1", "+2", "+3", "+4", "+5",
-                "1/32", "1/16", "1/8", "1/4", "전체 화면"
-            };
-            return values[Mathf.Clamp(level - 1, 0, values.Length - 1)];
-        }
-
-        private string GetClickSummary(int level)
-        {
-            string[] values = { "1회", "2회", "3회", "4회", "무한" };
-            return values[Mathf.Clamp(level - 1, 0, values.Length - 1)];
-        }
-
-        private string GetCriticalSummary(int level)
-        {
-            string[] values = { "0%", "5%", "10%", "20%", "30%", "50%", "75%", "100%" };
-            return values[Mathf.Clamp(level - 1, 0, values.Length - 1)];
-        }
-
-        private string GetBossSummary(int level)
-        {
-            int[] values = { 0, 25, 60, 110, 180, 300 };
-            return "+" + values[Mathf.Clamp(level, 0, values.Length - 1)] + "%";
+            if (_garnetValue != null) _garnetValue.text = _garnetBalance.ToString();
+            if (_summaryValues.Count < 5 || _document == null) return;
+            var info = CreateGameInformation();
+            _summaryValues[0].text = info.stats.attackPower.ToString();
+            _summaryValues[1].text = info.stats.attackRadiusWorldUnits.ToString("0.##") + "u";
+            _summaryValues[2].text = info.stats.attackCooldownSeconds.ToString("0.##") + "s";
+            _summaryValues[3].text = info.stats.criticalChancePercent.ToString("0.#") + "%";
+            _summaryValues[4].text = info.stats.bossDamageMultiplier.ToString("0.##") + "×";
         }
 
         private int CountPurchased(string categoryId)
@@ -3293,8 +2433,7 @@ namespace CursorHunter.Progression
 
             TraitTab[] tabs =
             {
-                TraitTab.Stat, TraitTab.Skill, TraitTab.Monster,
-                TraitTab.Loot, TraitTab.Pet
+                TraitTab.Stat, TraitTab.Skill, TraitTab.Monster
             };
             foreach (TraitTab tab in tabs)
             {
@@ -3356,11 +2495,6 @@ namespace CursorHunter.Progression
                 _purchased.Contains(node.PrerequisiteNodeId);
         }
 
-        private static bool IsFragmentCurrency(string currencyId)
-        {
-            return !string.IsNullOrEmpty(currencyId) &&
-                   currencyId.StartsWith("fragment.", StringComparison.Ordinal);
-        }
 
         private static long AddSaturating(long current, long amount)
         {
@@ -3386,8 +2520,7 @@ namespace CursorHunter.Progression
 
             TraitTab[] tabs =
             {
-                TraitTab.Stat, TraitTab.Skill, TraitTab.Monster,
-                TraitTab.Loot, TraitTab.Pet
+                TraitTab.Stat, TraitTab.Skill, TraitTab.Monster
             };
             foreach (TraitTab tab in tabs)
             {
@@ -3422,7 +2555,7 @@ namespace CursorHunter.Progression
             return false;
         }
 
-        private static void SetButtonLabel(Text label, string value)
+        private static void SetButtonLabel(TextMeshProUGUI label, string value)
         {
             if (label != null)
             {
@@ -3460,22 +2593,7 @@ namespace CursorHunter.Progression
 
         private string BuildNodeDescription(TraitNodeDefinition node)
         {
-            string description = node == null ? string.Empty : node.Description;
-            if (node == null || _activeTab != TraitTab.Stat ||
-                node.Id == null || node.Id.IndexOf("stat.gemstone.rate.",
-                    StringComparison.OrdinalIgnoreCase) < 0)
-            {
-                return description;
-            }
-
-            int gemstoneIndex = GetGemstoneIndexFromNodeId(node.Id);
-            if (gemstoneIndex < 0)
-            {
-                return description;
-            }
-
-            return description + "\n현재 등장 확률 " +
-                FormatGemstoneChance(GetGemstoneDropChance(gemstoneIndex));
+            return node == null ? string.Empty : node.Description;
         }
 
         private IReadOnlyList<TraitCategoryDefinition> GetCategories(TraitTab tab)
@@ -3491,10 +2609,6 @@ namespace CursorHunter.Progression
                     return _activeCatalog.SkillCategories;
                 case TraitTab.Monster:
                     return _activeCatalog.MonsterCategories;
-                case TraitTab.Loot:
-                    return _activeCatalog.LootCategories;
-                case TraitTab.Pet:
-                    return _activeCatalog.PetCategories;
                 default:
                     return _activeCatalog.StatCategories;
             }
@@ -3517,9 +2631,9 @@ namespace CursorHunter.Progression
                 return radiusIcon;
             }
 
-            if (categoryId.IndexOf("click", StringComparison.OrdinalIgnoreCase) >= 0)
+            if (categoryId.IndexOf("cooldown", StringComparison.OrdinalIgnoreCase) >= 0)
             {
-                return clickIcon;
+                return timerIcon != null ? timerIcon : clickIcon;
             }
 
             if (categoryId.IndexOf("critical", StringComparison.OrdinalIgnoreCase) >= 0)
@@ -3553,10 +2667,6 @@ namespace CursorHunter.Progression
                 return monsterIcon != null ? monsterIcon : bossIcon;
             }
 
-            if (categoryId.IndexOf("loot", StringComparison.OrdinalIgnoreCase) >= 0)
-            {
-                return lootIcon != null ? lootIcon : gemstoneIcon;
-            }
 
             if (categoryId.IndexOf("pet", StringComparison.OrdinalIgnoreCase) >= 0)
             {
@@ -3574,10 +2684,6 @@ namespace CursorHunter.Progression
                     return "스킬 목록";
                 case TraitTab.Monster:
                     return "몬스터 도감";
-                case TraitTab.Loot:
-                    return "전리품 목록";
-                case TraitTab.Pet:
-                    return "펫 목록";
                 default:
                     return "스탯 목록";
             }
@@ -3622,6 +2728,9 @@ namespace CursorHunter.Progression
                 return category.Icon;
             }
 
+            if (tab == TraitTab.Skill && category != null && category.Id == "skill.cursorAura")
+                return radiusIcon != null ? radiusIcon : skillIcon;
+
             if (tab == TraitTab.Skill && skillIcons != null &&
                 categoryIndex >= 0 && categoryIndex < skillIcons.Length &&
                 skillIcons[categoryIndex] != null)
@@ -3644,19 +2753,7 @@ namespace CursorHunter.Progression
                 }
             }
 
-            if (tab == TraitTab.Loot && lootIcons != null &&
-                categoryIndex >= 0 && categoryIndex < lootIcons.Length &&
-                lootIcons[categoryIndex] != null)
-            {
-                return lootIcons[categoryIndex];
-            }
 
-            if (tab == TraitTab.Pet && petIcons != null &&
-                categoryIndex >= 0 && categoryIndex < petIcons.Length &&
-                petIcons[categoryIndex] != null)
-            {
-                return petIcons[categoryIndex];
-            }
 
             return category == null ? null : GetCategoryIcon(category.Id);
         }
@@ -3691,23 +2788,7 @@ namespace CursorHunter.Progression
                 }
             }
 
-            if (tab == TraitTab.Loot && lootIcons != null &&
-                flatIndex >= 0 && flatIndex < lootIcons.Length &&
-                lootIcons[flatIndex] != null)
-            {
-                return lootIcons[flatIndex];
-            }
 
-            if (tab == TraitTab.Pet)
-            {
-                if (petIcons != null && flatIndex >= 0 &&
-                    flatIndex < petIcons.Length && petIcons[flatIndex] != null)
-                {
-                    return petIcons[flatIndex];
-                }
-
-                return petIcon != null ? petIcon : skillIcon;
-            }
 
             if (tab == TraitTab.Stat && category != null &&
                 string.Equals(category.Id, "stat.gemstone", StringComparison.Ordinal) &&
@@ -4002,7 +3083,7 @@ namespace CursorHunter.Progression
             return rect;
         }
 
-        private Text CreateText(
+        private TextMeshProUGUI CreateText(
             RectTransform rect,
             string content,
             int fontSize,
@@ -4010,30 +3091,28 @@ namespace CursorHunter.Progression
             Color color,
             bool bold)
         {
-            Text text = rect.gameObject.AddComponent<Text>();
+            TextMeshProUGUI text = rect.gameObject.AddComponent<TextMeshProUGUI>();
             text.text = content ?? string.Empty;
             // Use the serialized NanumGothic asset for Hangul. The builtin
             // fallback keeps custom catalogs usable when a scene has not yet
             // assigned a project font.
-            text.font = uiFont != null
-                ? uiFont
-                : Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            text.font = LocalizedTypography.GetFont(uiFont);
             text.fontSize = Mathf.Max(
                 12,
                 Mathf.RoundToInt(fontSize * Mathf.Clamp(textScale, 1f, 1.5f)));
-            text.alignment = alignment;
+            text.alignment = LocalizedTypography.Alignment(alignment);
             text.color = color;
             text.raycastTarget = false;
-            text.horizontalOverflow = HorizontalWrapMode.Wrap;
-            text.verticalOverflow = VerticalWrapMode.Truncate;
-            text.resizeTextForBestFit = false;
-            text.alignByGeometry = true;
-            text.supportRichText = false;
+
+            text.overflowMode = TextOverflowModes.Truncate;
+            text.enableAutoSizing = false;
+            text.richText = false;
             if (bold && text.font != null)
             {
-                text.fontStyle = FontStyle.Bold;
+                text.fontStyle = FontStyles.Bold;
             }
 
+            LocalizationCatalog.BindKnown(text, content);
             return text;
         }
 

@@ -41,7 +41,7 @@ namespace CursorHunter.Combat
         {
         }
 
-        public SpawnPlan(IReadOnlyList<SpawnPlanEntry> entries)
+        public SpawnPlan(IReadOnlyList<SpawnPlanEntry> entries, int globalAliveLimit = 80)
         {
             if (entries == null)
             {
@@ -55,8 +55,10 @@ namespace CursorHunter.Combat
             }
 
             _entries = Array.AsReadOnly(copy);
+            GlobalAliveLimit = Math.Max(1, Math.Min(80, globalAliveLimit));
         }
 
+        public int GlobalAliveLimit { get; }
         public IReadOnlyList<SpawnPlanEntry> Entries => _entries;
         public bool HasEntries => _entries.Count > 0;
     }

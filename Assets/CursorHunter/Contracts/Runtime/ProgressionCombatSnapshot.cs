@@ -14,8 +14,14 @@ namespace CursorHunter.Contracts
             bool unlocked,
             float damageMultiplier,
             float radiusMultiplier,
-            float cooldownMultiplier)
+            float cooldownMultiplier,
+            long damage = 1L,
+            float radiusWorldUnits = 1f,
+            float cooldownSeconds = 1f)
         {
+            Damage = damage;
+            RadiusWorldUnits = radiusWorldUnits;
+            CooldownSeconds = cooldownSeconds;
             SkillId = skillId ?? string.Empty;
             Unlocked = unlocked;
             DamageMultiplier = SanitizeMultiplier(damageMultiplier);
@@ -27,6 +33,9 @@ namespace CursorHunter.Contracts
                 : 1f;
         }
 
+        public long Damage { get; }
+        public float RadiusWorldUnits { get; }
+        public float CooldownSeconds { get; }
         public string SkillId { get; }
         public bool Unlocked { get; }
         public float DamageMultiplier { get; }
@@ -35,6 +44,9 @@ namespace CursorHunter.Contracts
 
         public bool IsValid =>
             !string.IsNullOrWhiteSpace(SkillId) &&
+            Damage > 0L && RadiusWorldUnits > 0f && CooldownSeconds > 0f &&
+            !float.IsNaN(RadiusWorldUnits) && !float.IsInfinity(RadiusWorldUnits) &&
+            !float.IsNaN(CooldownSeconds) && !float.IsInfinity(CooldownSeconds) &&
             DamageMultiplier > 0f &&
             RadiusMultiplier > 0f &&
             CooldownMultiplier > 0f;
@@ -69,8 +81,6 @@ namespace CursorHunter.Contracts
                 3L,
                 string.Empty,
                 0L,
-                0f,
-                string.Empty,
                 0f)
         {
         }
@@ -85,9 +95,10 @@ namespace CursorHunter.Contracts
             string bonusDropCurrencyId,
             long bonusDropAmount,
             float bonusDropChancePercent,
-            string lootFragmentCurrencyId,
-            float lootFragmentChancePercent)
+            int productionCount = 1,
+            MonsterBehaviorType behaviorType = MonsterBehaviorType.None)
         {
+            ProductionCount = Math.Max(1, productionCount);
             MonsterId = monsterId ?? string.Empty;
             Unlocked = unlocked;
             HitPoints = hitPoints > 0L ? hitPoints : 1L;
@@ -105,10 +116,10 @@ namespace CursorHunter.Contracts
             BonusDropCurrencyId = bonusDropCurrencyId ?? string.Empty;
             BonusDropAmount = bonusDropAmount > 0L ? bonusDropAmount : 0L;
             BonusDropChancePercent = SanitizePercent(bonusDropChancePercent);
-            LootFragmentCurrencyId = lootFragmentCurrencyId ?? string.Empty;
-            LootFragmentChancePercent = SanitizePercent(lootFragmentChancePercent);
+            BehaviorType = behaviorType;
         }
 
+        public int ProductionCount { get; }
         public string MonsterId { get; }
         public bool Unlocked { get; }
         public long HitPoints { get; }
@@ -118,8 +129,7 @@ namespace CursorHunter.Contracts
         public string BonusDropCurrencyId { get; }
         public long BonusDropAmount { get; }
         public float BonusDropChancePercent { get; }
-        public string LootFragmentCurrencyId { get; }
-        public float LootFragmentChancePercent { get; }
+        public MonsterBehaviorType BehaviorType { get; }
 
         public bool IsValid =>
             !string.IsNullOrWhiteSpace(MonsterId) &&
@@ -129,8 +139,7 @@ namespace CursorHunter.Contracts
             GarnetReward >= 0L &&
             BonusDropAmount >= 0L &&
             (BonusDropAmount == 0L || !string.IsNullOrWhiteSpace(BonusDropCurrencyId)) &&
-            (LootFragmentChancePercent <= 0f ||
-             !string.IsNullOrWhiteSpace(LootFragmentCurrencyId));
+            BehaviorType == MonsterBehaviorType.None;
 
         private static float SanitizePercent(float value)
         {
@@ -152,6 +161,8 @@ namespace CursorHunter.Contracts
     {
         private readonly SkillCombatSnapshot[] _skills;
         private readonly MonsterCombatSnapshot[] _monsters;
+        private readonly IReadOnlyList<SkillCombatSnapshot> _skillView;
+        private readonly IReadOnlyList<MonsterCombatSnapshot> _monsterView;
 
         public ProgressionCombatSnapshot(
             CombatSnapshot combat,
@@ -165,8 +176,16 @@ namespace CursorHunter.Contracts
             CombatSnapshot combat,
             SkillCombatSnapshot[] skills,
             MonsterCombatSnapshot[] monsters,
-            float normalFieldDurationSeconds)
+            float normalFieldDurationSeconds,
+            string sourceJson = null,
+            int globalAliveLimit = 80,
+            int perMonsterAliveLimit = 80,
+            float bossFieldDurationSeconds = 60f)
         {
+            GlobalAliveLimit = Math.Max(1, Math.Min(80, globalAliveLimit));
+            PerMonsterAliveLimit = Math.Max(1, Math.Min(GlobalAliveLimit, perMonsterAliveLimit));
+            BossFieldDurationSeconds = bossFieldDurationSeconds;
+            SourceJson = sourceJson ?? string.Empty;
             Combat = combat;
             _skills = skills == null
                 ? Array.Empty<SkillCombatSnapshot>()
@@ -174,21 +193,29 @@ namespace CursorHunter.Contracts
             _monsters = monsters == null
                 ? Array.Empty<MonsterCombatSnapshot>()
                 : (MonsterCombatSnapshot[])monsters.Clone();
+            _skillView = Array.AsReadOnly(_skills);
+            _monsterView = Array.AsReadOnly(_monsters);
             NormalFieldDurationSeconds = normalFieldDurationSeconds >= 15f &&
-                                         normalFieldDurationSeconds <= 60f &&
                                          !float.IsNaN(normalFieldDurationSeconds) &&
                                          !float.IsInfinity(normalFieldDurationSeconds)
-                ? normalFieldDurationSeconds
+                ? Math.Min(30f, normalFieldDurationSeconds)
                 : 15f;
         }
 
+        public int GlobalAliveLimit { get; }
+        public int PerMonsterAliveLimit { get; }
+        public float BossFieldDurationSeconds { get; }
+        public string SourceJson { get; }
         public CombatSnapshot Combat { get; }
-        public IReadOnlyList<SkillCombatSnapshot> Skills => _skills;
-        public IReadOnlyList<MonsterCombatSnapshot> Monsters => _monsters;
+        public IReadOnlyList<SkillCombatSnapshot> Skills => _skillView;
+        public IReadOnlyList<MonsterCombatSnapshot> Monsters => _monsterView;
         public float NormalFieldDurationSeconds { get; }
 
         public bool IsValid =>
             Combat.IsValid &&
+            GlobalAliveLimit >= 1 && GlobalAliveLimit <= 80 &&
+            PerMonsterAliveLimit >= 1 && PerMonsterAliveLimit <= GlobalAliveLimit &&
+            BossFieldDurationSeconds > 0f && !float.IsNaN(BossFieldDurationSeconds) && !float.IsInfinity(BossFieldDurationSeconds) &&
             AreValid(_skills) &&
             AreValid(_monsters);
 

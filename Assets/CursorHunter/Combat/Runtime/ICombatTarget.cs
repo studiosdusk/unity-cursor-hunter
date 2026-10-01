@@ -15,8 +15,6 @@ namespace CursorHunter.Combat
         string BonusDropCurrencyId { get; }
         long BonusDropAmount { get; }
         float BonusDropChancePercent { get; }
-        string LootFragmentCurrencyId { get; }
-        float LootFragmentChancePercent { get; }
 
         bool ApplyDamage(
             RunId runId,

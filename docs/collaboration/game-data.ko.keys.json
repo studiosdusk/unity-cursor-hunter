@@ -1,0 +1,223 @@
+{
+  "schemaVersion(스냅샷 스키마 버전)": 3,
+  "balanceVersion(밸런스 버전)": 3,
+  "stats(스탯)": {
+    "attackPower(공격력)": 1,
+    "attackRadiusWorldUnits(자동 공격 반경)": 1.7253809,
+    "attackCooldownSeconds(자동 공격 쿨타임)": 0.8,
+    "criticalChancePercent(치명타 확률)": 0,
+    "bossDamageMultiplier(보스 피해 배율)": 1,
+    "normalFieldDurationSeconds(일반 필드 제한 시간)": 15
+  },
+  "gemstones(젬스톤)": [
+    {
+      "id(고정 식별자)": "gem.garnet",
+      "enabled(사용 가능 여부)": true,
+      "amount(보유량)": 125
+    },
+    {
+      "id(고정 식별자)": "gem.topaz",
+      "enabled(사용 가능 여부)": false,
+      "amount(보유량)": 0
+    },
+    {
+      "id(고정 식별자)": "gem.amethyst",
+      "enabled(사용 가능 여부)": false,
+      "amount(보유량)": 0
+    },
+    {
+      "id(고정 식별자)": "gem.sapphire",
+      "enabled(사용 가능 여부)": false,
+      "amount(보유량)": 0
+    },
+    {
+      "id(고정 식별자)": "gem.diamond",
+      "enabled(사용 가능 여부)": false,
+      "amount(보유량)": 0
+    },
+    {
+      "id(고정 식별자)": "gem.dragon",
+      "enabled(사용 가능 여부)": false,
+      "amount(보유량)": 0
+    }
+  ],
+  "monsters(몬스터)": [
+    {
+      "id(고정 식별자)": "monster.01",
+      "enabled(사용 가능 여부)": true,
+      "productionCount(1회 생산 마릿수)": 1,
+      "hitPoints(체력)": 8,
+      "spawnIntervalSeconds(생성 주기)": 1.2,
+      "garnetReward(처치 가넷 보상)": 3,
+      "gemstoneId(추가 젬 식별자)": "gem.garnet",
+      "gemstoneAmount(추가 젬 수량)": 0,
+      "gemstoneChancePercent(추가 젬 확률)": 0,
+      "behaviorType(몬스터 행동 특성)": 0
+    },
+    {
+      "id(고정 식별자)": "monster.02",
+      "enabled(사용 가능 여부)": false,
+      "productionCount(1회 생산 마릿수)": 1,
+      "hitPoints(체력)": 20,
+      "spawnIntervalSeconds(생성 주기)": 1.35,
+      "garnetReward(처치 가넷 보상)": 4,
+      "gemstoneId(추가 젬 식별자)": "gem.topaz",
+      "gemstoneAmount(추가 젬 수량)": 1,
+      "gemstoneChancePercent(추가 젬 확률)": 100,
+      "behaviorType(몬스터 행동 특성)": 0
+    },
+    {
+      "id(고정 식별자)": "monster.03",
+      "enabled(사용 가능 여부)": false,
+      "productionCount(1회 생산 마릿수)": 1,
+      "hitPoints(체력)": 35,
+      "spawnIntervalSeconds(생성 주기)": 1.5,
+      "garnetReward(처치 가넷 보상)": 5,
+      "gemstoneId(추가 젬 식별자)": "gem.topaz",
+      "gemstoneAmount(추가 젬 수량)": 1,
+      "gemstoneChancePercent(추가 젬 확률)": 100,
+      "behaviorType(몬스터 행동 특성)": 0
+    },
+    {
+      "id(고정 식별자)": "monster.04",
+      "enabled(사용 가능 여부)": false,
+      "productionCount(1회 생산 마릿수)": 1,
+      "hitPoints(체력)": 55,
+      "spawnIntervalSeconds(생성 주기)": 1.65,
+      "garnetReward(처치 가넷 보상)": 6,
+      "gemstoneId(추가 젬 식별자)": "gem.amethyst",
+      "gemstoneAmount(추가 젬 수량)": 1,
+      "gemstoneChancePercent(추가 젬 확률)": 100,
+      "behaviorType(몬스터 행동 특성)": 0
+    },
+    {
+      "id(고정 식별자)": "monster.05",
+      "enabled(사용 가능 여부)": false,
+      "productionCount(1회 생산 마릿수)": 1,
+      "hitPoints(체력)": 80,
+      "spawnIntervalSeconds(생성 주기)": 1.8,
+      "garnetReward(처치 가넷 보상)": 7,
+      "gemstoneId(추가 젬 식별자)": "gem.amethyst",
+      "gemstoneAmount(추가 젬 수량)": 1,
+      "gemstoneChancePercent(추가 젬 확률)": 100,
+      "behaviorType(몬스터 행동 특성)": 0
+    },
+    {
+      "id(고정 식별자)": "monster.06",
+      "enabled(사용 가능 여부)": false,
+      "productionCount(1회 생산 마릿수)": 1,
+      "hitPoints(체력)": 120,
+      "spawnIntervalSeconds(생성 주기)": 1.95,
+      "garnetReward(처치 가넷 보상)": 8,
+      "gemstoneId(추가 젬 식별자)": "gem.sapphire",
+      "gemstoneAmount(추가 젬 수량)": 1,
+      "gemstoneChancePercent(추가 젬 확률)": 100,
+      "behaviorType(몬스터 행동 특성)": 0
+    },
+    {
+      "id(고정 식별자)": "monster.07",
+      "enabled(사용 가능 여부)": false,
+      "productionCount(1회 생산 마릿수)": 1,
+      "hitPoints(체력)": 170,
+      "spawnIntervalSeconds(생성 주기)": 2.1,
+      "garnetReward(처치 가넷 보상)": 9,
+      "gemstoneId(추가 젬 식별자)": "gem.sapphire",
+      "gemstoneAmount(추가 젬 수량)": 1,
+      "gemstoneChancePercent(추가 젬 확률)": 100,
+      "behaviorType(몬스터 행동 특성)": 0
+    },
+    {
+      "id(고정 식별자)": "monster.08",
+      "enabled(사용 가능 여부)": false,
+      "productionCount(1회 생산 마릿수)": 1,
+      "hitPoints(체력)": 230,
+      "spawnIntervalSeconds(생성 주기)": 2.25,
+      "garnetReward(처치 가넷 보상)": 10,
+      "gemstoneId(추가 젬 식별자)": "gem.diamond",
+      "gemstoneAmount(추가 젬 수량)": 1,
+      "gemstoneChancePercent(추가 젬 확률)": 100,
+      "behaviorType(몬스터 행동 특성)": 0
+    },
+    {
+      "id(고정 식별자)": "monster.09",
+      "enabled(사용 가능 여부)": false,
+      "productionCount(1회 생산 마릿수)": 1,
+      "hitPoints(체력)": 320,
+      "spawnIntervalSeconds(생성 주기)": 2.4,
+      "garnetReward(처치 가넷 보상)": 11,
+      "gemstoneId(추가 젬 식별자)": "gem.dragon",
+      "gemstoneAmount(추가 젬 수량)": 1,
+      "gemstoneChancePercent(추가 젬 확률)": 100,
+      "behaviorType(몬스터 행동 특성)": 0
+    },
+    {
+      "id(고정 식별자)": "monster.10",
+      "enabled(사용 가능 여부)": false,
+      "productionCount(1회 생산 마릿수)": 1,
+      "hitPoints(체력)": 450,
+      "spawnIntervalSeconds(생성 주기)": 2.55,
+      "garnetReward(처치 가넷 보상)": 12,
+      "gemstoneId(추가 젬 식별자)": "gem.dragon",
+      "gemstoneAmount(추가 젬 수량)": 1,
+      "gemstoneChancePercent(추가 젬 확률)": 100,
+      "behaviorType(몬스터 행동 특성)": 0
+    }
+  ],
+  "skills(스킬)": [
+    {
+      "id(고정 식별자)": "skill.fireball",
+      "enabled(사용 가능 여부)": true,
+      "damage(스킬 피해)": 4,
+      "radiusWorldUnits(스킬 반경)": 1.5,
+      "cooldownSeconds(스킬 쿨타임)": 4.5
+    },
+    {
+      "id(고정 식별자)": "skill.lightning",
+      "enabled(사용 가능 여부)": false,
+      "damage(스킬 피해)": 8,
+      "radiusWorldUnits(스킬 반경)": 2,
+      "cooldownSeconds(스킬 쿨타임)": 6
+    },
+    {
+      "id(고정 식별자)": "skill.freeze",
+      "enabled(사용 가능 여부)": false,
+      "damage(스킬 피해)": 12,
+      "radiusWorldUnits(스킬 반경)": 1.875,
+      "cooldownSeconds(스킬 쿨타임)": 7
+    },
+    {
+      "id(고정 식별자)": "skill.hurricane",
+      "enabled(사용 가능 여부)": false,
+      "damage(스킬 피해)": 36,
+      "radiusWorldUnits(스킬 반경)": 2.8125,
+      "cooldownSeconds(스킬 쿨타임)": 9
+    },
+    {
+      "id(고정 식별자)": "skill.meteor",
+      "enabled(사용 가능 여부)": false,
+      "damage(스킬 피해)": 40,
+      "radiusWorldUnits(스킬 반경)": 3.4375,
+      "cooldownSeconds(스킬 쿨타임)": 12
+    },
+    {
+      "id(고정 식별자)": "skill.dragonBreath",
+      "enabled(사용 가능 여부)": false,
+      "damage(스킬 피해)": 250,
+      "radiusWorldUnits(스킬 반경)": 5.625,
+      "cooldownSeconds(스킬 쿨타임)": 18
+    },
+    {
+      "id(고정 식별자)": "skill.cursorAura",
+      "enabled(사용 가능 여부)": false,
+      "damage(스킬 피해)": 1,
+      "radiusWorldUnits(스킬 반경)": 2,
+      "cooldownSeconds(스킬 쿨타임)": 1.5
+    }
+  ],
+  "rules(전투 공통 규칙)": {
+    "criticalDamageMultiplier(치명타 피해 배율)": 2,
+    "globalAliveLimit(전체 생존 몬스터 상한)": 80,
+    "perMonsterAliveLimit(종별 생존 몬스터 상한)": 80,
+    "bossFieldDurationSeconds(보스 필드 제한 시간)": 60
+  }
+}

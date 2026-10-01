@@ -29,8 +29,7 @@ namespace CursorHunter.Data
         [SerializeField] private string bonusDropCurrencyId = string.Empty;
         [SerializeField, Min(0)] private long bonusDropAmount;
         [SerializeField, Range(0f, 100f)] private float bonusDropChancePercent;
-        [SerializeField] private string lootFragmentCurrencyId = string.Empty;
-        [SerializeField, Range(0f, 100f)] private float lootFragmentChancePercent;
+        [SerializeField] private MonsterBehaviorType behaviorType;
 
         public string MonsterId => monsterId;
         public string DisplayName => displayName;
@@ -43,8 +42,7 @@ namespace CursorHunter.Data
         public string BonusDropCurrencyId => bonusDropCurrencyId ?? string.Empty;
         public long BonusDropAmount => Math.Max(0L, bonusDropAmount);
         public float BonusDropChancePercent => Mathf.Clamp(bonusDropChancePercent, 0f, 100f);
-        public string LootFragmentCurrencyId => lootFragmentCurrencyId ?? string.Empty;
-        public float LootFragmentChancePercent => Mathf.Clamp(lootFragmentChancePercent, 0f, 100f);
+        public MonsterBehaviorType BehaviorType => behaviorType;
 
         public SpawnSnapshot CreateSnapshot(int aliveLimit)
         {
@@ -59,8 +57,7 @@ namespace CursorHunter.Data
                 BonusDropCurrencyId,
                 BonusDropAmount,
                 BonusDropChancePercent,
-                LootFragmentCurrencyId,
-                LootFragmentChancePercent);
+                BehaviorType);
         }
 
         private void OnValidate()
@@ -93,14 +90,8 @@ namespace CursorHunter.Data
                 bonusDropChancePercent = 0f;
             }
 
-            lootFragmentCurrencyId = lootFragmentCurrencyId == null
-                ? string.Empty
-                : lootFragmentCurrencyId.Trim();
-            lootFragmentChancePercent = Mathf.Clamp(lootFragmentChancePercent, 0f, 100f);
-            if (string.IsNullOrEmpty(lootFragmentCurrencyId))
-            {
-                lootFragmentChancePercent = 0f;
-            }
+            behaviorType = MonsterBehaviorType.None;
+
         }
     }
 }

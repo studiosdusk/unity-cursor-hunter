@@ -26,7 +26,9 @@ namespace CursorHunter.Combat
         private SpawnSnapshot _spawnSnapshot;
         private GameObject _spawnPrefab;
         private SeededRandom _random;
-        private float _nextSpawnAt;
+        private IReadOnlyList<SpawnPlanEntry> _entries;
+        private float[] _nextSpawnTimes;
+        [SerializeField, Min(1)] private int globalAliveLimit = 80;
         private bool _isSpawning;
         private bool _spawnFailureLogged;
 
@@ -99,23 +101,19 @@ namespace CursorHunter.Combat
             }
 
             float elapsedSeconds = combatRunController.ElapsedSeconds;
-            if (elapsedSeconds < _nextSpawnAt)
+            // Bounded work: at most one spawn opportunity per species per frame.
+            for (int i = 0; i < _entries.Count; i++)
             {
-                return;
-            }
-
-            if (ActiveSpawnedCount < _spawnSnapshot.AliveLimit)
-            {
-                if (!SpawnPack(out _))
+                if (elapsedSeconds < _nextSpawnTimes[i]) continue;
+                _spawnSnapshot = _entries[i].Snapshot;
+                _spawnPrefab = _entries[i].Prefab;
+                if (ActiveSpawnedCount < globalAliveLimit && !SpawnPack(out _))
                 {
                     _isSpawning = false;
                     return;
                 }
+                _nextSpawnTimes[i] = elapsedSeconds + _spawnSnapshot.SpawnIntervalSeconds;
             }
-
-            // A missed spawn opportunity is intentionally not accumulated when
-            // the alive limit is reached.
-            _nextSpawnAt = elapsedSeconds + _spawnSnapshot.SpawnIntervalSeconds;
         }
 
         public SpawnStartResult StartRun(
@@ -135,23 +133,18 @@ namespace CursorHunter.Combat
             if (!request.IsValid ||
                 spawnPlan == null ||
                 !spawnPlan.HasEntries ||
-                spawnPlan.Entries.Count != 1 ||
                 !spawnPlan.Entries[0].HasValidSnapshot)
             {
                 return new SpawnStartResult(
                     SpawnStartStatus.InvalidRequest,
-                    "RunRequest or single-entry SpawnPlan is invalid.");
+                    "RunRequest or SpawnPlan is invalid.");
             }
 
-            SpawnPlanEntry planEntry = spawnPlan.Entries[0];
-            if (!planEntry.HasPrefab)
+            foreach (var entry in spawnPlan.Entries)
             {
-                Debug.LogWarning(
-                    "MonsterSpawner could not start because the SpawnPlan prefab is missing.",
-                    this);
-                return new SpawnStartResult(
-                    SpawnStartStatus.MissingPrefab,
-                    "MonsterDefinition does not reference a prefab.");
+                if (!entry.HasValidSnapshot || !entry.HasPrefab)
+                    return new SpawnStartResult(entry.HasPrefab ? SpawnStartStatus.InvalidRequest : SpawnStartStatus.MissingPrefab,
+                        "Every spawn entry requires valid data and a prefab.");
             }
 
             if (combatRunController == null)
@@ -163,27 +156,24 @@ namespace CursorHunter.Combat
             }
 
             _runId = request.RunId;
-            _spawnSnapshot = planEntry.Snapshot;
-            _spawnPrefab = planEntry.Prefab;
+            globalAliveLimit = spawnPlan.GlobalAliveLimit;
+            _entries = spawnPlan.Entries;
+            _nextSpawnTimes = new float[_entries.Count];
             _random = new SeededRandom(request.Seed);
-            _nextSpawnAt = 0f;
             _spawnFailureLogged = false;
             _isSpawning = true;
-
-            if (!SpawnPack(out SpawnStartStatus failureStatus))
+            for (int i = 0; i < _entries.Count; i++)
             {
-                StopRun();
-                return new SpawnStartResult(
-                    failureStatus,
-                    failureStatus == SpawnStartStatus.NoSpawnPosition
-                        ? "No valid spawn position is available."
-                        : "The initial spawn pack could not be created.");
+                _spawnSnapshot = _entries[i].Snapshot;
+                _spawnPrefab = _entries[i].Prefab;
+                if (!SpawnPack(out SpawnStartStatus failureStatus))
+                {
+                    StopRun();
+                    return new SpawnStartResult(failureStatus, "Initial monster pack failed.");
+                }
+                _nextSpawnTimes[i] = _spawnSnapshot.SpawnIntervalSeconds;
             }
-
-            _nextSpawnAt = _spawnSnapshot.SpawnIntervalSeconds;
-            return new SpawnStartResult(
-                SpawnStartStatus.Started,
-                "Initial spawn pack prepared.");
+            return new SpawnStartResult(SpawnStartStatus.Started, "All monster packs prepared.");
         }
 
         public void StopRun()
@@ -205,14 +195,19 @@ namespace CursorHunter.Combat
             _spawnedTargets.Clear();
             _runId = default;
             _spawnPrefab = null;
+            _entries = null;
+            _nextSpawnTimes = null;
         }
 
         private bool SpawnPack(out SpawnStartStatus failureStatus)
         {
             failureStatus = SpawnStartStatus.Started;
 
-            int remainingCapacity =
-                _spawnSnapshot.AliveLimit - ActiveSpawnedCount;
+            int speciesCount = 0;
+            foreach (var target in _spawnedTargets)
+                if (target != null && !target.IsDead && target.MonsterId == _spawnSnapshot.MonsterId) speciesCount++;
+            int remainingCapacity = Mathf.Min(_spawnSnapshot.AliveLimit - speciesCount,
+                Mathf.Max(1, globalAliveLimit) - ActiveSpawnedCount);
             int spawnCount = Mathf.Min(
                 _spawnSnapshot.PackSize,
                 Mathf.Max(0, remainingCapacity));

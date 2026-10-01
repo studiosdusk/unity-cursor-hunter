@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8c1e6b4b8a0b4b4aa4a31a2d6c7e9f05, type: 3}
+  m_Name: Monster07
+  m_EditorClassIdentifier: CursorHunter.Data::CursorHunter.Data.MonsterDefinition
+  monsterId: monster.07
+  displayName: 빙결 거미
+  prefabKey: Spider/Spider_Frozen
+  prefab: {fileID: 2133663529494808259, guid: 17ea98e5ecd9de54ea50864524bea75e, type: 3}
+  maxHealth: 170
+  spawnIntervalSeconds: 2.0999999999999996
+  packSize: 1
+  garnetReward: 9
+  bonusDropCurrencyId: gem.sapphire
+  bonusDropAmount: 1
+  bonusDropChancePercent: 100
+  behaviorType: 0

@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8c1e6b4b8a0b4b4aa4a31a2d6c7e9f05, type: 3}
+  m_Name: Monster01
+  m_EditorClassIdentifier: CursorHunter.Data::CursorHunter.Data.MonsterDefinition
+  monsterId: monster.01
+  displayName: 가넷 그루터기
+  prefabKey: Walker/Walker_Stump
+  prefab: {fileID: 5377580900226821509, guid: 76b40faaa9f5b364486f174c85bc38f5, type: 3}
+  maxHealth: 8
+  spawnIntervalSeconds: 1.2
+  packSize: 1
+  garnetReward: 3
+  bonusDropCurrencyId: gem.garnet
+  bonusDropAmount: 0
+  bonusDropChancePercent: 0
+  behaviorType: 0
