@@ -31,12 +31,6 @@ namespace CursorHunter.App
         [SerializeField] private AppUiRootController uiRootController;
         [SerializeField] private TraitScreenController progressionController;
 
-        [Header("Hunt combat parameters")]
-        [SerializeField, Min(1)] private long attackPower = 10;
-        [SerializeField, Min(0.01f)] private float rangeMultiplier = 1f;
-        [SerializeField, Min(0f)] private float attackCooldownSeconds = 0.5f;
-
-
         [Header("Hunt run")]
         [SerializeField] private MonsterDefinition monsterDefinition;
         [SerializeField, Min(1)] private int aliveLimit = 80;
@@ -56,6 +50,7 @@ namespace CursorHunter.App
         private void Awake()
         {
             ResolveReferences();
+            SyncCursorCombatStatDefaults();
             EnsureRunCoordinator();
         }
 
@@ -157,9 +152,13 @@ namespace CursorHunter.App
                 return;
             }
 
+            PlayerCombatStatsRuntime runtimeStats =
+                combatRunController.PlayerCombatStatsRuntime;
+            CursorCombatStatBonusesSnapshot cursorStatBonuses = default;
             ProgressionCombatSnapshot progressionSnapshot = null;
             if (progressionController != null)
             {
+                progressionController.SetCursorCombatStatDefaults(runtimeStats.Defaults);
                 string json;
                 try { json = progressionController.CreateGameInformationJson(); }
                 catch (Exception exception)
@@ -172,7 +171,11 @@ namespace CursorHunter.App
                     Debug.LogError("Combat JSON rejected: " + error, this);
                     return;
                 }
-                progressionSnapshot = information.ToCombatSnapshot(json);
+                cursorStatBonuses =
+                    progressionController.CreateCursorCombatStatBonusesSnapshot();
+                progressionSnapshot = information.ToCombatSnapshot(
+                    json,
+                    cursorStatBonuses);
                 schemaVersion = information.schemaVersion;
                 balanceVersion = information.balanceVersion;
             }
@@ -182,7 +185,7 @@ namespace CursorHunter.App
                 return;
             }
             CombatSnapshot combatSnapshot = progressionSnapshot == null
-                ? CreateFallbackCombatSnapshot()
+                ? runtimeStats.DefaultsCombatSnapshot
                 : progressionSnapshot.Combat;
 
             if (!combatSnapshot.IsValid)
@@ -190,7 +193,7 @@ namespace CursorHunter.App
                 Debug.LogWarning(
                     "Progression produced an invalid combat snapshot; using the prototype fallback.",
                     this);
-                combatSnapshot = CreateFallbackCombatSnapshot();
+                combatSnapshot = runtimeStats.DefaultsCombatSnapshot;
             }
 
             aliveLimit = Mathf.Max(1, aliveLimit);
@@ -225,6 +228,7 @@ namespace CursorHunter.App
             if (!_runCoordinator.Start(
                     runRequest,
                     combatSnapshot,
+                    cursorStatBonuses,
                     spawnPlan,
                     out string failureReason))
             {
@@ -249,7 +253,8 @@ namespace CursorHunter.App
             }
 
             combatRunController.ConfigureSkills(progressionSnapshot == null ? null : progressionSnapshot.Skills);
-            cursorController.SetRangeMultiplier(combatSnapshot.RangeMultiplier);
+            cursorController.SetRangeMultiplier(
+                combatRunController.PlayerCombatStatsRuntime.AttackRangeMultiplier);
             cursorController.ShowCursorImage();
 
             if (testPanelToggleController != null)
@@ -267,13 +272,15 @@ namespace CursorHunter.App
             }
         }
 
-        private CombatSnapshot CreateFallbackCombatSnapshot()
+        private void SyncCursorCombatStatDefaults()
         {
-            return new CombatSnapshot(
-                Math.Max(1L, attackPower),
-                Mathf.Max(0.01f, rangeMultiplier),
-                Mathf.Max(0f, attackCooldownSeconds),
-                1);
+            if (progressionController == null || combatRunController == null)
+            {
+                return;
+            }
+
+            progressionController.SetCursorCombatStatDefaults(
+                combatRunController.PlayerCombatStatsRuntime.Defaults);
         }
 
         /// <summary>

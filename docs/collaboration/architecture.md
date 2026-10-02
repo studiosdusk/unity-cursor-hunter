@@ -43,14 +43,17 @@ App이 Data/Progression에서 런 입력을 만들어 Combat에 전달한다. Pr
 
 ## 현재 통합 경로 — 전투 정보 v3 (2026-10-01)
 
-GameDataDocument.Load는 두 영어 리소스를 읽는다.
+GameDataDocument.Load는 두 영어 리소스를 읽는다. Main 씬의
+`PlayerCombatStatsDefaults` 컴포넌트는 커서 핵심 스탯의 공통 기본값을 별도로 소유한다.
 
-- GameData/game-data.en: 초기 GameInformation (stats/rules/gemstones/monsters/skills)
+- GameData/game-data.en: GameInformation 구조와 기타 초기값; Progression Sandbox/검증용 커서 기본값 포함
 - GameData/progression-config.en: 성장 화면 비용/선행 조건/명칭/외형 연결용 설정
 
-GameInformationBuilder가 현재 구매·지갑을 합산 → CreateGameInformationJson →
-검증/역직렬화 → ProgressionCombatSnapshot → App.HuntManager가 CombatSnapshot/스킬/SpawnPlan을 전달한다.
-전체 정보 팝업은 같은 SourceJson을 표시한다. Combat은 UI/PlayerPrefs/성장 설정을 직접 읽지 않는다.
+App이 기본 스탯 스냅샷을 Progression에 제공한다. GameInformationBuilder가 이 기본값과
+구매한 커서 스탯 증가량을 합쳐 전체 정보 JSON을 만든다. Progression은 별도의
+`CursorCombatStatBonusesSnapshot`도 App에 반환한다. App은 이를 런 시작 시 Combat에 전달하고,
+`PlayerCombatStatsRuntime`은 매 런 기본 컴포넌트에서 초기화한 뒤 증가량을 적용한다.
+전체 정보 팝업은 같은 최종 SourceJson을 표시한다. Combat은 UI/PlayerPrefs/성장 설정을 직접 읽지 않는다.
 진행도 원본 상태는 아직 TraitScreenController가 소유하며 독립 상태 서비스를 새로 만든 것은 아니다.
 
 게임 정보 파일과 한국어 참고본에는 유물, progression, entities, fieldHelp, implementation이 없다.

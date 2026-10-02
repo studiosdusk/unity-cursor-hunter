@@ -2,9 +2,13 @@
 
 현재 게임 버전: **0.0.5**. 전투 JSON의 schemaVersion=3과 저장 version=3은 게임 버전과 별개다.
 
-전투 정보의 구조·초기값은 [영어 JSON](../../Assets/CursorHunter/Data/Resources/GameData/game-data.en.json)이다.
-강화 비용·선행 조건·명칭은 [성장 화면 설정](../../Assets/CursorHunter/Data/Resources/GameData/progression-config.en.json)으로 분리했다.
-플레이어의 구매·지갑은 별도 PlayerPrefs에 저장하며, 전투 시작 때 둘을 합쳐 최종 정보를 만든다.
+커서 핵심 스탯의 공통 기본값은 Main 씬에서 `PlayerCombatStatsRuntime`과 함께 둔
+`PlayerCombatStatsDefaults` 컴포넌트가 소유한다. 나머지 게임 초기 데이터와 전체 정보
+구조는 [영어 JSON](../../Assets/CursorHunter/Data/Resources/GameData/game-data.en.json)에 둔다.
+강화 비용·선행 조건·명칭·커서 스탯 증가량은
+[성장 화면 설정](../../Assets/CursorHunter/Data/Resources/GameData/progression-config.en.json)으로 분리한다.
+플레이어의 구매·지갑은 별도 PlayerPrefs에 저장하며, 전투 시작 때 기본 스탯과 보유 특성의
+증가량을 합산한다.
 [키 바로 뒤 한국어 번역 JSON](game-data.ko.keys.json)은 원본의 모든 값을 유지하고 영문키(한국어)만 병기한다.
 [상세 한국어 해설 JSON](game-data.ko.reference.json)은 원본값·단위·설명·ID의 뜻까지 제공한다.
 두 한국어 파일은 사람이 읽는 참고서이며 게임에서 읽지 않는다.
@@ -46,7 +50,7 @@ macOS 설치 확인: `python3 tools/open_unity.py --check`. 확인 후 같은 �
 
 ## 현재 합류 기준
 
-- 플레이어 진행도를 합산한 GameInformation v3의 stats / rules / gemstones / monsters / skills를 전투 시작 입력으로 사용한다.
+- 커서 기본 스탯 컴포넌트와 보유 커서 특성의 증가량을 런 시작 때 합산한다. 스킬·몬스터·재화 정보는 GameInformation v3 스냅샷을 사용한다.
 - 일반 필드 15~30초, 자동 반경 공격·쿨타임, 일반 몬스터 10종 누적 생성.
 - 펫은 스킬의 커서 오라로 통합. 유물 관련 데이터·UI·드롭은 제거했으며 새 일반 유물 시스템은 추후 설계한다.
 - 몬스터 behaviorType은 enum 자리만 준비했다. 현재 None=0만 지원하며 행동은 미구현이다.
@@ -58,7 +62,8 @@ macOS 설치 확인: `python3 tools/open_unity.py --check`. 확인 후 같은 �
 
 ## 데이터와 검증
 
-- 전투 초기 정보: Assets/CursorHunter/Data/Resources/GameData/game-data.en.json (최종 GameInformation과 동일 구조)
+- 커서 핵심 스탯 기본값: Main.unity의 PlayerCombatStatsDefaults 컴포넌트
+- 그 외 초기 정보와 전체 GameInformation 구조: Assets/CursorHunter/Data/Resources/GameData/game-data.en.json
 - 성장 화면 설정: Assets/CursorHunter/Data/Resources/GameData/progression-config.en.json (Combat에는 전달하지 않음)
 - 한국어 키 번역: [game-data.ko.keys.json](game-data.ko.keys.json) (키만 번역 병기, 구조/값 유지)
 - 한국어 상세 해설: [game-data.ko.reference.json](game-data.ko.reference.json) (비실행 문서)

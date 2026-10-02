@@ -112,7 +112,7 @@ def validate_documents():
                 assert not n["prerequisiteNodeId"] or n["prerequisiteNodeId"] in ordered_nodes, "Nodes must follow prerequisite order"
                 ordered_nodes.add(n["id"])
                 assert n["cost"] >= 0 and n["currencyId"] in currency
-                assert n["operation"] in ("baseline", "set", "enable", "multiply")
+                assert n["operation"] in ("baseline", "set", "add", "enable", "multiply")
                 assert isinstance(n["startsUnlocked"], bool) and 0 <= n["requiredBossTier"] <= 5
                 assert n["displayName"] and n["description"] and math.isfinite(n["value"])
                 seen, current = {n["id"]}, n["prerequisiteNodeId"]

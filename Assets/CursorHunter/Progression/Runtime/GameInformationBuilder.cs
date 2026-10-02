@@ -6,15 +6,33 @@ using UnityEngine;
 
 namespace CursorHunter.Progression
 {
-    /// <summary>Resolves explicit JSON node effects against a copied file baseline.</summary>
+    /// <summary>Resolves explicit node effects against a copied authored baseline.</summary>
     public static class GameInformationBuilder
     {
         public static GameInformation Build(GameDataDocument document, ISet<string> purchased,
             Func<string, long> wallet)
         {
+            return Build(document, purchased, wallet, null);
+        }
+
+        public static GameInformation Build(
+            GameDataDocument document,
+            ISet<string> purchased,
+            Func<string, long> wallet,
+            CursorCombatStatDefaultsSnapshot? cursorStatDefaults)
+        {
             if (document == null || purchased == null || wallet == null)
                 throw new ArgumentNullException("Game data builder inputs cannot be null.");
             var result = JsonUtility.FromJson<GameInformation>(JsonUtility.ToJson(document.information));
+            if (cursorStatDefaults.HasValue)
+            {
+                ApplyCursorStatDefaults(result, cursorStatDefaults.Value);
+            }
+
+            ApplyCursorStatBonuses(
+                result,
+                CreateCursorCombatStatBonusesSnapshot(document, purchased));
+
             var monsters = new Dictionary<string, MonsterInformation>(StringComparer.Ordinal);
             var skills = new Dictionary<string, SkillInformation>(StringComparer.Ordinal);
             var skillDamageMultipliers = new Dictionary<string, double>(StringComparer.Ordinal);
@@ -31,11 +49,6 @@ namespace CursorHunter.Progression
                         case "stats":
                             switch (category.id)
                             {
-                                case "stat.attack": result.stats.attackPower = ScaleDamage(1, node.value); break;
-                                case "stat.radius": result.stats.attackRadiusWorldUnits = (float)node.value; break;
-                                case "stat.cooldown": result.stats.attackCooldownSeconds = (float)node.value; break;
-                                case "stat.critical": result.stats.criticalChancePercent = (float)node.value; break;
-                                case "stat.boss": result.stats.bossDamageMultiplier = (float)node.value; break;
                                 case "stat.fieldDuration": result.stats.normalFieldDurationSeconds = (float)node.value; break;
                             }
                             break;
@@ -54,8 +67,12 @@ namespace CursorHunter.Progression
                     }
                 }
             }
+            long baseAttackPower = cursorStatDefaults.HasValue
+                ? cursorStatDefaults.Value.AttackPower
+                : document.information.stats.attackPower;
             double attackRatio = document.progression.scaleSkillDamageWithAttack
-                ? (double)result.stats.attackPower / document.information.stats.attackPower : 1d;
+                ? (double)result.stats.attackPower / baseAttackPower
+                : 1d;
             foreach (var skill in result.skills)
                 skill.damage = ScaleDamage(skill.damage, skillDamageMultipliers[skill.id] * attackRatio);
 
@@ -69,6 +86,121 @@ namespace CursorHunter.Progression
             }
             if (!result.TryValidate(out string error)) throw new InvalidOperationException("Resolved game data: " + error);
             return result;
+        }
+
+        public static CursorCombatStatBonusesSnapshot CreateCursorCombatStatBonusesSnapshot(
+            GameDataDocument document,
+            ISet<string> purchased)
+        {
+            if (document == null || purchased == null)
+            {
+                throw new ArgumentNullException("Game data and purchased nodes cannot be null.");
+            }
+
+            long attackPowerDelta = 0L;
+            float radiusDelta = 0f;
+            float cooldownDelta = 0f;
+            float criticalChanceDelta = 0f;
+            float bossDamageDelta = 0f;
+
+            foreach (UpgradeCategoryData category in document.progression.categories)
+            {
+                if (category == null || category.tab != "stats" || category.nodes == null)
+                {
+                    continue;
+                }
+
+                foreach (UpgradeNodeData node in category.nodes)
+                {
+                    if (node == null || node.operation != "add" ||
+                        !purchased.Contains(node.id))
+                    {
+                        continue;
+                    }
+
+                    switch (category.id)
+                    {
+                        case "stat.attack":
+                            attackPowerDelta = AddNonNegative(
+                                attackPowerDelta,
+                                (long)Math.Round(node.value, MidpointRounding.AwayFromZero));
+                            break;
+                        case "stat.radius":
+                            radiusDelta += (float)node.value;
+                            break;
+                        case "stat.cooldown":
+                            cooldownDelta += (float)node.value;
+                            break;
+                        case "stat.critical":
+                            criticalChanceDelta += (float)node.value;
+                            break;
+                        case "stat.boss":
+                            bossDamageDelta += (float)node.value;
+                            break;
+                    }
+                }
+            }
+
+            var bonuses = new CursorCombatStatBonusesSnapshot(
+                attackPowerDelta,
+                radiusDelta,
+                cooldownDelta,
+                criticalChanceDelta,
+                0f,
+                bossDamageDelta);
+            if (!bonuses.IsValid)
+            {
+                throw new InvalidOperationException("Cursor combat trait bonuses are invalid.");
+            }
+
+            return bonuses;
+        }
+
+        private static void ApplyCursorStatDefaults(
+            GameInformation information,
+            CursorCombatStatDefaultsSnapshot defaults)
+        {
+            if (!defaults.IsValid)
+            {
+                throw new InvalidOperationException("Cursor combat defaults are invalid.");
+            }
+
+            information.stats.attackPower = defaults.AttackPower;
+            information.stats.attackRadiusWorldUnits = defaults.AttackRadiusWorldUnits;
+            information.stats.attackCooldownSeconds = defaults.AttackCooldownSeconds;
+            information.stats.criticalChancePercent = defaults.CriticalChancePercent;
+            information.stats.bossDamageMultiplier = defaults.BossDamageMultiplier;
+            information.rules.criticalDamageMultiplier =
+                defaults.CriticalDamageMultiplier;
+        }
+
+        private static void ApplyCursorStatBonuses(
+            GameInformation information,
+            CursorCombatStatBonusesSnapshot bonuses)
+        {
+            information.stats.attackPower = AddNonNegative(
+                information.stats.attackPower,
+                bonuses.AttackPowerDelta);
+            information.stats.attackRadiusWorldUnits +=
+                bonuses.AttackRadiusWorldUnitsDelta;
+            information.stats.attackCooldownSeconds = Mathf.Max(
+                CursorCombatStatLimits.MinimumAttackCooldownSeconds,
+                information.stats.attackCooldownSeconds +
+                bonuses.AttackCooldownSecondsDelta);
+            information.stats.criticalChancePercent = Mathf.Clamp(
+                information.stats.criticalChancePercent +
+                bonuses.CriticalChancePercentDelta,
+                0f,
+                CursorCombatStatLimits.MaximumCriticalChancePercent);
+            information.stats.bossDamageMultiplier +=
+                bonuses.BossDamageMultiplierDelta;
+            information.rules.criticalDamageMultiplier +=
+                bonuses.CriticalDamageMultiplierDelta;
+        }
+
+        private static long AddNonNegative(long value, long delta)
+        {
+            return delta > long.MaxValue - value ? long.MaxValue : value + delta;
         }
 
         private static long ScaleDamage(long value, double multiplier)

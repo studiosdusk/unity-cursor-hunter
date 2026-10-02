@@ -11,3 +11,7 @@
 `BossDamageMultiplier`를 피해에 곱한다. Field HUD의 `전체 정보`는 App이 Progression
 전역 오버레이를 호출하는 방식으로 연결하며 Combat은 Progression 구현을 직접 참조하지
 않는다. `RunResult.Rewards`는 가넷·젬스톤·전리품 조각을 settlement에 전달하는 계약이다.
+
+`PlayerCombatStatsDefaults`는 모든 새 런의 공통 커서 기본값을 Inspector에서 소유한다.
+런 시작마다 `PlayerCombatStatsRuntime`은 이 값으로 초기화한 뒤 App이 전달한
+`CursorCombatStatBonusesSnapshot`을 더한다. 특성 구매 상태나 성장 설정은 Combat에서 직접 읽지 않는다.

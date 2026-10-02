@@ -6,8 +6,8 @@ using UnityEngine.InputSystem;
 namespace CursorHunter.App
 {
     /// <summary>
-    /// Routes the cursor's automatic radius attack from the world cursor to the active combat run.
-    /// CombatRunController owns cooldown, overlap resolution, and damage.
+    /// Routes the cursor's automatic radius attack to the active combat run.
+    /// The cursor range follows the live runtime stats during Play Mode.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class CursorAttackController : MonoBehaviour
@@ -76,6 +76,7 @@ namespace CursorHunter.App
         private void Update()
         {
             ResolveReferences();
+            SyncCursorAttackRange();
 
             if (!CanAttack())
             {
@@ -89,6 +90,26 @@ namespace CursorHunter.App
             }
 
             TryPerformAttack(false);
+        }
+
+        private void SyncCursorAttackRange()
+        {
+            if (cursorController == null || combatRunController == null)
+            {
+                return;
+            }
+
+            PlayerCombatStatsRuntime stats = combatRunController.PlayerCombatStatsRuntime;
+            if (stats == null || !combatRunController.IsRunActive)
+            {
+                return;
+            }
+
+            float desiredMultiplier = stats.AttackRangeMultiplier;
+            if (!Mathf.Approximately(cursorController.RangeMultiplier, desiredMultiplier))
+            {
+                cursorController.SetRangeMultiplier(desiredMultiplier);
+            }
         }
 
         /// <summary>
@@ -105,6 +126,7 @@ namespace CursorHunter.App
         {
             return cursorController != null &&
                    combatRunController != null &&
+                   combatRunController.PlayerCombatStatsRuntime != null &&
                    hitBox != null &&
                    cursorController.IsCustomCursorActive &&
                    combatRunController.IsRunning;
@@ -133,7 +155,12 @@ namespace CursorHunter.App
                 return;
             }
 
-            combatRunController.TryAttack(hitBox);
+            if (allowUiPointer ||
+                combatRunController.PlayerCombatStatsRuntime.AutoAttackEnabled)
+            {
+                combatRunController.TryAttack(hitBox);
+            }
+
             combatRunController.TryUseSkills(hitBox.bounds.center);
         }
     }

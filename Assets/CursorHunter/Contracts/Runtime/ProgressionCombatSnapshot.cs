@@ -180,13 +180,15 @@ namespace CursorHunter.Contracts
             string sourceJson = null,
             int globalAliveLimit = 80,
             int perMonsterAliveLimit = 80,
-            float bossFieldDurationSeconds = 60f)
+            float bossFieldDurationSeconds = 60f,
+            CursorCombatStatBonusesSnapshot cursorStatBonuses = default)
         {
             GlobalAliveLimit = Math.Max(1, Math.Min(80, globalAliveLimit));
             PerMonsterAliveLimit = Math.Max(1, Math.Min(GlobalAliveLimit, perMonsterAliveLimit));
             BossFieldDurationSeconds = bossFieldDurationSeconds;
             SourceJson = sourceJson ?? string.Empty;
             Combat = combat;
+            CursorStatBonuses = cursorStatBonuses;
             _skills = skills == null
                 ? Array.Empty<SkillCombatSnapshot>()
                 : (SkillCombatSnapshot[])skills.Clone();
@@ -207,12 +209,14 @@ namespace CursorHunter.Contracts
         public float BossFieldDurationSeconds { get; }
         public string SourceJson { get; }
         public CombatSnapshot Combat { get; }
+        public CursorCombatStatBonusesSnapshot CursorStatBonuses { get; }
         public IReadOnlyList<SkillCombatSnapshot> Skills => _skillView;
         public IReadOnlyList<MonsterCombatSnapshot> Monsters => _monsterView;
         public float NormalFieldDurationSeconds { get; }
 
         public bool IsValid =>
             Combat.IsValid &&
+            CursorStatBonuses.IsValid &&
             GlobalAliveLimit >= 1 && GlobalAliveLimit <= 80 &&
             PerMonsterAliveLimit >= 1 && PerMonsterAliveLimit <= GlobalAliveLimit &&
             BossFieldDurationSeconds > 0f && !float.IsNaN(BossFieldDurationSeconds) && !float.IsInfinity(BossFieldDurationSeconds) &&

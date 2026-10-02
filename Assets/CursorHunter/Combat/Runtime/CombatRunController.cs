@@ -16,6 +16,7 @@ namespace CursorHunter.Combat
     {
         [SerializeField] private LayerMask enemyLayers = -1;
         [SerializeField, Min(32)] private int overlapBufferCapacity = 256;
+        [SerializeField] private PlayerCombatStatsRuntime playerCombatStatsRuntime;
 
         private Collider2D[] _overlapBuffer;
         private readonly HashSet<ICombatTarget> _uniqueTargets =
@@ -24,12 +25,12 @@ namespace CursorHunter.Combat
             new Dictionary<string, long>(StringComparer.Ordinal);
 
         private RunRequest _runRequest;
-        private CombatSnapshot _combatSnapshot;
         private SkillCombatSnapshot[] _skills = Array.Empty<SkillCombatSnapshot>();
         private float[] _nextSkillAt = Array.Empty<float>();
         private SeededRandom _random;
         private float _elapsedSeconds;
-        private float _nextAttackAvailableAt;
+        private float _lastAttackAt;
+        private bool _hasAttackedInRun;
         private int _defeatedCount;
         private long _garnetEarned;
         private long _effectiveDamage;
@@ -61,12 +62,36 @@ namespace CursorHunter.Combat
         public int DefeatedCount => _defeatedCount;
         public long GarnetEarned => _garnetEarned;
         public long EffectiveDamage => _effectiveDamage;
-        public CombatSnapshot CombatSnapshot => _combatSnapshot;
+        public CombatSnapshot CombatSnapshot => playerCombatStatsRuntime != null
+            ? playerCombatStatsRuntime.Snapshot
+            : default;
+        public PlayerCombatStatsRuntime PlayerCombatStatsRuntime
+        {
+            get
+            {
+                ResolvePlayerCombatStatsRuntime();
+                return playerCombatStatsRuntime;
+            }
+        }
 
         private void Awake()
         {
             overlapBufferCapacity = Mathf.Max(512, overlapBufferCapacity);
             _overlapBuffer = new Collider2D[overlapBufferCapacity];
+            ResolvePlayerCombatStatsRuntime();
+        }
+
+        private void ResolvePlayerCombatStatsRuntime()
+        {
+            if (playerCombatStatsRuntime == null)
+            {
+                playerCombatStatsRuntime = GetComponentInChildren<PlayerCombatStatsRuntime>(true);
+            }
+
+            if (playerCombatStatsRuntime == null)
+            {
+                playerCombatStatsRuntime = gameObject.AddComponent<PlayerCombatStatsRuntime>();
+            }
         }
 
         private void Update()
@@ -125,18 +150,43 @@ namespace CursorHunter.Combat
             RunRequest request,
             CombatSnapshot combatSnapshot)
         {
+            return PrepareRun(request, combatSnapshot, null);
+        }
+
+        public bool PrepareRun(
+            RunRequest request,
+            CombatSnapshot combatSnapshot,
+            CursorCombatStatBonusesSnapshot bonuses)
+        {
+            return PrepareRun(request, combatSnapshot, (CursorCombatStatBonusesSnapshot?)bonuses);
+        }
+
+        private bool PrepareRun(
+            RunRequest request,
+            CombatSnapshot combatSnapshot,
+            CursorCombatStatBonusesSnapshot? bonuses)
+        {
+            ResolvePlayerCombatStatsRuntime();
             if (_isPrepared || _isRunning ||
                 !request.IsValid || !combatSnapshot.IsValid)
             {
                 return false;
             }
 
+            bool capturedStats = bonuses.HasValue
+                ? playerCombatStatsRuntime.TryCaptureSnapshot(bonuses.Value)
+                : playerCombatStatsRuntime.TryCaptureSnapshot(combatSnapshot);
+            if (!capturedStats)
+            {
+                return false;
+            }
+
             _runRequest = request;
-            _combatSnapshot = combatSnapshot;
             ConfigureSkills(null);
             _random = new SeededRandom(request.Seed ^ 0xC17C17UL);
             _elapsedSeconds = 0f;
-            _nextAttackAvailableAt = 0f;
+            _lastAttackAt = 0f;
+            _hasAttackedInRun = false;
             _defeatedCount = 0;
             _garnetEarned = 0;
             _effectiveDamage = 0;
@@ -161,6 +211,7 @@ namespace CursorHunter.Combat
 
             _isPrepared = false;
             _isRunning = true;
+            playerCombatStatsRuntime.SetRunActive(true);
             return true;
         }
 
@@ -178,6 +229,7 @@ namespace CursorHunter.Combat
             _isPaused = false;
             _completionRequested = false;
             _abortRequested = false;
+            playerCombatStatsRuntime.SetRunActive(false);
             return true;
         }
 
@@ -215,13 +267,15 @@ namespace CursorHunter.Combat
             }
 
             if (_elapsedSeconds >= _runRequest.DurationSeconds ||
-                _elapsedSeconds < _nextAttackAvailableAt)
+                (_hasAttackedInRun &&
+                 _elapsedSeconds - _lastAttackAt <
+                 playerCombatStatsRuntime.AutoAttackIntervalSeconds))
             {
                 return false;
             }
 
-            _nextAttackAvailableAt =
-                _elapsedSeconds + _combatSnapshot.AttackCooldownSeconds;
+            _lastAttackAt = _elapsedSeconds;
+            _hasAttackedInRun = true;
 
             Physics2D.SyncTransforms();
 
@@ -329,6 +383,7 @@ namespace CursorHunter.Combat
             _isPaused = false;
             _completionRequested = false;
             _abortRequested = false;
+            playerCombatStatsRuntime.SetRunActive(false);
 
             result = CreateResult(
                 endReason,
@@ -351,6 +406,7 @@ namespace CursorHunter.Combat
             _isPaused = false;
             _completionRequested = false;
             _abortRequested = false;
+            playerCombatStatsRuntime.SetRunActive(false);
 
             result = CreateResult(
                 endReason,
@@ -445,22 +501,22 @@ namespace CursorHunter.Combat
 
         private bool RollCriticalHit()
         {
-            return _combatSnapshot.CriticalChancePercent > 0f &&
+            return playerCombatStatsRuntime.CriticalChancePercent > 0f &&
                    _random != null &&
-                   _random.NextFloat(0f, 100f) < _combatSnapshot.CriticalChancePercent;
+                   _random.NextFloat(0f, 100f) < playerCombatStatsRuntime.CriticalChancePercent;
         }
 
         private bool TryGetHitDamage(bool critical, out long damage, long skillDamage = 0L)
         {
-            double scaled = skillDamage > 0 ? skillDamage : _combatSnapshot.AttackPower;
+            double scaled = skillDamage > 0 ? skillDamage : playerCombatStatsRuntime.AttackPower;
             if (_runRequest.Mode == RunMode.Boss)
             {
-                scaled *= _combatSnapshot.BossDamageMultiplier;
+                scaled *= playerCombatStatsRuntime.BossDamageMultiplier;
             }
 
             if (critical)
             {
-                scaled *= _combatSnapshot.CriticalDamageMultiplier;
+                scaled *= playerCombatStatsRuntime.CriticalDamageMultiplier;
             }
 
             if (double.IsNaN(scaled) || double.IsInfinity(scaled) || scaled <= 0d)

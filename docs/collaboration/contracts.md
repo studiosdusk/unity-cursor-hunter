@@ -2,15 +2,19 @@
 
 ## 전투에 필요한 현재 정보만 전달한다
 
-[game-data.en.json](../../Assets/CursorHunter/Data/Resources/GameData/game-data.en.json)은 GameInformation과 같은 구조의 초기값이다.
-성장 화면은 [progression-config.en.json](../../Assets/CursorHunter/Data/Resources/GameData/progression-config.en.json)의 비용/선행 조건/효과와 플레이어 구매/지갑을 사용한다.
-GameInformationBuilder가 최종 정보를 만든 뒤 App이 Combat에 전달한다. 강화 설정 자체는 전투 입력이 아니다.
+[game-data.en.json](../../Assets/CursorHunter/Data/Resources/GameData/game-data.en.json)은 GameInformation 구조와 비전투 초기값이다.
+Main 씬의 `PlayerCombatStatsDefaults` 컴포넌트가 커서 핵심 스탯의 공통 기본값이다.
+성장 화면은 [progression-config.en.json](../../Assets/CursorHunter/Data/Resources/GameData/progression-config.en.json)의 비용/선행 조건/증가량과 플레이어 구매/지갑을 사용한다.
+GameInformationBuilder는 기본값에 구매한 증가량을 합산해 최종 전체 정보를 만든다. Progression은
+커서 증가량 스냅샷도 App에 반환하며, 런타임은 매 런 기본값을 다시 읽고 증가량을 적용한다.
 
 ```text
-game-data.en.json + progression-config.en.json + 구매/지갑
- → GameInformationBuilder → GameInformation
+PlayerCombatStatsDefaults + progression-config.en.json + 구매/지갑
+ → GameInformationBuilder → GameInformation + CursorCombatStatBonusesSnapshot
  → 메모리 JSON → 검증 → ProgressionCombatSnapshot
- → App.HuntManager / RunCoordinator → Combat
+ → App.HuntManager / RunCoordinator
+ → PlayerCombatStatsRuntime resets from defaults and adds cursor bonuses
+ → Combat
 ```
 
 영문 GameInformation의 루트는 schemaVersion=3, balanceVersion, stats, rules, gemstones, monsters, skills다.
@@ -55,8 +59,8 @@ MonsterInformation.behaviorType
 
 아래 controller는 현재 CombatRunController, snapshot은 App이 캡처한 ProgressionCombatSnapshot이다.
 전역 변수나 새로 추가한 전체 데이터 getter를 뜻하지 않는다.
-HuntManager.BeginPrototypeRun이 전체 스냅샷을 만들고,
-RunCoordinator.Start에 CombatSnapshot/SpawnPlan, ConfigureSkills에 스킬 목록을 전달한다.
+HuntManager.BeginPrototypeRun이 전체 정보와 커서 증가량 스냅샷을 만들고,
+RunCoordinator.Start에 CombatSnapshot/커서 증가량/SpawnPlan, ConfigureSkills에 스킬 목록을 전달한다.
 
 | 정보 | 실제 프로퍼티 |
 |---|---|

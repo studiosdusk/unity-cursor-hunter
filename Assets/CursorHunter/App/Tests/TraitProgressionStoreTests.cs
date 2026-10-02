@@ -5,7 +5,6 @@ using UnityEngine;
 namespace CursorHunter.App.Tests
 {
     // Editor-only tests for later execution. Original local values are restored.
-    [NonParallelizable]
     public sealed class TraitProgressionStoreTests
     {
         private const string Key = "cursor_hunter.progression.v1";
