@@ -300,8 +300,8 @@ namespace CursorHunter.Combat
                     continue;
                 }
 
-                WalkerStumpTarget targetAdapter =
-                    collider.GetComponentInParent<WalkerStumpTarget>();
+                MonsterCombatTarget targetAdapter =
+                    collider.GetComponentInParent<MonsterCombatTarget>();
 
                 if (targetAdapter != null &&
                     targetAdapter is ICombatTarget target &&
@@ -356,7 +356,7 @@ namespace CursorHunter.Combat
                 for (int j = 0; j < count; j++)
                 {
                     var collider = _overlapBuffer[j];
-                    var target = collider == null ? null : collider.GetComponentInParent<WalkerStumpTarget>();
+                    var target = collider == null ? null : collider.GetComponentInParent<MonsterCombatTarget>();
                     if (target != null && target.RunId == _runRequest.RunId && target.IsActive && target.IsRegistered)
                         _uniqueTargets.Add(target);
                 }

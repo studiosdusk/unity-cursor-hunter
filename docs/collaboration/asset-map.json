@@ -112,6 +112,55 @@
     "status": "candidate-not-runtime-verified"
   },
   {
+    "design_id": "monster.shared-root.prefab",
+    "owner": "Combat",
+    "path": "Assets/CursorHunter/Combat/Prefabs/Monsters/MonsterRoot.prefab",
+    "guid": "a0cf2089e36f42bfbebdb60196b32951",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "monster.behavior-profile.basic",
+    "owner": "Data",
+    "path": "Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Basic.asset",
+    "guid": "75d93b8c58314c00931fce8caf12af10",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "monster.behavior-profile.fast",
+    "owner": "Data",
+    "path": "Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Fast.asset",
+    "guid": "27244024086e4476abc73bc422f6e10c",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "monster.behavior-profile.high-health",
+    "owner": "Data",
+    "path": "Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/HighHealth.asset",
+    "guid": "ae22e549ee464746876ea87545e33da2",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "monster.behavior-profile.small",
+    "owner": "Data",
+    "path": "Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Small.asset",
+    "guid": "83e980cdfb5d4021aac4028b280d24d1",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "monster.behavior-profile.large-slow",
+    "owner": "Data",
+    "path": "Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/LargeSlow.asset",
+    "guid": "03e0a195361d4bcc9b1c9dfb1e540376",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "monster.behavior-profile.circular",
+    "owner": "Data",
+    "path": "Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Circular.asset",
+    "guid": "73574b06f4534f82a5d102718018a3cd",
+    "status": "runtime-applied"
+  },
+  {
     "design_id": "monster.golem",
     "owner": "Combat",
     "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/Prefabs/Golem/Golem_Iron.prefab",

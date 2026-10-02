@@ -182,7 +182,7 @@
           "enum": [
             0
           ],
-          "description": "MonsterBehaviorType.None = 0. Reserved enum field; behavior is not implemented."
+          "description": "Legacy MonsterBehaviorType field retained as None = 0. Species traits and movement are configured by MonsterDefinition behavior profiles."
         }
       }
     },

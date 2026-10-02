@@ -30771,6 +30771,7 @@ MonoBehaviour:
   combatRunController: {fileID: 2188000010}
   spawnedEnemyRoot: {fileID: 2188000107}
   worldCamera: {fileID: 1273511514}
+  monsterRootPrefab: {fileID: 100000, guid: a0cf2089e36f42bfbebdb60196b32951, type: 3}
   spawnPlaneZ: 0
   horizontalPadding: 0.02
   bottomPadding: 0.09

@@ -15,12 +15,18 @@ MonoBehaviour:
   monsterId: monster.07
   displayName: 빙결 거미
   prefabKey: Spider/Spider_Frozen
-  prefab: {fileID: 2133663529494808259, guid: 17ea98e5ecd9de54ea50864524bea75e, type: 3}
-  maxHealth: 170
-  spawnIntervalSeconds: 2.0999999999999996
-  packSize: 1
-  garnetReward: 9
-  bonusDropCurrencyId: gem.sapphire
-  bonusDropAmount: 1
-  bonusDropChancePercent: 100
-  behaviorType: 0
+  visualPrefab: {fileID: 5377580900226821509, guid: 76b40faaa9f5b364486f174c85bc38f5, type: 3}
+  baseStats:
+    maxHealth: 170
+    spawnIntervalSeconds: 2.0999999999999996
+    packSize: 1
+    moveSpeed: 0.45
+    visualScale: 1
+    hitAreaWidth: 1
+    hitAreaHeight: 1.2
+    garnetReward: 9
+    bonusDropCurrencyId: gem.sapphire
+    bonusDropAmount: 1
+    bonusDropChancePercent: 100
+  behaviorProfiles:
+  - {fileID: 11400000, guid: 75d93b8c58314c00931fce8caf12af10, type: 2}

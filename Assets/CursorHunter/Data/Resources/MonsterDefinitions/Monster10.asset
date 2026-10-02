@@ -15,12 +15,18 @@ MonoBehaviour:
   monsterId: monster.10
   displayName: 고대 해골군주
   prefabKey: Skeleton/Skeleton_Warlord
-  prefab: {fileID: 4249803776319479360, guid: 1fb07fcfb1fba2e46b61c34b043f72a0, type: 3}
-  maxHealth: 450
-  spawnIntervalSeconds: 2.55
-  packSize: 1
-  garnetReward: 12
-  bonusDropCurrencyId: gem.dragon
-  bonusDropAmount: 1
-  bonusDropChancePercent: 100
-  behaviorType: 0
+  visualPrefab: {fileID: 5377580900226821509, guid: 76b40faaa9f5b364486f174c85bc38f5, type: 3}
+  baseStats:
+    maxHealth: 450
+    spawnIntervalSeconds: 2.55
+    packSize: 1
+    moveSpeed: 0.45
+    visualScale: 1
+    hitAreaWidth: 1
+    hitAreaHeight: 1.2
+    garnetReward: 12
+    bonusDropCurrencyId: gem.dragon
+    bonusDropAmount: 1
+    bonusDropChancePercent: 100
+  behaviorProfiles:
+  - {fileID: 11400000, guid: 75d93b8c58314c00931fce8caf12af10, type: 2}

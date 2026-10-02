@@ -5,8 +5,8 @@ using UnityEngine;
 namespace CursorHunter.Combat
 {
     /// <summary>
-    /// Prototype normal-field spawner. It receives an immutable SpawnPlan
-    /// rather than reading Data assets, then creates its authored prefab.
+    /// Normal-field spawner. It receives an immutable SpawnPlan rather than
+    /// reading Data assets, then composes the shared root with each species visual.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class MonsterSpawner : MonoBehaviour
@@ -14,17 +14,19 @@ namespace CursorHunter.Combat
         [SerializeField] private CombatRunController combatRunController;
         [SerializeField] private Transform spawnedEnemyRoot;
         [SerializeField] private Camera worldCamera;
+        [SerializeField, Tooltip("Shared combat root used by every monster species.")]
+        private GameObject monsterRootPrefab;
         [SerializeField] private float spawnPlaneZ;
         [SerializeField, Min(0f)] private float horizontalPadding = 0.02f;
         [SerializeField, Min(0f)] private float bottomPadding = 0.09f;
         [SerializeField, Min(0f)] private float topPadding = 0.15f;
 
-        private readonly List<WalkerStumpTarget> _spawnedTargets =
-            new List<WalkerStumpTarget>();
+        private readonly List<MonsterCombatTarget> _spawnedTargets =
+            new List<MonsterCombatTarget>();
 
         private RunId _runId;
         private SpawnSnapshot _spawnSnapshot;
-        private GameObject _spawnPrefab;
+        private GameObject _spawnVisualPrefab;
         private SeededRandom _random;
         private IReadOnlyList<SpawnPlanEntry> _entries;
         private float[] _nextSpawnTimes;
@@ -39,7 +41,7 @@ namespace CursorHunter.Combat
                 PruneDestroyedTargets();
 
                 int count = 0;
-                foreach (WalkerStumpTarget target in _spawnedTargets)
+                foreach (MonsterCombatTarget target in _spawnedTargets)
                 {
                     if (target != null && !target.IsDead)
                     {
@@ -106,7 +108,7 @@ namespace CursorHunter.Combat
             {
                 if (elapsedSeconds < _nextSpawnTimes[i]) continue;
                 _spawnSnapshot = _entries[i].Snapshot;
-                _spawnPrefab = _entries[i].Prefab;
+                _spawnVisualPrefab = _entries[i].VisualPrefab;
                 if (ActiveSpawnedCount < globalAliveLimit && !SpawnPack(out _))
                 {
                     _isSpawning = false;
@@ -140,11 +142,25 @@ namespace CursorHunter.Combat
                     "RunRequest or SpawnPlan is invalid.");
             }
 
+            if (!HasValidMonsterRootPrefab(out string rootError))
+            {
+                return new SpawnStartResult(
+                    monsterRootPrefab == null
+                        ? SpawnStartStatus.MissingPrefab
+                        : SpawnStartStatus.InvalidRequest,
+                    rootError);
+            }
+
             foreach (var entry in spawnPlan.Entries)
             {
-                if (!entry.HasValidSnapshot || !entry.HasPrefab)
-                    return new SpawnStartResult(entry.HasPrefab ? SpawnStartStatus.InvalidRequest : SpawnStartStatus.MissingPrefab,
-                        "Every spawn entry requires valid data and a prefab.");
+                if (!entry.HasValidSnapshot || !entry.HasVisualPrefab)
+                {
+                    return new SpawnStartResult(
+                        entry.HasVisualPrefab
+                            ? SpawnStartStatus.InvalidRequest
+                            : SpawnStartStatus.MissingPrefab,
+                        "Every spawn entry requires valid data and a species visual prefab.");
+                }
             }
 
             if (combatRunController == null)
@@ -165,7 +181,7 @@ namespace CursorHunter.Combat
             for (int i = 0; i < _entries.Count; i++)
             {
                 _spawnSnapshot = _entries[i].Snapshot;
-                _spawnPrefab = _entries[i].Prefab;
+                _spawnVisualPrefab = _entries[i].VisualPrefab;
                 if (!SpawnPack(out SpawnStartStatus failureStatus))
                 {
                     StopRun();
@@ -176,13 +192,42 @@ namespace CursorHunter.Combat
             return new SpawnStartResult(SpawnStartStatus.Started, "All monster packs prepared.");
         }
 
+        private bool HasValidMonsterRootPrefab(out string error)
+        {
+            error = string.Empty;
+            if (monsterRootPrefab == null)
+            {
+                error = "MonsterSpawner requires the shared MonsterRoot prefab.";
+                return false;
+            }
+
+            Transform root = monsterRootPrefab.transform;
+            Transform hitArea = root.Find("HitArea");
+            Transform healthBarAnchor = root.Find("HealthBarAnchor");
+            if (root.GetComponent<MonsterCombatTarget>() == null ||
+                root.GetComponent<MonsterBehaviorController>() == null ||
+                root.Find("VisualRoot") == null ||
+                hitArea == null || hitArea.GetComponent<BoxCollider2D>() == null ||
+                healthBarAnchor == null ||
+                healthBarAnchor.GetComponent<MonsterHealthBarView>() == null)
+            {
+                error = "MonsterRoot must contain MonsterCombatTarget, " +
+                        "MonsterBehaviorController, HitArea/BoxCollider2D, " +
+                        "HealthBarAnchor/MonsterHealthBarView, " +
+                        "and VisualRoot direct children.";
+                return false;
+            }
+
+            return true;
+        }
+
         public void StopRun()
         {
             _isSpawning = false;
 
             for (int index = _spawnedTargets.Count - 1; index >= 0; index--)
             {
-                WalkerStumpTarget target = _spawnedTargets[index];
+                MonsterCombatTarget target = _spawnedTargets[index];
                 if (target == null)
                 {
                     continue;
@@ -194,7 +239,7 @@ namespace CursorHunter.Combat
 
             _spawnedTargets.Clear();
             _runId = default;
-            _spawnPrefab = null;
+            _spawnVisualPrefab = null;
             _entries = null;
             _nextSpawnTimes = null;
         }
@@ -235,7 +280,7 @@ namespace CursorHunter.Combat
 
                 if (!TryInitializeTarget(
                         instance,
-                        out WalkerStumpTarget target))
+                        out MonsterCombatTarget target))
                 {
                     failureStatus = SpawnStartStatus.InitialSpawnFailed;
                     if (target != null)
@@ -261,16 +306,16 @@ namespace CursorHunter.Combat
 
         private bool TryInitializeTarget(
             GameObject instance,
-            out WalkerStumpTarget target)
+            out MonsterCombatTarget target)
         {
             target = null;
 
             try
             {
-                target = instance.GetComponent<WalkerStumpTarget>();
+                target = instance.GetComponent<MonsterCombatTarget>();
                 if (target == null)
                 {
-                    target = instance.AddComponent<WalkerStumpTarget>();
+                    target = instance.AddComponent<MonsterCombatTarget>();
                 }
 
                 target.Initialize(_spawnSnapshot, _runId);
@@ -279,7 +324,21 @@ namespace CursorHunter.Combat
                     return false;
                 }
 
-                return target.EnsureCombatCollider() != null;
+                if (target.EnsureCombatCollider() == null ||
+                    !TryGetMovementBounds(out Bounds movementBounds))
+                {
+                    return false;
+                }
+
+                float headingRadians = _random.NextFloat(0f, Mathf.PI * 2f);
+                Vector2 initialHeading = new Vector2(
+                    Mathf.Cos(headingRadians),
+                    Mathf.Sin(headingRadians));
+                return target.ConfigureMovement(
+                    _spawnSnapshot,
+                    combatRunController,
+                    movementBounds,
+                    initialHeading);
             }
             catch (System.Exception exception)
             {
@@ -296,7 +355,7 @@ namespace CursorHunter.Combat
                  index >= firstNewTargetIndex;
                  index--)
             {
-                WalkerStumpTarget target = _spawnedTargets[index];
+                MonsterCombatTarget target = _spawnedTargets[index];
                 if (target == null)
                 {
                     _spawnedTargets.RemoveAt(index);
@@ -316,42 +375,84 @@ namespace CursorHunter.Combat
         {
             instance = null;
 
-            if (_spawnPrefab == null)
+            if (monsterRootPrefab == null || _spawnVisualPrefab == null)
             {
                 LogSpawnFailure(
-                    "MonsterSpawner could not create a target because the spawn prefab is missing.");
+                    "MonsterSpawner requires both the shared MonsterRoot and a species visual prefab.");
                 return false;
             }
 
             try
             {
-                // Clone the root Transform explicitly. Some Unity prefab
-                // references resolve the cloned native object as a Transform
-                // even though the serialized source field is a GameObject.
-                // Keeping the requested type as Transform avoids the invalid
-                // GameObject cast while preserving the complete prefab tree.
                 Transform cloneTransform = UnityEngine.Object.Instantiate(
-                    _spawnPrefab.transform,
+                    monsterRootPrefab.transform,
                     spawnPosition,
                     Quaternion.identity,
                     spawnedEnemyRoot);
                 instance = cloneTransform != null
                     ? cloneTransform.gameObject
                     : null;
+
+                if (instance == null)
+                {
+                    LogSpawnFailure(
+                        "MonsterSpawner could not resolve the shared MonsterRoot clone.");
+                    return false;
+                }
+
+                Transform visualRoot = instance.transform.Find("VisualRoot");
+                if (visualRoot == null)
+                {
+                    LogSpawnFailure(
+                        "The shared MonsterRoot prefab must contain a direct child named VisualRoot.");
+                    Destroy(instance);
+                    instance = null;
+                    return false;
+                }
+
+                Transform visualClone = UnityEngine.Object.Instantiate(
+                    _spawnVisualPrefab.transform,
+                    visualRoot,
+                    false);
+                if (visualClone == null)
+                {
+                    LogSpawnFailure(
+                        $"MonsterSpawner could not create visual '{_spawnVisualPrefab.name}'.");
+                    Destroy(instance);
+                    instance = null;
+                    return false;
+                }
+
+                visualClone.name = _spawnVisualPrefab.name;
+                visualClone.localPosition = Vector3.zero;
+                visualClone.localRotation = Quaternion.identity;
+                visualClone.localScale = _spawnVisualPrefab.transform.localScale;
+                visualClone.gameObject.SetActive(true);
+
+                // Supplier prefabs are visual-only under the shared root.
+                // Hit testing belongs to MonsterRoot/HitArea so vendor collider
+                // shapes cannot change combat reach from one species to another.
+                Collider2D[] visualColliders =
+                    visualClone.GetComponentsInChildren<Collider2D>(true);
+                foreach (Collider2D visualCollider in visualColliders)
+                {
+                    if (visualCollider != null)
+                    {
+                        visualCollider.enabled = false;
+                    }
+                }
             }
             catch (System.Exception exception)
             {
                 LogSpawnFailure(
-                    $"MonsterSpawner failed to instantiate spawn prefab " +
-                    $"'{_spawnPrefab.name}'. {exception.GetType().Name}: {exception.Message}");
-                return false;
-            }
-
-            if (instance == null)
-            {
-                LogSpawnFailure(
-                    "MonsterSpawner could not resolve the cloned spawn prefab root GameObject. " +
-                    $"Source type: {_spawnPrefab.GetType().Name}.");
+                    $"MonsterSpawner failed to instantiate the shared MonsterRoot or " +
+                    $"visual '{_spawnVisualPrefab.name}'. " +
+                    $"{exception.GetType().Name}: {exception.Message}");
+                if (instance != null)
+                {
+                    Destroy(instance);
+                    instance = null;
+                }
                 return false;
             }
 
@@ -399,6 +500,54 @@ namespace CursorHunter.Combat
             spawnPosition = worldCamera.ViewportToWorldPoint(viewportPosition);
             spawnPosition.z = spawnPlaneZ;
             return true;
+        }
+
+        private bool TryGetMovementBounds(out Bounds movementBounds)
+        {
+            movementBounds = default;
+            if (worldCamera == null)
+            {
+                return false;
+            }
+
+            float minX = Mathf.Clamp01(horizontalPadding);
+            float maxX = Mathf.Clamp01(1f - horizontalPadding);
+            float minY = Mathf.Clamp01(bottomPadding);
+            float maxY = Mathf.Clamp01(1f - topPadding);
+            if (minX >= maxX || minY >= maxY)
+            {
+                return false;
+            }
+
+            float cameraDistance = Mathf.Abs(
+                spawnPlaneZ - worldCamera.transform.position.z);
+            Vector3 bottomLeft = worldCamera.ViewportToWorldPoint(
+                new Vector3(minX, minY, cameraDistance));
+            Vector3 topRight = worldCamera.ViewportToWorldPoint(
+                new Vector3(maxX, maxY, cameraDistance));
+            float worldMinX = Mathf.Min(bottomLeft.x, topRight.x);
+            float worldMaxX = Mathf.Max(bottomLeft.x, topRight.x);
+            float worldMinY = Mathf.Min(bottomLeft.y, topRight.y);
+            float worldMaxY = Mathf.Max(bottomLeft.y, topRight.y);
+            worldMinX += _spawnSnapshot.HitAreaWidth * 0.5f;
+            worldMaxX -= _spawnSnapshot.HitAreaWidth * 0.5f;
+            worldMinY += _spawnSnapshot.HitAreaHeight * 0.5f;
+            worldMaxY -= _spawnSnapshot.HitAreaHeight * 0.5f;
+            if (worldMaxX <= worldMinX || worldMaxY <= worldMinY)
+            {
+                return false;
+            }
+
+            movementBounds = new Bounds(
+                new Vector3(
+                    (worldMinX + worldMaxX) * 0.5f,
+                    (worldMinY + worldMaxY) * 0.5f,
+                    spawnPlaneZ),
+                new Vector3(
+                    worldMaxX - worldMinX,
+                    worldMaxY - worldMinY,
+                    0f));
+            return worldMaxX > worldMinX && worldMaxY > worldMinY;
         }
 
         private void PruneDestroyedTargets()

@@ -562,18 +562,26 @@ namespace CursorHunter.App
                     MonsterDefinition definition = null;
                     foreach (var candidate in definitions)
                         if (candidate != null && candidate.MonsterId == monster.MonsterId) { definition = candidate; break; }
-                    if (definition == null || definition.Prefab == null)
+                    if (definition == null || definition.VisualPrefab == null)
                     {
                         failureResult = new SpawnStartResult(SpawnStartStatus.MissingDefinition,
                             "Missing visual definition: " + monster.MonsterId);
                         return false;
                     }
-                    var snapshot = new SpawnSnapshot(monster.MonsterId, definition.PrefabKey,
-                        monster.HitPoints, monster.SpawnIntervalSeconds, monster.ProductionCount,
-                        progressionSnapshot.PerMonsterAliveLimit, monster.GarnetReward, monster.BonusDropCurrencyId,
-                        monster.BonusDropAmount, monster.BonusDropChancePercent,
-                        monster.BehaviorType);
-                    entries.Add(new SpawnPlanEntry(snapshot, definition.Prefab));
+                    // Definition BaseStats + composable species profiles are
+                    // authoritative for combat values. Progression contributes
+                    // unlock state and the resolved production count only.
+                    SpawnSnapshot snapshot = definition.CreateSnapshotWithProductionBonus(
+                        progressionSnapshot.PerMonsterAliveLimit,
+                        monster.ProductionBonusCount);
+                    if (!snapshot.IsValid)
+                    {
+                        failureResult = new SpawnStartResult(
+                            SpawnStartStatus.InvalidRequest,
+                            "Monster definition produced invalid final stats: " + monster.MonsterId);
+                        return false;
+                    }
+                    entries.Add(new SpawnPlanEntry(snapshot, definition.VisualPrefab));
                 }
                 if (entries.Count == 0)
                 {
@@ -683,7 +691,7 @@ namespace CursorHunter.App
                 return false;
             }
 
-            spawnPlan = new SpawnPlan(snapshot, definition.Prefab);
+            spawnPlan = new SpawnPlan(snapshot, definition.VisualPrefab);
             failureResult = new SpawnStartResult(
                 SpawnStartStatus.Started,
                 "Monster definition snapshot and prefab are ready.");
@@ -701,10 +709,9 @@ namespace CursorHunter.App
                 return authored;
             }
 
-            // The prototype spawner consumes one entry. Select the first
-            // unlocked progression species whose ID matches the authored
-            // definition; the multi-species plan can be added without
-            // changing this read-only boundary.
+            // The prototype spawner consumes one entry. Select the matching
+            // progression species and add its production bonus to the
+            // definition-owned BaseStats and behavior-profile contributions.
             for (int i = 0; i < progressionSnapshot.Monsters.Count; i++)
             {
                 MonsterCombatSnapshot monster = progressionSnapshot.Monsters[i];
@@ -719,24 +726,36 @@ namespace CursorHunter.App
                     continue;
                 }
 
-                int packSize = Mathf.Max(
-                    1,
-                    Mathf.RoundToInt(authored.PackSize * monster.ProductionMultiplier));
                 return new SpawnSnapshot(
                     authored.MonsterId,
                     authored.PrefabKey,
-                    monster.HitPoints,
-                    monster.SpawnIntervalSeconds,
-                    packSize,
+                    authored.MaxHealth,
+                    authored.SpawnIntervalSeconds,
+                    AddProductionBonus(
+                        authored.PackSize,
+                        monster.ProductionBonusCount),
                     authored.AliveLimit,
-                    monster.GarnetReward,
-                    monster.BonusDropCurrencyId,
-                    monster.BonusDropAmount,
-                    monster.BonusDropChancePercent,
-                    monster.BehaviorType);
+                    authored.GarnetReward,
+                    authored.BonusDropCurrencyId,
+                    authored.BonusDropAmount,
+                    authored.BonusDropChancePercent,
+                    authored.BehaviorType,
+                    authored.MovementMode,
+                    authored.MoveSpeed,
+                    authored.VisualScale,
+                    authored.HitAreaWidth,
+                    authored.HitAreaHeight,
+                    authored.OrbitRadius,
+                    authored.OrbitAngularSpeedDegrees);
             }
 
             return authored;
+        }
+
+        private static int AddProductionBonus(int basePackSize, int bonusCount)
+        {
+            long result = (long)Mathf.Max(1, basePackSize) + Mathf.Max(0, bonusCount);
+            return result >= int.MaxValue ? int.MaxValue : (int)result;
         }
     }
 }

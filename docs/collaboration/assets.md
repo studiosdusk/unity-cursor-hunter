@@ -23,6 +23,13 @@
 | ui.boss.hp | Combat | [StatusBar_White.prefab](../../Assets/DownLoadAssets/GUI-CasualFantasy/Prefabs/Prefabs_Component_UI_Etc/StatusBar_White.prefab) |
 | field.normal | Combat | [Map_3_Jungle Age.prefab](../../Assets/DownLoadAssets/Map/2D%20Maps%20-%20Age%20Battle%20Stages/Prefabs/Landscape/Map/Map_3_Jungle%20Age.prefab) |
 | field.boss | Combat | [Map_13_Medieval Age.prefab](../../Assets/DownLoadAssets/Map/2D%20Maps%20-%20Age%20Battle%20Stages/Prefabs/Landscape/Map/Map_13_Medieval%20Age.prefab) |
+| monster.shared-root | Combat | [MonsterRoot.prefab](../../Assets/CursorHunter/Combat/Prefabs/Monsters/MonsterRoot.prefab) |
+| monster.behavior-profile.basic | Data | [Basic.asset](../../Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Basic.asset) — 10종 정의에서 재사용하는 기본 이동 프로필 |
+| monster.behavior-profile.fast | Data | [Fast.asset](../../Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Fast.asset) |
+| monster.behavior-profile.high-health | Data | [HighHealth.asset](../../Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/HighHealth.asset) |
+| monster.behavior-profile.small | Data | [Small.asset](../../Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Small.asset) |
+| monster.behavior-profile.large-slow | Data | [LargeSlow.asset](../../Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/LargeSlow.asset) |
+| monster.behavior-profile.circular | Data | [Circular.asset](../../Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Circular.asset) |
 | monster.golem | Combat | [Golem_Iron.prefab](../../Assets/DownLoadAssets/MonsterAsset/2D%20Minimal-EnemyMonster/EnemyMonster%202/Prefabs/Golem/Golem_Iron.prefab) |
 | boss.v4 | Combat | [Golem_Iron.prefab](../../Assets/DownLoadAssets/MonsterAsset/2D%20Minimal-EnemyMonster/EnemyMonster%202/Prefabs/Golem/Golem_Iron.prefab) |
 | skill.fireball | Combat | [FX_AOE_Fireball.prefab](../../Assets/DownLoadAssets/Eric%20VFX%20Studio/Game%20VFX%20-%20Stylized%20AOE%20Bundle/Prefabs/URP/FX_AOE_Fireball.prefab) |

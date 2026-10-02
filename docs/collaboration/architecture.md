@@ -35,7 +35,10 @@ App이 Data/Progression에서 런 입력을 만들어 Combat에 전달한다. Pr
 - 전투 루트와 특성 루트는 각 담당의 프리팹. 통합 씬에는 프리팹 참조만 배치하고 내부 override를 누적하지 않는다.
 - 런타임 통합에서는 App만 입력 라우팅, EventSystem, 화면 전환 수명주기를 소유한다. Sandbox는 독립 실행용 카메라/EventSystem을 자체 보유하되 실제 통합에는 가져오지 않는다.
 - VFX 원본을 수정하지 않고 Combat/Prefabs/Vfx에 Variant 또는 외형 래퍼를 둔다. UI도 같은 방식으로 소유 영역에 둔다.
-- 적 프리팹에 HP/보상을 복제하지 않는다. monster ID와 시각 참조만 두고 런 스냅샷 수치를 사용한다.
+- 일반 몬스터는 공용 `Combat/Prefabs/Monsters/MonsterRoot.prefab`을 사용한다. 종별
+  `MonsterDefinition`이 Base 스탯·드랍·외형 참조를 가지고, 재사용 가능한
+  `MonsterBehaviorProfile` 목록을 Base 위에 합성해 런 스냅샷으로 복사한다.
+- HP/보상은 전투 프리팹에 저장하지 않는다. 전투는 App이 만든 `SpawnSnapshot`만 사용한다.
 - 데이터는 하나의 거대한 GameData.asset에 몰지 않는다. ID는 파일명/표시명/enum 순서와 독립적으로 고정한다.
 - Addressables, DI 프레임워크, 공용 전역 이벤트 버스는 현 단계에 추가하지 않는다.
 
@@ -58,8 +61,10 @@ App이 기본 스탯 스냅샷을 Progression에 제공한다. GameInformationBu
 
 게임 정보 파일과 한국어 참고본에는 유물, progression, entities, fieldHelp, implementation이 없다.
 성장 설정에는 유물을 제외한 23분류/111노드 및 명칭/외형이 남는다. fieldHelp/implementation은 실행 문서에서 제거했다.
-몬스터 behaviorType은 Contracts.MonsterBehaviorType.None=0만 준비했으며 행동 구현은 추후다.
-일반 몬스터 10종, 스킬 7종, 젬 6종, 일반 필드 최대 30초를 유지한다.
+JSON의 `behaviorType`은 이전 호환을 위해 `None=0`으로 보존한다. 신규 종별 특성은
+Data의 조합형 프로필로 구성하고, 이동 모드·이동 속도·시각 크기·명중 영역 크기를
+`SpawnSnapshot`에 복사해 공용 MonsterRoot가 적용한다. 일반 몬스터 10종, 스킬 7종,
+젬 6종, 일반 필드 최대 30초를 유지한다.
 
 유물 제거로 조각 드롭·지갑·구매·능력치 보정이 제거됐다. 최초 v3 저장 전 기존 v1/v2 원문을 별도 PlayerPrefs 키에 백업한다.
 일반 강화·젬은 유지한다. Combat은 지급 후보만 반환하며 저장소를 수정하지 않는다.

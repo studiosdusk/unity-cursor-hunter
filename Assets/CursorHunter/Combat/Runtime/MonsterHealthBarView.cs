@@ -35,8 +35,15 @@ namespace CursorHunter.Combat
         /// </summary>
         public void Configure(Bounds targetBounds)
         {
+            Configure(targetBounds, false);
+        }
+
+        public void Configure(Bounds targetBounds, bool useTransformAsAnchor)
+        {
             barWidth = Mathf.Clamp(targetBounds.size.x * 1.15f, 0.45f, 3.5f);
-            verticalOffset = Mathf.Max(0.45f, targetBounds.extents.y + 0.16f);
+            verticalOffset = useTransformAsAnchor
+                ? 0f
+                : Mathf.Max(0.45f, targetBounds.extents.y + 0.16f);
             if (_barRoot != null)
             {
                 _barRoot.localPosition = new Vector3(0f, verticalOffset, 0f);

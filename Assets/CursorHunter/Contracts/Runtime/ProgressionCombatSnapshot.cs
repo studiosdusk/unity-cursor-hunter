@@ -60,9 +60,9 @@ namespace CursorHunter.Contracts
     }
 
     /// <summary>
-    /// One monster's immutable progression values. Spawn behavior flags remain
-    /// a combat concern; this structure carries only the values needed by the
-    /// first integration seam.
+    /// One monster's immutable progression handoff. ProductionCount is the
+    /// resolved count per spawn opportunity; base combat stats and species
+    /// traits are authored in MonsterDefinition and copied by App at run start.
     /// </summary>
     public readonly struct MonsterCombatSnapshot
     {
@@ -120,6 +120,11 @@ namespace CursorHunter.Contracts
         }
 
         public int ProductionCount { get; }
+        /// <summary>
+        /// Increase above the game's initial one-monster output. The App adds
+        /// this value to the species BaseStats.PackSize when composing a run.
+        /// </summary>
+        public int ProductionBonusCount => Math.Max(0, ProductionCount - 1);
         public string MonsterId { get; }
         public bool Unlocked { get; }
         public long HitPoints { get; }
