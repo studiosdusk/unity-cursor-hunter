@@ -6,8 +6,8 @@ using UnityEngine;
 namespace CursorHunter.Combat
 {
     /// <summary>
-    /// Owns one normal-field run's combat clock, attack cooldown, collider
-    /// resolution, damage accounting, and result creation. Cross-module
+    /// Owns one normal-field run's combat clock, per-target attack cooldowns,
+    /// collider resolution, damage accounting, and result creation. Cross-module
     /// lifecycle transitions are coordinated by App.RunCoordinator.
     /// </summary>
     [DefaultExecutionOrder(-100)]
@@ -21,6 +21,14 @@ namespace CursorHunter.Combat
         private Collider2D[] _overlapBuffer;
         private readonly HashSet<ICombatTarget> _uniqueTargets =
             new HashSet<ICombatTarget>();
+        private readonly Dictionary<ICombatTarget, float> _lastBasicHitAt =
+            new Dictionary<ICombatTarget, float>();
+        private readonly List<RaycastHit2D> _sweepHits =
+            new List<RaycastHit2D>(128);
+        private readonly List<Collider2D> _attackOverlaps =
+            new List<Collider2D>(128);
+        private readonly List<ICombatTarget> _attackTargets =
+            new List<ICombatTarget>(128);
         private readonly Dictionary<string, long> _resourceRewards =
             new Dictionary<string, long>(StringComparer.Ordinal);
 
@@ -29,8 +37,9 @@ namespace CursorHunter.Combat
         private float[] _nextSkillAt = Array.Empty<float>();
         private SeededRandom _random;
         private float _elapsedSeconds;
-        private float _lastAttackAt;
-        private bool _hasAttackedInRun;
+        private Vector2 _previousAttackCenter;
+        private float _previousAttackRadius;
+        private bool _hasPreviousAttackCenter;
         private int _defeatedCount;
         private long _garnetEarned;
         private long _effectiveDamage;
@@ -185,8 +194,8 @@ namespace CursorHunter.Combat
             ConfigureSkills(null);
             _random = new SeededRandom(request.Seed ^ 0xC17C17UL);
             _elapsedSeconds = 0f;
-            _lastAttackAt = 0f;
-            _hasAttackedInRun = false;
+            _lastBasicHitAt.Clear();
+            ResetAttackPath();
             _defeatedCount = 0;
             _garnetEarned = 0;
             _effectiveDamage = 0;
@@ -229,6 +238,8 @@ namespace CursorHunter.Combat
             _isPaused = false;
             _completionRequested = false;
             _abortRequested = false;
+            _lastBasicHitAt.Clear();
+            ResetAttackPath();
             playerCombatStatsRuntime.SetRunActive(false);
             return true;
         }
@@ -241,6 +252,7 @@ namespace CursorHunter.Combat
             }
 
             _isPaused = true;
+            ResetAttackPath();
             return true;
         }
 
@@ -256,26 +268,31 @@ namespace CursorHunter.Combat
         }
 
         /// <summary>
-        /// Resolves one input attack against every distinct enemy Collider2D
-        /// overlapping the cursor Collider2D.
+        /// Drops the cursor's previous position when input cannot attack. The
+        /// next valid sample then checks its endpoint without bridging the gap.
         /// </summary>
-        public bool TryAttack(Collider2D attackCollider)
+        public void ResetAttackPath()
+        {
+            _hasPreviousAttackCenter = false;
+        }
+
+        /// <summary>
+        /// Resolves basic attacks along the cursor's movement since its last
+        /// valid sample. Each target uses its own last successful hit time.
+        /// </summary>
+        public bool TryAttack(Collider2D attackCollider, bool includeMovementPath = true)
         {
             if (!IsRunning || attackCollider == null || !attackCollider.enabled)
             {
+                ResetAttackPath();
                 return false;
             }
 
-            if (_elapsedSeconds >= _runRequest.DurationSeconds ||
-                (_hasAttackedInRun &&
-                 _elapsedSeconds - _lastAttackAt <
-                 playerCombatStatsRuntime.AutoAttackIntervalSeconds))
+            if (_elapsedSeconds >= _runRequest.DurationSeconds)
             {
+                ResetAttackPath();
                 return false;
             }
-
-            _lastAttackAt = _elapsedSeconds;
-            _hasAttackedInRun = true;
 
             Physics2D.SyncTransforms();
 
@@ -286,44 +303,106 @@ namespace CursorHunter.Combat
             };
             contactFilter.SetLayerMask(enemyLayers);
 
-            int overlapCount = attackCollider.Overlap(
-                contactFilter,
-                _overlapBuffer);
-
             _uniqueTargets.Clear();
+            _attackTargets.Clear();
 
-            for (int index = 0; index < overlapCount; index++)
+            if (attackCollider is CircleCollider2D)
             {
-                Collider2D collider = _overlapBuffer[index];
-                if (collider == null)
+                Bounds bounds = attackCollider.bounds;
+                Vector2 center = bounds.center;
+                float radius = Mathf.Max(bounds.extents.x, bounds.extents.y);
+                if (radius <= 0f)
                 {
-                    continue;
+                    ResetAttackPath();
+                    return false;
                 }
 
-                MonsterCombatTarget targetAdapter =
-                    collider.GetComponentInParent<MonsterCombatTarget>();
-
-                if (targetAdapter != null &&
-                    targetAdapter is ICombatTarget target &&
-                    target.RunId == _runRequest.RunId &&
-                    target.IsActive &&
-                    target.IsRegistered)
+                _sweepHits.Clear();
+                Vector2 movement = center - _previousAttackCenter;
+                if (includeMovementPath && _hasPreviousAttackCenter &&
+                    Mathf.Approximately(radius, _previousAttackRadius) &&
+                    movement.sqrMagnitude > 0f)
                 {
-                    _uniqueTargets.Add(target);
+                    float distance = movement.magnitude;
+                    Physics2D.CircleCast(
+                        _previousAttackCenter,
+                        radius,
+                        movement / distance,
+                        contactFilter,
+                        _sweepHits,
+                        distance);
+                    for (int index = 0; index < _sweepHits.Count; index++)
+                    {
+                        AddAttackTarget(_sweepHits[index].collider);
+                    }
+                }
+
+                _attackOverlaps.Clear();
+                Physics2D.OverlapCircle(center, radius, contactFilter, _attackOverlaps);
+                for (int index = 0; index < _attackOverlaps.Count; index++)
+                {
+                    AddAttackTarget(_attackOverlaps[index]);
+                }
+
+                _previousAttackCenter = center;
+                _previousAttackRadius = radius;
+                _hasPreviousAttackCenter = includeMovementPath;
+            }
+            else
+            {
+                // Other collider shapes retain point-only overlap behavior.
+                ResetAttackPath();
+                int overlapCount = attackCollider.Overlap(contactFilter, _overlapBuffer);
+                for (int index = 0; index < overlapCount; index++)
+                {
+                    AddAttackTarget(_overlapBuffer[index]);
                 }
             }
 
-            foreach (ICombatTarget target in _uniqueTargets)
+            float cooldown = playerCombatStatsRuntime.AutoAttackIntervalSeconds;
+            for (int index = 0; index < _attackTargets.Count; index++)
             {
                 if (!IsRunning)
                 {
                     break;
                 }
 
-                ApplyBundle(target);
+                ICombatTarget target = _attackTargets[index];
+                if (!target.IsActive || !target.IsRegistered ||
+                    target.RunId != _runRequest.RunId ||
+                    (_lastBasicHitAt.TryGetValue(target, out float lastHitAt) &&
+                     _elapsedSeconds - lastHitAt < cooldown))
+                {
+                    continue;
+                }
+
+                if (ApplyBundle(target) && target.IsActive && IsRunning)
+                {
+                    _lastBasicHitAt[target] = _elapsedSeconds;
+                }
             }
 
             return true;
+        }
+
+        private void AddAttackTarget(Collider2D collider)
+        {
+            if (collider == null)
+            {
+                return;
+            }
+
+            MonsterCombatTarget targetAdapter =
+                collider.GetComponentInParent<MonsterCombatTarget>();
+            if (targetAdapter != null &&
+                targetAdapter is ICombatTarget target &&
+                target.RunId == _runRequest.RunId &&
+                target.IsActive &&
+                target.IsRegistered &&
+                _uniqueTargets.Add(target))
+            {
+                _attackTargets.Add(target);
+            }
         }
 
         public void ConfigureSkills(IReadOnlyList<SkillCombatSnapshot> skills)
@@ -383,6 +462,8 @@ namespace CursorHunter.Combat
             _isPaused = false;
             _completionRequested = false;
             _abortRequested = false;
+            _lastBasicHitAt.Clear();
+            ResetAttackPath();
             playerCombatStatsRuntime.SetRunActive(false);
 
             result = CreateResult(
@@ -406,6 +487,8 @@ namespace CursorHunter.Combat
             _isPaused = false;
             _completionRequested = false;
             _abortRequested = false;
+            _lastBasicHitAt.Clear();
+            ResetAttackPath();
             playerCombatStatsRuntime.SetRunActive(false);
 
             result = CreateResult(
@@ -429,13 +512,13 @@ namespace CursorHunter.Combat
                 CreateResourceRewards());
         }
 
-        private void ApplyBundle(ICombatTarget target, long skillDamage = 0L)
+        private bool ApplyBundle(ICombatTarget target, long skillDamage = 0L)
         {
             bool wasCritical = RollCriticalHit();
             if (!TryGetHitDamage(wasCritical, out long hitDamage, skillDamage))
             {
                 RequestAbort(RunEndReason.NumericOverflow);
-                return;
+                return false;
             }
 
             bool applied = target.ApplyDamage(
@@ -446,7 +529,12 @@ namespace CursorHunter.Combat
 
             if (!applied)
             {
-                return;
+                return false;
+            }
+
+            if (killed)
+            {
+                _lastBasicHitAt.Remove(target);
             }
 
             if (!TryAddNonNegative(
@@ -455,7 +543,7 @@ namespace CursorHunter.Combat
                     out long nextEffectiveDamage))
             {
                 RequestAbort(RunEndReason.NumericOverflow);
-                return;
+                return true;
             }
 
             _effectiveDamage = nextEffectiveDamage;
@@ -467,7 +555,7 @@ namespace CursorHunter.Combat
 
             if (!killed)
             {
-                return;
+                return true;
             }
 
             if (_defeatedCount == int.MaxValue ||
@@ -477,7 +565,7 @@ namespace CursorHunter.Combat
                     out long nextGarnetEarned))
             {
                 RequestAbort(RunEndReason.NumericOverflow);
-                return;
+                return true;
             }
 
             _defeatedCount++;
@@ -485,7 +573,7 @@ namespace CursorHunter.Combat
             if (!TryRecordReward("gem.garnet", target.GarnetReward))
             {
                 RequestAbort(RunEndReason.NumericOverflow);
-                return;
+                return true;
             }
 
             if (!TryRecordBonusDrop(
@@ -494,9 +582,9 @@ namespace CursorHunter.Combat
                     target.BonusDropChancePercent))
             {
                 RequestAbort(RunEndReason.NumericOverflow);
-                return;
+                return true;
             }
-            return;
+            return true;
         }
 
         private bool RollCriticalHit()

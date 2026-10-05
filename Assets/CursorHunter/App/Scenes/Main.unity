@@ -30795,6 +30795,7 @@ MonoBehaviour:
   testPanelToggleController: {fileID: 1836197417}
   uiRootController: {fileID: 2188000111}
   progressionController: {fileID: 760100001}
+  defaultStage: {fileID: 11400000, guid: 9bd12519f36e4a1983a0dd9dad013f4c, type: 2}
   monsterDefinition: {fileID: 11400000, guid: 7afc7c4d89551704be3531d7298dc4c6, type: 2}
   aliveLimit: 80
   durationSeconds: 15
@@ -31532,7 +31533,7 @@ SpriteRenderer:
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
-  m_DrawMode: 2
+  m_DrawMode: 0
   m_Size: {x: 48, y: 28}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
@@ -35030,7 +35031,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 26, y: 27, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 6449283120639045059}

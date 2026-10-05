@@ -32,6 +32,8 @@ namespace CursorHunter.App
         [SerializeField] private TraitScreenController progressionController;
 
         [Header("Hunt run")]
+        [SerializeField, Tooltip("Stage roster used by the existing Enter button. Leave empty for the legacy progression roster.")]
+        private CombatStageDefinition defaultStage;
         [SerializeField] private MonsterDefinition monsterDefinition;
         [SerializeField, Min(1)] private int aliveLimit = 80;
         [SerializeField, Min(1f)] private float durationSeconds = 15f;
@@ -133,6 +135,15 @@ namespace CursorHunter.App
         /// </summary>
         public void BeginPrototypeRun()
         {
+            BeginStageRun(defaultStage);
+        }
+
+        /// <summary>
+        /// Starts a selected inspector-authored stage. A null stage retains
+        /// the legacy progression-driven prototype roster.
+        /// </summary>
+        public void BeginStageRun(CombatStageDefinition stage)
+        {
             ResolveReferences();
             EnsureRunCoordinator();
             SubscribeToCoordinator();
@@ -171,6 +182,18 @@ namespace CursorHunter.App
                     Debug.LogError("Combat JSON rejected: " + error, this);
                     return;
                 }
+                if (stage != null)
+                {
+                    if (!stage.TryApplyToInformation(information, out error))
+                    {
+                        Debug.LogError(
+                            $"Cannot enter stage '{stage.StageId}': " + error,
+                            this);
+                        return;
+                    }
+
+                    json = GameInformationJson.Serialize(information);
+                }
                 cursorStatBonuses =
                     progressionController.CreateCursorCombatStatBonusesSnapshot();
                 progressionSnapshot = information.ToCombatSnapshot(
@@ -178,6 +201,13 @@ namespace CursorHunter.App
                     cursorStatBonuses);
                 schemaVersion = information.schemaVersion;
                 balanceVersion = information.balanceVersion;
+            }
+            else if (stage != null)
+            {
+                Debug.LogError(
+                    $"Cannot enter stage '{stage.StageId}' without player combat information.",
+                    this);
+                return;
             }
             else if (!allowPrototypeFallback)
             {
@@ -206,6 +236,7 @@ namespace CursorHunter.App
 
             if (!TryCreateSpawnPlan(
                 progressionSnapshot,
+                stage,
                 out SpawnPlan spawnPlan,
                 out SpawnStartResult spawnPlanStartResult))
             {
@@ -544,6 +575,7 @@ namespace CursorHunter.App
 
         private bool TryCreateSpawnPlan(
             ProgressionCombatSnapshot progressionSnapshot,
+            CombatStageDefinition stage,
             out SpawnPlan spawnPlan,
             out SpawnStartResult failureResult)
         {
@@ -551,6 +583,22 @@ namespace CursorHunter.App
             failureResult = new SpawnStartResult(
                 SpawnStartStatus.Started,
                 "Monster definition snapshot is ready.");
+
+            if (stage != null)
+            {
+                if (stage.TryCreateSpawnPlan(
+                    progressionSnapshot,
+                    out spawnPlan,
+                    out string stageError))
+                {
+                    return true;
+                }
+
+                failureResult = new SpawnStartResult(
+                    SpawnStartStatus.InvalidRequest,
+                    stageError);
+                return false;
+            }
 
             if (progressionSnapshot != null && !string.IsNullOrEmpty(progressionSnapshot.SourceJson))
             {

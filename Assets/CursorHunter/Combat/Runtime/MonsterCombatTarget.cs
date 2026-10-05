@@ -28,8 +28,15 @@ namespace CursorHunter.Combat
             "death"
         };
 
+        private static readonly int IsMovingHash = Animator.StringToHash("isMoving");
+        private static readonly int IdleHash = Animator.StringToHash("Idle");
+        private static readonly int WalkHash = Animator.StringToHash("Walk");
+
         [SerializeField] private Animator animator;
         [SerializeField] private Transform healthBarAnchor;
+        [SerializeField] private bool showHealthBar;
+        [SerializeField, Range(0.01f, 1f)]
+        private float deathDespawnNormalizedTime = 1f;
 
         private bool _isInitialized;
         private bool _isRegistered;
@@ -38,6 +45,8 @@ namespace CursorHunter.Combat
         private RunId _deathRunId;
         private float _destroyAt;
         private bool _destroyScheduled;
+        private int _deathStateLayer = -1;
+        private int _deathStateHash;
         private string _monsterId;
         private long _maxHealth;
         private long _currentHealth;
@@ -48,6 +57,11 @@ namespace CursorHunter.Combat
         private MonsterBehaviorType _behaviorType;
         private MonsterHealthBarView _healthBar;
         private MonsterBehaviorController _behaviorController;
+        private bool _hasIsMovingParameter;
+        private bool _hasLocomotionStates;
+        private bool _isMoving;
+        private int _idleStateHash;
+        private int _walkStateHash;
 
         public bool IsInitialized => _isInitialized;
         public bool IsRegistered => _isRegistered;
@@ -68,18 +82,33 @@ namespace CursorHunter.Combat
             ResolveAnimator();
         }
 
-        protected virtual void Update()
+        protected virtual void LateUpdate()
         {
-            if (!_destroyScheduled || !_isDead || Time.time < _destroyAt)
+            if (!_destroyScheduled || !_isDead)
+            {
+                return;
+            }
+
+            if (_runId != _deathRunId)
+            {
+                _destroyScheduled = false;
+                return;
+            }
+
+            if (TryGetDeathState(out AnimatorStateInfo state))
+            {
+                if (state.normalizedTime < deathDespawnNormalizedTime)
+                {
+                    return;
+                }
+            }
+            else if (Time.time < _destroyAt)
             {
                 return;
             }
 
             _destroyScheduled = false;
-            if (_runId == _deathRunId)
-            {
-                DestroySelf();
-            }
+            DestroySelf();
         }
 
         /// <summary>
@@ -100,6 +129,8 @@ namespace CursorHunter.Combat
 
             _destroyScheduled = false;
             _deathRunId = default;
+            _deathStateLayer = -1;
+            _deathStateHash = 0;
             _runId = runId;
             _monsterId = snapshot.MonsterId;
             _maxHealth = snapshot.MaxHealth;
@@ -128,20 +159,27 @@ namespace CursorHunter.Combat
             // so resolve the Animator again after visual composition is complete.
             ResolveAnimator();
             AttachAnimationEventRelays();
-            EnsureHealthBar();
-            _healthBar.Initialize(_maxHealth);
-            Bounds visualBounds = CalculateVisualBounds();
-            if (healthBarAnchor != null)
+            if (showHealthBar)
             {
-                healthBarAnchor.position = new Vector3(
-                    visualBounds.center.x,
-                    visualBounds.max.y + 0.16f,
-                    visualBounds.center.z);
-                _healthBar.Configure(visualBounds, true);
+                EnsureHealthBar();
+                _healthBar.Initialize(_maxHealth);
+                Bounds visualBounds = CalculateVisualBounds();
+                if (healthBarAnchor != null)
+                {
+                    healthBarAnchor.position = new Vector3(
+                        visualBounds.center.x,
+                        visualBounds.max.y + 0.16f,
+                        visualBounds.center.z);
+                    _healthBar.Configure(visualBounds, true);
+                }
+                else
+                {
+                    _healthBar.Configure(visualBounds);
+                }
             }
-            else
+            else if (_healthBar != null)
             {
-                _healthBar.Configure(visualBounds);
+                _healthBar.Hide();
             }
 
             if (animator == null)
@@ -151,13 +189,14 @@ namespace CursorHunter.Combat
 
             animator.Rebind();
             animator.Update(0f);
+            InitializeMovementAnimation();
         }
 
         public bool ConfigureMovement(
             SpawnSnapshot snapshot,
             CombatRunController runController,
             Bounds movementBounds,
-            Vector2 initialHeading)
+            ulong behaviorSeed)
         {
             if (!IsActive)
             {
@@ -171,7 +210,7 @@ namespace CursorHunter.Combat
                        this,
                        runController,
                        movementBounds,
-                       initialHeading);
+                       behaviorSeed);
         }
 
         /// <summary>
@@ -183,9 +222,66 @@ namespace CursorHunter.Combat
         {
             _isRegistered = false;
             _destroyScheduled = false;
+            SetMoving(false);
             if (_healthBar != null)
             {
                 _healthBar.Hide();
+            }
+        }
+
+        internal void SetMoving(bool moving)
+        {
+            if (animator == null || animator.runtimeAnimatorController == null)
+            {
+                return;
+            }
+
+            bool shouldMove = moving && IsActive;
+            if (_isMoving != shouldMove)
+            {
+                _isMoving = shouldMove;
+                if (_hasIsMovingParameter)
+                {
+                    animator.SetBool(IsMovingHash, shouldMove);
+                }
+            }
+
+            // Death can be requested in LateUpdate, after the Animator has
+            // evaluated for this frame. Until its next evaluation the reported
+            // state may still be Walk; never replace the pending Dead playback.
+            if (_isDead)
+            {
+                return;
+            }
+
+            // Some visual controllers have Idle/Walk clips but no transition.
+            // Only switch between locomotion states so Hit and Dead can finish.
+            if (!_hasLocomotionStates ||
+                (_behaviorController != null && _behaviorController.IsHitStopped))
+            {
+                return;
+            }
+
+            AnimatorStateInfo state = animator.GetCurrentAnimatorStateInfo(0);
+            if (animator.IsInTransition(0))
+            {
+                AnimatorStateInfo nextState = animator.GetNextAnimatorStateInfo(0);
+                if (!shouldMove && nextState.shortNameHash == WalkHash &&
+                    (state.shortNameHash == IdleHash ||
+                     state.shortNameHash == WalkHash))
+                {
+                    animator.Play(_idleStateHash, 0, 0f);
+                }
+                return;
+            }
+
+            if (shouldMove && state.shortNameHash == IdleHash)
+            {
+                animator.CrossFade(_walkStateHash, 0.1f, 0);
+            }
+            else if (!shouldMove && state.shortNameHash == WalkHash)
+            {
+                animator.Play(_idleStateHash, 0, 0f);
             }
         }
 
@@ -268,7 +364,7 @@ namespace CursorHunter.Combat
 
             effectiveDamage = damage < _currentHealth ? damage : _currentHealth;
             _currentHealth -= effectiveDamage;
-            if (_healthBar != null)
+            if (showHealthBar && _healthBar != null)
             {
                 _healthBar.SetHealth(_currentHealth);
             }
@@ -282,6 +378,7 @@ namespace CursorHunter.Combat
                 }
                 _isDead = true;
                 _isRegistered = false;
+                SetMoving(false);
                 _deathRunId = _runId;
                 killed = true;
                 StartDeathAnimation();
@@ -293,12 +390,19 @@ namespace CursorHunter.Combat
         }
 
         /// <summary>
-        /// Kept for the existing Walker animation event. Generic prefabs do
-        /// not need an event because the adapter schedules a guarded fallback.
+        /// Kept for existing animation events. An event cannot remove a monster
+        /// before its configured death visual has finished.
         /// </summary>
         public void DestroySelf()
         {
-            if (!_isDead || !_deathRunId.IsValid)
+            if (!_isDead || !_deathRunId.IsValid || _runId != _deathRunId)
+            {
+                return;
+            }
+
+            if (_destroyScheduled &&
+                (!TryGetDeathState(out AnimatorStateInfo state) ||
+                 state.normalizedTime < deathDespawnNormalizedTime))
             {
                 return;
             }
@@ -334,6 +438,44 @@ namespace CursorHunter.Combat
             {
                 _behaviorController = GetComponent<MonsterBehaviorController>();
             }
+        }
+
+        private void InitializeMovementAnimation()
+        {
+            _isMoving = false;
+            _hasIsMovingParameter = false;
+            _hasLocomotionStates = false;
+            if (animator == null || animator.runtimeAnimatorController == null ||
+                animator.layerCount == 0)
+            {
+                return;
+            }
+
+            foreach (AnimatorControllerParameter parameter in animator.parameters)
+            {
+                if (parameter.nameHash == IsMovingHash &&
+                    parameter.type == AnimatorControllerParameterType.Bool)
+                {
+                    _hasIsMovingParameter = true;
+                    animator.SetBool(IsMovingHash, false);
+                    break;
+                }
+            }
+
+            string layerName = animator.GetLayerName(0);
+            _idleStateHash = Animator.StringToHash(layerName + ".Idle");
+            _walkStateHash = Animator.StringToHash(layerName + ".Walk");
+            if (!animator.HasState(0, _idleStateHash))
+            {
+                _idleStateHash = IdleHash;
+            }
+            if (!animator.HasState(0, _walkStateHash))
+            {
+                _walkStateHash = WalkHash;
+            }
+            _hasLocomotionStates =
+                animator.HasState(0, _idleStateHash) &&
+                animator.HasState(0, _walkStateHash);
         }
 
         private void AttachAnimationEventRelays()
@@ -430,43 +572,74 @@ namespace CursorHunter.Combat
                 return;
             }
 
-            bool hasAnimation = false;
-            float animationDuration = 0f;
-
-            if (TryPlayState(
+            if (!TryPlayState(
                     DeadStateCandidates,
-                    out float stateDuration))
-            {
-                hasAnimation = true;
-                animationDuration = stateDuration;
-            }
-
-            if (!hasAnimation)
+                    out float animationDuration,
+                    out _deathStateLayer,
+                    out _deathStateHash))
             {
                 DestroySelf();
                 return;
             }
 
+            // The clock only cleans up a missing/interrupted Animator state.
+            // Normal removal follows the Animator's actual playback progress.
             _destroyAt = Time.time +
                          Mathf.Max(0.25f, animationDuration);
             _destroyScheduled = true;
         }
 
-        private void PlayHitAnimation()
+        private bool TryGetDeathState(out AnimatorStateInfo state)
         {
-            if (animator == null)
+            state = default;
+            if (animator == null || !animator.isActiveAndEnabled ||
+                animator.runtimeAnimatorController == null ||
+                _deathStateLayer < 0 || _deathStateLayer >= animator.layerCount)
             {
-                return;
+                return false;
             }
 
-            TryPlayState(HitStateCandidates, out _);
+            state = animator.GetCurrentAnimatorStateInfo(_deathStateLayer);
+            return state.fullPathHash == _deathStateHash;
+        }
+
+        private void PlayHitAnimation()
+        {
+            SetMoving(false);
+
+            float hitDuration = 0.25f;
+            if (animator != null &&
+                TryPlayState(HitStateCandidates, out float stateDuration))
+            {
+                if (stateDuration > 0f)
+                {
+                    hitDuration = stateDuration;
+                }
+            }
+
+            ResolveBehaviorController();
+            if (_behaviorController != null)
+            {
+                _behaviorController.StopForHit(hitDuration);
+            }
         }
 
         private bool TryPlayState(
             string[] stateCandidates,
             out float duration)
         {
+            return TryPlayState(stateCandidates, out duration, out _, out _);
+        }
+
+        private bool TryPlayState(
+            string[] stateCandidates,
+            out float duration,
+            out int playedLayer,
+            out int playedStateHash)
+        {
             duration = 0f;
+            playedLayer = -1;
+            playedStateHash = 0;
             if (animator == null || animator.runtimeAnimatorController == null)
             {
                 return false;
@@ -486,6 +659,8 @@ namespace CursorHunter.Combat
 
                     animator.Play(stateHash, layer, 0f);
                     duration = FindClipLength(stateCandidate);
+                    playedLayer = layer;
+                    playedStateHash = stateHash;
                     return true;
                 }
             }

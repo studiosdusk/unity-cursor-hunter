@@ -4,8 +4,7 @@ namespace CursorHunter.Combat
 {
     /// <summary>
     /// Small world-space health bar for a spawned normal monster. The view is
-    /// only enabled at spawn and after damage, which keeps a crowded field
-    /// readable while still making the target's current HP inspectable.
+    /// shown at spawn and after damage when enabled on MonsterCombatTarget.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class MonsterHealthBarView : MonoBehaviour

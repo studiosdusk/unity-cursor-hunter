@@ -330,15 +330,11 @@ namespace CursorHunter.Combat
                     return false;
                 }
 
-                float headingRadians = _random.NextFloat(0f, Mathf.PI * 2f);
-                Vector2 initialHeading = new Vector2(
-                    Mathf.Cos(headingRadians),
-                    Mathf.Sin(headingRadians));
                 return target.ConfigureMovement(
                     _spawnSnapshot,
                     combatRunController,
                     movementBounds,
-                    initialHeading);
+                    _random.NextUInt64());
             }
             catch (System.Exception exception)
             {

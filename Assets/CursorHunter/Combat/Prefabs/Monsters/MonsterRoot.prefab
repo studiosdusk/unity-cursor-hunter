@@ -50,6 +50,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: CursorHunter.Combat::CursorHunter.Combat.MonsterCombatTarget
   animator: {fileID: 0}
   healthBarAnchor: {fileID: 300001}
+  showHealthBar: 0
+  deathDespawnNormalizedTime: 0.7777778
 --- !u!114 &100003
 MonoBehaviour:
   m_ObjectHideFlags: 0

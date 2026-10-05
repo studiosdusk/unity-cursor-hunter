@@ -10,6 +10,8 @@ namespace CursorHunter.Combat
     [DisallowMultipleComponent]
     public sealed class MonsterBehaviorController : MonoBehaviour
     {
+        private const float ActionDurationSeconds = 2f;
+
         [SerializeField] private Transform visualRoot;
         [SerializeField] private Transform hitArea;
         [SerializeField] private BoxCollider2D hitAreaCollider;
@@ -27,7 +29,15 @@ namespace CursorHunter.Combat
         private float _orbitAngleDegrees;
         private float _orbitAngularSpeedDegrees;
         private float _lastElapsedSeconds;
+        private float _nextActionAt;
+        private float _hitStopUntil;
+        private SeededRandom _actionRandom;
+        private bool _isMoveAction;
         private bool _isConfigured;
+
+        internal bool IsHitStopped =>
+            _isConfigured && _runController != null &&
+            _runController.ElapsedSeconds < _hitStopUntil;
 
         private void Awake()
         {
@@ -40,6 +50,10 @@ namespace CursorHunter.Combat
                 _runController == null || !_runController.IsRunActive ||
                 _runController.IsPaused)
             {
+                if (_target != null)
+                {
+                    _target.SetMoving(false);
+                }
                 return;
             }
 
@@ -48,10 +62,51 @@ namespace CursorHunter.Combat
             if (deltaSeconds <= 0f || float.IsNaN(deltaSeconds) ||
                 float.IsInfinity(deltaSeconds))
             {
+                _target.SetMoving(false);
                 return;
             }
 
+            float segmentStart = _lastElapsedSeconds;
+            bool movedInCurrentAction = false;
+            while (segmentStart < elapsedSeconds)
+            {
+                float segmentEnd = Mathf.Min(elapsedSeconds, _nextActionAt);
+                float movementStart = Mathf.Max(segmentStart, _hitStopUntil);
+                if (_isMoveAction && movementStart < segmentEnd)
+                {
+                    movedInCurrentAction |= AdvanceMovement(segmentEnd - movementStart);
+                }
+
+                segmentStart = segmentEnd;
+                if (segmentStart >= _nextActionAt)
+                {
+                    bool continuedMoving = _isMoveAction && movedInCurrentAction;
+                    ChooseNextAction();
+                    _nextActionAt += ActionDurationSeconds;
+                    movedInCurrentAction = continuedMoving && _isMoveAction;
+                }
+            }
+
             _lastElapsedSeconds = elapsedSeconds;
+            _target.SetMoving(_isMoveAction && movedInCurrentAction);
+        }
+
+        internal void StopForHit(float durationSeconds)
+        {
+            if (!_isConfigured || _target == null || !_target.IsActive ||
+                _runController == null)
+            {
+                return;
+            }
+
+            _hitStopUntil = Mathf.Max(
+                _hitStopUntil,
+                _runController.ElapsedSeconds + Mathf.Max(0f, durationSeconds));
+        }
+
+        private bool AdvanceMovement(float deltaSeconds)
+        {
+            Vector3 previousPosition = transform.position;
             switch (_movementMode)
             {
                 case MonsterMovementMode.BoundedWander:
@@ -61,10 +116,19 @@ namespace CursorHunter.Combat
                     AdvanceCircular(deltaSeconds);
                     break;
             }
+
+            Vector3 movement = transform.position - previousPosition;
+            bool isMoving = movement.sqrMagnitude > 0f;
+            if (isMoving)
+            {
+                FaceHorizontalDirection(movement.x);
+            }
+
+            return isMoving;
         }
 
         /// <summary>
-        /// Applies scale and hitbox size before the target lays out its health bar.
+        /// Applies scale and hitbox size before the target optionally lays out its health bar.
         /// </summary>
         public bool ApplyPresentation(SpawnSnapshot snapshot)
         {
@@ -90,8 +154,9 @@ namespace CursorHunter.Combat
             MonsterCombatTarget target,
             CombatRunController runController,
             Bounds movementBounds,
-            Vector2 initialHeading)
+            ulong behaviorSeed)
         {
+            _isConfigured = false;
             if (target == null || runController == null || !target.IsActive)
             {
                 return false;
@@ -112,6 +177,9 @@ namespace CursorHunter.Combat
             _boundsMin = movementBounds.min;
             _boundsMax = movementBounds.max;
             _lastElapsedSeconds = runController.ElapsedSeconds;
+            _nextActionAt = _lastElapsedSeconds + ActionDurationSeconds;
+            _hitStopUntil = 0f;
+            _actionRandom = new SeededRandom(behaviorSeed);
             _isConfigured = true;
 
             Vector3 initialPosition = transform.position;
@@ -119,14 +187,11 @@ namespace CursorHunter.Combat
             initialPosition.y = Mathf.Clamp(initialPosition.y, _boundsMin.y, _boundsMax.y);
             transform.position = initialPosition;
 
-            Vector2 direction = initialHeading.sqrMagnitude > 0.0001f
-                ? initialHeading.normalized
-                : Vector2.right;
-            _velocity = direction * _moveSpeed;
+            _velocity = Vector2.zero;
             if (_movementMode == MonsterMovementMode.Circular)
             {
                 _orbitCenter = transform.position;
-                _orbitAngleDegrees = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+                _orbitAngleDegrees = _actionRandom.NextFloat(0f, 360f);
                 _orbitAngularSpeedDegrees = snapshot.OrbitAngularSpeedDegrees;
                 float availableRadius = Mathf.Min(
                     Mathf.Min(_orbitCenter.x - _boundsMin.x, _boundsMax.x - _orbitCenter.x),
@@ -137,6 +202,9 @@ namespace CursorHunter.Combat
                     Mathf.Max(0f, availableRadius));
                 SetRootPosition(_orbitCenter + DirectionFromDegrees(_orbitAngleDegrees) * _orbitRadius);
             }
+
+            ChooseNextAction();
+            _target.SetMoving(false);
 
             return true;
         }
@@ -169,6 +237,27 @@ namespace CursorHunter.Combat
                 360f);
             SetRootPosition(
                 _orbitCenter + DirectionFromDegrees(_orbitAngleDegrees) * _orbitRadius);
+        }
+
+        private void ChooseNextAction()
+        {
+            _isMoveAction = _movementMode != MonsterMovementMode.Stationary &&
+                _actionRandom.NextFloat(0f, 1f) < 0.5f;
+            if (!_isMoveAction)
+            {
+                return;
+            }
+
+            if (_movementMode == MonsterMovementMode.BoundedWander)
+            {
+                float headingDegrees = _actionRandom.NextFloat(0f, 360f);
+                _velocity = DirectionFromDegrees(headingDegrees) * _moveSpeed;
+            }
+            else if (_movementMode == MonsterMovementMode.Circular)
+            {
+                _orbitAngularSpeedDegrees = Mathf.Abs(_orbitAngularSpeedDegrees) *
+                    (_actionRandom.NextFloat(0f, 1f) < 0.5f ? -1f : 1f);
+            }
         }
 
         private static float AdvanceReflectedAxis(
@@ -211,6 +300,23 @@ namespace CursorHunter.Combat
             rootPosition.x = position.x;
             rootPosition.y = position.y;
             transform.position = rootPosition;
+        }
+
+        private void FaceHorizontalDirection(float direction)
+        {
+            if (visualRoot == null || Mathf.Abs(direction) <= 0.000001f)
+            {
+                return;
+            }
+
+            Vector3 scale = visualRoot.localScale;
+            // The Walker visuals face left at their authored positive X scale.
+            float facingScale = Mathf.Abs(scale.x) * (direction > 0f ? -1f : 1f);
+            if (scale.x != facingScale)
+            {
+                scale.x = facingScale;
+                visualRoot.localScale = scale;
+            }
         }
 
         private void ResolveHierarchy()

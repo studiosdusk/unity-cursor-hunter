@@ -458,3 +458,91 @@
 - 노드형 성장 UI, 자동 반경/쿨타임, 몬스터 10종, TMP·화질 설정, 전투 정보/성장 설정 분리, 유물 제거와 behaviorType 예약 필드의 누적 변경을 함께 커밋한다.
 - 전투 JSON schemaVersion=3, 저장 version=3은 그대로 유지한다. 문서 파일명의 v0.0.4는 기존 링크와 역사적 본문 보존을 위해 변경하지 않는다.
 - 검증: Python 테스트 12개, 한영 참고본·스키마·참조·협업 경계·C# 구문·diff 검사. Unity/게임/Editor 테스트는 실행하지 않는다.
+
+## 2026-10-05 · 일반 몬스터 체력바 기본 숨김
+
+- `MonsterRoot.prefab`의 `showHealthBar`를 끄고, 생성·피격 때 체력바를 표시하는 경로가 이 설정을 따르도록 했다. 전투 HP 계산과 피해 판정은 그대로 유지한다.
+- `python3 tools/validate_collaboration.py`와 `git diff --check` 통과. Unity Import·컴파일·Play Mode 시각 검증은 수행하지 않았다.
+
+## 2026-10-05 · 몬스터 이동 애니메이션 연결
+
+- `MonsterBehaviorController`가 실제 위치 변화로 이동 여부를 판정하고, `MonsterCombatTarget`이 Animator의 `isMoving` Bool과 Idle/Walk 상태를 갱신한다. Hit/Dead 중에는 이동 상태 전환을 미루고, 일시정지·런 종료·사망 시 Bool을 끈다.
+- 공급사 Walker 컨트롤러 원본은 수정하지 않았다. 디스크에 저장된 원본에는 아직 `isMoving` 파라미터가 없어서, Idle/Walk 스테이트를 직접 전환하는 경로도 넣었다.
+- `python3 tools/validate_collaboration.py`와 `git diff --check` 통과. 이 프로젝트의 Unity 컴파일·Play Mode는 확인하지 않았다.
+
+## 2026-10-05 · 몬스터 이동 방향에 맞춘 좌우 반전
+
+- `MonsterBehaviorController`가 수평 이동 방향을 기준으로 `VisualRoot`만 좌우 반전한다. 경계에서 되돌아올 때는 반사된 속도 방향을 사용하고, 정지·수직 이동 중에는 마지막 방향을 유지한다.
+- `HitArea`와 공급사 프리팹 원본은 변경하지 않았다.
+- `python3 tools/validate_collaboration.py`와 `git diff --check` 통과. 이 프로젝트의 Unity 컴파일·Play Mode 시각 검증은 수행하지 않았다.
+
+## 2026-10-05 · 2초 간격 몬스터 행동 패턴
+
+- 각 몬스터가 생성 시와 이후 2초마다 정지·이동을 같은 확률로 선택한다. 이동을 다시 선택하면 새 이동 방향을 고르고, 경계 반사와 원형 이동 모드는 유지한다.
+- 몬스터별 독립 시드 난수를 사용하고, 런 시계로 시간을 재어 일시정지·오래된 RunId가 행동 시간을 진행시키지 않도록 한다. `Stationary` 프로필은 계속 정지한다.
+- `python3 tools/validate_collaboration.py`와 `git diff --check` 통과. 이 프로젝트의 Unity 컴파일·Play Mode는 확인하지 않았다.
+
+## 2026-10-05 · 정지 행동의 Idle 전환 보강
+
+- 정지 선택 시 Animator가 Walk에 있으면 Idle로 전환하고, Idle→Walk 전환 중 정지가 선택돼도 Idle로 되돌린다. Hit/Dead로의 전환은 유지한다.
+- 이전 변경에서 어긋난 `ConfigureMovement`의 시드 인자 타입을 호출부와 맞췄다.
+- `python3 tools/validate_collaboration.py`와 `git diff --check` 통과. 이 프로젝트의 Unity 컴파일·Play Mode는 확인하지 않았다.
+
+## 2026-10-05 · 몬스터 좌우 바라보기 반전 수정
+
+- Walker 비주얼의 기본 방향이 왼쪽인 점에 맞춰 오른쪽 이동에서 `VisualRoot`의 X 배율을 음수로, 왼쪽 이동에서 양수로 바꿨다.
+- 경계 반사 프레임에도 실제 X 위치 변화를 기준으로 방향을 정하고, 새 이동 행동을 고른 직후 아직 움직이기 전에는 바라보는 방향을 바꾸지 않는다.
+- `python3 tools/validate_collaboration.py`와 `git diff --check` 통과. 이 프로젝트의 Unity 컴파일·Play Mode는 확인하지 않았다.
+
+## 2026-10-05 · 몬스터 피격 중 이동 정지
+
+- 피격 시 즉시 `isMoving`을 끄고 Hit 상태가 있으면 재생한다. Hit 클립 길이 동안 실제 위치 이동을 생략하며, 연속 피격 시 정지 시간을 마지막 피격 기준으로 연장한다.
+- 피격 정지 중의 반복적인 이동 상태 갱신이 Hit 애니메이션을 Idle/Walk로 덮어쓰지 않도록 막았다.
+- 기존 2초 정지·이동 행동 선택 시계는 유지하고, 사망 시에는 기존 사망 처리에 따라 영구적으로 이동을 멈춘다.
+- `python3 tools/validate_collaboration.py`와 `git diff --check` 통과. 이 프로젝트의 Unity 컴파일·Play Mode는 확인하지 않았다.
+
+## 2026-10-05 · 몬스터 에셋 Animator Controller 통일
+
+- `EnemyMonster 2`의 17종 컨트롤러에 Walker 기준 `hit` Trigger, `dead`·`isMoving` Bool, Idle↔Walk, Any State→Hit/Dead, Hit→Idle 전이를 구성했다. Walker에 빠져 있던 Walk→Idle 전이도 추가했다.
+- 종별 5개 애니메이션 클립과 기존 재생 속도, 컨트롤러 GUID를 유지했다. 50개 프리팹이 각 종 컨트롤러를 계속 참조하는지 확인했다.
+- 사용자 요청에 따라 이번에는 공급사 컨트롤러 원본을 직접 수정했다. 17개 컨트롤러의 상태·전이·파라미터·클립 GUID와 50개 프리팹 연결 구조 검사, `python3 tools/validate_collaboration.py`, `git diff --check`를 통과했다. Unity Import·Play Mode는 아직 확인하지 않았다.
+
+## 2026-10-05 · 몬스터 Definition별 비주얼 프리팹 연결
+
+- `Monster01~10.asset`의 `visualPrefab`을 기존 `prefabKey`가 지목하던 종별 프리팹으로 연결했다. Monster01의 Walker Stump 연결은 유지하고, 나머지 9개를 각자 다른 외형으로 교체했다.
+- 10개 참조 모두 프리팹의 GUID와 루트 GameObject fileID가 일치하고 서로 중복되지 않는지 검사했다. 프로토타입 `SlimeDefinition.asset`은 변경하지 않았다.
+- `python3 tools/validate_collaboration.py`와 `git diff --check` 통과. Unity Import·Play Mode는 확인하지 않았다.
+
+## 2026-10-05 · 몬스터 사망 연출 제거 시점 정렬
+
+- 17종 Dead 클립은 길이가 1.5초지만 `Dead` 시각 파츠가 1.167초에 꺼진다. 기존 클립 길이 타이머와 Walker의 1.483초 이벤트는 화면에서 사라진 뒤에도 오브젝트를 남겼다.
+- 공용 `MonsterRoot`의 제거 기준을 Dead 상태 정규화 시간 0.7777778로 설정하고, `MonsterCombatTarget`은 Animator의 실제 진행률로 제거한다. 기존 이벤트가 연출 종료 전에 오더라도 제거하지 않으며, Animator 상태가 없어졌을 때만 클립 길이 타이머를 사용한다.
+- 체력 0 판정과 보상 집계는 타격 시점 그대로이고, 시각 오브젝트 제거만 연출과 맞춘다. 공급사 애니메이션 클립은 변경하지 않았다.
+- 17개 클립의 종료 키프레임과 프리팹 제거 비율 검사, `python3 tools/validate_collaboration.py`, `git diff --check` 통과. 접근되는 Unity 창은 다른 프로젝트여서 이 프로젝트의 Unity 컴파일·Play Mode는 확인하지 않았다.
+
+## 2026-10-05 · 커서 이동 경로와 몬스터별 기본 공격 쿨타임
+
+- `CombatRunController`의 공용 마지막 공격 시각을 없애고, 기본 공격 피해가 실제 적용된 몬스터 인스턴스별 시각을 저장한다. 쿨타임 길이는 기존 `PlayerCombatStatsRuntime` 값을 공통으로 읽는다. 빈 공간·쿨타임 중인 몬스터는 다른 몬스터의 타격 기회를 소모하지 않는다.
+- 원형 커서의 이전·현재 위치 사이를 CircleCast하고 현재 위치를 OverlapCircle로 검사한다. 가변 결과 목록과 몬스터 중복 제거를 사용해 빠른 이동 경로의 여러 적을 같은 프레임에 타격할 수 있다.
+- `CursorAttackController`는 몬스터 이동 이후 LateUpdate에서 샘플링한다. UI 포인터, 화면 밖, 포커스 상실, 일시정지, 자동 공격 해제, 런 종료 때 경로를 끊고, 테스트 버튼은 현재 위치만 판정한다. 스킬 타이머와 판정은 유지한다.
+- App EditMode 테스트에 다중 타격, 타격 시각이 다른 두 몬스터의 독립 쿨타임, 경로 초기화/현재 위치 전용 판정을 추가했다.
+- Unity 생성 프로젝트의 참조를 이용한 Roslyn C# 컴파일에서 Combat·App·App.Tests 3개 어셈블리가 통과했다. `python3 tools/validate_collaboration.py`와 `git diff --check`도 통과했다. 이 프로젝트의 Unity Test Runner·Play Mode는 실행하지 않았다.
+
+## 2026-10-05 · 일부 몬스터 피격·사망 연출 누락 방지
+
+- `MonsterCombatTarget`의 사망 직후 이동 상태 갱신이 이전 Walk 상태를 보고 Idle을 강제로 재생하면, 아직 평가되지 않은 Dead 재생 요청을 덮을 수 있었다. 사망 후에는 `isMoving` 값만 끄고 Idle/Walk 직접 전환을 하지 않도록 했다.
+- 17종 Animator Controller의 Hit→Idle 전이가 모두 Exit Time 0으로 설정돼 있었다. Hit 클립이 끝난 뒤에 돌아오도록 Exit Time 1로 수정했다. Dead 클립과 제거 기준은 유지했다.
+- 17종 전이 값 검사, Combat·App·App.Tests Roslyn C# 컴파일, 협업 경계 검사와 diff 공백 검사를 통과했다. 올바른 프로젝트의 Unity Play Mode는 이 환경에서 접근되지 않아 재현·시각 검증은 하지 못했다.
+
+## 2026-10-05 · 인스펙터 기반 전투 스테이지 스폰 설정
+
+- `CombatStageDefinition`에 몬스터별 스폰 허용과 생산 특성 단계(기본·2·3·4 또는 구매한 단계 사용)를 추가했다. 허용 여부와 명시한 생산 단계는 해당 런에만 적용하고 플레이어 구매·저장은 변경하지 않는다.
+- `Stage01.asset`에 Monster01~10을 등록하고 처음에는 Monster01만 허용했다. Main의 기존 진입 버튼은 `HuntManager.Default Stage`를 통해 이 스테이지로 들어간다. 다른 스테이지 에셋은 `BeginStageRun`에 전달할 수 있다.
+- 런 시작 시 스테이지 설정을 게임 정보 JSON과 스폰 계획에 함께 반영해 전투 중 전체 정보 화면과 실제 등장 몬스터가 일치하게 했다. 중복 몬스터, 빈 허용 목록, 누락된 비주얼은 진입 전에 거부한다.
+- App·App.Tests Roslyn C# 컴파일, 스테이지 에셋 참조, `python3 tools/validate_collaboration.py`, `git diff --check`를 통과했다. Unity Test Runner와 Play Mode는 실행하지 않았다.
+
+## 2026-10-05 · 전투 필드 바닥의 그리드 경계 숨김
+
+- `field_a.png`의 둘레 1픽셀이 투명해 타일 반복 시 필드 전체에 격자 경계가 드러나는 것을 확인했다. 공급사 원본은 수정하지 않았다.
+- Main 씬의 `field_a` SpriteRenderer를 단일 표시로 바꾸고 카메라 바깥까지 넓혀, 반복 경계와 외곽의 투명 테두리가 화면에 보이지 않게 했다. 원본의 실제 색상 영역은 단색이어서 확대해도 바닥 무늬가 흐려지는 문제는 없다.
+- `python3 tools/validate_collaboration.py`와 `git diff --check`로 정적 검증했다. 접근 가능한 Unity 창은 다른 프로젝트여서 Cursor Hunter의 Game View 시각 검증은 수행하지 않았다.

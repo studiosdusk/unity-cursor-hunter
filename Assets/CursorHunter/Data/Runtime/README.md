@@ -8,4 +8,5 @@
 목록에서 마지막으로 지정한 항목이 선택된다. 런 시작 시 `CreateSnapshot`이 이를 최종
 `SpawnSnapshot`으로 복사한다. Progression의 소환 수는 현재 기본값 1마리를 기준으로 한
 증가분으로 해석하며, App이 이를 종별 `BaseStats.PackSize`에 더한다.
-10종은 우선 같은 Walker Stump 비주얼을 사용하고, 각 외형은 정의 에셋에서 개별 교체한다.
+10종 Definition의 `visualPrefab`은 각자의 `prefabKey`에 해당하는 서로 다른 몬스터
+프리팹을 참조한다.

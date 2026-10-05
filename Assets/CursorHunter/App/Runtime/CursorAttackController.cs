@@ -73,23 +73,47 @@ namespace CursorHunter.App
             }
         }
 
-        private void Update()
+        // Sample after monster movement in Update so the sweep sees current hit areas.
+        private void LateUpdate()
         {
             ResolveReferences();
             SyncCursorAttackRange();
 
             if (!CanAttack())
             {
+                ResetAttackPath();
                 return;
             }
 
             Mouse mouse = Mouse.current;
             if (mouse == null || !Application.isFocused)
             {
+                ResetAttackPath();
+                return;
+            }
+
+            Vector2 screenPosition = mouse.position.ReadValue();
+            if (screenPosition.x < 0f || screenPosition.y < 0f ||
+                screenPosition.x > Screen.width || screenPosition.y > Screen.height)
+            {
+                ResetAttackPath();
                 return;
             }
 
             TryPerformAttack(false);
+        }
+
+        private void OnDisable()
+        {
+            ResetAttackPath();
+        }
+
+        private void ResetAttackPath()
+        {
+            if (combatRunController != null)
+            {
+                combatRunController.ResetAttackPath();
+            }
         }
 
         private void SyncCursorAttackRange()
@@ -113,9 +137,9 @@ namespace CursorHunter.App
         }
 
         /// <summary>
-        /// Performs one attack from the current cursor position when invoked by
-        /// the prototype test button. UI pointer blocking is bypassed because
-        /// the button itself is intentionally the test input.
+        /// Performs a point-only attack from the current cursor position when
+        /// invoked by the prototype test button. UI pointer blocking is bypassed
+        /// because the button itself is intentionally the test input.
         /// </summary>
         public void TestAttack()
         {
@@ -138,6 +162,7 @@ namespace CursorHunter.App
 
             if (!CanAttack())
             {
+                ResetAttackPath();
                 return;
             }
 
@@ -147,18 +172,24 @@ namespace CursorHunter.App
                 EventSystem.current != null &&
                 EventSystem.current.IsPointerOverGameObject())
             {
+                ResetAttackPath();
                 return;
             }
 
             if (!cursorController.RefreshCursorPosition())
             {
+                ResetAttackPath();
                 return;
             }
 
             if (allowUiPointer ||
                 combatRunController.PlayerCombatStatsRuntime.AutoAttackEnabled)
             {
-                combatRunController.TryAttack(hitBox);
+                combatRunController.TryAttack(hitBox, !allowUiPointer);
+            }
+            else
+            {
+                ResetAttackPath();
             }
 
             combatRunController.TryUseSkills(hitBox.bounds.center);

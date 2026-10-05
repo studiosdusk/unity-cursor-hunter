@@ -557,6 +557,165 @@ namespace CursorHunter.App.Tests
             }
         }
 
+        [Test]
+        public void CursorSweepHitsEveryMonsterBetweenSamples()
+        {
+            GameObject combatObject = new GameObject("SweepCombat");
+            GameObject cursorObject = new GameObject("SweepCursor");
+            MonsterCombatTarget first = null;
+            MonsterCombatTarget second = null;
+            try
+            {
+                RunRequest request = CreateRequest("run-sweep");
+                CombatRunController combat =
+                    combatObject.AddComponent<CombatRunController>();
+                CircleCollider2D cursor = cursorObject.AddComponent<CircleCollider2D>();
+                cursor.isTrigger = true;
+                cursor.radius = 0.15f;
+                cursorObject.transform.position = new Vector3(-3f, 0f, 0f);
+                first = CreateAttackTestTarget("First", -1f, request.RunId);
+                second = CreateAttackTestTarget("Second", 1f, request.RunId);
+
+                Assert.That(combat.StartRun(request, CreateAttackTestSnapshot()), Is.True);
+                Assert.That(combat.TryAttack(cursor), Is.True);
+                Assert.That(first.CurrentHealth, Is.EqualTo(100L));
+
+                cursorObject.transform.position = new Vector3(3f, 0f, 0f);
+                Assert.That(combat.TryAttack(cursor), Is.True);
+                Assert.That(first.CurrentHealth, Is.EqualTo(90L));
+                Assert.That(second.CurrentHealth, Is.EqualTo(90L));
+
+                cursorObject.transform.position = new Vector3(-3f, 0f, 0f);
+                combat.TryAttack(cursor);
+                Assert.That(first.CurrentHealth, Is.EqualTo(90L));
+                Assert.That(second.CurrentHealth, Is.EqualTo(90L));
+            }
+            finally
+            {
+                if (first != null) UnityEngine.Object.DestroyImmediate(first.gameObject);
+                if (second != null) UnityEngine.Object.DestroyImmediate(second.gameObject);
+                UnityEngine.Object.DestroyImmediate(cursorObject);
+                UnityEngine.Object.DestroyImmediate(combatObject);
+            }
+        }
+
+        [Test]
+        public void BasicAttackCooldownIsIndependentForEachMonster()
+        {
+            GameObject combatObject = new GameObject("IndependentCooldownCombat");
+            GameObject cursorObject = new GameObject("IndependentCooldownCursor");
+            MonsterCombatTarget first = null;
+            MonsterCombatTarget second = null;
+            try
+            {
+                RunRequest request = CreateRequest("run-independent-cooldown");
+                CombatRunController combat =
+                    combatObject.AddComponent<CombatRunController>();
+                CircleCollider2D cursor = cursorObject.AddComponent<CircleCollider2D>();
+                cursor.isTrigger = true;
+                cursor.radius = 0.15f;
+                cursorObject.transform.position = new Vector3(-2f, 0f, 0f);
+                first = CreateAttackTestTarget("First", -2f, request.RunId);
+                second = CreateAttackTestTarget("Second", 2f, request.RunId);
+
+                Assert.That(combat.StartRun(request, CreateAttackTestSnapshot()), Is.True);
+                combat.TryAttack(cursor);
+                Assert.That(first.CurrentHealth, Is.EqualTo(90L));
+
+                combat.AdvanceTime(0.2f);
+                cursorObject.transform.position = new Vector3(2f, 0f, 0f);
+                combat.TryAttack(cursor);
+                Assert.That(first.CurrentHealth, Is.EqualTo(90L));
+                Assert.That(second.CurrentHealth, Is.EqualTo(90L));
+
+                combat.AdvanceTime(0.8f);
+                cursorObject.transform.position = new Vector3(-2f, 0f, 0f);
+                combat.TryAttack(cursor);
+                Assert.That(first.CurrentHealth, Is.EqualTo(80L));
+                Assert.That(second.CurrentHealth, Is.EqualTo(90L));
+
+                combat.AdvanceTime(0.2f);
+                cursorObject.transform.position = new Vector3(2f, 0f, 0f);
+                combat.TryAttack(cursor);
+                Assert.That(first.CurrentHealth, Is.EqualTo(80L));
+                Assert.That(second.CurrentHealth, Is.EqualTo(80L));
+            }
+            finally
+            {
+                if (first != null) UnityEngine.Object.DestroyImmediate(first.gameObject);
+                if (second != null) UnityEngine.Object.DestroyImmediate(second.gameObject);
+                UnityEngine.Object.DestroyImmediate(cursorObject);
+                UnityEngine.Object.DestroyImmediate(combatObject);
+            }
+        }
+
+        [Test]
+        public void ResetAndPointOnlyAttackDoNotBridgeCursorPath()
+        {
+            GameObject combatObject = new GameObject("ResetSweepCombat");
+            GameObject cursorObject = new GameObject("ResetSweepCursor");
+            MonsterCombatTarget target = null;
+            try
+            {
+                RunRequest request = CreateRequest("run-reset-sweep");
+                CombatRunController combat =
+                    combatObject.AddComponent<CombatRunController>();
+                CircleCollider2D cursor = cursorObject.AddComponent<CircleCollider2D>();
+                cursor.isTrigger = true;
+                cursor.radius = 0.15f;
+                cursorObject.transform.position = new Vector3(-3f, 0f, 0f);
+                target = CreateAttackTestTarget("Middle", 0f, request.RunId);
+
+                Assert.That(combat.StartRun(request, CreateAttackTestSnapshot()), Is.True);
+                combat.TryAttack(cursor);
+                combat.ResetAttackPath();
+
+                cursorObject.transform.position = new Vector3(3f, 0f, 0f);
+                combat.TryAttack(cursor);
+                Assert.That(target.CurrentHealth, Is.EqualTo(100L));
+
+                cursorObject.transform.position = new Vector3(-3f, 0f, 0f);
+                combat.TryAttack(cursor, false);
+                Assert.That(target.CurrentHealth, Is.EqualTo(100L));
+
+                cursorObject.transform.position = new Vector3(3f, 0f, 0f);
+                combat.TryAttack(cursor);
+                Assert.That(target.CurrentHealth, Is.EqualTo(100L));
+
+                cursorObject.transform.position = new Vector3(-3f, 0f, 0f);
+                combat.TryAttack(cursor);
+                Assert.That(target.CurrentHealth, Is.EqualTo(90L));
+            }
+            finally
+            {
+                if (target != null) UnityEngine.Object.DestroyImmediate(target.gameObject);
+                UnityEngine.Object.DestroyImmediate(cursorObject);
+                UnityEngine.Object.DestroyImmediate(combatObject);
+            }
+        }
+
+        private static CombatSnapshot CreateAttackTestSnapshot()
+        {
+            return new CombatSnapshot(10L, 1f, 1f, 1, 0f, 1f, true, 1f);
+        }
+
+        private static MonsterCombatTarget CreateAttackTestTarget(
+            string name,
+            float x,
+            RunId runId)
+        {
+            GameObject targetObject = new GameObject(name);
+            targetObject.transform.position = new Vector3(x, 0f, 0f);
+            BoxCollider2D hitArea = targetObject.AddComponent<BoxCollider2D>();
+            hitArea.isTrigger = true;
+            hitArea.size = new Vector2(0.4f, 0.4f);
+            MonsterCombatTarget target = targetObject.AddComponent<MonsterCombatTarget>();
+            target.Initialize(
+                new SpawnSnapshot(name, "test-prefab", 100L, 1f, 1, 1, 0L),
+                runId);
+            return target;
+        }
+
         private static RunSession StartRunning(string runId)
         {
             RunSession session = new RunSession();
