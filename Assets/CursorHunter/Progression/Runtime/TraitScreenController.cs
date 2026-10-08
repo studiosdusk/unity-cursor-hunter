@@ -92,6 +92,7 @@ namespace CursorHunter.Progression
         private ProgressionCombatSnapshot _activeRunSnapshot;
         private GameDataDocument _document;
         private string _summaryJson;
+        private CursorCombatStatDefaultsSnapshot? _cursorCombatStatDefaults;
 
         private readonly HashSet<string> _purchased =
             new HashSet<string>(StringComparer.Ordinal);
@@ -352,21 +353,22 @@ namespace CursorHunter.Progression
 
 
         /// <summary>
-        /// Creates the immutable values that App copies into a new combat run.
-        /// No live UI collection is handed to Combat; the arrays are copied by
-        /// ProgressionCombatSnapshot before the next purchase can occur.
+        /// Creates the resolved information document for the current trait
+        /// state. App separately captures additive cursor bonuses for Combat;
+        /// neither object exposes the live purchased-node collection.
         /// </summary>
         public string CreateGameInformationJson()
         {
-            if (_activeCatalog == null)
-            {
-                ResolveCatalog();
-                _garnetBalance = startingGarnet;
-                InitializeGemstoneBalances();
-                InitializePurchasedState();
-                LoadSavedProgress();
-            }
+            EnsureProgressionState();
             return GameInformationJson.Serialize(CreateGameInformation());
+        }
+
+        public CursorCombatStatBonusesSnapshot CreateCursorCombatStatBonusesSnapshot()
+        {
+            EnsureProgressionState();
+            return GameInformationBuilder.CreateCursorCombatStatBonusesSnapshot(
+                _document,
+                _purchased);
         }
 
         public ProgressionCombatSnapshot CreateCombatSnapshot()
@@ -374,13 +376,46 @@ namespace CursorHunter.Progression
             string json = CreateGameInformationJson();
             if (!GameInformationJson.TryDeserialize(json, out var information, out string error))
                 throw new InvalidOperationException(error);
-            return information.ToCombatSnapshot(json);
+            return information.ToCombatSnapshot(
+                json,
+                CreateCursorCombatStatBonusesSnapshot());
         }
 
         private GameInformation CreateGameInformation()
         {
             return GameInformationBuilder.Build(_document, _purchased,
-                id => GetGemstoneBalance(GetGemstoneIndexById(id)));
+                id => GetGemstoneBalance(GetGemstoneIndexById(id)),
+                _cursorCombatStatDefaults);
+        }
+
+        public void SetCursorCombatStatDefaults(
+            CursorCombatStatDefaultsSnapshot defaults)
+        {
+            if (!defaults.IsValid)
+            {
+                Debug.LogError("Cursor combat defaults are invalid.", this);
+                return;
+            }
+
+            _cursorCombatStatDefaults = defaults;
+            if (_isBuilt)
+            {
+                RefreshAll();
+            }
+        }
+
+        private void EnsureProgressionState()
+        {
+            if (_activeCatalog != null)
+            {
+                return;
+            }
+
+            ResolveCatalog();
+            _garnetBalance = startingGarnet;
+            InitializeGemstoneBalances();
+            InitializePurchasedState();
+            LoadSavedProgress();
         }
 
         /// <summary>

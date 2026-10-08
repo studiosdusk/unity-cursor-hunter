@@ -18,7 +18,18 @@ def main():
     categories = {c["id"]: c for c in document["progression"]["categories"]}
     entities = {e["id"]: e for e in document["entities"]}
     def values(category, baseline):
-        return [baseline if n["operation"] == "baseline" else n["value"] for n in categories[category]["nodes"]]
+        result = []
+        current = baseline
+        for node in categories[category]["nodes"]:
+            operation = node["operation"]
+            if operation == "baseline":
+                current = baseline
+            elif operation == "set":
+                current = node["value"]
+            elif operation == "add":
+                current += node["value"]
+            result.append(current)
+        return result
     data = {
         "schemaVersion": example["schemaVersion"],
         "normalFieldDurationSeconds": values("stat.fieldDuration", example["stats"]["normalFieldDurationSeconds"]),

@@ -267,6 +267,6 @@ I/II/III을 같은 표에 기록한다. 구매하지 않은 노드는 Value 열�
 일반·보스 Field 우측 상단의 `전체 정보`는 별도 아이콘 에셋을 복제하지 않고
 `TraitScreenController`가 활성 Canvas에 만든 전역 Key/Value 오버레이를 호출한다.
 전투 HUD의 버튼 배경은 기존 Casual Fantasy 패널 색상 규칙을 따르며, 표시 내용은
-특성 화면과 동일하다. 일반 몬스터 HP 바는 `MonsterHealthBarView`가 런타임에서
-공유하는 흰색 1px Sprite로 구성한다. 외부 PNG를 확대하지 않으므로 몬스터마다
-새 텍스처를 할당하지 않고, HP 비율에 따라 초록·노랑·빨강 Fill 색상만 바꾼다.
+특성 화면과 동일하다. 일반 몬스터 HP 바는 기본적으로 숨긴다. 전투 프리팹의
+`showHealthBar`를 켜면 `MonsterHealthBarView`가 공유 흰색 1px Sprite로 표시하고,
+HP 비율에 따라 초록·노랑·빨강 Fill 색상을 바꾼다.

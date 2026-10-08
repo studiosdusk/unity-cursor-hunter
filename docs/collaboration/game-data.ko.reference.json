@@ -178,7 +178,7 @@
         },
         "behaviorType (몬스터 행동 특성)": {
           "원본값": 0,
-          "설명": "MonsterBehaviorType enum의 숫자 코드입니다. 현재 0=None(특성 없음)만 정의합니다. 지그재그·은신·무적 동작은 미구현이며, 추후 enum과 스키마를 함께 확장합니다."
+          "설명": "기존 MonsterBehaviorType 필드의 숫자 코드이며 현재 0=None만 허용합니다. 신규 종별 행동·스탯은 MonsterDefinition의 MonsterBehaviorProfile 에셋에서 구성합니다."
         }
       },
       {
@@ -222,7 +222,7 @@
         },
         "behaviorType (몬스터 행동 특성)": {
           "원본값": 0,
-          "설명": "MonsterBehaviorType enum의 숫자 코드입니다. 현재 0=None(특성 없음)만 정의합니다. 지그재그·은신·무적 동작은 미구현이며, 추후 enum과 스키마를 함께 확장합니다."
+          "설명": "기존 MonsterBehaviorType 필드의 숫자 코드이며 현재 0=None만 허용합니다. 신규 종별 행동·스탯은 MonsterDefinition의 MonsterBehaviorProfile 에셋에서 구성합니다."
         }
       },
       {
@@ -266,7 +266,7 @@
         },
         "behaviorType (몬스터 행동 특성)": {
           "원본값": 0,
-          "설명": "MonsterBehaviorType enum의 숫자 코드입니다. 현재 0=None(특성 없음)만 정의합니다. 지그재그·은신·무적 동작은 미구현이며, 추후 enum과 스키마를 함께 확장합니다."
+          "설명": "기존 MonsterBehaviorType 필드의 숫자 코드이며 현재 0=None만 허용합니다. 신규 종별 행동·스탯은 MonsterDefinition의 MonsterBehaviorProfile 에셋에서 구성합니다."
         }
       },
       {
@@ -310,7 +310,7 @@
         },
         "behaviorType (몬스터 행동 특성)": {
           "원본값": 0,
-          "설명": "MonsterBehaviorType enum의 숫자 코드입니다. 현재 0=None(특성 없음)만 정의합니다. 지그재그·은신·무적 동작은 미구현이며, 추후 enum과 스키마를 함께 확장합니다."
+          "설명": "기존 MonsterBehaviorType 필드의 숫자 코드이며 현재 0=None만 허용합니다. 신규 종별 행동·스탯은 MonsterDefinition의 MonsterBehaviorProfile 에셋에서 구성합니다."
         }
       },
       {
@@ -354,7 +354,7 @@
         },
         "behaviorType (몬스터 행동 특성)": {
           "원본값": 0,
-          "설명": "MonsterBehaviorType enum의 숫자 코드입니다. 현재 0=None(특성 없음)만 정의합니다. 지그재그·은신·무적 동작은 미구현이며, 추후 enum과 스키마를 함께 확장합니다."
+          "설명": "기존 MonsterBehaviorType 필드의 숫자 코드이며 현재 0=None만 허용합니다. 신규 종별 행동·스탯은 MonsterDefinition의 MonsterBehaviorProfile 에셋에서 구성합니다."
         }
       },
       {
@@ -398,7 +398,7 @@
         },
         "behaviorType (몬스터 행동 특성)": {
           "원본값": 0,
-          "설명": "MonsterBehaviorType enum의 숫자 코드입니다. 현재 0=None(특성 없음)만 정의합니다. 지그재그·은신·무적 동작은 미구현이며, 추후 enum과 스키마를 함께 확장합니다."
+          "설명": "기존 MonsterBehaviorType 필드의 숫자 코드이며 현재 0=None만 허용합니다. 신규 종별 행동·스탯은 MonsterDefinition의 MonsterBehaviorProfile 에셋에서 구성합니다."
         }
       },
       {
@@ -442,7 +442,7 @@
         },
         "behaviorType (몬스터 행동 특성)": {
           "원본값": 0,
-          "설명": "MonsterBehaviorType enum의 숫자 코드입니다. 현재 0=None(특성 없음)만 정의합니다. 지그재그·은신·무적 동작은 미구현이며, 추후 enum과 스키마를 함께 확장합니다."
+          "설명": "기존 MonsterBehaviorType 필드의 숫자 코드이며 현재 0=None만 허용합니다. 신규 종별 행동·스탯은 MonsterDefinition의 MonsterBehaviorProfile 에셋에서 구성합니다."
         }
       },
       {
@@ -486,7 +486,7 @@
         },
         "behaviorType (몬스터 행동 특성)": {
           "원본값": 0,
-          "설명": "MonsterBehaviorType enum의 숫자 코드입니다. 현재 0=None(특성 없음)만 정의합니다. 지그재그·은신·무적 동작은 미구현이며, 추후 enum과 스키마를 함께 확장합니다."
+          "설명": "기존 MonsterBehaviorType 필드의 숫자 코드이며 현재 0=None만 허용합니다. 신규 종별 행동·스탯은 MonsterDefinition의 MonsterBehaviorProfile 에셋에서 구성합니다."
         }
       },
       {
@@ -530,7 +530,7 @@
         },
         "behaviorType (몬스터 행동 특성)": {
           "원본값": 0,
-          "설명": "MonsterBehaviorType enum의 숫자 코드입니다. 현재 0=None(특성 없음)만 정의합니다. 지그재그·은신·무적 동작은 미구현이며, 추후 enum과 스키마를 함께 확장합니다."
+          "설명": "기존 MonsterBehaviorType 필드의 숫자 코드이며 현재 0=None만 허용합니다. 신규 종별 행동·스탯은 MonsterDefinition의 MonsterBehaviorProfile 에셋에서 구성합니다."
         }
       },
       {
@@ -574,7 +574,7 @@
         },
         "behaviorType (몬스터 행동 특성)": {
           "원본값": 0,
-          "설명": "MonsterBehaviorType enum의 숫자 코드입니다. 현재 0=None(특성 없음)만 정의합니다. 지그재그·은신·무적 동작은 미구현이며, 추후 enum과 스키마를 함께 확장합니다."
+          "설명": "기존 MonsterBehaviorType 필드의 숫자 코드이며 현재 0=None만 허용합니다. 신규 종별 행동·스탯은 MonsterDefinition의 MonsterBehaviorProfile 에셋에서 구성합니다."
         }
       }
     ],

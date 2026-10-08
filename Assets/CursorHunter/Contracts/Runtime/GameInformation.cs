@@ -66,6 +66,15 @@ namespace CursorHunter.Contracts
 
         public ProgressionCombatSnapshot ToCombatSnapshot(string sourceJson)
         {
+            return ToCombatSnapshot(
+                sourceJson,
+                default(CursorCombatStatBonusesSnapshot));
+        }
+
+        public ProgressionCombatSnapshot ToCombatSnapshot(
+            string sourceJson,
+            CursorCombatStatBonusesSnapshot cursorStatBonuses)
+        {
             if (!TryValidate(out string error))
                 throw new ArgumentException(error);
             var skillSnapshots = new SkillCombatSnapshot[skills.Length];
@@ -90,7 +99,8 @@ namespace CursorHunter.Contracts
                 stats.bossDamageMultiplier, true, stats.attackCooldownSeconds, rules.criticalDamageMultiplier);
             return new ProgressionCombatSnapshot(combat, skillSnapshots, monsterSnapshots,
                 stats.normalFieldDurationSeconds, sourceJson, rules.globalAliveLimit,
-                rules.perMonsterAliveLimit, rules.bossFieldDurationSeconds);
+                rules.perMonsterAliveLimit, rules.bossFieldDurationSeconds,
+                cursorStatBonuses);
         }
 
         public const float BaseAttackRadiusWorldUnits = 1.7253809f;

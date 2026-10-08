@@ -5,7 +5,10 @@ using UnityEngine;
 
 namespace CursorHunter.Data
 {
-    /// <summary>Loads separate combat baseline and growth configuration. Combat receives only resolved information.</summary>
+    /// <summary>
+    /// Loads combat information and growth configuration. Main-scene cursor
+    /// defaults can override the file's cursor core values before upgrades resolve.
+    /// </summary>
     [Serializable]
     public sealed class GameDataDocument
     {
@@ -133,20 +136,27 @@ namespace CursorHunter.Data
 
         private static bool ValidEffect(UpgradeCategoryData category, UpgradeNodeData node)
         {
-            if (!Finite(node.value, 0, 1000000000000d)) return false;
+            if (!Finite(node.value, -1000000000000d, 1000000000000d)) return false;
             switch (category.tab)
             {
                 case "stats":
-                    if (node.operation != "baseline" && node.operation != "set") return false;
                     if (node.operation == "baseline") return node.startsUnlocked;
                     switch (category.id)
                     {
-                        case "stat.attack": return node.value >= 1 && node.value == Math.Floor(node.value);
-                        case "stat.radius": return node.value > 0;
-                        case "stat.cooldown": return node.value >= .05;
-                        case "stat.critical": return node.value <= 100;
-                        case "stat.fieldDuration": return node.value >= 15 && node.value <= 30;
-                        case "stat.boss": return node.value > 0;
+                        case "stat.attack":
+                            return node.operation == "add" && node.value >= 0 &&
+                                   node.value == Math.Floor(node.value);
+                        case "stat.radius":
+                            return node.operation == "add" && node.value > 0;
+                        case "stat.cooldown":
+                            return node.operation == "add" && node.value < 0;
+                        case "stat.critical":
+                            return node.operation == "add" && node.value >= 0;
+                        case "stat.fieldDuration":
+                            return node.operation == "set" && node.value >= 15 &&
+                                   node.value <= 30;
+                        case "stat.boss":
+                            return node.operation == "add" && node.value >= 0;
                         default: return false;
                     }
                 case "skills":

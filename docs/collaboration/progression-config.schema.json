@@ -90,13 +90,14 @@
           "enum": [
             "baseline",
             "set",
+            "add",
             "multiply",
             "enable"
           ]
         },
         "value": {
           "type": "number",
-          "minimum": 0,
+          "minimum": -1000000000000,
           "maximum": 1000000000000
         }
       }

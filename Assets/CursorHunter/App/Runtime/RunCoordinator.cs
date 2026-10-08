@@ -48,6 +48,36 @@ namespace CursorHunter.App
             SpawnPlan spawnPlan,
             out string failureReason)
         {
+            return StartInternal(
+                request,
+                combatSnapshot,
+                null,
+                spawnPlan,
+                out failureReason);
+        }
+
+        public bool Start(
+            RunRequest request,
+            CombatSnapshot combatSnapshot,
+            CursorCombatStatBonusesSnapshot cursorStatBonuses,
+            SpawnPlan spawnPlan,
+            out string failureReason)
+        {
+            return StartInternal(
+                request,
+                combatSnapshot,
+                cursorStatBonuses,
+                spawnPlan,
+                out failureReason);
+        }
+
+        private bool StartInternal(
+            RunRequest request,
+            CombatSnapshot combatSnapshot,
+            CursorCombatStatBonusesSnapshot? cursorStatBonuses,
+            SpawnPlan spawnPlan,
+            out string failureReason)
+        {
             failureReason = string.Empty;
 
             if (_disposed)
@@ -94,7 +124,13 @@ namespace CursorHunter.App
             bool combatStarted = false;
             try
             {
-                if (!_combatRunController.PrepareRun(request, combatSnapshot))
+                bool prepared = cursorStatBonuses.HasValue
+                    ? _combatRunController.PrepareRun(
+                        request,
+                        combatSnapshot,
+                        cursorStatBonuses.Value)
+                    : _combatRunController.PrepareRun(request, combatSnapshot);
+                if (!prepared)
                 {
                     return FailStart(
                         session,

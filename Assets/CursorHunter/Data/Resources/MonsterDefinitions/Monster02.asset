@@ -15,12 +15,18 @@ MonoBehaviour:
   monsterId: monster.02
   displayName: 토파즈 동굴박쥐
   prefabKey: Bat/Bat_Cave
-  prefab: {fileID: 4248380182268442837, guid: 00905adb4ac771b49845393f1de2b943, type: 3}
-  maxHealth: 20
-  spawnIntervalSeconds: 1.3499999999999999
-  packSize: 1
-  garnetReward: 4
-  bonusDropCurrencyId: gem.topaz
-  bonusDropAmount: 1
-  bonusDropChancePercent: 100
-  behaviorType: 0
+  visualPrefab: {fileID: 4248380182268442837, guid: 00905adb4ac771b49845393f1de2b943, type: 3}
+  baseStats:
+    maxHealth: 20
+    spawnIntervalSeconds: 1.3499999999999999
+    packSize: 1
+    moveSpeed: 0.45
+    visualScale: 1
+    hitAreaWidth: 1
+    hitAreaHeight: 1.2
+    garnetReward: 4
+    bonusDropCurrencyId: gem.topaz
+    bonusDropAmount: 1
+    bonusDropChancePercent: 100
+  behaviorProfiles:
+  - {fileID: 11400000, guid: 27244024086e4476abc73bc422f6e10c, type: 2}
