@@ -14,8 +14,8 @@ namespace CursorHunter.Progression
     public static class TraitProgressionStore
     {
         private const string SaveKey = "cursor_hunter.progression.v1";
-        private const int CurrentVersion = 3;
-        private const string LegacyBackupKey = SaveKey + ".before-v3";
+        private const int CurrentVersion = 4;
+        private const string LegacyBackupKey = SaveKey + ".before-v4";
 
         [Serializable]
         public sealed class SaveData
@@ -109,7 +109,7 @@ namespace CursorHunter.Progression
                     return false;
                 }
 
-                // Preserve the exact old save (including retired data) before the first v3 write.
+                // Preserve the exact old save (including retired data) before the first v4 write.
                 // Unknown/corrupt versions must not be silently overwritten.
                 if (PlayerPrefs.HasKey(SaveKey))
                 {

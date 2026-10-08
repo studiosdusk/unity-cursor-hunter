@@ -15474,14 +15474,13 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 7668aef2c90f84f47b9b9c0650bce440, type: 3}
   uiFont: {fileID: 12800000, guid: 76d037539f56c45a1ba293f2dff49672, type: 3}
   initialTab: 0
-  transitionSeconds: 0.22
+  transitionSeconds: 0.14
   nodeCellSize: {x: 106, y: 106}
-  nodeGridSpacing: {x: 8, y: 8}
-  connectorWidth: 22
+  nodeGridSpacing: {x: 18, y: 18}
+  connectorWidth: 18
   connectorThickness: 3
   categoryHeaderHeight: 28
-  maxNodesPerLine: 5
-  textScale: 1.18
+  textScale: 1.05
   backgroundColor: {r: 0.015, g: 0.045, b: 0.11, a: 0.98}
   panelColor: {r: 0.02, g: 0.06, b: 0.14, a: 0.84}
   inkColor: {r: 0.96, g: 0.98, b: 1, a: 1}

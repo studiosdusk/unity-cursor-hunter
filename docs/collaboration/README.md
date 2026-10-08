@@ -1,6 +1,6 @@
 # 두 사람 개발 인수인계
 
-현재 게임 버전: **0.0.5**. 전투 JSON의 schemaVersion=3과 저장 version=3은 게임 버전과 별개다.
+현재 게임 버전: **0.0.5**. 전투 JSON의 schemaVersion=3과 진행도 저장 version=4는 게임 버전과 별개다.
 
 커서 핵심 스탯의 공통 기본값은 Main 씬에서 `PlayerCombatStatsRuntime`과 함께 둔
 `PlayerCombatStatsDefaults` 컴포넌트가 소유한다. 나머지 게임 초기 데이터와 전체 정보
@@ -35,11 +35,11 @@ macOS 설치 확인: `python3 tools/open_unity.py --check`. 확인 후 같은 �
 
 ## 승기에게 전달할 순서
 1. 이 문서와 [소유권·디렉토리](architecture.md)를 읽는다.
-2. [연결 계약](contracts.md)을 두 사람이 확인한다. 핵심 런타임 계약은 현재 구현되어 있고, 보스·스킬 고유 동작은 후속 작업이다. 펫은 별도 영역 없이 커서 오라 스킬로 통합했다.
+2. [연결 계약](contracts.md)을 두 사람이 확인한다. 핵심 런타임 계약은 현재 구현되어 있고, 보스·스킬 고유 동작은 후속 작업이다. 펫은 전투 데이터에서 커서 오라 스킬 ID를 유지하고, 성장 UI에서는 스탯 트리 안의 펫 동료 분기로 표시한다.
 3. [병합 절차](workflow.md)에 따라 각자 작업 브랜치와 별도 체크아웃을 사용한다.
 4. [에셋 매핑](assets.md)에서 자신의 원본 에셋을 찾아 전용 프리팹을 만든다.
 5. 특성 화면의 노드 수·아이콘·폰트 연결은 [특성 UI 에셋 매핑](trait-ui-assets.md)을 기준으로 확인한다.
-6. 기본 레이아웃은 [Stat](screenshots/trait-stat.png) · [Skill](screenshots/trait-skill.png) · [Monster](screenshots/trait-monster.png) 캡처로 확인한다. 이 파일들은 이전 캡처이며, 최신 잠금·확률 표시는 Mac 잠금 해제 후 다시 캡처한다. 젬스톤 표시 규칙과 실제 매핑은 [특성 UI 에셋 매핑](trait-ui-assets.md)을 읽는다.
+6. [Stat](screenshots/trait-stat.png) · [Skill](screenshots/trait-skill.png) · [Monster](screenshots/trait-monster.png) 캡처는 이전 탭 레이아웃의 기록이다. 현재 화면 기준은 전체 화면 단일 연결 보드이며, 최신 배치·잠금·비용 표시와 실제 아이콘 매핑은 [특성 UI 에셋 매핑](trait-ui-assets.md)을 읽는다.
 
 | 담당 | 주 작업 | 소유하는 결과 |
 |---|---|---|
@@ -52,7 +52,7 @@ macOS 설치 확인: `python3 tools/open_unity.py --check`. 확인 후 같은 �
 
 - 커서 기본 스탯 컴포넌트와 보유 커서 특성의 증가량을 런 시작 때 합산한다. 스킬·몬스터·재화 정보는 GameInformation v3 스냅샷을 사용한다.
 - 일반 필드 15~30초, 자동 반경 공격·쿨타임, 일반 몬스터 10종 누적 생성.
-- 펫은 스킬의 커서 오라로 통합. 유물 관련 데이터·UI·드롭은 제거했으며 새 일반 유물 시스템은 추후 설계한다.
+- 펫은 커서 오라 스킬로 작동하며 성장 UI에서는 스탯 트리에 포함한다. 유물 관련 데이터·UI·드롭은 제거했으며 새 일반 유물 시스템은 추후 설계한다.
 - JSON의 기존 몬스터 behaviorType은 None=0으로 유지한다. 신규 종별 행동·스탯 프로필은
   MonsterDefinition과 MonsterBehaviorProfile 에셋에서 구성한다.
 - 젬 별도 해금 트리는 제거. 일반 몬스터가 해당 젬을 공급한다.
@@ -86,5 +86,5 @@ Unity 컴파일/Import/시각 검증은 수행하지 않았다.
 보스 패턴·패링, 스킬별 투사체/빙결/고유 연출도 완성된 것으로 간주하지 않는다.
 
 테스트 플래그 testModeUnlockAll과 testModeFreeUpgrades는 Main에서 껐다.
-기존 저장은 정상 첫 v3 저장 직전에 .before-v3 키에 원문 백업한다. 유물은 현재 진행도에서 제외하고 일반 강화·젬 잔액은 유지한다.
+현재 저장 version은 4다. v3 저장은 정상 첫 v4 저장 직전에 .before-v4 키에 원문 백업하며, 예전 기본 노드 소유 표시는 새 중앙 시작점 규칙으로 옮긴다. 유물은 현재 진행도에서 제외하고 일반 강화·젬 잔액은 유지한다.
 이전 캡처·v0.0.4 숫자 표·역할 스킬의 옛 규칙은 위 개편 기준과 충돌할 때 과거 기록으로 취급한다.

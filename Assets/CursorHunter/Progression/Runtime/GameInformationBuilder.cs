@@ -212,19 +212,9 @@ namespace CursorHunter.Progression
 
         public static bool IsInitiallyPurchased(GameDataDocument document, UpgradeCategoryData category, UpgradeNodeData node)
         {
-            if (category.tab == "stats") return node.startsUnlocked;
-            if (category.tab == "monsters")
-            {
-                foreach (var monster in document.information.monsters)
-                    if (monster.id == category.id) return node.operation == "enable" ? monster.enabled :
-                        monster.enabled && monster.productionCount >= node.value;
-            }
-            if (category.tab == "skills")
-            {
-                foreach (var skill in document.information.skills)
-                    if (skill.id == category.id) return node.operation == "enable" ? skill.enabled : node.startsUnlocked;
-            }
-            return false;
+            // Combat defaults describe the authored run snapshot; they do not
+            // mean the player has purchased those nodes in the research tree.
+            return document != null && category != null && node != null && node.startsUnlocked;
         }
     }
 }
