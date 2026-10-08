@@ -1,9 +1,9 @@
 namespace CursorHunter.Combat
 {
     /// <summary>
-    /// Small deterministic PRNG used for run-local spawn decisions. It avoids
-    /// UnityEngine.Random's global mutable state so a RunRequest seed can
-    /// reproduce a spawn sequence.
+    /// Small deterministic PRNG used for run-local spawn and behavior
+    /// decisions. It avoids UnityEngine.Random's global mutable state so a
+    /// RunRequest seed can reproduce a spawn sequence.
     /// </summary>
     public sealed class SeededRandom
     {
@@ -27,13 +27,17 @@ namespace CursorHunter.Combat
                 ((maximumExclusive - minimumInclusive) * unit));
         }
 
-        private double NextUnit()
+        public ulong NextUInt64()
         {
             _state ^= _state << 13;
             _state ^= _state >> 7;
             _state ^= _state << 17;
+            return _state;
+        }
 
-            ulong mantissa = _state >> 11;
+        private double NextUnit()
+        {
+            ulong mantissa = NextUInt64() >> 11;
             return mantissa * (1.0 / 9007199254740992.0);
         }
     }

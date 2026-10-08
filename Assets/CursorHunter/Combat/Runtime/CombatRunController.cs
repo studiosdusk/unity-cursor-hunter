@@ -6,8 +6,8 @@ using UnityEngine;
 namespace CursorHunter.Combat
 {
     /// <summary>
-    /// Owns one normal-field run's combat clock, attack cooldown, collider
-    /// resolution, damage accounting, and result creation. Cross-module
+    /// Owns one normal-field run's combat clock, per-target attack cooldowns,
+    /// collider resolution, damage accounting, and result creation. Cross-module
     /// lifecycle transitions are coordinated by App.RunCoordinator.
     /// </summary>
     [DefaultExecutionOrder(-100)]
@@ -16,20 +16,30 @@ namespace CursorHunter.Combat
     {
         [SerializeField] private LayerMask enemyLayers = -1;
         [SerializeField, Min(32)] private int overlapBufferCapacity = 256;
+        [SerializeField] private PlayerCombatStatsRuntime playerCombatStatsRuntime;
 
         private Collider2D[] _overlapBuffer;
         private readonly HashSet<ICombatTarget> _uniqueTargets =
             new HashSet<ICombatTarget>();
+        private readonly Dictionary<ICombatTarget, float> _lastBasicHitAt =
+            new Dictionary<ICombatTarget, float>();
+        private readonly List<RaycastHit2D> _sweepHits =
+            new List<RaycastHit2D>(128);
+        private readonly List<Collider2D> _attackOverlaps =
+            new List<Collider2D>(128);
+        private readonly List<ICombatTarget> _attackTargets =
+            new List<ICombatTarget>(128);
         private readonly Dictionary<string, long> _resourceRewards =
             new Dictionary<string, long>(StringComparer.Ordinal);
 
         private RunRequest _runRequest;
-        private CombatSnapshot _combatSnapshot;
         private SkillCombatSnapshot[] _skills = Array.Empty<SkillCombatSnapshot>();
         private float[] _nextSkillAt = Array.Empty<float>();
         private SeededRandom _random;
         private float _elapsedSeconds;
-        private float _nextAttackAvailableAt;
+        private Vector2 _previousAttackCenter;
+        private float _previousAttackRadius;
+        private bool _hasPreviousAttackCenter;
         private int _defeatedCount;
         private long _garnetEarned;
         private long _effectiveDamage;
@@ -61,12 +71,36 @@ namespace CursorHunter.Combat
         public int DefeatedCount => _defeatedCount;
         public long GarnetEarned => _garnetEarned;
         public long EffectiveDamage => _effectiveDamage;
-        public CombatSnapshot CombatSnapshot => _combatSnapshot;
+        public CombatSnapshot CombatSnapshot => playerCombatStatsRuntime != null
+            ? playerCombatStatsRuntime.Snapshot
+            : default;
+        public PlayerCombatStatsRuntime PlayerCombatStatsRuntime
+        {
+            get
+            {
+                ResolvePlayerCombatStatsRuntime();
+                return playerCombatStatsRuntime;
+            }
+        }
 
         private void Awake()
         {
             overlapBufferCapacity = Mathf.Max(512, overlapBufferCapacity);
             _overlapBuffer = new Collider2D[overlapBufferCapacity];
+            ResolvePlayerCombatStatsRuntime();
+        }
+
+        private void ResolvePlayerCombatStatsRuntime()
+        {
+            if (playerCombatStatsRuntime == null)
+            {
+                playerCombatStatsRuntime = GetComponentInChildren<PlayerCombatStatsRuntime>(true);
+            }
+
+            if (playerCombatStatsRuntime == null)
+            {
+                playerCombatStatsRuntime = gameObject.AddComponent<PlayerCombatStatsRuntime>();
+            }
         }
 
         private void Update()
@@ -125,18 +159,43 @@ namespace CursorHunter.Combat
             RunRequest request,
             CombatSnapshot combatSnapshot)
         {
+            return PrepareRun(request, combatSnapshot, null);
+        }
+
+        public bool PrepareRun(
+            RunRequest request,
+            CombatSnapshot combatSnapshot,
+            CursorCombatStatBonusesSnapshot bonuses)
+        {
+            return PrepareRun(request, combatSnapshot, (CursorCombatStatBonusesSnapshot?)bonuses);
+        }
+
+        private bool PrepareRun(
+            RunRequest request,
+            CombatSnapshot combatSnapshot,
+            CursorCombatStatBonusesSnapshot? bonuses)
+        {
+            ResolvePlayerCombatStatsRuntime();
             if (_isPrepared || _isRunning ||
                 !request.IsValid || !combatSnapshot.IsValid)
             {
                 return false;
             }
 
+            bool capturedStats = bonuses.HasValue
+                ? playerCombatStatsRuntime.TryCaptureSnapshot(bonuses.Value)
+                : playerCombatStatsRuntime.TryCaptureSnapshot(combatSnapshot);
+            if (!capturedStats)
+            {
+                return false;
+            }
+
             _runRequest = request;
-            _combatSnapshot = combatSnapshot;
             ConfigureSkills(null);
             _random = new SeededRandom(request.Seed ^ 0xC17C17UL);
             _elapsedSeconds = 0f;
-            _nextAttackAvailableAt = 0f;
+            _lastBasicHitAt.Clear();
+            ResetAttackPath();
             _defeatedCount = 0;
             _garnetEarned = 0;
             _effectiveDamage = 0;
@@ -161,6 +220,7 @@ namespace CursorHunter.Combat
 
             _isPrepared = false;
             _isRunning = true;
+            playerCombatStatsRuntime.SetRunActive(true);
             return true;
         }
 
@@ -178,6 +238,9 @@ namespace CursorHunter.Combat
             _isPaused = false;
             _completionRequested = false;
             _abortRequested = false;
+            _lastBasicHitAt.Clear();
+            ResetAttackPath();
+            playerCombatStatsRuntime.SetRunActive(false);
             return true;
         }
 
@@ -189,6 +252,7 @@ namespace CursorHunter.Combat
             }
 
             _isPaused = true;
+            ResetAttackPath();
             return true;
         }
 
@@ -204,24 +268,31 @@ namespace CursorHunter.Combat
         }
 
         /// <summary>
-        /// Resolves one input attack against every distinct enemy Collider2D
-        /// overlapping the cursor Collider2D.
+        /// Drops the cursor's previous position when input cannot attack. The
+        /// next valid sample then checks its endpoint without bridging the gap.
         /// </summary>
-        public bool TryAttack(Collider2D attackCollider)
+        public void ResetAttackPath()
+        {
+            _hasPreviousAttackCenter = false;
+        }
+
+        /// <summary>
+        /// Resolves basic attacks along the cursor's movement since its last
+        /// valid sample. Each target uses its own last successful hit time.
+        /// </summary>
+        public bool TryAttack(Collider2D attackCollider, bool includeMovementPath = true)
         {
             if (!IsRunning || attackCollider == null || !attackCollider.enabled)
             {
+                ResetAttackPath();
                 return false;
             }
 
-            if (_elapsedSeconds >= _runRequest.DurationSeconds ||
-                _elapsedSeconds < _nextAttackAvailableAt)
+            if (_elapsedSeconds >= _runRequest.DurationSeconds)
             {
+                ResetAttackPath();
                 return false;
             }
-
-            _nextAttackAvailableAt =
-                _elapsedSeconds + _combatSnapshot.AttackCooldownSeconds;
 
             Physics2D.SyncTransforms();
 
@@ -232,44 +303,106 @@ namespace CursorHunter.Combat
             };
             contactFilter.SetLayerMask(enemyLayers);
 
-            int overlapCount = attackCollider.Overlap(
-                contactFilter,
-                _overlapBuffer);
-
             _uniqueTargets.Clear();
+            _attackTargets.Clear();
 
-            for (int index = 0; index < overlapCount; index++)
+            if (attackCollider is CircleCollider2D)
             {
-                Collider2D collider = _overlapBuffer[index];
-                if (collider == null)
+                Bounds bounds = attackCollider.bounds;
+                Vector2 center = bounds.center;
+                float radius = Mathf.Max(bounds.extents.x, bounds.extents.y);
+                if (radius <= 0f)
                 {
-                    continue;
+                    ResetAttackPath();
+                    return false;
                 }
 
-                WalkerStumpTarget targetAdapter =
-                    collider.GetComponentInParent<WalkerStumpTarget>();
-
-                if (targetAdapter != null &&
-                    targetAdapter is ICombatTarget target &&
-                    target.RunId == _runRequest.RunId &&
-                    target.IsActive &&
-                    target.IsRegistered)
+                _sweepHits.Clear();
+                Vector2 movement = center - _previousAttackCenter;
+                if (includeMovementPath && _hasPreviousAttackCenter &&
+                    Mathf.Approximately(radius, _previousAttackRadius) &&
+                    movement.sqrMagnitude > 0f)
                 {
-                    _uniqueTargets.Add(target);
+                    float distance = movement.magnitude;
+                    Physics2D.CircleCast(
+                        _previousAttackCenter,
+                        radius,
+                        movement / distance,
+                        contactFilter,
+                        _sweepHits,
+                        distance);
+                    for (int index = 0; index < _sweepHits.Count; index++)
+                    {
+                        AddAttackTarget(_sweepHits[index].collider);
+                    }
+                }
+
+                _attackOverlaps.Clear();
+                Physics2D.OverlapCircle(center, radius, contactFilter, _attackOverlaps);
+                for (int index = 0; index < _attackOverlaps.Count; index++)
+                {
+                    AddAttackTarget(_attackOverlaps[index]);
+                }
+
+                _previousAttackCenter = center;
+                _previousAttackRadius = radius;
+                _hasPreviousAttackCenter = includeMovementPath;
+            }
+            else
+            {
+                // Other collider shapes retain point-only overlap behavior.
+                ResetAttackPath();
+                int overlapCount = attackCollider.Overlap(contactFilter, _overlapBuffer);
+                for (int index = 0; index < overlapCount; index++)
+                {
+                    AddAttackTarget(_overlapBuffer[index]);
                 }
             }
 
-            foreach (ICombatTarget target in _uniqueTargets)
+            float cooldown = playerCombatStatsRuntime.AutoAttackIntervalSeconds;
+            for (int index = 0; index < _attackTargets.Count; index++)
             {
                 if (!IsRunning)
                 {
                     break;
                 }
 
-                ApplyBundle(target);
+                ICombatTarget target = _attackTargets[index];
+                if (!target.IsActive || !target.IsRegistered ||
+                    target.RunId != _runRequest.RunId ||
+                    (_lastBasicHitAt.TryGetValue(target, out float lastHitAt) &&
+                     _elapsedSeconds - lastHitAt < cooldown))
+                {
+                    continue;
+                }
+
+                if (ApplyBundle(target) && target.IsActive && IsRunning)
+                {
+                    _lastBasicHitAt[target] = _elapsedSeconds;
+                }
             }
 
             return true;
+        }
+
+        private void AddAttackTarget(Collider2D collider)
+        {
+            if (collider == null)
+            {
+                return;
+            }
+
+            MonsterCombatTarget targetAdapter =
+                collider.GetComponentInParent<MonsterCombatTarget>();
+            if (targetAdapter != null &&
+                targetAdapter is ICombatTarget target &&
+                target.RunId == _runRequest.RunId &&
+                target.IsActive &&
+                target.IsRegistered &&
+                _uniqueTargets.Add(target))
+            {
+                _attackTargets.Add(target);
+            }
         }
 
         public void ConfigureSkills(IReadOnlyList<SkillCombatSnapshot> skills)
@@ -302,7 +435,7 @@ namespace CursorHunter.Combat
                 for (int j = 0; j < count; j++)
                 {
                     var collider = _overlapBuffer[j];
-                    var target = collider == null ? null : collider.GetComponentInParent<WalkerStumpTarget>();
+                    var target = collider == null ? null : collider.GetComponentInParent<MonsterCombatTarget>();
                     if (target != null && target.RunId == _runRequest.RunId && target.IsActive && target.IsRegistered)
                         _uniqueTargets.Add(target);
                 }
@@ -329,6 +462,9 @@ namespace CursorHunter.Combat
             _isPaused = false;
             _completionRequested = false;
             _abortRequested = false;
+            _lastBasicHitAt.Clear();
+            ResetAttackPath();
+            playerCombatStatsRuntime.SetRunActive(false);
 
             result = CreateResult(
                 endReason,
@@ -351,6 +487,9 @@ namespace CursorHunter.Combat
             _isPaused = false;
             _completionRequested = false;
             _abortRequested = false;
+            _lastBasicHitAt.Clear();
+            ResetAttackPath();
+            playerCombatStatsRuntime.SetRunActive(false);
 
             result = CreateResult(
                 endReason,
@@ -373,13 +512,13 @@ namespace CursorHunter.Combat
                 CreateResourceRewards());
         }
 
-        private void ApplyBundle(ICombatTarget target, long skillDamage = 0L)
+        private bool ApplyBundle(ICombatTarget target, long skillDamage = 0L)
         {
             bool wasCritical = RollCriticalHit();
             if (!TryGetHitDamage(wasCritical, out long hitDamage, skillDamage))
             {
                 RequestAbort(RunEndReason.NumericOverflow);
-                return;
+                return false;
             }
 
             bool applied = target.ApplyDamage(
@@ -390,7 +529,12 @@ namespace CursorHunter.Combat
 
             if (!applied)
             {
-                return;
+                return false;
+            }
+
+            if (killed)
+            {
+                _lastBasicHitAt.Remove(target);
             }
 
             if (!TryAddNonNegative(
@@ -399,7 +543,7 @@ namespace CursorHunter.Combat
                     out long nextEffectiveDamage))
             {
                 RequestAbort(RunEndReason.NumericOverflow);
-                return;
+                return true;
             }
 
             _effectiveDamage = nextEffectiveDamage;
@@ -411,7 +555,7 @@ namespace CursorHunter.Combat
 
             if (!killed)
             {
-                return;
+                return true;
             }
 
             if (_defeatedCount == int.MaxValue ||
@@ -421,7 +565,7 @@ namespace CursorHunter.Combat
                     out long nextGarnetEarned))
             {
                 RequestAbort(RunEndReason.NumericOverflow);
-                return;
+                return true;
             }
 
             _defeatedCount++;
@@ -429,7 +573,7 @@ namespace CursorHunter.Combat
             if (!TryRecordReward("gem.garnet", target.GarnetReward))
             {
                 RequestAbort(RunEndReason.NumericOverflow);
-                return;
+                return true;
             }
 
             if (!TryRecordBonusDrop(
@@ -438,29 +582,29 @@ namespace CursorHunter.Combat
                     target.BonusDropChancePercent))
             {
                 RequestAbort(RunEndReason.NumericOverflow);
-                return;
+                return true;
             }
-            return;
+            return true;
         }
 
         private bool RollCriticalHit()
         {
-            return _combatSnapshot.CriticalChancePercent > 0f &&
+            return playerCombatStatsRuntime.CriticalChancePercent > 0f &&
                    _random != null &&
-                   _random.NextFloat(0f, 100f) < _combatSnapshot.CriticalChancePercent;
+                   _random.NextFloat(0f, 100f) < playerCombatStatsRuntime.CriticalChancePercent;
         }
 
         private bool TryGetHitDamage(bool critical, out long damage, long skillDamage = 0L)
         {
-            double scaled = skillDamage > 0 ? skillDamage : _combatSnapshot.AttackPower;
+            double scaled = skillDamage > 0 ? skillDamage : playerCombatStatsRuntime.AttackPower;
             if (_runRequest.Mode == RunMode.Boss)
             {
-                scaled *= _combatSnapshot.BossDamageMultiplier;
+                scaled *= playerCombatStatsRuntime.BossDamageMultiplier;
             }
 
             if (critical)
             {
-                scaled *= _combatSnapshot.CriticalDamageMultiplier;
+                scaled *= playerCombatStatsRuntime.CriticalDamageMultiplier;
             }
 
             if (double.IsNaN(scaled) || double.IsInfinity(scaled) || scaled <= 0d)

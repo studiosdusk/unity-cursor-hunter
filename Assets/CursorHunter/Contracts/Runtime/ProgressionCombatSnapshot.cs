@@ -60,9 +60,9 @@ namespace CursorHunter.Contracts
     }
 
     /// <summary>
-    /// One monster's immutable progression values. Spawn behavior flags remain
-    /// a combat concern; this structure carries only the values needed by the
-    /// first integration seam.
+    /// One monster's immutable progression handoff. ProductionCount is the
+    /// resolved count per spawn opportunity; base combat stats and species
+    /// traits are authored in MonsterDefinition and copied by App at run start.
     /// </summary>
     public readonly struct MonsterCombatSnapshot
     {
@@ -120,6 +120,11 @@ namespace CursorHunter.Contracts
         }
 
         public int ProductionCount { get; }
+        /// <summary>
+        /// Increase above the game's initial one-monster output. The App adds
+        /// this value to the species BaseStats.PackSize when composing a run.
+        /// </summary>
+        public int ProductionBonusCount => Math.Max(0, ProductionCount - 1);
         public string MonsterId { get; }
         public bool Unlocked { get; }
         public long HitPoints { get; }
@@ -180,13 +185,15 @@ namespace CursorHunter.Contracts
             string sourceJson = null,
             int globalAliveLimit = 80,
             int perMonsterAliveLimit = 80,
-            float bossFieldDurationSeconds = 60f)
+            float bossFieldDurationSeconds = 60f,
+            CursorCombatStatBonusesSnapshot cursorStatBonuses = default)
         {
             GlobalAliveLimit = Math.Max(1, Math.Min(80, globalAliveLimit));
             PerMonsterAliveLimit = Math.Max(1, Math.Min(GlobalAliveLimit, perMonsterAliveLimit));
             BossFieldDurationSeconds = bossFieldDurationSeconds;
             SourceJson = sourceJson ?? string.Empty;
             Combat = combat;
+            CursorStatBonuses = cursorStatBonuses;
             _skills = skills == null
                 ? Array.Empty<SkillCombatSnapshot>()
                 : (SkillCombatSnapshot[])skills.Clone();
@@ -207,12 +214,14 @@ namespace CursorHunter.Contracts
         public float BossFieldDurationSeconds { get; }
         public string SourceJson { get; }
         public CombatSnapshot Combat { get; }
+        public CursorCombatStatBonusesSnapshot CursorStatBonuses { get; }
         public IReadOnlyList<SkillCombatSnapshot> Skills => _skillView;
         public IReadOnlyList<MonsterCombatSnapshot> Monsters => _monsterView;
         public float NormalFieldDurationSeconds { get; }
 
         public bool IsValid =>
             Combat.IsValid &&
+            CursorStatBonuses.IsValid &&
             GlobalAliveLimit >= 1 && GlobalAliveLimit <= 80 &&
             PerMonsterAliveLimit >= 1 && PerMonsterAliveLimit <= GlobalAliveLimit &&
             BossFieldDurationSeconds > 0f && !float.IsNaN(BossFieldDurationSeconds) && !float.IsInfinity(BossFieldDurationSeconds) &&

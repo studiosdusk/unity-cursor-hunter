@@ -15,12 +15,18 @@ MonoBehaviour:
   monsterId: monster.05
   displayName: 수정 전갈
   prefabKey: Scorpion/Scorpion_Purple
-  prefab: {fileID: 3991827156076009884, guid: c6d4b2a09041c4444ac1b1e6cffc0c78, type: 3}
-  maxHealth: 80
-  spawnIntervalSeconds: 1.7999999999999998
-  packSize: 1
-  garnetReward: 7
-  bonusDropCurrencyId: gem.amethyst
-  bonusDropAmount: 1
-  bonusDropChancePercent: 100
-  behaviorType: 0
+  visualPrefab: {fileID: 3991827156076009884, guid: c6d4b2a09041c4444ac1b1e6cffc0c78, type: 3}
+  baseStats:
+    maxHealth: 80
+    spawnIntervalSeconds: 1.7999999999999998
+    packSize: 1
+    moveSpeed: 0.45
+    visualScale: 1
+    hitAreaWidth: 1
+    hitAreaHeight: 1.2
+    garnetReward: 7
+    bonusDropCurrencyId: gem.amethyst
+    bonusDropAmount: 1
+    bonusDropChancePercent: 100
+  behaviorProfiles:
+  - {fileID: 11400000, guid: 03e0a195361d4bcc9b1c9dfb1e540376, type: 2}

@@ -15,12 +15,18 @@ MonoBehaviour:
   monsterId: monster.06
   displayName: 사파이어 눈요정
   prefabKey: Fairy/Fairy_Snow
-  prefab: {fileID: 8251008516348628987, guid: 1c1a3180575dcef419ba8e5dd252dc04, type: 3}
-  maxHealth: 120
-  spawnIntervalSeconds: 1.95
-  packSize: 1
-  garnetReward: 8
-  bonusDropCurrencyId: gem.sapphire
-  bonusDropAmount: 1
-  bonusDropChancePercent: 100
-  behaviorType: 0
+  visualPrefab: {fileID: 8251008516348628987, guid: 1c1a3180575dcef419ba8e5dd252dc04, type: 3}
+  baseStats:
+    maxHealth: 120
+    spawnIntervalSeconds: 1.95
+    packSize: 1
+    moveSpeed: 0.45
+    visualScale: 1
+    hitAreaWidth: 1
+    hitAreaHeight: 1.2
+    garnetReward: 8
+    bonusDropCurrencyId: gem.sapphire
+    bonusDropAmount: 1
+    bonusDropChancePercent: 100
+  behaviorProfiles:
+  - {fileID: 11400000, guid: 73574b06f4534f82a5d102718018a3cd, type: 2}

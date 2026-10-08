@@ -15,7 +15,8 @@
 
 | 구분 | 파일/타입 | 역할 |
 |---|---|---|
-| 전투 정보 형식과 초기값 | [game-data.en.json](../../Assets/CursorHunter/Data/Resources/GameData/game-data.en.json) | schemaVersion/balanceVersion, stats/rules/gemstones/monsters/skills만 포함 |
+| 전투 정보 형식과 기타 초기값 | [game-data.en.json](../../Assets/CursorHunter/Data/Resources/GameData/game-data.en.json) | schemaVersion/balanceVersion, stats/rules/gemstones/monsters/skills 구조. 커서 기본값은 Main 씬 컴포넌트가 우선 |
+| 커서 기본 스탯 | `PlayerCombatStatsDefaults` on Main.unity | 모든 새 런에서 공통으로 쓰는 커서 핵심 기본값 |
 | 키 바로 뒤 한국어 | [game-data.ko.keys.json](game-data.ko.keys.json) | 같은 값·계층·자료형, 영문키(한국어) 형태. 사람이 읽는 참고본 |
 | 상세 한국어 설명 | [game-data.ko.reference.json](game-data.ko.reference.json) | 단위·enum 의미 설명. 게임 입력 아님 |
 | 성장 화면 내부 설정 | [progression-config.en.json](../../Assets/CursorHunter/Data/Resources/GameData/progression-config.en.json) | 23분류/111노드 비용·효과·선행 조건, 명칭·외형 키, 젬 보스 보상. 전투로 전달하지 않음 |
@@ -25,8 +26,9 @@
 progression은 “내가 가진 값”이 아니라 “업그레이드가 얼마이며 무엇을 바꾸는가”를 정의한다.
 전투에는 불필요하지만 성장 화면에는 필요하므로 분리했다. fieldHelp/implementation은 실행 문서에서 제거하고 설명은 이 문서와 한국어 참고본으로 제공한다.
 
-game-data.en.json은 여전히 초기값/구조 참고이지 진행 중인 플레이어 세이브 파일이 아니다.
-강화하면 구매 기록·지갑을 저장하고, 전투 시작 때 그 기록으로 생성한 GameInformation을 사용한다.
+game-data.en.json은 기타 초기값/구조 참고이지 진행 중인 플레이어 세이브 파일이 아니다.
+Main 런타임의 커서 기본값은 `PlayerCombatStatsDefaults`에서 읽는다. 강화하면 구매 기록·지갑을 저장하고,
+전투 시작 때 공통 커서 기본값에 보유 특성의 additive 델타를 합산한다. 다른 성장 정보는 기존 GameInformation 경로를 사용한다.
 현재 값은 전체 정보 → JSON 복사로 확인한다. Resources 파일 자체를 전투 보상으로 덮어쓰지 않는다.
 
 ## 3. 현재 JSON 구조

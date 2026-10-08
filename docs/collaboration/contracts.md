@@ -2,15 +2,19 @@
 
 ## 전투에 필요한 현재 정보만 전달한다
 
-[game-data.en.json](../../Assets/CursorHunter/Data/Resources/GameData/game-data.en.json)은 GameInformation과 같은 구조의 초기값이다.
-성장 화면은 [progression-config.en.json](../../Assets/CursorHunter/Data/Resources/GameData/progression-config.en.json)의 비용/선행 조건/효과와 플레이어 구매/지갑을 사용한다.
-GameInformationBuilder가 최종 정보를 만든 뒤 App이 Combat에 전달한다. 강화 설정 자체는 전투 입력이 아니다.
+[game-data.en.json](../../Assets/CursorHunter/Data/Resources/GameData/game-data.en.json)은 GameInformation 구조와 비전투 초기값이다.
+Main 씬의 `PlayerCombatStatsDefaults` 컴포넌트가 커서 핵심 스탯의 공통 기본값이다.
+성장 화면은 [progression-config.en.json](../../Assets/CursorHunter/Data/Resources/GameData/progression-config.en.json)의 비용/선행 조건/증가량과 플레이어 구매/지갑을 사용한다.
+GameInformationBuilder는 기본값에 구매한 증가량을 합산해 최종 전체 정보를 만든다. Progression은
+커서 증가량 스냅샷도 App에 반환하며, 런타임은 매 런 기본값을 다시 읽고 증가량을 적용한다.
 
 ```text
-game-data.en.json + progression-config.en.json + 구매/지갑
- → GameInformationBuilder → GameInformation
+PlayerCombatStatsDefaults + progression-config.en.json + 구매/지갑
+ → GameInformationBuilder → GameInformation + CursorCombatStatBonusesSnapshot
  → 메모리 JSON → 검증 → ProgressionCombatSnapshot
- → App.HuntManager / RunCoordinator → Combat
+ → App.HuntManager / RunCoordinator
+ → PlayerCombatStatsRuntime resets from defaults and adds cursor bonuses
+ → Combat
 ```
 
 영문 GameInformation의 루트는 schemaVersion=3, balanceVersion, stats, rules, gemstones, monsters, skills다.
@@ -35,28 +39,34 @@ false인 항목도 삭제하지 않고 ID로 구분한다. 배열 인덱스를 I
 정식 [v3 스키마](game-information-v3.schema.json)와 [전체 예제](game-information-v3.example.json)를 따른다.
 이전 v2 예제·스키마는 과거 기록이며 v3 런 입력으로 사용할 수 없다.
 
-## 몬스터 특성 enum: 자리만 준비
+## 몬스터 특성과 이동 프로필
 
-Contracts.MonsterBehaviorType에는 현재 None=0만 정의한다.
-JSON의 behaviorType은 숫자 0이며, 미정 특성을 임의 배정하지 않았다.
-지그재그/은신/주기적 무적은 아직 enum 멤버나 행동 로직으로 구현하지 않았다.
-향후 추가할 때 숫자 코드를 고정하고 계약·스키마·테스트·Combat 행동을 함께 확장한다.
+JSON `behaviorType`과 `MonsterCombatSnapshot.BehaviorType`은 이전 데이터 호환을 위해
+`Contracts.MonsterBehaviorType.None=0`으로 유지한다. 신규 특성은 Data의
+`MonsterBehaviorProfile` 에셋으로 구성한다. 프로필의 체력·이동속도·비주얼 크기·명중
+영역 배율은 곱해지며, 이동 모드는 프로필 목록에서 마지막으로 지정한 값이 선택된다.
+최종 수치는 `SpawnSnapshot`의 movement mode, speed, scale, hit area, orbit 값으로
+Combat에 전달된다.
 
 ```text
-MonsterInformation.behaviorType
- → MonsterCombatSnapshot.BehaviorType
- → SpawnSnapshot.BehaviorType
- → WalkerStumpTarget.BehaviorType
+MonsterDefinition.BaseStats
+ + MonsterDefinition.BehaviorProfiles[]
+ + (MonsterCombatSnapshot.ProductionCount - initial count 1)
+ → App SpawnPlan
+ → SpawnSnapshot
+ → MonsterRoot/MonsterBehaviorController
 ```
 
-잘못된 enum 코드는 유효성 검사에서 거절한다. 이 필드는 런 중 바꾸지 않는다.
+첫 데이터 연결은 .01 기본, .02 빠른, .03 고체력, .04 소형, .05 대형·저속,
+.06 원형 이동, .07~.10 기본이다. 나중에 종별 외형은 `MonsterDefinition.VisualPrefab`으로
+수동 교체한다. 기존 `behaviorType` JSON 필드는 계속 0만 허용한다.
 
 ## 전투에서 값을 읽는 실제 API
 
 아래 controller는 현재 CombatRunController, snapshot은 App이 캡처한 ProgressionCombatSnapshot이다.
 전역 변수나 새로 추가한 전체 데이터 getter를 뜻하지 않는다.
-HuntManager.BeginPrototypeRun이 전체 스냅샷을 만들고,
-RunCoordinator.Start에 CombatSnapshot/SpawnPlan, ConfigureSkills에 스킬 목록을 전달한다.
+HuntManager.BeginPrototypeRun이 전체 정보와 커서 증가량 스냅샷을 만들고,
+RunCoordinator.Start에 CombatSnapshot/커서 증가량/SpawnPlan, ConfigureSkills에 스킬 목록을 전달한다.
 
 | 정보 | 실제 프로퍼티 |
 |---|---|

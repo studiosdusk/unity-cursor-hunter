@@ -25,9 +25,16 @@ Progression > Trait Catalog`로 카탈로그 에셋을 만든 뒤 화면 컨트�
 차감·환불한다. 현재 적용된 노드 수와 전체 에셋 경로는
 `docs/collaboration/trait-ui-assets.md`에서 관리한다. 구매 상태·젬 잔액·전리품 조각은
 현재 `TraitProgressionStore`의 PlayerPrefs JSON에 저장한다. 런 시작 시
-`CreateCombatSnapshot()`이 값을 복사하고, App은 Eligible `RunResult.Rewards`를
+`CreateCombatSnapshot()`이 최종 정보와 커서 보너스를 값 복사하고, App은 Eligible `RunResult.Rewards`를
 `GrantResourceRewards()`로 한 번 반영한다. Combat은 이 컴포넌트나 저장소를 직접
 참조하지 않는다. 출시 전 PlayerPrefs를 정식 파일/클라우드 저장으로 교체한다.
+
+Main 씬에서는 App이 `PlayerCombatStatsDefaults`의 공통 커서 기본값 스냅샷을 전달한다.
+`GameInformationBuilder`는 기본값에 보유 특성의 `add` 델타를 합산해 전체 정보와 요약을
+만들고, `CreateCursorCombatStatBonusesSnapshot()`은 같은 델타만 별도 계약으로 반환한다.
+공격력·반경·쿨다운·치명타·보스 피해 노드의 값은 최종값이 아니라 증가량이다.
+쿨다운 감소는 음수 델타로 표현하며 최종 쿨다운은 0.05초 이상, 치명타 확률은 100% 이하로 제한한다.
+스킬 특성은 현재 배율 방식을 유지하고, 설정된 공격력-스킬 피해 연동은 기본 공격력 대비 비율로 계산한다.
 
 
 ## v0.0.5 런타임 데이터 기준

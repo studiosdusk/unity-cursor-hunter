@@ -1,6 +1,8 @@
 namespace CursorHunter.Contracts
 {
-    // Stable serialized codes. Only the field is reserved; no movement or immunity logic yet.
+    // Legacy serialized field retained for existing GameInformation data.
+    // New species traits use composable Data.MonsterBehaviorProfile assets,
+    // and movement uses MonsterMovementMode.
     public enum MonsterBehaviorType
     {
         None = 0

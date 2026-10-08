@@ -6,7 +6,7 @@ using UnityEngine;
 namespace CursorHunter.Combat
 {
     /// <summary>
-    /// Runtime binding between a pure spawn snapshot and its authored visual.
+    /// Runtime binding between a pure spawn snapshot and its species visual.
     /// The plan is intentionally outside Contracts because GameObject
     /// references must not cross the pure run-data boundary.
     /// </summary>
@@ -14,21 +14,23 @@ namespace CursorHunter.Combat
     {
         public SpawnPlanEntry(
             SpawnSnapshot snapshot,
-            GameObject prefab)
+            GameObject visualPrefab)
         {
             Snapshot = snapshot;
-            Prefab = prefab;
+            VisualPrefab = visualPrefab;
         }
 
         public SpawnSnapshot Snapshot { get; }
-        public GameObject Prefab { get; }
+        public GameObject VisualPrefab { get; }
+        public GameObject Prefab => VisualPrefab;
         public bool HasValidSnapshot => Snapshot.IsValid;
-        public bool HasPrefab => Prefab != null;
+        public bool HasVisualPrefab => VisualPrefab != null;
+        public bool HasPrefab => HasVisualPrefab;
     }
 
     /// <summary>
-    /// Extensible spawn input. The first implementation consumes one entry;
-    /// the copied entry list leaves room for a multi-monster SpawnPlan later.
+    /// Extensible spawn input for one or more species sharing the same
+    /// MonsterRoot prefab while supplying distinct visual prefabs.
     /// </summary>
     public sealed class SpawnPlan
     {

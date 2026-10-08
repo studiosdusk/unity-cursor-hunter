@@ -8,7 +8,8 @@
 젬스톤을 표시하지 않으며, 게임 시작 후 특성·전투·정산 화면에는 해금된 종류만 표시한다.
 
 ## 재사용 방식
-원본 Assets/DownLoadAssets는 보존한다. 각 모듈 소유 폴더에 Variant 또는 시각 래퍼를 만든다. GUID는 원본 추적용이며 런타임 로더 구현이 아니다.
+원본 Assets/DownLoadAssets는 기본적으로 보존한다. 각 모듈 소유 폴더에 Variant 또는 시각 래퍼를 만든다. GUID는 원본 추적용이며 런타임 로더 구현이 아니다.
+2026-10-05 사용자 요청에 따라 예외적으로 `EnemyMonster 2/Animations`의 17종 Animator Controller에 Walker와 같은 전이·파라미터를 직접 적용했다. 각 종의 클립, 컨트롤러 GUID, 50개 프리팹 연결은 유지한다.
 아래 링크의 에셋을 Unity에서 선택한 뒤 스프라이트 모드, pivot, 픽셀 크기, sorting, URP 머티리얼, emission/loop/stop을 점검한다.
 
 | 기획 ID | 담당 | 특성 화면 적용 에셋 |
@@ -23,6 +24,13 @@
 | ui.boss.hp | Combat | [StatusBar_White.prefab](../../Assets/DownLoadAssets/GUI-CasualFantasy/Prefabs/Prefabs_Component_UI_Etc/StatusBar_White.prefab) |
 | field.normal | Combat | [Map_3_Jungle Age.prefab](../../Assets/DownLoadAssets/Map/2D%20Maps%20-%20Age%20Battle%20Stages/Prefabs/Landscape/Map/Map_3_Jungle%20Age.prefab) |
 | field.boss | Combat | [Map_13_Medieval Age.prefab](../../Assets/DownLoadAssets/Map/2D%20Maps%20-%20Age%20Battle%20Stages/Prefabs/Landscape/Map/Map_13_Medieval%20Age.prefab) |
+| monster.shared-root | Combat | [MonsterRoot.prefab](../../Assets/CursorHunter/Combat/Prefabs/Monsters/MonsterRoot.prefab) |
+| monster.behavior-profile.basic | Data | [Basic.asset](../../Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Basic.asset) — 10종 정의에서 재사용하는 기본 이동 프로필 |
+| monster.behavior-profile.fast | Data | [Fast.asset](../../Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Fast.asset) |
+| monster.behavior-profile.high-health | Data | [HighHealth.asset](../../Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/HighHealth.asset) |
+| monster.behavior-profile.small | Data | [Small.asset](../../Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Small.asset) |
+| monster.behavior-profile.large-slow | Data | [LargeSlow.asset](../../Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/LargeSlow.asset) |
+| monster.behavior-profile.circular | Data | [Circular.asset](../../Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Circular.asset) |
 | monster.golem | Combat | [Golem_Iron.prefab](../../Assets/DownLoadAssets/MonsterAsset/2D%20Minimal-EnemyMonster/EnemyMonster%202/Prefabs/Golem/Golem_Iron.prefab) |
 | boss.v4 | Combat | [Golem_Iron.prefab](../../Assets/DownLoadAssets/MonsterAsset/2D%20Minimal-EnemyMonster/EnemyMonster%202/Prefabs/Golem/Golem_Iron.prefab) |
 | skill.fireball | Combat | [FX_AOE_Fireball.prefab](../../Assets/DownLoadAssets/Eric%20VFX%20Studio/Game%20VFX%20-%20Stylized%20AOE%20Bundle/Prefabs/URP/FX_AOE_Fireball.prefab) |

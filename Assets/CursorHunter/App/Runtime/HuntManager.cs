@@ -31,13 +31,9 @@ namespace CursorHunter.App
         [SerializeField] private AppUiRootController uiRootController;
         [SerializeField] private TraitScreenController progressionController;
 
-        [Header("Hunt combat parameters")]
-        [SerializeField, Min(1)] private long attackPower = 10;
-        [SerializeField, Min(0.01f)] private float rangeMultiplier = 1f;
-        [SerializeField, Min(0f)] private float attackCooldownSeconds = 0.5f;
-
-
         [Header("Hunt run")]
+        [SerializeField, Tooltip("Stage roster used by the existing Enter button. Leave empty for the legacy progression roster.")]
+        private CombatStageDefinition defaultStage;
         [SerializeField] private MonsterDefinition monsterDefinition;
         [SerializeField, Min(1)] private int aliveLimit = 80;
         [SerializeField, Min(1f)] private float durationSeconds = 15f;
@@ -56,6 +52,7 @@ namespace CursorHunter.App
         private void Awake()
         {
             ResolveReferences();
+            SyncCursorCombatStatDefaults();
             EnsureRunCoordinator();
         }
 
@@ -138,6 +135,15 @@ namespace CursorHunter.App
         /// </summary>
         public void BeginPrototypeRun()
         {
+            BeginStageRun(defaultStage);
+        }
+
+        /// <summary>
+        /// Starts a selected inspector-authored stage. A null stage retains
+        /// the legacy progression-driven prototype roster.
+        /// </summary>
+        public void BeginStageRun(CombatStageDefinition stage)
+        {
             ResolveReferences();
             EnsureRunCoordinator();
             SubscribeToCoordinator();
@@ -157,9 +163,13 @@ namespace CursorHunter.App
                 return;
             }
 
+            PlayerCombatStatsRuntime runtimeStats =
+                combatRunController.PlayerCombatStatsRuntime;
+            CursorCombatStatBonusesSnapshot cursorStatBonuses = default;
             ProgressionCombatSnapshot progressionSnapshot = null;
             if (progressionController != null)
             {
+                progressionController.SetCursorCombatStatDefaults(runtimeStats.Defaults);
                 string json;
                 try { json = progressionController.CreateGameInformationJson(); }
                 catch (Exception exception)
@@ -172,9 +182,32 @@ namespace CursorHunter.App
                     Debug.LogError("Combat JSON rejected: " + error, this);
                     return;
                 }
-                progressionSnapshot = information.ToCombatSnapshot(json);
+                if (stage != null)
+                {
+                    if (!stage.TryApplyToInformation(information, out error))
+                    {
+                        Debug.LogError(
+                            $"Cannot enter stage '{stage.StageId}': " + error,
+                            this);
+                        return;
+                    }
+
+                    json = GameInformationJson.Serialize(information);
+                }
+                cursorStatBonuses =
+                    progressionController.CreateCursorCombatStatBonusesSnapshot();
+                progressionSnapshot = information.ToCombatSnapshot(
+                    json,
+                    cursorStatBonuses);
                 schemaVersion = information.schemaVersion;
                 balanceVersion = information.balanceVersion;
+            }
+            else if (stage != null)
+            {
+                Debug.LogError(
+                    $"Cannot enter stage '{stage.StageId}' without player combat information.",
+                    this);
+                return;
             }
             else if (!allowPrototypeFallback)
             {
@@ -182,7 +215,7 @@ namespace CursorHunter.App
                 return;
             }
             CombatSnapshot combatSnapshot = progressionSnapshot == null
-                ? CreateFallbackCombatSnapshot()
+                ? runtimeStats.DefaultsCombatSnapshot
                 : progressionSnapshot.Combat;
 
             if (!combatSnapshot.IsValid)
@@ -190,7 +223,7 @@ namespace CursorHunter.App
                 Debug.LogWarning(
                     "Progression produced an invalid combat snapshot; using the prototype fallback.",
                     this);
-                combatSnapshot = CreateFallbackCombatSnapshot();
+                combatSnapshot = runtimeStats.DefaultsCombatSnapshot;
             }
 
             aliveLimit = Mathf.Max(1, aliveLimit);
@@ -203,6 +236,7 @@ namespace CursorHunter.App
 
             if (!TryCreateSpawnPlan(
                 progressionSnapshot,
+                stage,
                 out SpawnPlan spawnPlan,
                 out SpawnStartResult spawnPlanStartResult))
             {
@@ -225,6 +259,7 @@ namespace CursorHunter.App
             if (!_runCoordinator.Start(
                     runRequest,
                     combatSnapshot,
+                    cursorStatBonuses,
                     spawnPlan,
                     out string failureReason))
             {
@@ -249,7 +284,8 @@ namespace CursorHunter.App
             }
 
             combatRunController.ConfigureSkills(progressionSnapshot == null ? null : progressionSnapshot.Skills);
-            cursorController.SetRangeMultiplier(combatSnapshot.RangeMultiplier);
+            cursorController.SetRangeMultiplier(
+                combatRunController.PlayerCombatStatsRuntime.AttackRangeMultiplier);
             cursorController.ShowCursorImage();
 
             if (testPanelToggleController != null)
@@ -267,13 +303,15 @@ namespace CursorHunter.App
             }
         }
 
-        private CombatSnapshot CreateFallbackCombatSnapshot()
+        private void SyncCursorCombatStatDefaults()
         {
-            return new CombatSnapshot(
-                Math.Max(1L, attackPower),
-                Mathf.Max(0.01f, rangeMultiplier),
-                Mathf.Max(0f, attackCooldownSeconds),
-                1);
+            if (progressionController == null || combatRunController == null)
+            {
+                return;
+            }
+
+            progressionController.SetCursorCombatStatDefaults(
+                combatRunController.PlayerCombatStatsRuntime.Defaults);
         }
 
         /// <summary>
@@ -537,6 +575,7 @@ namespace CursorHunter.App
 
         private bool TryCreateSpawnPlan(
             ProgressionCombatSnapshot progressionSnapshot,
+            CombatStageDefinition stage,
             out SpawnPlan spawnPlan,
             out SpawnStartResult failureResult)
         {
@@ -544,6 +583,22 @@ namespace CursorHunter.App
             failureResult = new SpawnStartResult(
                 SpawnStartStatus.Started,
                 "Monster definition snapshot is ready.");
+
+            if (stage != null)
+            {
+                if (stage.TryCreateSpawnPlan(
+                    progressionSnapshot,
+                    out spawnPlan,
+                    out string stageError))
+                {
+                    return true;
+                }
+
+                failureResult = new SpawnStartResult(
+                    SpawnStartStatus.InvalidRequest,
+                    stageError);
+                return false;
+            }
 
             if (progressionSnapshot != null && !string.IsNullOrEmpty(progressionSnapshot.SourceJson))
             {
@@ -555,18 +610,26 @@ namespace CursorHunter.App
                     MonsterDefinition definition = null;
                     foreach (var candidate in definitions)
                         if (candidate != null && candidate.MonsterId == monster.MonsterId) { definition = candidate; break; }
-                    if (definition == null || definition.Prefab == null)
+                    if (definition == null || definition.VisualPrefab == null)
                     {
                         failureResult = new SpawnStartResult(SpawnStartStatus.MissingDefinition,
                             "Missing visual definition: " + monster.MonsterId);
                         return false;
                     }
-                    var snapshot = new SpawnSnapshot(monster.MonsterId, definition.PrefabKey,
-                        monster.HitPoints, monster.SpawnIntervalSeconds, monster.ProductionCount,
-                        progressionSnapshot.PerMonsterAliveLimit, monster.GarnetReward, monster.BonusDropCurrencyId,
-                        monster.BonusDropAmount, monster.BonusDropChancePercent,
-                        monster.BehaviorType);
-                    entries.Add(new SpawnPlanEntry(snapshot, definition.Prefab));
+                    // Definition BaseStats + composable species profiles are
+                    // authoritative for combat values. Progression contributes
+                    // unlock state and the resolved production count only.
+                    SpawnSnapshot snapshot = definition.CreateSnapshotWithProductionBonus(
+                        progressionSnapshot.PerMonsterAliveLimit,
+                        monster.ProductionBonusCount);
+                    if (!snapshot.IsValid)
+                    {
+                        failureResult = new SpawnStartResult(
+                            SpawnStartStatus.InvalidRequest,
+                            "Monster definition produced invalid final stats: " + monster.MonsterId);
+                        return false;
+                    }
+                    entries.Add(new SpawnPlanEntry(snapshot, definition.VisualPrefab));
                 }
                 if (entries.Count == 0)
                 {
@@ -676,7 +739,7 @@ namespace CursorHunter.App
                 return false;
             }
 
-            spawnPlan = new SpawnPlan(snapshot, definition.Prefab);
+            spawnPlan = new SpawnPlan(snapshot, definition.VisualPrefab);
             failureResult = new SpawnStartResult(
                 SpawnStartStatus.Started,
                 "Monster definition snapshot and prefab are ready.");
@@ -694,10 +757,9 @@ namespace CursorHunter.App
                 return authored;
             }
 
-            // The prototype spawner consumes one entry. Select the first
-            // unlocked progression species whose ID matches the authored
-            // definition; the multi-species plan can be added without
-            // changing this read-only boundary.
+            // The prototype spawner consumes one entry. Select the matching
+            // progression species and add its production bonus to the
+            // definition-owned BaseStats and behavior-profile contributions.
             for (int i = 0; i < progressionSnapshot.Monsters.Count; i++)
             {
                 MonsterCombatSnapshot monster = progressionSnapshot.Monsters[i];
@@ -712,24 +774,36 @@ namespace CursorHunter.App
                     continue;
                 }
 
-                int packSize = Mathf.Max(
-                    1,
-                    Mathf.RoundToInt(authored.PackSize * monster.ProductionMultiplier));
                 return new SpawnSnapshot(
                     authored.MonsterId,
                     authored.PrefabKey,
-                    monster.HitPoints,
-                    monster.SpawnIntervalSeconds,
-                    packSize,
+                    authored.MaxHealth,
+                    authored.SpawnIntervalSeconds,
+                    AddProductionBonus(
+                        authored.PackSize,
+                        monster.ProductionBonusCount),
                     authored.AliveLimit,
-                    monster.GarnetReward,
-                    monster.BonusDropCurrencyId,
-                    monster.BonusDropAmount,
-                    monster.BonusDropChancePercent,
-                    monster.BehaviorType);
+                    authored.GarnetReward,
+                    authored.BonusDropCurrencyId,
+                    authored.BonusDropAmount,
+                    authored.BonusDropChancePercent,
+                    authored.BehaviorType,
+                    authored.MovementMode,
+                    authored.MoveSpeed,
+                    authored.VisualScale,
+                    authored.HitAreaWidth,
+                    authored.HitAreaHeight,
+                    authored.OrbitRadius,
+                    authored.OrbitAngularSpeedDegrees);
             }
 
             return authored;
+        }
+
+        private static int AddProductionBonus(int basePackSize, int bonusCount)
+        {
+            long result = (long)Mathf.Max(1, basePackSize) + Mathf.Max(0, bonusCount);
+            return result >= int.MaxValue ? int.MaxValue : (int)result;
         }
     }
 }

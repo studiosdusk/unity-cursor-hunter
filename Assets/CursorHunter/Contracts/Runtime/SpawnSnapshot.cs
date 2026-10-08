@@ -1,3 +1,5 @@
+using System;
+
 namespace CursorHunter.Contracts
 {
     /// <summary>
@@ -38,7 +40,14 @@ namespace CursorHunter.Contracts
             string bonusDropCurrencyId,
             long bonusDropAmount,
             float bonusDropChancePercent,
-            MonsterBehaviorType behaviorType = MonsterBehaviorType.None)
+            MonsterBehaviorType behaviorType = MonsterBehaviorType.None,
+            MonsterMovementMode movementMode = MonsterMovementMode.BoundedWander,
+            float moveSpeed = 0.45f,
+            float visualScale = 1f,
+            float hitAreaWidth = 1f,
+            float hitAreaHeight = 1.2f,
+            float orbitRadius = 0.65f,
+            float orbitAngularSpeedDegrees = 90f)
         {
             MonsterId = monsterId ?? string.Empty;
             PrefabKey = prefabKey ?? string.Empty;
@@ -51,6 +60,15 @@ namespace CursorHunter.Contracts
             BonusDropAmount = bonusDropAmount > 0L ? bonusDropAmount : 0L;
             BonusDropChancePercent = SanitizePercent(bonusDropChancePercent);
             BehaviorType = behaviorType;
+            MovementMode = movementMode;
+            MoveSpeed = IsFinitePositive(moveSpeed) ? moveSpeed : 0.45f;
+            VisualScale = IsFinitePositive(visualScale) ? visualScale : 1f;
+            HitAreaWidth = IsFinitePositive(hitAreaWidth) ? hitAreaWidth : 1f;
+            HitAreaHeight = IsFinitePositive(hitAreaHeight) ? hitAreaHeight : 1.2f;
+            OrbitRadius = IsFinitePositive(orbitRadius) ? orbitRadius : 0.65f;
+            OrbitAngularSpeedDegrees = IsFinitePositive(orbitAngularSpeedDegrees)
+                ? orbitAngularSpeedDegrees
+                : 90f;
         }
 
         public string MonsterId { get; }
@@ -64,6 +82,13 @@ namespace CursorHunter.Contracts
         public long BonusDropAmount { get; }
         public float BonusDropChancePercent { get; }
         public MonsterBehaviorType BehaviorType { get; }
+        public MonsterMovementMode MovementMode { get; }
+        public float MoveSpeed { get; }
+        public float VisualScale { get; }
+        public float HitAreaWidth { get; }
+        public float HitAreaHeight { get; }
+        public float OrbitRadius { get; }
+        public float OrbitAngularSpeedDegrees { get; }
 
         public bool IsValid =>
             !string.IsNullOrWhiteSpace(MonsterId) &&
@@ -79,7 +104,19 @@ namespace CursorHunter.Contracts
             (BonusDropAmount == 0L ||
              (!string.IsNullOrWhiteSpace(BonusDropCurrencyId) &&
               BonusDropChancePercent > 0f)) &&
+            Enum.IsDefined(typeof(MonsterMovementMode), MovementMode) &&
+            IsFinitePositive(MoveSpeed) &&
+            IsFinitePositive(VisualScale) &&
+            IsFinitePositive(HitAreaWidth) &&
+            IsFinitePositive(HitAreaHeight) &&
+            IsFinitePositive(OrbitRadius) &&
+            IsFinitePositive(OrbitAngularSpeedDegrees) &&
             BehaviorType == MonsterBehaviorType.None;
+
+        private static bool IsFinitePositive(float value)
+        {
+            return value > 0f && !float.IsNaN(value) && !float.IsInfinity(value);
+        }
 
         private static float SanitizePercent(float value)
         {

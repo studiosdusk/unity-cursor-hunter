@@ -15,12 +15,18 @@ MonoBehaviour:
   monsterId: monster.08
   displayName: 다이아 철골렘
   prefabKey: Golem/Golem_Iron
-  prefab: {fileID: 3296661359835857684, guid: 84ccd47ae94098f489358e7e865939be, type: 3}
-  maxHealth: 230
-  spawnIntervalSeconds: 2.25
-  packSize: 1
-  garnetReward: 10
-  bonusDropCurrencyId: gem.diamond
-  bonusDropAmount: 1
-  bonusDropChancePercent: 100
-  behaviorType: 0
+  visualPrefab: {fileID: 3296661359835857684, guid: 84ccd47ae94098f489358e7e865939be, type: 3}
+  baseStats:
+    maxHealth: 230
+    spawnIntervalSeconds: 2.25
+    packSize: 1
+    moveSpeed: 0.45
+    visualScale: 1
+    hitAreaWidth: 1
+    hitAreaHeight: 1.2
+    garnetReward: 10
+    bonusDropCurrencyId: gem.diamond
+    bonusDropAmount: 1
+    bonusDropChancePercent: 100
+  behaviorProfiles:
+  - {fileID: 11400000, guid: 75d93b8c58314c00931fce8caf12af10, type: 2}

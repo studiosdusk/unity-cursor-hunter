@@ -15,12 +15,18 @@ MonoBehaviour:
   monsterId: monster.04
   displayName: 자수정 가면유령
   prefabKey: Ghost/Ghost_Mask
-  prefab: {fileID: 1702457686898916737, guid: 6ee1557c3a5461b4fa884bdd8d8b1a3a, type: 3}
-  maxHealth: 55
-  spawnIntervalSeconds: 1.65
-  packSize: 1
-  garnetReward: 6
-  bonusDropCurrencyId: gem.amethyst
-  bonusDropAmount: 1
-  bonusDropChancePercent: 100
-  behaviorType: 0
+  visualPrefab: {fileID: 1702457686898916737, guid: 6ee1557c3a5461b4fa884bdd8d8b1a3a, type: 3}
+  baseStats:
+    maxHealth: 55
+    spawnIntervalSeconds: 1.65
+    packSize: 1
+    moveSpeed: 0.45
+    visualScale: 1
+    hitAreaWidth: 1
+    hitAreaHeight: 1.2
+    garnetReward: 6
+    bonusDropCurrencyId: gem.amethyst
+    bonusDropAmount: 1
+    bonusDropChancePercent: 100
+  behaviorProfiles:
+  - {fileID: 11400000, guid: 83e980cdfb5d4021aac4028b280d24d1, type: 2}
