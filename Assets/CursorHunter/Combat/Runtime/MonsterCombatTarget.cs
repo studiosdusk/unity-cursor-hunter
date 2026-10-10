@@ -10,7 +10,7 @@ namespace CursorHunter.Combat
     /// Animator location, and supported animation state set.
     /// </summary>
     [DisallowMultipleComponent]
-    public class MonsterCombatTarget : MonoBehaviour, ICombatTarget, IDamageTextAnchor
+    public class MonsterCombatTarget : MonoBehaviour, ICombatTarget, IDamageTextAnchor, IHitEffectAnchor
     {
         private static readonly string[] HitStateCandidates =
         {
@@ -34,6 +34,7 @@ namespace CursorHunter.Combat
 
         [SerializeField] private Animator animator;
         [SerializeField] private Transform healthBarAnchor;
+        [SerializeField] private Collider2D hitEffectCollider;
         [SerializeField] private bool showHealthBar;
         [SerializeField, Range(0.01f, 1f)]
         private float deathDespawnNormalizedTime = 1f;
@@ -83,6 +84,23 @@ namespace CursorHunter.Combat
         protected virtual void Awake()
         {
             ResolveAnimator();
+            ResolveHitEffectCollider();
+        }
+
+        private void ResolveHitEffectCollider()
+        {
+            if (hitEffectCollider != null) return;
+            Transform hitArea = transform.Find("HitArea");
+            hitEffectCollider = hitArea != null
+                ? hitArea.GetComponent<Collider2D>()
+                : GetComponentInChildren<Collider2D>(true);
+        }
+
+        public bool TryGetHitEffectBounds(out Bounds bounds)
+        {
+            bounds = hitEffectCollider != null ? hitEffectCollider.bounds : default;
+            return hitEffectCollider != null && hitEffectCollider.enabled &&
+                hitEffectCollider.gameObject.activeInHierarchy;
         }
 
         protected virtual void LateUpdate()
@@ -162,6 +180,7 @@ namespace CursorHunter.Combat
             // so resolve the Animator again after visual composition is complete.
             ResolveAnimator();
             AttachAnimationEventRelays();
+            ResolveHitEffectCollider();
             if (showHealthBar)
             {
                 EnsureHealthBar();
@@ -303,10 +322,12 @@ namespace CursorHunter.Combat
                 GetComponentInChildren<Collider2D>(true);
             if (existingCollider != null)
             {
+                if (hitEffectCollider == null) hitEffectCollider = existingCollider;
                 return existingCollider;
             }
 
             BoxCollider2D generatedCollider = gameObject.AddComponent<BoxCollider2D>();
+            hitEffectCollider = generatedCollider;
             SpriteRenderer[] allRenderers =
                 GetComponentsInChildren<SpriteRenderer>(true);
             List<SpriteRenderer> visualRenderers =

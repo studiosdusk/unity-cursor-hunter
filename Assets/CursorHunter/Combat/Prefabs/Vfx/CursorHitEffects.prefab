@@ -1,0 +1,59 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &100000
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 100001}
+  - component: {fileID: 100002}
+  m_Layer: 0
+  m_Name: CursorHitEffects
+  m_TagString: Untagged
+  m_IsActive: 1
+--- !u!4 &100001
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100000}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+--- !u!114 &100002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f0a1b0d43fc204c399d0edc4a4cba9a7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CursorHunter.Combat::CursorHunter.Combat.CursorHitEffectManager
+  combatRunController: {fileID: 0}
+  effectVariants:
+  - prefab: {fileID: 6992517093925385274, guid: 251c9d85494dc45caac8a37c5127e79a, type: 3}
+    materialOverride: {fileID: 2100000, guid: beabe16808ed42bb9ef4450c7475159e, type: 2}
+  - prefab: {fileID: 68563611259148265, guid: e391de5b2094e4f2496b1e2b59ca2f2b, type: 3}
+    materialOverride: {fileID: 2100000, guid: 08c2699296694f199d0d57d73fb77c14, type: 2}
+  - prefab: {fileID: 7786080992150189318, guid: 013afa93b52e3412eaaf2df66b44873c, type: 3}
+    materialOverride: {fileID: 2100000, guid: 32554376df6c4ba19682e7cba4296472, type: 2}
+  - prefab: {fileID: 3375139083347673831, guid: ca1fb5b3a4df84163bd77513d81dcea9, type: 3}
+    materialOverride: {fileID: 2100000, guid: 7134dbf96e68405e9c57dd19742e9895, type: 2}
+  maximumVisibleEffects: 256
+  lifetimeSeconds: 0.5
+  sizeMultiplier: 1.2
+  minimumSize: 0.5
+  maximumSize: 2.5
+  spawnOffset: {x: 0, y: 0, z: -0.02}
+  sortingOrder: 200
+  visualRandomSeed: 19770419

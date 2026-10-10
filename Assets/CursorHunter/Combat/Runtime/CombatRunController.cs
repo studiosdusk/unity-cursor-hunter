@@ -446,7 +446,7 @@ namespace CursorHunter.Combat
                 foreach (var target in _uniqueTargets)
                 {
                     if (!IsRunning) break;
-                    ApplyBundle(target, skill.Damage);
+                    ApplyBundle(target, skill.Damage, CombatDamageSource.Skill);
                 }
             }
         }
@@ -518,7 +518,8 @@ namespace CursorHunter.Combat
                 CreateResourceRewards());
         }
 
-        private bool ApplyBundle(ICombatTarget target, long skillDamage = 0L)
+        private bool ApplyBundle(ICombatTarget target, long skillDamage = 0L,
+            CombatDamageSource source = CombatDamageSource.CursorAttack)
         {
             bool wasCritical = RollCriticalHit();
             if (!TryGetHitDamage(wasCritical, out long hitDamage, skillDamage))
@@ -530,6 +531,11 @@ namespace CursorHunter.Combat
             IDamageTextAnchor anchor = target as IDamageTextAnchor;
             Vector3 hitPosition = DamageApplied != null && anchor != null
                 ? anchor.DamageTextPosition : default;
+            Bounds hitBounds = default;
+            bool hasHitBounds = DamageApplied != null &&
+                source == CombatDamageSource.CursorAttack &&
+                target is IHitEffectAnchor hitAnchor &&
+                hitAnchor.TryGetHitEffectBounds(out hitBounds);
             bool applied = target.ApplyDamage(
                 _runRequest.RunId,
                 hitDamage,
@@ -561,7 +567,8 @@ namespace CursorHunter.Combat
             {
                 DamageApplied?.Invoke(new CombatDamageApplied(
                     _runRequest.RunId, target, effectiveDamage, wasCritical,
-                    hitPosition, anchor != null));
+                    hitPosition, anchor != null, source, hitBounds.center, hasHitBounds,
+                    Mathf.Max(hitBounds.size.x, hitBounds.size.y)));
             }
 
             if (wasCritical && effectiveDamage > 0L)
