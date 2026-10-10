@@ -10,7 +10,7 @@ namespace CursorHunter.Combat
     /// Animator location, and supported animation state set.
     /// </summary>
     [DisallowMultipleComponent]
-    public class MonsterCombatTarget : MonoBehaviour, ICombatTarget
+    public class MonsterCombatTarget : MonoBehaviour, ICombatTarget, IDamageTextAnchor
     {
         private static readonly string[] HitStateCandidates =
         {
@@ -68,6 +68,9 @@ namespace CursorHunter.Combat
         public bool IsActive => _isInitialized && _isRegistered && !_isDead;
         public bool IsDead => _isDead;
         public RunId RunId => _runId;
+        public Vector3 DamageTextPosition => healthBarAnchor != null
+            ? healthBarAnchor.position
+            : transform.position + Vector3.up;
         public string MonsterId => _monsterId;
         public long MaxHealth => _maxHealth;
         public long CurrentHealth => _currentHealth;

@@ -546,3 +546,41 @@
 - `field_a.png`의 둘레 1픽셀이 투명해 타일 반복 시 필드 전체에 격자 경계가 드러나는 것을 확인했다. 공급사 원본은 수정하지 않았다.
 - Main 씬의 `field_a` SpriteRenderer를 단일 표시로 바꾸고 카메라 바깥까지 넓혀, 반복 경계와 외곽의 투명 테두리가 화면에 보이지 않게 했다. 원본의 실제 색상 영역은 단색이어서 확대해도 바닥 무늬가 흐려지는 문제는 없다.
 - `python3 tools/validate_collaboration.py`와 `git diff --check`로 정적 검증했다. 접근 가능한 Unity 창은 다른 프로젝트여서 Cursor Hunter의 Game View 시각 검증은 수행하지 않았다.
+
+
+### 2026-10-10 · Combat — 풀링 월드 데미지 텍스트
+
+- `CombatRunController.ApplyBundle`의 정상 피해에서 `CombatDamageApplied` 이벤트를
+  발행한다. RunId·대상·실제 HP 감소량·치명타 여부·피해 전 위치를 담는다.
+  위치는 Combat 내부 `IDamageTextAnchor`로 받으므로 처치 즉시 제거되는 대상도 표시할 수 있다.
+  시작/종료/중단은 `PresentationReset`으로 표시를 정리한다. 기존 `CriticalHit` 이벤트는 유지한다.
+- `Combat/Runtime/DamageTextManager`가 하나의 업데이트 루프로 연출을 진행한다.
+  128개 사전 준비, 최대 256개, 0.8초 수명, 네 가지 상승/드리프트/크기 변형이 기본값이다.
+  용량은 초기화 때 고정된다. 풀은 몬스터와 별개인 `CombatManager/DamageTextPool` 아래에 둔다.
+- 같은 대상·같은 히트 종류의 생성 후 0.1초 이내 피해는 합산한다. 합산 시 수명/궤적은
+  다시 시작하지 않으며 Int64 합산 overflow는 새 표시로 분리한다. 포화 시 가장 오래된 일반
+  표시를 재사용한다. 모두 크리티컬이면 일반 표시를 생략하고 새 크리티컬은 가장 오래된
+  크리티컬을 재사용한다. 전투 피해/보상 수치는 변경하지 않는다.
+- `DamageText_Root`의 `Normal Hit Text` / `Critical Hit Text`에 두 TMP 자식을 연결했다.
+  기존 `damageText` 참조는 `FormerlySerializedAs`로 이전하고 기존 script/prefab GUID를 유지한다.
+  두 자식의 Font Asset/Material Preset을 인스펙터에서 각각 지정한다. 현재 폰트 참조는 유지했고,
+  새 크리티컬 자식에는 기존 자식을 복제한 참조가 들어 있다. 코드가 폰트나 재질을 바꾸지 않는다.
+- 사용자 추가 요청으로 피해 숫자는 폰트와 무관하게 항상 구분자 없이 표시한다(예: `12312591245`).
+  최대 19자리 Int64를 반올림 없이 문자 버퍼에 직접 기록한다.
+  슬롯별 문자 버퍼와 양쪽 스타일의 최대 길이 메시를 사전 준비하고 페이드는 정점 알파만 갱신한다.
+- 프리팹 자식 원점/크기/줄바꿈과 sorting order 300을 정리했다. TMP의 월드 단위 스케일 설정은
+  유지한다. `UI/Scripts/DamageText/CursorHunter.Combat.asmref`로 기존 위치의 view를 Combat에 편입하고
+  이전 Assembly-CSharp 이름은 `MovedFrom`으로 명시했다. Combat에 TMP/UI 패키지 참조만 추가했다.
+- `AppTextBootstrap`은 DamageText_Root 자식의 폰트를 덮어쓰지 않는다. `PrototypeRunHud`의
+  중복 중앙 크리티컬 표시와 고정 ×2 문구를 제거했다.
+- CombatSandbox 씬 파일은 없어서 새 씬을 만들지 않았다. Main의 기존 사용자 변경 위에
+  CombatManager 컴포넌트 한 개와 직렬화 설정만 추가했다. 공급사 프리팹의 기존 변경은 건드리지 않았다.
+- `DamageTextManagerEditor`에서 생성/활성/최고 활성/합산/조기 재사용/일반 생략 수를 읽기 전용으로
+  확인할 수 있다. `Combat/Tests/DamageTextTests.cs`에 10개 EditMode 검사를 추가했다.
+  1만 요청의 용량 상한, 합산 범위·수명, 치명타 우선, Int64, 일시정지, 런 전환, 치명타 스킬,
+  처치 위치, 폰트/재질·페이드 재사용을 다룬다.
+- 검증: `python3 tools/validate_collaboration.py` 통과. 설치된 Unity 참조 DLL을 사용한 외부 Roslyn
+  컴파일에서 Combat/App/Combat.Editor/Combat.Tests 오류 없음. 프리팹 내부 참조와 Main의 기존 변경
+  보존을 정적으로 확인했다. Unity 배치 EditMode 실행은 같은 프로젝트를 연 에디터가 있어 거절됐다.
+  10개 검사는 작성/컴파일만 완료했으며 실행 성공을 주장하지 않는다. Unity Import/에디터 컴파일,
+  실제 화면 크기·배치·프레임 성능·GC는 에디터에서 후속 확인이 필요하다.

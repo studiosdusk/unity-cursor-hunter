@@ -9928,6 +9928,105 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 1
+--- !u!114 &760100001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1090725704}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f2106d3cc7123d5ab9d330d7e1ac7767, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CursorHunter.Progression::CursorHunter.Progression.TraitScreenController
+  catalog: {fileID: 0}
+  startingGarnet: 125
+  startingGemstoneBalances: 7d0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+  unlockedBossTier: 0
+  loadSavedProgress: 1
+  testModeUnlockAll: 0
+  testModeFreeUpgrades: 0
+  backRequested:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 2188000111}
+        m_TargetAssemblyTypeName: CursorHunter.App.AppUiRootController, CursorHunter.App
+        m_MethodName: CloseTrait
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 1
+        m_CallState: 2
+  panelSprite: {fileID: 21300000, guid: ad88fadd7bc384969bd45f53f0448093, type: 3}
+  combatBackgroundSprite: {fileID: 21300000, guid: 50ecae6f83b58504da8df79af34915e1, type: 3}
+  tabSprite: {fileID: 21300000, guid: ecf3e525de7a347879c0787e5d7f091d, type: 3}
+  tabFocusSprite: {fileID: 21300000, guid: db9921feae62c49c397bde0fdd539174, type: 3}
+  categorySprite: {fileID: 21300000, guid: aae6551a421cb4bd5b9273d7dc157ce3, type: 3}
+  categoryFocusSprite: {fileID: 21300000, guid: 0d6bcce8a80284b63afb025a509a6d34, type: 3}
+  nodeSprite: {fileID: 21300000, guid: 6e89665deabf841238f44ebf2fd1665d, type: 3}
+  nodeAccentSprite: {fileID: 21300000, guid: 83463df8e9bac4db0b26718b7f40b3db, type: 3}
+  nodePurchasedSprite: {fileID: 21300000, guid: ad88fadd7bc384969bd45f53f0448093, type: 3}
+  nodeLockedSprite: {fileID: 21300000, guid: fdb8d6a0cb191473a90fa04c8407fcd7, type: 3}
+  gemIcon: {fileID: 21300000, guid: 6f40e5d50d0934e45aac02171a570c88, type: 3}
+  lockIcon: {fileID: 21300000, guid: 177c91d27d5534109a5f6b3bb3ccbb3b, type: 3}
+  checkIcon: {fileID: 21300000, guid: 67d74fe0bc2ff4f04bb9d4f9e1d63c02, type: 3}
+  backIcon: {fileID: 21300000, guid: fda9564e96d404ec384b9e32872d049a, type: 3}
+  attackIcon: {fileID: 21300000, guid: 12c58e25a645d4bf9808e3e5b47cd280, type: 3}
+  radiusIcon: {fileID: 21300000, guid: d57fcc99df0714fa8b5dc8e3e3132f14, type: 3}
+  clickIcon: {fileID: 21300000, guid: 41a812f0b7e094dde92f3f5fe64429e5, type: 3}
+  timerIcon: {fileID: 21300000, guid: cb04b83a8c3a045558cd1f05866cf45e, type: 3}
+  criticalIcon: {fileID: 21300000, guid: 2cc5e317ec48f435aac4bb12606baa4f, type: 3}
+  gemstoneIcon: {fileID: 21300000, guid: 58f1b94daaf3b4b06b098c42546e19d4, type: 3}
+  bossIcon: {fileID: 21300000, guid: 5a893ec9b0d664a2ca122e47efbf71f8, type: 3}
+  skillIcon: {fileID: 21300000, guid: 13756a141b0b84db08f0c80f06bb5d45, type: 3}
+  monsterIcon: {fileID: 21300000, guid: 6b3d80100f82a44bb8968db0ec8c98e3, type: 3}
+  petIcon: {fileID: 21300000, guid: 7668aef2c90f84f47b9b9c0650bce440, type: 3}
+  gemstoneIcons:
+  - {fileID: 21300000, guid: 6f40e5d50d0934e45aac02171a570c88, type: 3}
+  - {fileID: 21300000, guid: e7456ed055303479fa545fea773f4bf1, type: 3}
+  - {fileID: 21300000, guid: e74fb0eb39fbd4d94ab0f7601df612ca, type: 3}
+  - {fileID: 21300000, guid: db445bdb34cc34ec78fc713c3278d6db, type: 3}
+  - {fileID: 21300000, guid: f0ec595ceb4954cb58e8a1acec6720c5, type: 3}
+  - {fileID: 21300000, guid: 80437da613ef64ecab96530c087df0f0, type: 3}
+  skillIcons:
+  - {fileID: 21300000, guid: 393781675fedf45caa73b42273c43781, type: 3}
+  - {fileID: 21300000, guid: 38d138f4bd4964678b146f843d742bd8, type: 3}
+  - {fileID: 21300000, guid: 1e4f2d388537b4ac6a27a560d6dce4d0, type: 3}
+  - {fileID: 21300000, guid: c96f62a4ab65749128908e5360e39126, type: 3}
+  - {fileID: 21300000, guid: 671e13c2a7e8a4415adcc42790d2be55, type: 3}
+  - {fileID: 21300000, guid: 3c616b140805d4445b62ce619eb60e08, type: 3}
+  monsterIcons:
+  - {fileID: 21300000, guid: 81366e1f0ef95fb4ca021ff158c9bbd7, type: 3}
+  - {fileID: 21300000, guid: 46fa022d7d7f6e741ab54b2481f73084, type: 3}
+  - {fileID: 21300000, guid: 9731bdc77bdd099499cd873c1fb95277, type: 3}
+  - {fileID: 21300000, guid: 05f79d22c8aa05941922a68b388ed9cd, type: 3}
+  - {fileID: 21300000, guid: 7e2cacd5ae582be4b8a01ec0292d35b7, type: 3}
+  - {fileID: 21300000, guid: d8527bbb0c6fabd4fa5a81df3a311acc, type: 3}
+  - {fileID: 21300000, guid: 27c7f323c4c073a419bda2ab90cc40ea, type: 3}
+  - {fileID: 21300000, guid: 58ecdefa4b1d13344a5d2d437e661188, type: 3}
+  - {fileID: 21300000, guid: 170b99d1e420c684a975dab96970ac8c, type: 3}
+  - {fileID: 21300000, guid: e8a4f1b855cceee4cb4ec88d35ca7636, type: 3}
+  petIcons:
+  - {fileID: 21300000, guid: 7668aef2c90f84f47b9b9c0650bce440, type: 3}
+  uiFont: {fileID: 12800000, guid: 76d037539f56c45a1ba293f2dff49672, type: 3}
+  initialTab: 0
+  transitionSeconds: 0.22
+  nodeCellSize: {x: 106, y: 106}
+  nodeGridSpacing: {x: 8, y: 8}
+  connectorWidth: 22
+  connectorThickness: 3
+  categoryHeaderHeight: 28
+  maxNodesPerLine: 5
+  textScale: 1.18
+  backgroundColor: {r: 0.015, g: 0.045, b: 0.11, a: 0.98}
+  panelColor: {r: 0.02, g: 0.06, b: 0.14, a: 0.84}
+  inkColor: {r: 0.96, g: 0.98, b: 1, a: 1}
+  mutedInkColor: {r: 0.64, g: 0.75, b: 0.88, a: 1}
 --- !u!1 &767424381
 GameObject:
   m_ObjectHideFlags: 0
@@ -15381,111 +15480,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1090725704}
   m_CullTransparentMesh: 1
---- !u!114 &760100001
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1090725704}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f2106d3cc7123d5ab9d330d7e1ac7767, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: CursorHunter.Progression::CursorHunter.Progression.TraitScreenController
-  catalog: {fileID: 0}
-  startingGarnet: 125
-  startingGemstoneBalances:
-  - 125
-  - 0
-  - 0
-  - 0
-  - 0
-  - 0
-  unlockedBossTier: 0
-  loadSavedProgress: 1
-  testModeUnlockAll: 0
-  testModeFreeUpgrades: 0
-  backRequested:
-    m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 2188000111}
-        m_TargetAssemblyTypeName: CursorHunter.App.AppUiRootController, CursorHunter.App
-        m_MethodName: CloseTrait
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument:
-          m_BoolArgument: 1
-        m_CallState: 2
-  panelSprite: {fileID: 21300000, guid: ad88fadd7bc384969bd45f53f0448093, type: 3}
-  combatBackgroundSprite: {fileID: 21300000, guid: 50ecae6f83b58504da8df79af34915e1, type: 3}
-  tabSprite: {fileID: 21300000, guid: ecf3e525de7a347879c0787e5d7f091d, type: 3}
-  tabFocusSprite: {fileID: 21300000, guid: db9921feae62c49c397bde0fdd539174, type: 3}
-  categorySprite: {fileID: 21300000, guid: aae6551a421cb4bd5b9273d7dc157ce3, type: 3}
-  categoryFocusSprite: {fileID: 21300000, guid: 0d6bcce8a80284b63afb025a509a6d34, type: 3}
-  nodeSprite: {fileID: 21300000, guid: 6e89665deabf841238f44ebf2fd1665d, type: 3}
-  nodeAccentSprite: {fileID: 21300000, guid: 83463df8e9bac4db0b26718b7f40b3db, type: 3}
-  nodePurchasedSprite: {fileID: 21300000, guid: ad88fadd7bc384969bd45f53f0448093, type: 3}
-  nodeLockedSprite: {fileID: 21300000, guid: fdb8d6a0cb191473a90fa04c8407fcd7, type: 3}
-  gemIcon: {fileID: 21300000, guid: 6f40e5d50d0934e45aac02171a570c88, type: 3}
-  lockIcon: {fileID: 21300000, guid: 177c91d27d5534109a5f6b3bb3ccbb3b, type: 3}
-  checkIcon: {fileID: 21300000, guid: 67d74fe0bc2ff4f04bb9d4f9e1d63c02, type: 3}
-  backIcon: {fileID: 21300000, guid: fda9564e96d404ec384b9e32872d049a, type: 3}
-  attackIcon: {fileID: 21300000, guid: 12c58e25a645d4bf9808e3e5b47cd280, type: 3}
-  radiusIcon: {fileID: 21300000, guid: d57fcc99df0714fa8b5dc8e3e3132f14, type: 3}
-  clickIcon: {fileID: 21300000, guid: 41a812f0b7e094dde92f3f5fe64429e5, type: 3}
-  timerIcon: {fileID: 21300000, guid: cb04b83a8c3a045558cd1f05866cf45e, type: 3}
-  criticalIcon: {fileID: 21300000, guid: 2cc5e317ec48f435aac4bb12606baa4f, type: 3}
-  gemstoneIcon: {fileID: 21300000, guid: 58f1b94daaf3b4b06b098c42546e19d4, type: 3}
-  bossIcon: {fileID: 21300000, guid: 5a893ec9b0d664a2ca122e47efbf71f8, type: 3}
-  skillIcon: {fileID: 21300000, guid: 13756a141b0b84db08f0c80f06bb5d45, type: 3}
-  monsterIcon: {fileID: 21300000, guid: 6b3d80100f82a44bb8968db0ec8c98e3, type: 3}
-  petIcon: {fileID: 21300000, guid: 7668aef2c90f84f47b9b9c0650bce440, type: 3}
-  gemstoneIcons:
-  - {fileID: 21300000, guid: 6f40e5d50d0934e45aac02171a570c88, type: 3}
-  - {fileID: 21300000, guid: e7456ed055303479fa545fea773f4bf1, type: 3}
-  - {fileID: 21300000, guid: e74fb0eb39fbd4d94ab0f7601df612ca, type: 3}
-  - {fileID: 21300000, guid: db445bdb34cc34ec78fc713c3278d6db, type: 3}
-  - {fileID: 21300000, guid: f0ec595ceb4954cb58e8a1acec6720c5, type: 3}
-  - {fileID: 21300000, guid: 80437da613ef64ecab96530c087df0f0, type: 3}
-  skillIcons:
-  - {fileID: 21300000, guid: 393781675fedf45caa73b42273c43781, type: 3}
-  - {fileID: 21300000, guid: 38d138f4bd4964678b146f843d742bd8, type: 3}
-  - {fileID: 21300000, guid: 1e4f2d388537b4ac6a27a560d6dce4d0, type: 3}
-  - {fileID: 21300000, guid: c96f62a4ab65749128908e5360e39126, type: 3}
-  - {fileID: 21300000, guid: 671e13c2a7e8a4415adcc42790d2be55, type: 3}
-  - {fileID: 21300000, guid: 3c616b140805d4445b62ce619eb60e08, type: 3}
-  monsterIcons:
-  - {fileID: 21300000, guid: 81366e1f0ef95fb4ca021ff158c9bbd7, type: 3}
-  - {fileID: 21300000, guid: 46fa022d7d7f6e741ab54b2481f73084, type: 3}
-  - {fileID: 21300000, guid: 9731bdc77bdd099499cd873c1fb95277, type: 3}
-  - {fileID: 21300000, guid: 05f79d22c8aa05941922a68b388ed9cd, type: 3}
-  - {fileID: 21300000, guid: 7e2cacd5ae582be4b8a01ec0292d35b7, type: 3}
-  - {fileID: 21300000, guid: d8527bbb0c6fabd4fa5a81df3a311acc, type: 3}
-  - {fileID: 21300000, guid: 27c7f323c4c073a419bda2ab90cc40ea, type: 3}
-  - {fileID: 21300000, guid: 58ecdefa4b1d13344a5d2d437e661188, type: 3}
-  - {fileID: 21300000, guid: 170b99d1e420c684a975dab96970ac8c, type: 3}
-  - {fileID: 21300000, guid: e8a4f1b855cceee4cb4ec88d35ca7636, type: 3}
-  petIcons:
-  - {fileID: 21300000, guid: 7668aef2c90f84f47b9b9c0650bce440, type: 3}
-  uiFont: {fileID: 12800000, guid: 76d037539f56c45a1ba293f2dff49672, type: 3}
-  initialTab: 0
-  transitionSeconds: 0.22
-  nodeCellSize: {x: 106, y: 106}
-  nodeGridSpacing: {x: 8, y: 8}
-  connectorWidth: 22
-  connectorThickness: 3
-  categoryHeaderHeight: 28
-  maxNodesPerLine: 5
-  textScale: 1.18
-  backgroundColor: {r: 0.015, g: 0.045, b: 0.11, a: 0.98}
-  panelColor: {r: 0.02, g: 0.06, b: 0.14, a: 0.84}
-  inkColor: {r: 0.96, g: 0.98, b: 1, a: 1}
-  mutedInkColor: {r: 0.64, g: 0.75, b: 0.88, a: 1}
 --- !u!1 &1092935314
 GameObject:
   m_ObjectHideFlags: 0
@@ -26580,7 +26574,7 @@ RectTransform:
   m_GameObject: {fileID: 1836197412}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 0, y: 0, z: 0}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1006955488}
@@ -30776,6 +30770,7 @@ MonoBehaviour:
   horizontalPadding: 0.02
   bottomPadding: 0.09
   topPadding: 0.15
+  globalAliveLimit: 80
 --- !u!114 &2188000012
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -30896,6 +30891,7 @@ GameObject:
   - component: {fileID: 2188000105}
   - component: {fileID: 2188000010}
   - component: {fileID: 2188000011}
+  - component: {fileID: 2188000200}
   m_Layer: 0
   m_Name: CombatManager
   m_TagString: Untagged
@@ -31025,6 +31021,114 @@ MonoBehaviour:
   - screenId: 5
     root: {fileID: 2059559603}
   initialScreen: 0
+--- !u!1 &2188000120
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2188000121}
+  - component: {fileID: 2188000122}
+  - component: {fileID: 2188000123}
+  m_Layer: 0
+  m_Name: PlayerCombatStatsRuntime
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2188000121
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2188000120}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2188000105}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2188000122
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2188000120}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bdc9b75b48a041c09914e5ee9296f9fe, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CursorHunter.Combat::CursorHunter.Combat.PlayerCombatStatsRuntime
+  hasRunSnapshot: 0
+  runActive: 0
+  attackPower: 1
+  attackRadiusWorldUnits: 1.7253809
+  attackCooldownSeconds: 0.8
+  autoAttackEnabled: 1
+  criticalChancePercent: 0
+  criticalDamageMultiplier: 2
+  bossDamageMultiplier: 1
+--- !u!114 &2188000123
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2188000120}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6c191fa2c7204c3383641e0dca737b3a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CursorHunter.Combat::CursorHunter.Combat.PlayerCombatStatsDefaults
+  attackPower: 1
+  attackRadiusWorldUnits: 1.7253809
+  attackCooldownSeconds: 0.8
+  autoAttackEnabled: 1
+  criticalChancePercent: 0
+  criticalDamageMultiplier: 2
+  bossDamageMultiplier: 1
+--- !u!114 &2188000200
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2188000104}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 427d061d1dfe4515a7928ff959358931, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CursorHunter.Combat::CursorHunter.Combat.DamageTextManager
+  combatRunController: {fileID: 2188000010}
+  damageTextPrefab: {fileID: 3890622913035671333, guid: 8b27b34dbbbbb4375baf523ec317f4b9, type: 3}
+  initialPoolSize: 128
+  maximumPoolSize: 256
+  mergeWindowSeconds: 0.1
+  lifetimeSeconds: 0.8
+  spawnOffset: {x: 0, y: 0.22, z: -0.05}
+  normalScale: 1
+  criticalScale: 1.2
+  fadeStart: 0.65
+  motionVariants:
+  - horizontalDrift: -0.18
+    rise: 0.62
+    scaleOvershoot: 0.15
+  - horizontalDrift: 0.22
+    rise: 0.54
+    scaleOvershoot: 0.12
+  - horizontalDrift: -0.08
+    rise: 0.74
+    scaleOvershoot: 0.18
+  - horizontalDrift: 0.12
+    rise: 0.66
+    scaleOvershoot: 0.14
 --- !u!1 &13811761052743795
 GameObject:
   m_ObjectHideFlags: 0
@@ -37872,79 +37976,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 603742185294599784}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &2188000120
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 2188000121}
-  - component: {fileID: 2188000122}
-  - component: {fileID: 2188000123}
-  m_Layer: 0
-  m_Name: PlayerCombatStatsRuntime
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &2188000121
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2188000120}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 2188000105}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &2188000122
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2188000120}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bdc9b75b48a041c09914e5ee9296f9fe, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: CursorHunter.Combat::CursorHunter.Combat.PlayerCombatStatsRuntime
-  hasRunSnapshot: 0
-  runActive: 0
-  attackPower: 1
-  attackRadiusWorldUnits: 1.7253809
-  attackCooldownSeconds: 0.8
-  autoAttackEnabled: 1
-  criticalChancePercent: 0
-  criticalDamageMultiplier: 2
-  bossDamageMultiplier: 1
---- !u!114 &2188000123
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2188000120}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6c191fa2c7204c3383641e0dca737b3a, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: CursorHunter.Combat::CursorHunter.Combat.PlayerCombatStatsDefaults
-  attackPower: 1
-  attackRadiusWorldUnits: 1.7253809
-  attackCooldownSeconds: 0.8
-  autoAttackEnabled: 1
-  criticalChancePercent: 0
-  criticalDamageMultiplier: 2
-  bossDamageMultiplier: 1
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
