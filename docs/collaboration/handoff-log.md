@@ -546,3 +546,136 @@
 - `field_a.png`의 둘레 1픽셀이 투명해 타일 반복 시 필드 전체에 격자 경계가 드러나는 것을 확인했다. 공급사 원본은 수정하지 않았다.
 - Main 씬의 `field_a` SpriteRenderer를 단일 표시로 바꾸고 카메라 바깥까지 넓혀, 반복 경계와 외곽의 투명 테두리가 화면에 보이지 않게 했다. 원본의 실제 색상 영역은 단색이어서 확대해도 바닥 무늬가 흐려지는 문제는 없다.
 - `python3 tools/validate_collaboration.py`와 `git diff --check`로 정적 검증했다. 접근 가능한 Unity 창은 다른 프로젝트여서 Cursor Hunter의 Game View 시각 검증은 수행하지 않았다.
+
+
+### 2026-10-10 · Combat — 풀링 월드 데미지 텍스트
+
+- `CombatRunController.ApplyBundle`의 정상 피해에서 `CombatDamageApplied` 이벤트를
+  발행한다. RunId·대상·실제 HP 감소량·치명타 여부·피해 전 위치를 담는다.
+  위치는 Combat 내부 `IDamageTextAnchor`로 받으므로 처치 즉시 제거되는 대상도 표시할 수 있다.
+  시작/종료/중단은 `PresentationReset`으로 표시를 정리한다. 기존 `CriticalHit` 이벤트는 유지한다.
+- `Combat/Runtime/DamageTextManager`가 하나의 업데이트 루프로 연출을 진행한다.
+  128개 사전 준비, 최대 256개, 0.8초 수명, 네 가지 상승/드리프트/크기 변형이 기본값이다.
+  용량은 초기화 때 고정된다. 풀은 몬스터와 별개인 `CombatManager/DamageTextPool` 아래에 둔다.
+- 같은 대상·같은 히트 종류의 생성 후 0.1초 이내 피해는 합산한다. 합산 시 수명/궤적은
+  다시 시작하지 않으며 Int64 합산 overflow는 새 표시로 분리한다. 포화 시 가장 오래된 일반
+  표시를 재사용한다. 모두 크리티컬이면 일반 표시를 생략하고 새 크리티컬은 가장 오래된
+  크리티컬을 재사용한다. 전투 피해/보상 수치는 변경하지 않는다.
+- `DamageText_Root`의 `Normal Hit Text` / `Critical Hit Text`에 두 TMP 자식을 연결했다.
+  기존 `damageText` 참조는 `FormerlySerializedAs`로 이전하고 기존 script/prefab GUID를 유지한다.
+  두 자식의 Font Asset/Material Preset을 인스펙터에서 각각 지정한다. 현재 폰트 참조는 유지했고,
+  새 크리티컬 자식에는 기존 자식을 복제한 참조가 들어 있다. 코드가 폰트나 재질을 바꾸지 않는다.
+- 사용자 추가 요청으로 피해 숫자는 폰트와 무관하게 항상 구분자 없이 표시한다(예: `12312591245`).
+  최대 19자리 Int64를 반올림 없이 문자 버퍼에 직접 기록한다.
+  슬롯별 문자 버퍼와 양쪽 스타일의 최대 길이 메시를 사전 준비하고 페이드는 정점 알파만 갱신한다.
+- 프리팹 자식 원점/크기/줄바꿈과 sorting order 300을 정리했다. TMP의 월드 단위 스케일 설정은
+  유지한다. `UI/Scripts/DamageText/CursorHunter.Combat.asmref`로 기존 위치의 view를 Combat에 편입하고
+  이전 Assembly-CSharp 이름은 `MovedFrom`으로 명시했다. Combat에 TMP/UI 패키지 참조만 추가했다.
+- `AppTextBootstrap`은 DamageText_Root 자식의 폰트를 덮어쓰지 않는다. `PrototypeRunHud`의
+  중복 중앙 크리티컬 표시와 고정 ×2 문구를 제거했다.
+- CombatSandbox 씬 파일은 없어서 새 씬을 만들지 않았다. Main의 기존 사용자 변경 위에
+  CombatManager 컴포넌트 한 개와 직렬화 설정만 추가했다. 공급사 프리팹의 기존 변경은 건드리지 않았다.
+- `DamageTextManagerEditor`에서 생성/활성/최고 활성/합산/조기 재사용/일반 생략 수를 읽기 전용으로
+  확인할 수 있다. `Combat/Tests/DamageTextTests.cs`에 10개 EditMode 검사를 추가했다.
+  1만 요청의 용량 상한, 합산 범위·수명, 치명타 우선, Int64, 일시정지, 런 전환, 치명타 스킬,
+  처치 위치, 폰트/재질·페이드 재사용을 다룬다.
+- 검증: `python3 tools/validate_collaboration.py` 통과. 설치된 Unity 참조 DLL을 사용한 외부 Roslyn
+  컴파일에서 Combat/App/Combat.Editor/Combat.Tests 오류 없음. 프리팹 내부 참조와 Main의 기존 변경
+  보존을 정적으로 확인했다. Unity 배치 EditMode 실행은 같은 프로젝트를 연 에디터가 있어 거절됐다.
+  10개 검사는 작성/컴파일만 완료했으며 실행 성공을 주장하지 않는다. Unity Import/에디터 컴파일,
+  실제 화면 크기·배치·프레임 성능·GC는 에디터에서 후속 확인이 필요하다.
+
+### 2026-10-10 · Combat — 커서 랜덤 히트 이펙트
+
+- 사용자 지정 `Combat/Art/MouseAttack_Prefab/MouseAttack_0~3` 중 성공한 기본 타격마다
+  25% 확률로 하나를 재생한다. 연속 중복은 허용한다. 사용자가 이번에 지정한 에셋이
+  이전 문서의 히트 에셋 후보와 검기 제외 지침보다 우선한다. 원본 프리팹·공급사 재질은 보존했다.
+- `CombatDamageApplied`에 명시적인 `CombatDamageSource`, 몸체 좌표·크기를 추가했다.
+  기본 공격과 스킬 생산자를 함께 수정했고, 기존 6인자 생성자와 데미지 숫자의 좌표는 유지한다.
+  `IHitEffectAnchor`/MonsterRoot의 캐시된 HitArea로 피해 전 bounds를 복사하므로 처치 후에도
+  좌표가 유효하다. 이벤트 소비자는 이미 죽은 대상의 활성 상태를 다시 확인하지 않는다.
+- `CursorHitEffectManager`는 네 원본을 시작 때 한 번씩 복제한다. 자동 방출을 끄고
+  월드 공간에서 파티클 하나씩 방출하며, 수명은 기본 0.5초다. 타격 중 GameObject 생성/파괴,
+  코루틴, 재질 복제, 컴포넌트 검색을 하지 않는다. 별도 SeededRandom 인스턴스로 전투·Unity 난수와 분리한다.
+- 전체 표시 상한은 256개이며, 4종 각각은 전체 상한을 수용할 수 있게 초기화한다.
+  무작위 선택 편중으로 다른 이펙트로 대체하지 않는다. 포화 시 추가 표시만 생략한다.
+  기본 크기는 HitArea 최대 변 ×1.2, 0.5~2.5 월드 단위로 제한한다. sorting order는 200이다.
+- `Prefabs/Vfx/CursorHitEffects.prefab`이 원본 4종과 Combat 소유 URP Particles/Unlit
+  투명 재질을 참조한다. Main의 CombatManager 자식 프리팹으로 연결했다.
+  전투 pause와 별도로 파티클을 Pause/Play하고, PresentationReset·비활성화·런 변경 때
+  정리한다. Inspector에는 활성·최고 활성·방출·생략 수를 표시한다.
+- `CombatSandbox.unity`를 추가했다. 자체 카메라, 고정 스냅샷 8개/80개 몸체, 자동 타격,
+  0.05초 부하 모드, 정지·재개·재시작 패널이 있다. Main 빌드 목록에는 추가하지 않았다.
+- 검증: Unity 6000.3.13f1의 별도 임시 프로젝트에 관련 코드·에셋을 복사하여 EditMode
+  19개(기존 데미지 숫자 10개 + 히트 이펙트 9개)와 PlayMode 1개 모두 통과했다.
+  1만 건 요청의 총량 상한, 네 시스템 재사용, 이동 경로·중복 콜라이더·쿨타임·시간 만료,
+  치명타·스킬 구분, 처치 전 좌표, 난수 분리, 준비 후 128건 표시 요청의 관리 힙 할당 0B를 확인했다.
+  Metal/URP Sandbox 카메라 렌더링을 PNG로 확인했다. 실제 비활성화 콜백은 PlayMode에서 검증한다.
+- Combat/App/Combat.Editor/Combat.Tests 외부 Roslyn 컴파일, 협업 구조 검사와 diff 검사를 통과했다.
+  Main 전체 플레이와 대상 기기의 프레임 시간/오버드로 프로파일링은 아직 수행하지 않았다.
+  Sandbox IMGUI 패널은 개발용으로 문자열을 할당하므로 타격 경로의 GC와 구분한다.
+
+### 2026-10-10 · Combat — 히트 이펙트 종류 제거 후 전체 표시 중단 수정
+
+- 사용자가 Main에서 MouseAttack_0 프리팹·재질을 함께 제거했지만, 매니저의 4종 필수
+  검증 때문에 초기화가 중단됐다. 유효한 프리팹·재질 쌍만 초기화하고 해당 개수에서
+  랜덤 선택하도록 수정했다. 정지·재개·정리 루프도 실제 생성 개수를 사용한다.
+- 같은 인덱스의 프리팹 또는 재질이 없으면 해당 항목만 제외한다. 유효한 쌍이 없으면
+  표시를 생성하지 않으며, Inspector에 경고와 Configured Variants 수를 표시한다.
+  목록 변경은 Play 재시작 때 반영된다. 사용자 Main의 1·2·3번 구성과 크기 설정은 보존했다.
+- 3종·단일 종류·빈 항목·짧은 재질 목록·전체 빈 목록 회귀 검사를 추가했다.
+  격리한 Unity 프로젝트의 EditMode 25개를 통과했으며, 남은 종류의 재생·재질 대응,
+  정지·재개·종료, 준비 후 타격 경로의 관리 힙 할당 0B를 확인했다.
+- 기존 Sandbox PlayMode 1개도 통과했다. 협업 경계 검사와 변경 범위의 공백 검사,
+  Main 씬 파일의 수정 전후 SHA-256 일치를 확인했다.
+
+### 2026-10-10 · Combat — 히트 이펙트 배열 편집 유연화
+
+- `CursorHitEffectManager`의 별도 프리팹·재질 배열을 `Effect Variants` 하나로 통합했다.
+  각 항목에 Prefab과 Material Override가 함께 있으므로 추가·삭제·재정렬할 때 쌍이 유지된다.
+  Override가 없으면 프리팹 재질을 사용하고, 비어 있거나 지원하지 않는 항목은 제외한다.
+  기존과 같이 자식 없는 단일 ParticleSystem을 지원하며 재질은 URP 호환이어야 한다.
+- Play 중 Inspector 변경은 다음 Update에서 반영한다. 기존 파티클과 공유 시스템을
+  정리한 후 다시 준비하고, 전체 삭제 시 표시를 끄며 다시 추가하면 구독·재생을 복구한다.
+  정지 상태를 유지하고 이전 시스템·중복 구독이 남지 않도록 했다. 재구성은 타격 경로에서 실행하지 않는다.
+- 래퍼 프리팹과 Main의 직렬화 경로를 새 배열로 이전했다. 사용자 Main의 1·2·3번 연결,
+  크기 배율 1.5/최소 2/최대 3 및 관련 없는 씬 내용은 보존했다. 이미 열려 있는 이전 씬은
+  숨긴 이전 필드를 역직렬화 시 한 번 이전하고 비워, 전체 삭제 후 옛 목록이 복원되지 않는다.
+- Unity 6000.3.13f1 격리 프로젝트에서 EditMode 27개와 PlayMode 2개를 통과했다.
+  6개·3개·1개·빈 목록, 순서 변경, 빈 항목, 재질 기본값, 이전 설정 변환, 실행 중
+  정지/비활성 상태에서 변경과 빈 목록 복구, 시스템 정리와 구독 1회를 검증했다.
+  타격 경로의 관리 힙 할당 0B, 협업 경계 검사, 코드·문서 공백 검사도 통과했다.
+
+### 2026-10-10 · App — 커서 스킨 선택과 범위 이미지 분리
+
+- Main의 `Managers > CursorManager`에 `CursorSkinController`를 추가했다.
+  `Selected Skin` 드롭다운에서 `cursor_image`와 `Joystick_Skill01_Fill_White`를
+  선택하며, 기본값은 새 Joystick 이미지다. 편집/Play 모드에서 선택을 반영한다.
+- `App/Art/CursorSkins`에 두 `CursorSkinDefinition` 에셋을 만들었다. 스킨마다
+  고유 ID, Sprite, 범위 원 지름 비율을 저장하고 Available Skins 목록으로 확장한다.
+  인게임 UI는 `TrySelectSkin(string)` 또는 UnityEvent용 `SelectSkin(string)`을
+  호출한다. 목록 순서와 무관하게 ID로 선택하며 중복/없는 ID·누락 Sprite는 거부한다.
+  실제 스킨 선택 화면과 영구 저장은 이번 범위에 포함하지 않았다.
+- `cursor_image`의 기존 CircleCollider2D를 유지하고 SpriteRenderer를 자식
+  `SkinVisual`로 옮겼다. 자식의 크기와 중심만 보정하므로 이미지 해상도/PPU/pivot과
+  무관하게 범위 원이 판정에 맞고 기존 범위 강화 배율을 함께 따른다.
+  이동·표시·공격 로직과 공급사 이미지·재질은 유지했다. 기존 사용자 씬 수정도 보존했다.
+- Unity 6000.3.13f1 격리 프로젝트에서 두 실제 이미지 에셋과 커서 스킨 Runtime/Editor를
+  임포트/컴파일하고 EditMode 7개를 모두 통과했다. 실제 이미지 교체·콜라이더 보존,
+  크기/피벗 보정·확대, 추가/재정렬, 무효 ID, 숨김 상태, 잘못된 렌더러 연결을 확인했다.
+  전체 App 외부 Roslyn 컴파일 및 협업 구조 검사도 통과했다.
+  Main 씬의 변경 전후 YAML 블록 비교로 콜라이더와 관련 없는 모든 블록의 일치를 확인했다.
+  실제 Main 전체 플레이와 화면 렌더링은 이번 검증에 포함하지 않았다.
+
+### 2026-10-10 · App — 커서 이미지 호흡 연출
+
+- `CursorSkinController`가 Play 중 스킨의 기본 표시 크기에 0.95~1.05배 사인파를
+  적용한다. 한 왕복은 기본 2초이며 축소·확대의 양 끝에서 부드럽게 방향을 바꾼다.
+  Inspector의 Breathing Enabled/Min Scale/Max Scale/Period Seconds로 조절한다.
+- 스킨 전환·범위 강화 때도 보정된 기본 크기에 배율을 적용하므로 누적 확대가 없다.
+  피벗 보정에도 같은 배율을 사용해 이미지 중심을 유지하며 콜라이더는 수정하지 않는다.
+  시간 배율과 무관하게 재생하고 편집 모드·컴포넌트 비활성화 때는 기본 크기로 돌아온다.
+- Main에 기본 연출 값을 명시했다. 이번 씬 변경은 스킨 컨트롤러 설정 네 필드뿐이며,
+  변경 전후 YAML 비교로 나머지 사용자 씬 데이터가 동일함을 확인했다.
+- Unity 6000.3.13f1 격리 프로젝트의 컴파일 및 기존 EditMode 회귀 테스트 7개,
+  협업 구조 검사와 코드·문서 공백 검사를 통과했다. 실제 Main의 Play/시각 검증은 미실행이다.

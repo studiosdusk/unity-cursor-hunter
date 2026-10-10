@@ -1,0 +1,8 @@
+{
+  "name": "CursorHunter.App.Editor",
+  "rootNamespace": "CursorHunter.App.Editor",
+  "references": ["CursorHunter.App"],
+  "includePlatforms": ["Editor"],
+  "autoReferenced": false,
+  "noEngineReferences": false
+}
