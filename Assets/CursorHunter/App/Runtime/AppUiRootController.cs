@@ -118,6 +118,15 @@ namespace CursorHunter.App
             if (!_bindings.TryGetValue(screenId, out UiScreenBinding binding) ||
                 !binding.IsValid)
             {
+                // A binding can be incomplete during a scene or domain reload
+                // while serialized references are being restored. Rebuild once
+                // from the authored array before reporting a navigation error.
+                InitializeBindings(true);
+            }
+
+            if (!_bindings.TryGetValue(screenId, out UiScreenBinding refreshedBinding) ||
+                !refreshedBinding.IsValid)
+            {
                 Debug.LogError(
                     $"AppUiRootController has no valid binding for screen " +
                     $"'{screenId}'.",
@@ -125,6 +134,7 @@ namespace CursorHunter.App
                 return false;
             }
 
+            binding = refreshedBinding;
             UiScreenId previousScreen = CurrentScreen;
             foreach (UiScreenBinding screenBinding in _bindings.Values)
             {
@@ -153,9 +163,9 @@ namespace CursorHunter.App
                    binding.Root.activeSelf;
         }
 
-        private void InitializeBindings()
+        private void InitializeBindings(bool forceRefresh = false)
         {
-            if (_bindingsInitialized)
+            if (_bindingsInitialized && !forceRefresh)
             {
                 return;
             }

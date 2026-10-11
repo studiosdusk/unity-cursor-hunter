@@ -369,7 +369,15 @@ namespace CursorHunter.Progression
                 switch (source.tab)
                 {
                     case "stats": catalog.statCategories.Add(category); break;
-                    case "skills": catalog.skillCategories.Add(category); break;
+                    case "skills":
+                        // Cursor Aura is the existing pet companion system. Keep
+                        // its stable skill.* IDs and GameInformation ownership,
+                        // while presenting its upgrades as a branch in Stats.
+                        if (string.Equals(source.id, "skill.cursorAura", StringComparison.Ordinal))
+                            catalog.statCategories.Add(category);
+                        else
+                            catalog.skillCategories.Add(category);
+                        break;
                     case "monsters": catalog.monsterCategories.Add(category); break;
                 }
             }

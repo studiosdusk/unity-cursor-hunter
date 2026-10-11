@@ -13,14 +13,14 @@
         "nodes": [
           {
             "id": "stat.attack.01",
-            "displayName": "Attack Power 1",
-            "description": "Baseline is read from the PlayerCombatStatsDefaults component.",
-            "valueLabel": "Component baseline",
+            "displayName": "Research Core",
+            "description": "Central start point. Activate it to reveal the first cardinal research options.",
+            "valueLabel": "Start research",
             "cost": 0,
             "currencyId": "gem.garnet",
             "requiredBossTier": 0,
             "prerequisiteNodeId": "",
-            "startsUnlocked": true,
+            "startsUnlocked": false,
             "operation": "baseline",
             "value": 0
           },
@@ -155,8 +155,8 @@
             "cost": 0,
             "currencyId": "gem.garnet",
             "requiredBossTier": 0,
-            "prerequisiteNodeId": "",
-            "startsUnlocked": true,
+            "prerequisiteNodeId": "stat.attack.01",
+            "startsUnlocked": false,
             "operation": "baseline",
             "value": 0
           },
@@ -304,8 +304,8 @@
             "cost": 0,
             "currencyId": "gem.garnet",
             "requiredBossTier": 0,
-            "prerequisiteNodeId": "",
-            "startsUnlocked": true,
+            "prerequisiteNodeId": "stat.attack.01",
+            "startsUnlocked": false,
             "operation": "baseline",
             "value": 0
           },
@@ -375,8 +375,8 @@
             "cost": 0,
             "currencyId": "gem.garnet",
             "requiredBossTier": 0,
-            "prerequisiteNodeId": "",
-            "startsUnlocked": true,
+            "prerequisiteNodeId": "stat.attack.01",
+            "startsUnlocked": false,
             "operation": "baseline",
             "value": 0
           },
@@ -485,8 +485,8 @@
             "cost": 0,
             "currencyId": "gem.garnet",
             "requiredBossTier": 0,
-            "prerequisiteNodeId": "",
-            "startsUnlocked": true,
+            "prerequisiteNodeId": "stat.attack.01",
+            "startsUnlocked": false,
             "operation": "baseline",
             "value": 0
           },
@@ -543,7 +543,7 @@
             "cost": 25,
             "currencyId": "gem.topaz",
             "requiredBossTier": 0,
-            "prerequisiteNodeId": "",
+            "prerequisiteNodeId": "stat.attack.01",
             "startsUnlocked": false,
             "operation": "add",
             "value": 0.25
@@ -609,12 +609,12 @@
           {
             "id": "skill.fireball",
             "displayName": "Fireball",
-            "description": "Enable the skill. Initial availability is read from information.skills.",
+            "description": "Unlock Fireball from the central research start point.",
             "valueLabel": "Unlock skill",
             "cost": 0,
             "currencyId": "gem.garnet",
             "requiredBossTier": 0,
-            "prerequisiteNodeId": "",
+            "prerequisiteNodeId": "stat.attack.01",
             "startsUnlocked": false,
             "operation": "enable",
             "value": 1
@@ -667,12 +667,12 @@
           {
             "id": "skill.lightning",
             "displayName": "Lightning Bolt",
-            "description": "Enable the skill. Initial availability is read from information.skills.",
+            "description": "Enable the skill from the central research start point.",
             "valueLabel": "Unlock skill",
             "cost": 60,
             "currencyId": "gem.topaz",
             "requiredBossTier": 0,
-            "prerequisiteNodeId": "",
+            "prerequisiteNodeId": "stat.attack.01",
             "startsUnlocked": false,
             "operation": "enable",
             "value": 1
@@ -725,12 +725,12 @@
           {
             "id": "skill.freeze",
             "displayName": "Freezing",
-            "description": "Enable the skill. Initial availability is read from information.skills.",
+            "description": "Enable the skill from the central research start point.",
             "valueLabel": "Unlock skill",
             "cost": 90,
             "currencyId": "gem.amethyst",
             "requiredBossTier": 0,
-            "prerequisiteNodeId": "",
+            "prerequisiteNodeId": "stat.attack.01",
             "startsUnlocked": false,
             "operation": "enable",
             "value": 1
@@ -783,12 +783,12 @@
           {
             "id": "skill.hurricane",
             "displayName": "Hurricane",
-            "description": "Enable the skill. Initial availability is read from information.skills.",
+            "description": "Enable the skill from the central research start point.",
             "valueLabel": "Unlock skill",
             "cost": 120,
             "currencyId": "gem.sapphire",
             "requiredBossTier": 0,
-            "prerequisiteNodeId": "",
+            "prerequisiteNodeId": "stat.attack.01",
             "startsUnlocked": false,
             "operation": "enable",
             "value": 1
@@ -841,12 +841,12 @@
           {
             "id": "skill.meteor",
             "displayName": "Meteor",
-            "description": "Enable the skill. Initial availability is read from information.skills.",
+            "description": "Enable the skill from the central research start point.",
             "valueLabel": "Unlock skill",
             "cost": 150,
             "currencyId": "gem.diamond",
             "requiredBossTier": 0,
-            "prerequisiteNodeId": "",
+            "prerequisiteNodeId": "stat.attack.01",
             "startsUnlocked": false,
             "operation": "enable",
             "value": 1
@@ -899,12 +899,12 @@
           {
             "id": "skill.dragonBreath",
             "displayName": "Dragon Breath",
-            "description": "Enable the skill. Initial availability is read from information.skills.",
+            "description": "Enable the skill from the central research start point.",
             "valueLabel": "Unlock skill",
             "cost": 180,
             "currencyId": "gem.dragon",
             "requiredBossTier": 0,
-            "prerequisiteNodeId": "",
+            "prerequisiteNodeId": "stat.attack.01",
             "startsUnlocked": false,
             "operation": "enable",
             "value": 1
@@ -957,12 +957,12 @@
           {
             "id": "skill.cursorAura",
             "displayName": "Cursor Aura",
-            "description": "Enable the skill. Initial availability is read from information.skills.",
+            "description": "Enable the skill from the central research start point.",
             "valueLabel": "Unlock skill",
             "cost": 210,
             "currencyId": "gem.garnet",
             "requiredBossTier": 0,
-            "prerequisiteNodeId": "",
+            "prerequisiteNodeId": "stat.attack.01",
             "startsUnlocked": false,
             "operation": "enable",
             "value": 1
@@ -1020,7 +1020,7 @@
             "cost": 0,
             "currencyId": "gem.garnet",
             "requiredBossTier": 0,
-            "prerequisiteNodeId": "",
+            "prerequisiteNodeId": "stat.attack.01",
             "startsUnlocked": false,
             "operation": "enable",
             "value": 1

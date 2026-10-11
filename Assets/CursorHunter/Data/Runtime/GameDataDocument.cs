@@ -140,7 +140,10 @@ namespace CursorHunter.Data
             switch (category.tab)
             {
                 case "stats":
-                    if (node.operation == "baseline") return node.startsUnlocked;
+                    // Baseline nodes can be gated research choices. The flag
+                    // controls whether a node begins purchased; it does not
+                    // determine whether its authored baseline effect is valid.
+                    if (node.operation == "baseline") return node.cost == 0;
                     switch (category.id)
                     {
                         case "stat.attack":
