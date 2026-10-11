@@ -2,7 +2,9 @@
   "name": "CursorHunter.Combat",
   "rootNamespace": "CursorHunter.Combat",
   "references": [
-    "CursorHunter.Contracts"
+    "CursorHunter.Contracts",
+    "Unity.TextMeshPro",
+    "UnityEngine.UI"
   ],
   "autoReferenced": false,
   "noEngineReferences": false

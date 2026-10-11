@@ -52,11 +52,13 @@ namespace CursorHunter.Combat
         public event Action<RunEndReason> CompletionRequested;
         public event Action<RunEndReason> AbortRequested;
         /// <summary>
-        /// Raised once for each logical critical hit. The HUD uses this event
-        /// for an explicit visual callout; it carries no Unity object reference
-        /// so listeners cannot mutate combat state or retain target objects.
+        /// Retained for non-text critical feedback consumers.
         /// </summary>
         public event Action<long> CriticalHit;
+        public event Action<CombatDamageApplied> DamageApplied;
+        public event Action PresentationReset;
+
+        public RunId CurrentRunId => _isRunning ? _runRequest.RunId : default;
 
         public bool IsRunning =>
             _isRunning && !_isPaused && !_completionRequested && !_abortRequested;
@@ -221,6 +223,7 @@ namespace CursorHunter.Combat
             _isPrepared = false;
             _isRunning = true;
             playerCombatStatsRuntime.SetRunActive(true);
+            PresentationReset?.Invoke();
             return true;
         }
 
@@ -241,6 +244,7 @@ namespace CursorHunter.Combat
             _lastBasicHitAt.Clear();
             ResetAttackPath();
             playerCombatStatsRuntime.SetRunActive(false);
+            PresentationReset?.Invoke();
             return true;
         }
 
@@ -442,7 +446,7 @@ namespace CursorHunter.Combat
                 foreach (var target in _uniqueTargets)
                 {
                     if (!IsRunning) break;
-                    ApplyBundle(target, skill.Damage);
+                    ApplyBundle(target, skill.Damage, CombatDamageSource.Skill);
                 }
             }
         }
@@ -466,6 +470,7 @@ namespace CursorHunter.Combat
             ResetAttackPath();
             playerCombatStatsRuntime.SetRunActive(false);
 
+            PresentationReset?.Invoke();
             result = CreateResult(
                 endReason,
                 settlementPolicy);
@@ -491,6 +496,7 @@ namespace CursorHunter.Combat
             ResetAttackPath();
             playerCombatStatsRuntime.SetRunActive(false);
 
+            PresentationReset?.Invoke();
             result = CreateResult(
                 endReason,
                 settlementPolicy);
@@ -512,7 +518,8 @@ namespace CursorHunter.Combat
                 CreateResourceRewards());
         }
 
-        private bool ApplyBundle(ICombatTarget target, long skillDamage = 0L)
+        private bool ApplyBundle(ICombatTarget target, long skillDamage = 0L,
+            CombatDamageSource source = CombatDamageSource.CursorAttack)
         {
             bool wasCritical = RollCriticalHit();
             if (!TryGetHitDamage(wasCritical, out long hitDamage, skillDamage))
@@ -521,6 +528,14 @@ namespace CursorHunter.Combat
                 return false;
             }
 
+            IDamageTextAnchor anchor = target as IDamageTextAnchor;
+            Vector3 hitPosition = DamageApplied != null && anchor != null
+                ? anchor.DamageTextPosition : default;
+            Bounds hitBounds = default;
+            bool hasHitBounds = DamageApplied != null &&
+                source == CombatDamageSource.CursorAttack &&
+                target is IHitEffectAnchor hitAnchor &&
+                hitAnchor.TryGetHitEffectBounds(out hitBounds);
             bool applied = target.ApplyDamage(
                 _runRequest.RunId,
                 hitDamage,
@@ -547,6 +562,14 @@ namespace CursorHunter.Combat
             }
 
             _effectiveDamage = nextEffectiveDamage;
+
+            if (effectiveDamage > 0L)
+            {
+                DamageApplied?.Invoke(new CombatDamageApplied(
+                    _runRequest.RunId, target, effectiveDamage, wasCritical,
+                    hitPosition, anchor != null, source, hitBounds.center, hasHitBounds,
+                    Mathf.Max(hitBounds.size.x, hitBounds.size.y)));
+            }
 
             if (wasCritical && effectiveDamage > 0L)
             {

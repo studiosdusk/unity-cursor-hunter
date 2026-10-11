@@ -6,9 +6,9 @@ namespace CursorHunter.App
     /// <summary>
     /// Controls the world-space cursor used by Main.unity's test panel.
     ///
-    /// The cursor follows the mouse on the gameplay XY plane. Its visual
-    /// SpriteRenderer and attack Collider2D therefore share the same world
-    /// position and scale.
+    /// The cursor follows the mouse on the gameplay XY plane. The skin visual
+    /// is a child of the attack Collider2D transform and inherits its range
+    /// scale; CursorSkinController fits each sprite without changing the hit area.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class MainCursorController : MonoBehaviour
