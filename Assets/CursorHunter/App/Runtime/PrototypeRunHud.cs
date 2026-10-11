@@ -1,5 +1,4 @@
 using CursorHunter.Contracts;
-using CursorHunter.Combat;
 using CursorHunter.Progression;
 using System.Text;
 using UnityEngine;
@@ -20,15 +19,11 @@ namespace CursorHunter.App
         [SerializeField] private TraitScreenController progressionController;
         [SerializeField] private Font uiFont;
 
-        private CombatRunController _combatController;
         private TextMeshProUGUI _timerText;
-        private TextMeshProUGUI _criticalNotice;
         private Button _progressionInfoButton;
         private GameObject _resultPanel;
         private TextMeshProUGUI _resultText;
         private TMP_FontAsset _runtimeFont;
-        private float _criticalNoticeUntil;
-        private bool _criticalSubscribed;
 
         public void Initialize()
         {
@@ -58,14 +53,6 @@ namespace CursorHunter.App
                     FindObjectsInactive.Include);
             }
 
-            if (_combatController == null)
-            {
-                _combatController = FindFirstObjectByType<CombatRunController>(
-                    FindObjectsInactive.Include);
-            }
-
-            SubscribeCriticalFeedback();
-
             if (_runtimeFont == null)
             {
                 _runtimeFont = LocalizedTypography.GetFont(uiFont);
@@ -90,42 +77,12 @@ namespace CursorHunter.App
                 _resultPanel = CreateResultPanel();
             }
 
-            if (_criticalNotice == null)
-            {
-                _criticalNotice = CreateCriticalNotice();
-            }
-
             if (_progressionInfoButton == null)
             {
                 _progressionInfoButton = CreateProgressionInfoButton();
             }
 
             _resultPanel.SetActive(false);
-            if (_criticalNotice != null)
-            {
-                _criticalNoticeUntil = 0f;
-                _criticalNotice.gameObject.SetActive(false);
-            }
-        }
-
-        private void Update()
-        {
-            if (_criticalNotice != null &&
-                _criticalNotice.gameObject.activeSelf &&
-                Time.unscaledTime >= _criticalNoticeUntil)
-            {
-                _criticalNotice.gameObject.SetActive(false);
-            }
-        }
-
-        private void OnDisable()
-        {
-            UnsubscribeCriticalFeedback();
-        }
-
-        private void OnDestroy()
-        {
-            UnsubscribeCriticalFeedback();
         }
 
         public void ShowRunning(float remainingSeconds, int defeatedCount, long garnetEarned)
@@ -155,40 +112,6 @@ namespace CursorHunter.App
                 _resultPanel.SetActive(false);
             }
 
-        }
-
-        private void SubscribeCriticalFeedback()
-        {
-            if (_criticalSubscribed || _combatController == null)
-            {
-                return;
-            }
-
-            _combatController.CriticalHit += HandleCriticalHit;
-            _criticalSubscribed = true;
-        }
-
-        private void UnsubscribeCriticalFeedback()
-        {
-            if (!_criticalSubscribed || _combatController == null)
-            {
-                return;
-            }
-
-            _combatController.CriticalHit -= HandleCriticalHit;
-            _criticalSubscribed = false;
-        }
-
-        private void HandleCriticalHit(long effectiveDamage)
-        {
-            if (_criticalNotice == null)
-            {
-                return;
-            }
-
-            _criticalNotice.text = "치명타! ×2\n피해 " + effectiveDamage;
-            _criticalNoticeUntil = Time.unscaledTime + 0.45f;
-            _criticalNotice.gameObject.SetActive(true);
         }
 
         public void ShowResult(RunResult result)
@@ -303,11 +226,6 @@ namespace CursorHunter.App
             {
                 _progressionInfoButton.gameObject.SetActive(false);
             }
-
-            if (_criticalNotice != null)
-            {
-                _criticalNotice.gameObject.SetActive(false);
-            }
         }
 
         private Button CreateProgressionInfoButton()
@@ -353,24 +271,6 @@ namespace CursorHunter.App
                 18,
                 TextAnchor.MiddleCenter).text = LocalizationCatalog.Get("ui.info.all", "전체 정보");
             return button;
-        }
-
-        private TextMeshProUGUI CreateCriticalNotice()
-        {
-            TextMeshProUGUI notice = CreateText(
-                "CriticalHitNotice",
-                canvas.transform,
-                new Vector2(0.5f, 0.5f),
-                new Vector2(0.5f, 0.5f),
-                new Vector2(0.5f, 0.5f),
-                new Vector2(0f, 170f),
-                new Vector2(320f, 86f),
-                28,
-                TextAnchor.MiddleCenter);
-            notice.color = new Color(1f, 0.82f, 0.20f, 1f);
-            notice.fontStyle = FontStyles.Bold;
-            notice.gameObject.SetActive(false);
-            return notice;
         }
 
         private GameObject CreateResultPanel()
