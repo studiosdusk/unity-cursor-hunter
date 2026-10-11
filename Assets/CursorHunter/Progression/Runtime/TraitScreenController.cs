@@ -66,7 +66,7 @@ namespace CursorHunter.Progression
         [SerializeField, Range(0, 2)] private int initialTab;
         [SerializeField, Min(0f)] private float transitionSeconds = 0.14f;
         [SerializeField] private Vector2 nodeCellSize = new Vector2(106f, 106f);
-        [SerializeField] private Vector2 nodeGridSpacing = new Vector2(18f, 18f);
+        [SerializeField] private Vector2 nodeGridSpacing = new Vector2(27f, 27f);
         [SerializeField, Min(12f)] private float connectorWidth = 22f;
         [SerializeField, Range(2f, 16f)] private float connectorThickness = 3f;
         [SerializeField, Min(24f)] private float categoryHeaderHeight = 28f;
@@ -102,6 +102,8 @@ namespace CursorHunter.Progression
             new Dictionary<string, string>(StringComparer.Ordinal);
         private readonly Dictionary<string, Vector2> _boardPositionsByNodeId =
             new Dictionary<string, Vector2>(StringComparer.Ordinal);
+        private readonly Dictionary<string, RectTransform> _boardNodeRectsById =
+            new Dictionary<string, RectTransform>(StringComparer.Ordinal);
         private RectTransform _runtimeRoot;
         private RectTransform _nodeContent;
         private RectTransform _nodeViewport;
@@ -130,9 +132,6 @@ namespace CursorHunter.Progression
         private TextMeshProUGUI _tooltipUpgradeLabel;
         private Button _tooltipResetButton;
         private string _tooltipNodeId;
-        private bool _pointerOverTooltip;
-        private bool _tooltipPinned;
-        private Coroutine _tooltipHideRoutine;
         private Coroutine _tooltipAnimation;
         private Button _upgradeButton;
         private Image _upgradeButtonImage;
@@ -147,8 +146,12 @@ namespace CursorHunter.Progression
         private TextMeshProUGUI _testBossTierHeading;
         private Button[] _testBossTierButtons = Array.Empty<Button>();
         private TextMeshProUGUI[] _testBossTierLabels = Array.Empty<TextMeshProUGUI>();
+        private Button _testUnlockAllButton;
+        private TextMeshProUGUI _testUnlockAllLabel;
         private bool _testToolsOpen;
         private Texture2D _dragHandCursor;
+        private Texture2D _traitBackdropTexture;
+        private Sprite _traitBackdropSprite;
         private Coroutine _fitGraphRoutine;
         private readonly List<TextMeshProUGUI> _summaryValues = new List<TextMeshProUGUI>();
         private Coroutine _transition;
@@ -164,6 +167,8 @@ namespace CursorHunter.Progression
             public int CategoryIndex;
             public int NodeIndex;
             public int FlatIndex;
+            public int DifficultyTier;
+            public int BossGateTier;
             public Vector2Int Cell;
             public Vector2 Position;
         }
@@ -184,9 +189,12 @@ namespace CursorHunter.Progression
         private const float StatGraphWidth = 1600f;
         private const float StatGraphHeight = 1120f;
         private const float BoardNodeSize = 76f;
-        private const float BoardNodePitchX = 98f;
-        private const float BoardNodePitchY = 98f;
-        private const float MinimumGraphZoom = 0.12f;
+        // BoardNodeSize is 76 px. A 22 px gap was too tight for the number of
+        // branches on the combined board, so increase the gap by 1.5x.
+        private const float BoardNodePitchX = 109f;
+        private const float BoardNodePitchY = 109f;
+        private const float MinimumGraphZoom = 0.28f;
+        private const float MaximumGraphZoom = 2.1f;
         private const string ResearchCoreNodeId = "stat.attack.01";
 
         private static readonly Color LockedColor =
@@ -263,6 +271,16 @@ namespace CursorHunter.Progression
         {
             if (_summaryOverlay != null) Destroy(_summaryOverlay);
             RestoreDragCursor();
+            if (_traitBackdropSprite != null)
+            {
+                Destroy(_traitBackdropSprite);
+                _traitBackdropSprite = null;
+            }
+            if (_traitBackdropTexture != null)
+            {
+                Destroy(_traitBackdropTexture);
+                _traitBackdropTexture = null;
+            }
             if (_dragHandCursor != null)
             {
                 Destroy(_dragHandCursor);
@@ -686,41 +704,49 @@ namespace CursorHunter.Progression
             {
                 background = _runtimeRoot.gameObject.AddComponent<Image>();
             }
-            background.sprite = combatBackgroundSprite;
-            // field_a.png is a 202x111 combat tile. Stretching it to the
-            // entire canvas magnifies its texels and produces the blurred
-            // screenshot seen at non-native resolutions. Tiling keeps the
-            // texture at its imported pixel density; the source is configured
-            // with Repeat wrap mode, so Unity can draw it as a single tiled
-            // quad instead of allocating one quad per tile.
-            background.type = combatBackgroundSprite == null
-                ? Image.Type.Simple
-                : Image.Type.Tiled;
-            background.pixelsPerUnitMultiplier = 1f;
-            // Keep the authored combat texture as a translucent blue-tinted
-            // layer. The combat map remains underneath it, so props and
-            // ambient details continue to read through the trait screen while
-            // the palette matches the dark skill-tree reference.
-            background.color = combatBackgroundSprite == null
-                ? backgroundColor
-                : new Color(0.20f, 0.31f, 0.52f, 0.24f);
+            background.sprite = null;
+            background.type = Image.Type.Simple;
+            background.color = backgroundColor;
             background.preserveAspect = false;
             background.raycastTarget = true;
 
-            // The same field texture used by the combat scene remains visible
-            // beneath the tree, while this shade keeps white connectors and
-            // labels readable without adding a grey frame around the UI.
-            RectTransform shadeRect = CreateRect(
-                "FieldShade",
+            // A full-screen jewel-toned gradient gives the research board
+            // depth without stretching a small combat tile across the canvas.
+            RectTransform gradientRect = CreateRect(
+                "TraitBackdropGradient",
                 _runtimeRoot,
                 Vector2.zero,
                 Vector2.one,
                 Vector2.zero,
                 Vector2.zero,
                 new Vector2(0.5f, 0.5f));
-            Image fieldShade = shadeRect.gameObject.AddComponent<Image>();
-            fieldShade.color = new Color(0.014f, 0.026f, 0.078f, 0.82f);
-            fieldShade.raycastTarget = false;
+            Image gradient = gradientRect.gameObject.AddComponent<Image>();
+            gradient.sprite = CreateTraitBackdropSprite();
+            gradient.type = Image.Type.Simple;
+            gradient.color = Color.white;
+            gradient.preserveAspect = false;
+            gradient.raycastTarget = false;
+
+            // Retain only a trace of the game's field tile as a surface grain.
+            // Tiling keeps the source at its imported pixel density.
+            if (combatBackgroundSprite != null)
+            {
+                RectTransform textureRect = CreateRect(
+                    "TraitBackdropFieldTexture",
+                    _runtimeRoot,
+                    Vector2.zero,
+                    Vector2.one,
+                    Vector2.zero,
+                    Vector2.zero,
+                    new Vector2(0.5f, 0.5f));
+                Image fieldTexture = textureRect.gameObject.AddComponent<Image>();
+                fieldTexture.sprite = combatBackgroundSprite;
+                fieldTexture.type = Image.Type.Tiled;
+                fieldTexture.pixelsPerUnitMultiplier = 1f;
+                fieldTexture.color = new Color(0.76f, 0.82f, 1f, 0.055f);
+                fieldTexture.preserveAspect = false;
+                fieldTexture.raycastTarget = false;
+            }
 
             _runtimeGroup = _runtimeRoot.gameObject.AddComponent<CanvasGroup>();
             _runtimeGroup.interactable = true;
@@ -738,6 +764,99 @@ namespace CursorHunter.Progression
             _isBuilt = true;
             ShowTab((TraitTab)Mathf.Clamp(initialTab, 0, 2), false);
             Canvas.ForceUpdateCanvases();
+        }
+
+        private Sprite CreateTraitBackdropSprite()
+        {
+            const int textureSize = 512;
+            _traitBackdropTexture = new Texture2D(
+                textureSize,
+                textureSize,
+                TextureFormat.RGBA32,
+                false,
+                false)
+            {
+                name = "TraitScreen_JewelGradient",
+                filterMode = FilterMode.Bilinear,
+                wrapMode = TextureWrapMode.Clamp,
+                hideFlags = HideFlags.DontSave
+            };
+
+            Color[] pixels = new Color[textureSize * textureSize];
+            Color lower = new Color32(14, 21, 39, 255);
+            Color middle = new Color32(27, 39, 66, 255);
+            Color upper = new Color32(17, 25, 48, 255);
+            Color sapphireGlow = new Color32(64, 96, 142, 255);
+            Color amethystGlow = new Color32(97, 58, 101, 255);
+            Color amberGlow = new Color32(150, 91, 43, 255);
+
+            for (int y = 0; y < textureSize; y++)
+            {
+                float v = y / (float)(textureSize - 1);
+                Color vertical = v < 0.56f
+                    ? Color.Lerp(lower, middle, v / 0.56f)
+                    : Color.Lerp(middle, upper, (v - 0.56f) / 0.44f);
+
+                for (int x = 0; x < textureSize; x++)
+                {
+                    float u = x / (float)(textureSize - 1);
+                    Color color = vertical;
+                    color = Color.Lerp(
+                        color,
+                        sapphireGlow,
+                        SoftBackdropGlow(u, v, 0.50f, 0.72f, 0.60f, 0.48f) * 0.22f);
+                    color = Color.Lerp(
+                        color,
+                        amethystGlow,
+                        SoftBackdropGlow(u, v, 0.10f, 0.43f, 0.52f, 0.60f) * 0.15f);
+                    color = Color.Lerp(
+                        color,
+                        amberGlow,
+                        SoftBackdropGlow(u, v, 0.89f, 0.19f, 0.48f, 0.38f) * 0.13f);
+
+                    float edge = Mathf.Max(
+                        Mathf.Abs(u - 0.5f) * 2f,
+                        Mathf.Abs(v - 0.5f) * 2f);
+                    color *= 1f - edge * edge * 0.19f;
+
+                    // A touch of deterministic grain keeps the broad color
+                    // fields from reading like flat vector panels.
+                    int hash = unchecked((x * 374761393) ^ (y * 668265263));
+                    hash = unchecked((hash ^ (hash >> 13)) * 1274126177);
+                    float grain = ((hash & 0xFF) / 255f - 0.5f) * 0.012f;
+                    color.r = Mathf.Clamp01(color.r + grain);
+                    color.g = Mathf.Clamp01(color.g + grain);
+                    color.b = Mathf.Clamp01(color.b + grain);
+                    color.a = 1f;
+                    pixels[y * textureSize + x] = color;
+                }
+            }
+
+            _traitBackdropTexture.SetPixels(pixels);
+            _traitBackdropTexture.Apply(false, true);
+            _traitBackdropSprite = Sprite.Create(
+                _traitBackdropTexture,
+                new Rect(0f, 0f, textureSize, textureSize),
+                new Vector2(0.5f, 0.5f),
+                100f);
+            _traitBackdropSprite.name = "TraitScreen_JewelGradientSprite";
+            _traitBackdropSprite.hideFlags = HideFlags.DontSave;
+            return _traitBackdropSprite;
+        }
+
+        private static float SoftBackdropGlow(
+            float u,
+            float v,
+            float centerX,
+            float centerY,
+            float radiusX,
+            float radiusY)
+        {
+            float dx = (u - centerX) / radiusX;
+            float dy = (v - centerY) / radiusY;
+            float distance = Mathf.Sqrt(dx * dx + dy * dy);
+            float falloff = Mathf.Clamp01(1f - distance);
+            return falloff * falloff * (3f - 2f * falloff);
         }
 
         private void BuildHeader()
@@ -845,8 +964,8 @@ namespace CursorHunter.Progression
                 new Vector2(-24f, -28f),
                 new Vector2(388f, 28f),
                 new Vector2(1f, 1f));
-            CreateLegendChip(legend, 0f, "강화 완료", GetBoardStateColor(NodePurchaseState.Purchased));
-            CreateLegendChip(legend, 96f, "구매 가능", GetBoardStateColor(NodePurchaseState.Available));
+            CreateLegendChip(legend, 0f, "완료", GetBoardStateColor(NodePurchaseState.Purchased));
+            CreateLegendChip(legend, 96f, "가능", GetBoardStateColor(NodePurchaseState.Available));
             CreateLegendChip(legend, 192f, "재화 부족", GetBoardStateColor(NodePurchaseState.Unaffordable));
             CreateLegendChip(legend, 292f, "잠김", GetBoardStateColor(NodePurchaseState.Locked));
         }
@@ -926,7 +1045,7 @@ namespace CursorHunter.Progression
                     new Vector2(18f, -12f),
                     new Vector2(-60f, 30f),
                     new Vector2(0.5f, 1f)),
-                "진행도 테스트 도구",
+                "진행도 테스트",
                 19,
                 TextAnchor.MiddleLeft,
                 inkColor,
@@ -955,7 +1074,7 @@ namespace CursorHunter.Progression
                     new Vector2(18f, -48f),
                     new Vector2(-36f, 22f),
                     new Vector2(0.5f, 1f)),
-                "수량을 입력하고 원하는 젬스톤을 지급하세요.",
+                "수량을 정해 젬스톤을 지급하고 해금 단계를 확인하세요.",
                 12,
                 TextAnchor.MiddleLeft,
                 mutedInkColor,
@@ -1008,7 +1127,7 @@ namespace CursorHunter.Progression
                 new Vector2(202f, 40f),
                 null,
                 new Color(0.20f, 0.46f, 0.60f, 0.98f),
-                "모든 젬스톤 지급",
+                "전체 종류 지급",
                 14,
                 inkColor);
             grantAll.onClick.AddListener(GrantAllTestGemstones);
@@ -1022,7 +1141,7 @@ namespace CursorHunter.Progression
                     new Vector2(18f, -126f),
                     new Vector2(-36f, 22f),
                     new Vector2(0.5f, 1f)),
-                "종류별 지급",
+                "젬스톤별 지급",
                 13,
                 TextAnchor.MiddleLeft,
                 new Color(0.58f, 0.79f, 1f, 1f),
@@ -1066,52 +1185,83 @@ namespace CursorHunter.Progression
                     new Vector2(18f, -384f),
                     new Vector2(-36f, 22f),
                     new Vector2(0.5f, 1f)),
-                "보스 단계 해금 · 현재 0단계",
+                "보스 해금 단계 · 현재 0단계",
                 13,
                 TextAnchor.MiddleLeft,
                 new Color(0.82f, 0.90f, 1f, 1f),
                 true);
             BuildTestBossTierSelector();
 
+            CreateText(
+                CreateRect(
+                    "TestActionsHeading",
+                    _testToolsPanel,
+                    new Vector2(0f, 1f),
+                    new Vector2(1f, 1f),
+                    new Vector2(18f, -460f),
+                    new Vector2(-36f, 22f),
+                    new Vector2(0.5f, 1f)),
+                "진행도 조작",
+                13,
+                TextAnchor.MiddleLeft,
+                new Color(0.58f, 0.79f, 1f, 1f),
+                true);
+
             Button resetGemstones = CreateButton(
                 "ResetTestGemstones",
                 _testToolsPanel,
-                new Vector2(0f, 1f),
-                new Vector2(1f, 1f),
-                new Vector2(0f, -459f),
-                new Vector2(-36f, 38f),
+                new Vector2(0.5f, 1f),
+                new Vector2(0.5f, 1f),
+                new Vector2(-81f, -492f),
+                new Vector2(154f, 38f),
                 null,
                 new Color(0.42f, 0.18f, 0.24f, 0.98f),
-                "젬스톤 잔액 0으로 초기화",
-                13,
+                "젬 잔액 비우기",
+                12,
                 inkColor);
             resetGemstones.onClick.AddListener(ResetTestGemstones);
 
-            Button unlockAll = CreateButton(
+            Button refundGemstones = CreateButton(
+                "RefundAllTestGemstones",
+                _testToolsPanel,
+                new Vector2(0.5f, 1f),
+                new Vector2(0.5f, 1f),
+                new Vector2(81f, -492f),
+                new Vector2(154f, 38f),
+                null,
+                new Color(0.12f, 0.42f, 0.36f, 0.98f),
+                "젬 전체 회수",
+                12,
+                inkColor);
+            refundGemstones.onClick.AddListener(RefundAllTestGemstones);
+
+            _testUnlockAllButton = CreateButton(
                 "TestUnlockAllConditions",
                 _testToolsPanel,
-                new Vector2(0f, 1f),
-                new Vector2(1f, 1f),
-                new Vector2(0f, -503f),
-                new Vector2(-36f, 38f),
+                new Vector2(0.5f, 1f),
+                new Vector2(0.5f, 1f),
+                new Vector2(-81f, -536f),
+                new Vector2(154f, 38f),
                 null,
                 new Color(0.42f, 0.22f, 0.50f, 0.98f),
-                "테스트: 잠금 조건 해제",
-                14,
+                "조건 무시: 끔",
+                12,
                 inkColor);
-            unlockAll.onClick.AddListener(UnlockAllConditionsForTesting);
+            _testUnlockAllLabel = _testUnlockAllButton.GetComponentInChildren<TextMeshProUGUI>();
+            _testUnlockAllButton.onClick.AddListener(ToggleUnlockAllConditionsForTesting);
+            RefreshTestUnlockAllButton();
 
             Button upgradeAll = CreateButton(
                 "TestUpgradeAllNodes",
                 _testToolsPanel,
-                new Vector2(0f, 1f),
-                new Vector2(1f, 1f),
-                new Vector2(0f, -547f),
-                new Vector2(-36f, 38f),
+                new Vector2(0.5f, 1f),
+                new Vector2(0.5f, 1f),
+                new Vector2(81f, -536f),
+                new Vector2(154f, 38f),
                 null,
                 new Color(0.88f, 0.48f, 0.18f, 0.98f),
-                "테스트: 전체 강화",
-                14,
+                "전체 연구 완료",
+                12,
                 inkColor);
             upgradeAll.onClick.AddListener(UpgradeAllNodesForTesting);
 
@@ -1121,10 +1271,10 @@ namespace CursorHunter.Progression
                     _testToolsPanel,
                     new Vector2(0f, 1f),
                     new Vector2(1f, 1f),
-                    new Vector2(18f, -578f),
+                    new Vector2(18f, -580f),
                     new Vector2(-36f, 34f),
                     new Vector2(0.5f, 1f)),
-                "테스트 구매는 저장됩니다. 구매 상태는 화면 하단의 전체 초기화로 되돌릴 수 있습니다.",
+                "젬 회수는 연구 상태를 유지합니다. 우측 아래 전체 초기화는 연구도 되돌립니다.",
                 10,
                 TextAnchor.MiddleLeft,
                 mutedInkColor,
@@ -1262,6 +1412,9 @@ namespace CursorHunter.Progression
         private void SetTestBossTier(int tier)
         {
             unlockedBossTier = Mathf.Clamp(tier, 0, 5);
+            // Selecting a milestone explicitly tests its authored gates, even
+            // if the all-conditions override was previously turned on.
+            testModeUnlockAll = false;
             RefreshTestBossTierButtons();
             RefreshAll();
             RefreshNodeTooltip(FindNode(_tooltipNodeId));
@@ -1271,9 +1424,10 @@ namespace CursorHunter.Progression
 
         private void RefreshTestBossTierButtons()
         {
+            RefreshTestUnlockAllButton();
             if (_testBossTierHeading != null)
             {
-                _testBossTierHeading.text = "보스 단계 해금 · 현재 " +
+                _testBossTierHeading.text = "보스 해금 단계 · 현재 " +
                     Mathf.Clamp(unlockedBossTier, 0, 5) + "단계";
             }
 
@@ -1318,6 +1472,37 @@ namespace CursorHunter.Progression
             }
         }
 
+        private void RefreshTestUnlockAllButton()
+        {
+            if (_testUnlockAllButton == null)
+            {
+                return;
+            }
+
+            bool ignoringConditions = testModeUnlockAll;
+            SetButtonLabel(
+                _testUnlockAllLabel,
+                ignoringConditions
+                    ? "조건 무시: 켬"
+                    : "조건 무시: 끔");
+            Color color = ignoringConditions
+                ? new Color(0.55f, 0.31f, 0.66f, 0.98f)
+                : new Color(0.28f, 0.19f, 0.36f, 0.98f);
+            Image image = _testUnlockAllButton.GetComponent<Image>();
+            if (image != null)
+            {
+                image.color = color;
+            }
+
+            ColorBlock colors = _testUnlockAllButton.colors;
+            colors.normalColor = color;
+            colors.highlightedColor = Color.Lerp(color, Color.white, 0.12f);
+            colors.selectedColor = colors.highlightedColor;
+            colors.pressedColor = Color.Lerp(color, Color.black, 0.12f);
+            colors.disabledColor = color;
+            _testUnlockAllButton.colors = colors;
+        }
+
         private void ResetTestGemstones()
         {
             EnsureGemstoneBalanceCapacity();
@@ -1331,6 +1516,34 @@ namespace CursorHunter.Progression
             RefreshNodeTooltip(FindNode(_tooltipNodeId));
             SaveProgressionState();
             SetTestStatus("테스트: 모든 젬스톤 잔액을 0개로 초기화했습니다.");
+        }
+
+        private void RefundAllTestGemstones()
+        {
+            EnsureGemstoneBalanceCapacity();
+            var recordedSpending = new List<KeyValuePair<string, int>>(_spentByNode);
+            for (int i = 0; i < recordedSpending.Count; i++)
+            {
+                KeyValuePair<string, int> spent = recordedSpending[i];
+                TraitNodeDefinition node = FindNode(spent.Key);
+                string currencyId = _spentCurrencyByNode.TryGetValue(
+                    spent.Key,
+                    out string savedCurrency)
+                    ? savedCurrency
+                    : node == null ? string.Empty : node.CostGemstoneId;
+                RefundNodeCost(node, spent.Value, currencyId);
+            }
+
+            _spentByNode.Clear();
+            _spentCurrencyByNode.Clear();
+            if (_gemstoneBalances.Length > 0)
+            {
+                _garnetBalance = _gemstoneBalances[0];
+            }
+            RefreshAll();
+            RefreshNodeTooltip(FindNode(_tooltipNodeId));
+            SaveProgressionState();
+            SetTestStatus("사용한 젬스톤을 모두 회수했습니다. 연구 상태는 유지됩니다.");
         }
 
         private bool TryGetTestGrantAmount(out long amount)
@@ -1392,17 +1605,21 @@ namespace CursorHunter.Progression
             SetTestStatus("모든 젬스톤에 " + amount.ToString("N0", CultureInfo.InvariantCulture) + "개씩 지급했습니다.");
         }
 
-        private void UnlockAllConditionsForTesting()
+        private void ToggleUnlockAllConditionsForTesting()
         {
-            testModeUnlockAll = true;
-            BuildNodes(false);
+            testModeUnlockAll = !testModeUnlockAll;
+            RefreshTestUnlockAllButton();
+            RefreshAll();
             RefreshNodeTooltip(FindNode(_tooltipNodeId));
-            SetTestStatus("테스트: 선행 조건과 젬스톤 공급 잠금을 해제했습니다.");
+            SetTestStatus(testModeUnlockAll
+                ? "테스트: 보스·선행 연구·젬스톤 공급 조건을 무시합니다."
+                : "테스트: 보스 단계와 선행 연구 조건을 적용합니다.");
         }
 
         private void UpgradeAllNodesForTesting()
         {
             testModeUnlockAll = true;
+            RefreshTestUnlockAllButton();
             foreach (TraitNodeDefinition node in EnumerateAllNodes())
             {
                 if (node == null || string.IsNullOrEmpty(node.Id))
@@ -2062,14 +2279,13 @@ namespace CursorHunter.Progression
             _tooltipRoot = CreatePanel(
                 "NodeTooltip",
                 _runtimeRoot,
-                Vector2.zero,
-                Vector2.zero,
+                new Vector2(0.5f, 0.5f),
+                new Vector2(0.5f, 0.5f),
                 Vector2.zero,
                 new Vector2(392f, 372f),
                 null,
                 new Color(0.008f, 0.014f, 0.028f, 1f),
-                Vector2.zero);
-            _tooltipRoot.pivot = Vector2.zero;
+                new Vector2(0f, 1f));
             Image background = _tooltipRoot.GetComponent<Image>();
             background.sprite = null;
             background.type = Image.Type.Simple;
@@ -2082,9 +2298,6 @@ namespace CursorHunter.Progression
                 outline.effectDistance = new Vector2(2f, -2f);
             }
 
-            TraitNodeTooltipPointerRelay relay =
-                _tooltipRoot.gameObject.AddComponent<TraitNodeTooltipPointerRelay>();
-            relay.Bind(this);
             _tooltipGroup = _tooltipRoot.gameObject.AddComponent<CanvasGroup>();
 
             CreateImageRect(
@@ -2474,7 +2687,10 @@ namespace CursorHunter.Progression
                 AddLocalizedInfo("추가 젬스톤", "gemstoneId", GetGemstoneLocalizedName(monster.gemstoneId, monster.gemstoneId));
                 AddLocalizedInfo("드롭 수량", "gemstoneAmount", monster.gemstoneAmount);
                 AddLocalizedInfo("드롭 확률(%)", "gemstoneChancePercent", monster.gemstoneChancePercent);
-                AddLocalizedInfo("행동 유형", "behaviorType", GetMonsterBehaviorLabel(monster.behaviorType));
+                AddLocalizedInfo(
+                    "실행 특성",
+                    "specialAbility",
+                    GetMonsterBehaviorLabel(monster.id, monster.behaviorType));
             }
 
             CreateSummarySection(_summaryOverlayContent, "스킬과 펫 정보", GetTabAccent(TraitTab.Skill));
@@ -2499,13 +2715,7 @@ namespace CursorHunter.Progression
             {
                 if (node == null) continue;
                 NodePurchaseState state = GetNodePurchaseState(node);
-                string stateLabel = state == NodePurchaseState.Purchased
-                    ? "강화 완료"
-                    : state == NodePurchaseState.Available
-                        ? "강화 가능"
-                        : state == NodePurchaseState.Unaffordable
-                            ? "재화 부족"
-                            : "잠김";
+                string stateLabel = GetNodeStateLabel(node, state);
                 TraitGemstoneDefinition currency = GetGemstoneDefinitionById(node.CostGemstoneId);
                 string currencyTitle = currency == null
                     ? GetGemstoneLocalizedName(node.CostGemstoneId, node.CostGemstoneId)
@@ -2589,8 +2799,24 @@ namespace CursorHunter.Progression
                 : GetLocalizedNodeTitle(node);
         }
 
-        private static string GetMonsterBehaviorLabel(MonsterBehaviorType behaviorType)
+        private static string GetMonsterBehaviorLabel(
+            string monsterId,
+            MonsterBehaviorType behaviorType)
         {
+            switch (monsterId)
+            {
+                case "monster.01": return "기본 몬스터";
+                case "monster.02": return "소형 · 시각·피격 영역 0.62배";
+                case "monster.03": return "고속 · 이동 속도 1.8배";
+                case "monster.04": return "은신 · 4초마다 1.2초";
+                case "monster.05": return "방패 · 4.5초마다 1.7초, 피해 65% 감소";
+                case "monster.06": return "순간이동 · 3.5초마다";
+                case "monster.07": return "고체력 · 체력 2.5배";
+                case "monster.08": return "대형 · 시각 2배, 피격 영역 1.8배";
+                case "monster.09": return "회복 · 3.5초마다 반경 2.75, 아군 체력 20%";
+                case "monster.10": return "부활 · 4초마다 반경 3.5, 아군 체력 30%";
+            }
+
             switch (behaviorType)
             {
                 case MonsterBehaviorType.None:
@@ -2882,6 +3108,7 @@ namespace CursorHunter.Progression
             float previousZoom = Mathf.Max(0.01f, _nodeContent.localScale.x);
             DestroyChildren(_nodeContent);
             _boardPositionsByNodeId.Clear();
+            _boardNodeRectsById.Clear();
 
             List<BoardNodeEntry> entries = CollectBoardEntries();
             if (entries.Count == 0)
@@ -2951,6 +3178,7 @@ namespace CursorHunter.Progression
                 Button button = CreateBoardNode(entry, state);
                 RectTransform rect = button.transform as RectTransform;
                 rect.anchoredPosition = entry.Position;
+                _boardNodeRectsById[entry.Node.Id] = rect;
                 TraitNodeDefinition captured = entry.Node;
                 button.onClick.AddListener(() => SelectNode(captured));
                 TraitUiButtonFeedback feedback = button.GetComponent<TraitUiButtonFeedback>();
@@ -2958,7 +3186,6 @@ namespace CursorHunter.Progression
                 {
                     feedback.SetScaleFeedback(1.14f, 0.94f, 0.14f);
                     feedback.PointerEntered += data => HandleNodePointerEnter(captured, data);
-                    feedback.PointerExited += data => HandleNodePointerExit(captured, data);
                 }
             }
 
@@ -2986,7 +3213,9 @@ namespace CursorHunter.Progression
 
             if (!string.IsNullOrEmpty(_tooltipNodeId))
             {
-                RefreshNodeTooltip(FindNode(_tooltipNodeId));
+                TraitNodeDefinition selectedNode = FindNode(_tooltipNodeId);
+                RefreshNodeTooltip(selectedNode);
+                PositionNodeTooltip(selectedNode);
             }
         }
 
@@ -3051,6 +3280,13 @@ namespace CursorHunter.Progression
 
                 byId[entry.Node.Id] = entry;
                 remaining.Add(entry);
+            }
+
+            for (int i = 0; i < remaining.Count; i++)
+            {
+                GetBoardUnlockTiers(remaining[i], byId, out int difficultyTier, out int bossGateTier);
+                remaining[i].DifficultyTier = difficultyTier;
+                remaining[i].BossGateTier = bossGateTier;
             }
 
             BoardNodeEntry center = RemoveEntryById(remaining, byId, "stat.attack.01");
@@ -3181,15 +3417,27 @@ namespace CursorHunter.Progression
 
         private int CompareBoardDifficulty(BoardNodeEntry left, BoardNodeEntry right)
         {
+            int tierOrder = left.DifficultyTier.CompareTo(right.DifficultyTier);
+            if (tierOrder != 0)
+            {
+                return tierOrder;
+            }
+
+            // At a shared gemstone tier, place direct boss-gated unlocks first
+            // so the rewards from the next boss remain close to the core.
+            int bossGateOrder = right.BossGateTier.CompareTo(left.BossGateTier);
+            if (bossGateOrder != 0)
+            {
+                return bossGateOrder;
+            }
+
             int leftCurrency = Mathf.Max(0, GetGemstoneIndexById(left.Node.CostGemstoneId));
             int rightCurrency = Mathf.Max(0, GetGemstoneIndexById(right.Node.CostGemstoneId));
             long leftScore = left.Node.StartsUnlocked ? 0L :
-                left.Node.RequiredBossTier * 1000000L +
                 leftCurrency * 100000L +
                 (left.Node.AcquisitionOnly ? 50000L : 0L) +
                 left.Node.Cost;
             long rightScore = right.Node.StartsUnlocked ? 0L :
-                right.Node.RequiredBossTier * 1000000L +
                 rightCurrency * 100000L +
                 (right.Node.AcquisitionOnly ? 50000L : 0L) +
                 right.Node.Cost;
@@ -3197,6 +3445,37 @@ namespace CursorHunter.Progression
             return scoreOrder != 0
                 ? scoreOrder
                 : string.Compare(left.Node.Id, right.Node.Id, StringComparison.Ordinal);
+        }
+
+        private void GetBoardUnlockTiers(
+            BoardNodeEntry entry,
+            Dictionary<string, BoardNodeEntry> entriesById,
+            out int difficultyTier,
+            out int bossGateTier)
+        {
+            difficultyTier = 0;
+            bossGateTier = 0;
+            if (entry == null || entry.Node == null)
+            {
+                return;
+            }
+
+            var visited = new HashSet<string>(StringComparer.Ordinal);
+            string currentId = entry.Node.Id;
+            while (!string.IsNullOrEmpty(currentId) && visited.Add(currentId) &&
+                entriesById.TryGetValue(currentId, out BoardNodeEntry current))
+            {
+                bossGateTier = Mathf.Max(bossGateTier, current.Node.RequiredBossTier);
+                int gemstoneTier = Mathf.Max(
+                    0,
+                    GetGemstoneIndexById(current.Node.CostGemstoneId));
+                difficultyTier = Mathf.Max(
+                    difficultyTier,
+                    Mathf.Max(current.Node.RequiredBossTier, gemstoneTier));
+                currentId = current.Node.PrerequisiteNodeId;
+            }
+
+            difficultyTier = Mathf.Max(difficultyTier, bossGateTier);
         }
 
         private static List<Vector2Int> BuildBoardCells(int count)
@@ -3413,8 +3692,8 @@ namespace CursorHunter.Progression
             Color stateColor = GetBoardNodeColor(entry, state);
             bool purchased = state == NodePurchaseState.Purchased;
             bool available = state == NodePurchaseState.Available;
-            bool locked = state == NodePurchaseState.Locked ||
-                state == NodePurchaseState.Unaffordable;
+            bool concealed = state == NodePurchaseState.Locked;
+            bool unaffordable = state == NodePurchaseState.Unaffordable;
             bool isCore = string.Equals(
                 entry.Node.Id,
                 "stat.attack.01",
@@ -3452,37 +3731,76 @@ namespace CursorHunter.Progression
             selectionFrame.gameObject.SetActive(
                 string.Equals(entry.Node.Id, _selectedNodeId, StringComparison.Ordinal));
 
-            Sprite icon = GetNodeIcon(
-                entry.Tab,
-                entry.Category,
-                entry.Node,
-                entry.CategoryIndex,
-                entry.FlatIndex);
-            if (icon != null)
+            if (concealed)
             {
-                float iconSize = isCore ? 34f : 37f;
-                RectTransform iconRect = CreateImageRect(
-                    "Icon",
-                    buttonRect,
-                    new Vector2(0.5f, 0.5f),
-                    new Vector2(0.5f, 0.5f),
-                    new Vector2(0f, isCore ? 5f : 1f),
-                    new Vector2(iconSize, iconSize),
-                    icon,
-                    locked ? new Color(0.80f, 0.82f, 0.92f, 0.60f) : Color.white,
-                    new Vector2(0.5f, 0.5f));
-                iconRect.GetComponent<Image>().preserveAspect = true;
+                if (lockIcon != null)
+                {
+                    RectTransform lockRect = CreateImageRect(
+                        "LockSymbol",
+                        buttonRect,
+                        new Vector2(0.5f, 0.5f),
+                        new Vector2(0.5f, 0.5f),
+                        Vector2.zero,
+                        new Vector2(30f, 30f),
+                        lockIcon,
+                        new Color(0.90f, 0.91f, 0.96f, 0.94f),
+                        new Vector2(0.5f, 0.5f));
+                    lockRect.GetComponent<Image>().preserveAspect = true;
+                }
+                else
+                {
+                    CreateText(
+                        CreateRect(
+                            "UnknownMark",
+                            buttonRect,
+                            new Vector2(0.5f, 0.5f),
+                            new Vector2(0.5f, 0.5f),
+                            Vector2.zero,
+                            new Vector2(40f, 42f),
+                            new Vector2(0.5f, 0.5f)),
+                        "?",
+                        30,
+                        TextAnchor.MiddleCenter,
+                        new Color(0.90f, 0.91f, 0.96f, 0.94f),
+                        true);
+                }
+            }
+            else
+            {
+                Sprite icon = GetNodeIcon(
+                    entry.Tab,
+                    entry.Category,
+                    entry.Node,
+                    entry.CategoryIndex,
+                    entry.FlatIndex);
+                if (icon != null)
+                {
+                    float iconSize = isCore ? 34f : 37f;
+                    RectTransform iconRect = CreateImageRect(
+                        "Icon",
+                        buttonRect,
+                        new Vector2(0.5f, 0.5f),
+                        new Vector2(0.5f, 0.5f),
+                        new Vector2(0f, isCore ? 5f : 1f),
+                        new Vector2(iconSize, iconSize),
+                        icon,
+                        Color.white,
+                        new Vector2(0.5f, 0.5f));
+                    iconRect.GetComponent<Image>().preserveAspect = true;
+                }
             }
 
-            string marker = isCore
-                ? "CORE"
-                : entry.Tab == TraitTab.Monster
-                    ? "M"
-                    : entry.Category != null && entry.Category.Id == "skill.cursorAura"
-                        ? "PET"
-                        : entry.Tab == TraitTab.Skill
-                            ? "SK"
-                            : GetNodeRankLabel(entry.Node);
+            string marker = concealed
+                ? string.Empty
+                : isCore
+                    ? "CORE"
+                    : entry.Tab == TraitTab.Monster
+                        ? "M"
+                        : entry.Category != null && entry.Category.Id == "skill.cursorAura"
+                            ? "PET"
+                            : entry.Tab == TraitTab.Skill
+                                ? "SK"
+                                : GetNodeRankLabel(entry.Node);
             if (!string.IsNullOrEmpty(marker))
             {
                 CreateText(
@@ -3519,7 +3837,7 @@ namespace CursorHunter.Progression
                     true);
             }
 
-            Sprite stateIcon = purchased ? checkIcon : locked ? lockIcon : null;
+            Sprite stateIcon = purchased ? checkIcon : null;
             if (stateIcon != null)
             {
                 RectTransform badge = CreateImageRect(
@@ -3561,6 +3879,61 @@ namespace CursorHunter.Progression
                     TextAnchor.MiddleCenter,
                     stateColor,
                     true);
+            }
+            else if (unaffordable)
+            {
+                CreateText(
+                    CreateRect(
+                        "UnaffordableMark",
+                        buttonRect,
+                        new Vector2(1f, 1f),
+                        new Vector2(1f, 1f),
+                        new Vector2(-8f, -8f),
+                        new Vector2(18f, 18f),
+                        new Vector2(0.5f, 0.5f)),
+                    "!",
+                    14,
+                    TextAnchor.MiddleCenter,
+                    new Color(1f, 0.54f, 0.42f, 1f),
+                    true);
+            }
+
+            int unlockGemstoneIndex = !concealed && entry.Tab == TraitTab.Monster
+                ? GetMonsterUnlockGemstoneIndex(entry.Node.Id)
+                : -1;
+            Sprite unlockGemstoneIcon = unlockGemstoneIndex >= 0
+                ? GetGemstoneIcon(unlockGemstoneIndex)
+                : null;
+            if (unlockGemstoneIcon != null)
+            {
+                RectTransform gemBadge = CreateRect(
+                    "NewGemstoneBadge",
+                    buttonRect,
+                    new Vector2(1f, 1f),
+                    new Vector2(1f, 1f),
+                    new Vector2(9f, 9f),
+                    new Vector2(22f, 22f),
+                    new Vector2(0.5f, 0.5f));
+                Image gemBadgeBack = gemBadge.gameObject.AddComponent<Image>();
+                gemBadgeBack.color = new Color(0.025f, 0.035f, 0.065f, 0.98f);
+                gemBadgeBack.raycastTarget = false;
+                CreateSquareNodeFrame(
+                    gemBadge,
+                    new Color(1f, 0.82f, 0.44f, 0.95f),
+                    1.5f);
+
+                RectTransform gemIcon = CreateImageRect(
+                    "GemstoneIcon",
+                    gemBadge,
+                    new Vector2(0.5f, 0.5f),
+                    new Vector2(0.5f, 0.5f),
+                    Vector2.zero,
+                    new Vector2(16f, 16f),
+                    unlockGemstoneIcon,
+                    Color.white,
+                    new Vector2(0.5f, 0.5f));
+                gemIcon.GetComponent<Image>().preserveAspect = true;
+                gemIcon.GetComponent<Image>().raycastTarget = false;
             }
 
             if (isCore)
@@ -4088,10 +4461,11 @@ namespace CursorHunter.Progression
                 (_nodeViewport.rect.width - 120f) / Mathf.Max(1f, _nodeContent.sizeDelta.x),
                 (_nodeViewport.rect.height - 112f) / Mathf.Max(1f, _nodeContent.sizeDelta.y));
             float zoom = requestedZoom > 0f
-                ? Mathf.Clamp(requestedZoom, MinimumGraphZoom, 1.25f)
+                ? Mathf.Clamp(requestedZoom, MinimumGraphZoom, MaximumGraphZoom)
                 : Mathf.Clamp(fitZoom, MinimumGraphZoom, 1.05f);
             _nodeContent.localScale = Vector3.one * zoom;
             _nodeContent.anchoredPosition = Vector2.zero;
+            PositionNodeTooltip(FindNode(_tooltipNodeId));
         }
 
         private IEnumerator FitGraphAfterActivation()
@@ -4115,9 +4489,10 @@ namespace CursorHunter.Progression
             Vector2 viewportCenter = Vector2.zero;
             float oldZoom = Mathf.Max(0.01f, _nodeContent.localScale.x);
             Vector2 contentPointAtCenter = (viewportCenter - _nodeContent.anchoredPosition) / oldZoom;
-            float safeZoom = Mathf.Clamp(zoom, MinimumGraphZoom, 1.25f);
+            float safeZoom = Mathf.Clamp(zoom, MinimumGraphZoom, MaximumGraphZoom);
             _nodeContent.localScale = Vector3.one * safeZoom;
             _nodeContent.anchoredPosition = viewportCenter - contentPointAtCenter * safeZoom;
+            PositionNodeTooltip(FindNode(_tooltipNodeId));
         }
 
         internal void ZoomGraphAt(Vector2 screenPosition, float wheelDelta)
@@ -4142,9 +4517,10 @@ namespace CursorHunter.Progression
             float nextZoom = Mathf.Clamp(
                 previousZoom * Mathf.Pow(1.12f, wheelDelta),
                 MinimumGraphZoom,
-                1.35f);
+                MaximumGraphZoom);
             _nodeContent.localScale = Vector3.one * nextZoom;
             _nodeContent.anchoredPosition = viewportPoint - contentPoint * nextZoom;
+            PositionNodeTooltip(FindNode(_tooltipNodeId));
         }
 
         internal void SetGraphDragCursor(bool dragging)
@@ -4600,18 +4976,9 @@ namespace CursorHunter.Progression
                 return;
             }
 
-            _tooltipPinned = true;
             _selectedNodeId = node.Id;
             UpdateNodeSelectionFrame();
-            RectTransform nodeRect = _nodeContent == null
-                ? null
-                : _nodeContent.Find("Node_" + node.Id) as RectTransform;
-            Vector2 screenPosition = nodeRect == null
-                ? new Vector2(Screen.width * 0.5f, Screen.height * 0.5f)
-                : RectTransformUtility.WorldToScreenPoint(
-                    GetUiCamera(),
-                    nodeRect.position);
-            ShowNodeTooltip(node, screenPosition);
+            ShowNodeTooltip(node);
         }
 
         private Camera GetUiCamera()
@@ -4631,70 +4998,12 @@ namespace CursorHunter.Progression
                 return;
             }
 
-            if (!_tooltipPinned || _tooltipNodeId != node.Id)
-            {
-                _tooltipPinned = false;
-            }
-            if (_tooltipHideRoutine != null)
-            {
-                StopCoroutine(_tooltipHideRoutine);
-                _tooltipHideRoutine = null;
-            }
-
             _selectedNodeId = node.Id;
             UpdateNodeSelectionFrame();
-            ShowNodeTooltip(node, eventData == null ? Input.mousePosition : eventData.position);
+            ShowNodeTooltip(node);
         }
 
-        private void HandleNodePointerExit(
-            TraitNodeDefinition node,
-            PointerEventData eventData)
-        {
-            ScheduleNodeTooltipHide();
-        }
-
-        internal void HandleTooltipPointerEnter()
-        {
-            _pointerOverTooltip = true;
-            if (_tooltipHideRoutine != null)
-            {
-                StopCoroutine(_tooltipHideRoutine);
-                _tooltipHideRoutine = null;
-            }
-        }
-
-        internal void HandleTooltipPointerExit()
-        {
-            _pointerOverTooltip = false;
-            ScheduleNodeTooltipHide();
-        }
-
-        private void ScheduleNodeTooltipHide()
-        {
-            if (_tooltipRoot == null || !_tooltipRoot.gameObject.activeSelf ||
-                _pointerOverTooltip || _tooltipPinned)
-            {
-                return;
-            }
-
-            if (_tooltipHideRoutine != null)
-            {
-                StopCoroutine(_tooltipHideRoutine);
-            }
-            _tooltipHideRoutine = StartCoroutine(HideTooltipAfterPointerLeaves());
-        }
-
-        private IEnumerator HideTooltipAfterPointerLeaves()
-        {
-            yield return new WaitForSecondsRealtime(0.55f);
-            _tooltipHideRoutine = null;
-            if (!_pointerOverTooltip && !_tooltipPinned)
-            {
-                HideNodeTooltip();
-            }
-        }
-
-        private void ShowNodeTooltip(TraitNodeDefinition node, Vector2 screenPosition)
+        private void ShowNodeTooltip(TraitNodeDefinition node)
         {
             if (node == null || _tooltipRoot == null)
             {
@@ -4703,15 +5012,9 @@ namespace CursorHunter.Progression
 
             bool animate = !_tooltipRoot.gameObject.activeSelf || _tooltipNodeId != node.Id;
             _tooltipNodeId = node.Id;
-            if (_tooltipHideRoutine != null)
-            {
-                StopCoroutine(_tooltipHideRoutine);
-                _tooltipHideRoutine = null;
-            }
-
             _tooltipRoot.gameObject.SetActive(true);
-            PositionNodeTooltip(screenPosition);
             RefreshNodeTooltip(node);
+            PositionNodeTooltip(node);
             if (animate)
             {
                 if (_tooltipAnimation != null)
@@ -4719,6 +5022,83 @@ namespace CursorHunter.Progression
                     StopCoroutine(_tooltipAnimation);
                 }
                 _tooltipAnimation = StartCoroutine(AnimateTooltipIn());
+            }
+        }
+
+        private void PositionNodeTooltip(TraitNodeDefinition node)
+        {
+            if (node == null || _tooltipRoot == null || _runtimeRoot == null ||
+                !_boardNodeRectsById.TryGetValue(node.Id, out RectTransform nodeRect) ||
+                nodeRect == null)
+            {
+                return;
+            }
+
+            Vector3[] corners = new Vector3[4];
+            nodeRect.GetWorldCorners(corners);
+            Camera camera = GetUiCamera();
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                    _runtimeRoot,
+                    RectTransformUtility.WorldToScreenPoint(camera, corners[2]),
+                    camera,
+                    out Vector2 topRight) ||
+                !RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                    _runtimeRoot,
+                    RectTransformUtility.WorldToScreenPoint(camera, corners[1]),
+                    camera,
+                    out Vector2 topLeft))
+            {
+                return;
+            }
+
+            const float gap = 16f;
+            const float margin = 18f;
+            Rect bounds = _runtimeRoot.rect;
+            Vector2 panelSize = _tooltipRoot.sizeDelta;
+            float left = topRight.x + gap;
+            if (left + panelSize.x > bounds.xMax - margin &&
+                topLeft.x - panelSize.x - gap >= bounds.xMin + margin)
+            {
+                left = topLeft.x - panelSize.x - gap;
+            }
+
+            float top = topRight.y;
+            if (top - panelSize.y < bounds.yMin + margin &&
+                topRight.y - gap - panelSize.y >= bounds.yMin + margin)
+            {
+                top = topRight.y - gap;
+            }
+
+            float minLeft = bounds.xMin + margin;
+            float maxLeft = bounds.xMax - panelSize.x - margin;
+            float minTop = bounds.yMin + panelSize.y + margin;
+            float maxTop = bounds.yMax - margin;
+            if (maxLeft < minLeft)
+            {
+                left = (bounds.xMin + bounds.xMax - panelSize.x) * 0.5f;
+            }
+            else
+            {
+                left = Mathf.Clamp(left, minLeft, maxLeft);
+            }
+
+            if (maxTop < minTop)
+            {
+                top = (bounds.yMin + bounds.yMax + panelSize.y) * 0.5f;
+            }
+            else
+            {
+                top = Mathf.Clamp(top, minTop, maxTop);
+            }
+
+            _tooltipRoot.anchoredPosition = new Vector2(left, top);
+        }
+
+        internal void RefreshNodeTooltipPosition()
+        {
+            if (_tooltipRoot != null && _tooltipRoot.gameObject.activeInHierarchy)
+            {
+                PositionNodeTooltip(FindNode(_tooltipNodeId));
             }
         }
 
@@ -4748,62 +5128,32 @@ namespace CursorHunter.Progression
             _tooltipAnimation = null;
         }
 
-        private void PositionNodeTooltip(Vector2 screenPosition)
+        private void RefreshNodeTooltip(TraitNodeDefinition node)
         {
-            if (_tooltipRoot == null || _runtimeRoot == null)
+            if (_tooltipType == null)
             {
                 return;
             }
-
-            RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                _runtimeRoot,
-                screenPosition,
-                GetUiCamera(),
-                out Vector2 localPoint);
-            Rect rootRect = _runtimeRoot.rect;
-            float cursorX = localPoint.x - rootRect.xMin;
-            float cursorY = localPoint.y - rootRect.yMin;
-            Vector2 size = _tooltipRoot.sizeDelta;
-            float x = cursorX + 24f;
-            float y = cursorY + 18f;
-            if (x + size.x > rootRect.width - 16f)
+            if (node == null)
             {
-                x = cursorX - size.x - 24f;
-            }
-            if (y + size.y > rootRect.height - 16f)
-            {
-                y = cursorY - size.y - 18f;
-            }
-
-            _tooltipRoot.anchoredPosition = new Vector2(
-                Mathf.Clamp(x, 16f, Mathf.Max(16f, rootRect.width - size.x - 16f)),
-                Mathf.Clamp(y, 16f, Mathf.Max(16f, rootRect.height - size.y - 16f)));
-        }
-
-        private void RefreshNodeTooltip(TraitNodeDefinition node)
-        {
-            if (node == null || _tooltipType == null)
-            {
+                HideNodeTooltip();
                 return;
             }
 
             NodePurchaseState state = GetNodePurchaseState(node);
             TraitTab tab = GetNodeTab(node);
             bool concealed = state == NodePurchaseState.Locked;
-            _tooltipType.text = concealed ? "잠긴 연구" : GetNodeTypeLabel(node, tab);
+            _tooltipType.text = concealed ? "잠긴 항목" : GetNodeTypeLabel(node, tab);
             _tooltipType.color = concealed
                 ? new Color(0.88f, 0.89f, 0.94f, 1f)
                 : GetCategoryAccent(tab);
             _tooltipTitle.text = concealed ? "???" : GetLocalizedNodeTitle(node);
             _tooltipValue.text = concealed ? "???" : GetLocalizedNodeValueLabel(node);
             _tooltipDescription.text = concealed
-                ? "이 항목은 잠겨 있습니다.\n해금 조건을 충족하면 내용이 공개됩니다."
+                ? "잠긴 연구입니다.\n해금 조건을 충족하면 상세 정보가 공개됩니다."
                 : BuildNodeDescription(node);
 
             TraitGemstoneDefinition gemstone = GetGemstoneDefinitionById(node.CostGemstoneId);
-            string currencyName = gemstone == null
-                ? GetGemstoneLocalizedName(node.CostGemstoneId, node.CostGemstoneId)
-                : GetGemstoneLocalizedName(gemstone.Id, gemstone.Title);
             if (concealed)
             {
                 _tooltipCost.text = "비용 · 해금 후 공개";
@@ -4814,28 +5164,34 @@ namespace CursorHunter.Progression
             }
             else if (testModeFreeUpgrades)
             {
-                _tooltipCost.text = GetNodeCostText(node) + " " + currencyName +
-                    " · 보유 " + GetNodeBalance(node).ToString("N0", CultureInfo.InvariantCulture);
+                _tooltipCost.text = "테스트 무료 · 보유 " +
+                    GetNodeBalance(node).ToString("N0", CultureInfo.InvariantCulture);
             }
             else
             {
-                _tooltipCost.text = "비용  " +
+                string currencyName = gemstone == null
+                    ? GetGemstoneLocalizedName(node.CostGemstoneId, node.CostGemstoneId)
+                    : GetGemstoneLocalizedName(gemstone.Id, gemstone.Title);
+                _tooltipCost.text = "필요 " +
                     node.Cost.ToString("N0", CultureInfo.InvariantCulture) + "  " +
-                    currencyName + "  ·  보유 " +
+                    currencyName + " · 보유 " +
                     GetNodeBalance(node).ToString("N0", CultureInfo.InvariantCulture);
             }
 
             bool purchased = state == NodePurchaseState.Purchased;
             bool canBuy = state == NodePurchaseState.Available && !node.AcquisitionOnly;
+            bool showAction = canBuy || state == NodePurchaseState.Unaffordable;
             bool canReset = purchased && !node.StartsUnlocked && !HasPurchasedDependents(node);
             _tooltipStatus.text = GetTooltipStatus(node, state);
             _tooltipStatus.color = GetBoardStateColor(state);
-            _tooltipUpgradeButton.gameObject.SetActive(canBuy);
+            _tooltipUpgradeButton.gameObject.SetActive(showAction);
             _tooltipUpgradeButton.interactable = canBuy;
-            if (canBuy)
+            if (showAction)
             {
                 SetButtonLabel(_tooltipUpgradeLabel, GetTooltipActionLabel(node, state));
-                _tooltipUpgradeLabel.color = new Color(0.06f, 0.07f, 0.09f, 1f);
+                _tooltipUpgradeLabel.color = canBuy
+                    ? new Color(0.06f, 0.07f, 0.09f, 1f)
+                    : new Color(1f, 0.94f, 0.93f, 1f);
             }
 
             RectTransform actionRect = _tooltipUpgradeButton.transform as RectTransform;
@@ -4896,7 +5252,7 @@ namespace CursorHunter.Progression
 
             if (state == NodePurchaseState.Unaffordable)
             {
-                return "젬스톤 부족";
+                return "재화 부족";
             }
 
             if (state == NodePurchaseState.Locked)
@@ -4904,11 +5260,19 @@ namespace CursorHunter.Progression
                 return "선행 조건 필요";
             }
 
-            if (IsEntityUnlockNode(node.Id))
+            if (IsRootEntityNode(node.Id, "skill."))
             {
-                return node.Id.StartsWith("skill.", StringComparison.Ordinal)
-                    ? "스킬 해금하기"
-                    : "몬스터 해금하기";
+                return "배우기";
+            }
+
+            if (IsRootEntityNode(node.Id, "monster."))
+            {
+                return "해금하기";
+            }
+
+            if (node.Id.StartsWith("stat.", StringComparison.Ordinal))
+            {
+                return node.Cost <= 0 ? "기본값 적용" : "강화하기";
             }
 
             return string.IsNullOrEmpty(node.PrerequisiteNodeId) || node.Cost <= 0
@@ -4916,17 +5280,39 @@ namespace CursorHunter.Progression
                 : "강화하기";
         }
 
-        private static bool IsEntityUnlockNode(string nodeId)
-        {
-            return IsRootEntityNode(nodeId, "skill.") ||
-                IsRootEntityNode(nodeId, "monster.");
-        }
-
         private static bool IsRootEntityNode(string nodeId, string prefix)
         {
             return !string.IsNullOrEmpty(nodeId) &&
                 nodeId.StartsWith(prefix, StringComparison.Ordinal) &&
                 nodeId.IndexOf('.', prefix.Length) < 0;
+        }
+
+        private static string GetNodeStateLabel(
+            TraitNodeDefinition node,
+            NodePurchaseState state)
+        {
+            if (node != null && string.Equals(node.Id, ResearchCoreNodeId, StringComparison.Ordinal) &&
+                state == NodePurchaseState.Purchased)
+            {
+                return "시작 완료";
+            }
+
+            if (state == NodePurchaseState.Purchased)
+            {
+                if (node != null && IsRootEntityNode(node.Id, "skill.")) return "배움 완료";
+                if (node != null && IsRootEntityNode(node.Id, "monster.")) return "해금 완료";
+                if (node != null && node.StartsUnlocked) return "기본 적용";
+                return "강화 완료";
+            }
+
+            if (state == NodePurchaseState.Available)
+            {
+                if (node != null && IsRootEntityNode(node.Id, "skill.")) return "배우기 가능";
+                if (node != null && IsRootEntityNode(node.Id, "monster.")) return "해금 가능";
+                return "강화 가능";
+            }
+
+            return state == NodePurchaseState.Unaffordable ? "재화 부족" : "잠김";
         }
 
         private string GetTooltipStatus(TraitNodeDefinition node, NodePurchaseState state)
@@ -4937,20 +5323,35 @@ namespace CursorHunter.Progression
                     StringComparison.Ordinal))
             {
                 return state == NodePurchaseState.Purchased
-                    ? "시작점 활성화 · 동서남북의 첫 연구가 열렸습니다"
-                    : "중앙 시작점 · 선택하면 첫 연구 분기가 열립니다";
+                    ? "시작 완료 · 네 방향 연구 개방"
+                    : "중앙 시작점 · 강화하면 첫 연구 개방";
             }
 
             if (state == NodePurchaseState.Purchased)
             {
+                if (IsRootEntityNode(node.Id, "skill."))
+                {
+                    return "배움 완료 · 전투 사용 중";
+                }
+                if (IsRootEntityNode(node.Id, "monster."))
+                {
+                    return "해금 완료 · 전투 출현 중";
+                }
                 return node.StartsUnlocked
-                    ? "기본 항목 · 효과 적용 중"
-                    : "효과 적용 중";
+                    ? "기본 효과 적용 중"
+                    : "강화 완료 · 효과 적용 중";
             }
             if (state == NodePurchaseState.Available)
             {
-                return "구매 가능 · 아래 [" + GetTooltipActionLabel(node, state) +
-                    "] 버튼을 누르세요";
+                if (IsRootEntityNode(node.Id, "skill."))
+                {
+                    return "배우기 가능 · 배우면 전투에서 사용";
+                }
+                if (IsRootEntityNode(node.Id, "monster."))
+                {
+                    return "해금 가능 · 해금 후 전투 출현";
+                }
+                return "강화 가능 · 적용 즉시 효과 반영";
             }
             if (state == NodePurchaseState.Unaffordable)
             {
@@ -4960,29 +5361,23 @@ namespace CursorHunter.Progression
                     return (gemstone == null
                         ? GetGemstoneLocalizedName(node.CostGemstoneId, node.CostGemstoneId)
                         : GetGemstoneLocalizedName(gemstone.Id, gemstone.Title)) +
-                        " 공급원을 먼저 해금하세요";
+                        " 공급 필요";
                 }
-                return "재화 부족 · 필요 " + node.Cost.ToString("N0", CultureInfo.InvariantCulture) +
-                    " / 보유 " + GetNodeBalance(node).ToString("N0", CultureInfo.InvariantCulture);
-            }
-            if (node.AcquisitionOnly)
-            {
-                return node.RequiredBossTier > unlockedBossTier
-                    ? "보스 " + node.RequiredBossTier + "단계 이후 전투 중 획득"
-                    : "전투 중 확률로 획득할 수 있습니다";
+                return "재화 부족 · " + node.Cost.ToString("N0", CultureInfo.InvariantCulture) +
+                    " 필요 / " + GetNodeBalance(node).ToString("N0", CultureInfo.InvariantCulture) + " 보유";
             }
             if (!testModeUnlockAll && node.RequiredBossTier > unlockedBossTier)
             {
-                return "보스 " + node.RequiredBossTier + "단계를 먼저 격파하세요";
+                return "잠김 · 보스 " + node.RequiredBossTier + "단계 필요";
             }
             if (!testModeUnlockAll && !IsPrerequisiteMet(node))
             {
-                TraitNodeDefinition prerequisite = FindNode(node.PrerequisiteNodeId);
-                return "선행 항목 해금 필요 · " +
-                    (prerequisite == null ? node.PrerequisiteNodeId : GetLocalizedNodeTitle(prerequisite));
+                return "잠김 · 선행 연구 완료 필요";
             }
 
-            return "현재는 잠겨 있습니다";
+            return node.AcquisitionOnly
+                ? "잠김 · 전투에서 획득"
+                : "잠김 · 해금 조건 필요";
         }
 
         private static string GetNodeTypeLabel(TraitNodeDefinition node, TraitTab tab)
@@ -5017,18 +5412,11 @@ namespace CursorHunter.Progression
 
         private void HideNodeTooltip()
         {
-            if (_tooltipHideRoutine != null)
-            {
-                StopCoroutine(_tooltipHideRoutine);
-                _tooltipHideRoutine = null;
-            }
             if (_tooltipAnimation != null)
             {
                 StopCoroutine(_tooltipAnimation);
                 _tooltipAnimation = null;
             }
-            _pointerOverTooltip = false;
-            _tooltipPinned = false;
             _tooltipNodeId = null;
             if (_tooltipRoot != null)
             {
@@ -5137,14 +5525,17 @@ namespace CursorHunter.Progression
             int amount,
             string currencyId)
         {
-            if (testModeFreeUpgrades || node == null || amount <= 0)
+            if (testModeFreeUpgrades || amount <= 0 ||
+                (node == null && string.IsNullOrEmpty(currencyId)))
             {
                 return;
             }
 
-            string effectiveCurrencyId = string.IsNullOrEmpty(currencyId)
-                ? node.CostGemstoneId
-                : currencyId;
+            string effectiveCurrencyId = currencyId;
+            if (string.IsNullOrEmpty(effectiveCurrencyId))
+            {
+                effectiveCurrencyId = node == null ? string.Empty : node.CostGemstoneId;
+            }
 
             int index = GetGemstoneIndexById(effectiveCurrencyId);
             if (index == 0)
@@ -5323,8 +5714,25 @@ namespace CursorHunter.Progression
             }
             else
             {
-                SetTestStatus(GetLocalizedNodeTitle(node) + " 강화 완료");
+                SetTestStatus(GetNodeCompletionMessage(node));
             }
+        }
+
+        private string GetNodeCompletionMessage(TraitNodeDefinition node)
+        {
+            if (node == null)
+            {
+                return "연구를 완료했습니다.";
+            }
+            if (IsRootEntityNode(node.Id, "skill."))
+            {
+                return "배움 완료: " + GetLocalizedNodeTitle(node);
+            }
+            if (IsRootEntityNode(node.Id, "monster."))
+            {
+                return "몬스터 해금 완료: " + GetLocalizedNodeTitle(node);
+            }
+            return GetLocalizedNodeTitle(node) + " 강화 완료";
         }
 
         private void ResetNode(TraitNodeDefinition node)
@@ -5700,7 +6108,7 @@ namespace CursorHunter.Progression
 
             if (string.Equals(id, ResearchCoreNodeId, StringComparison.Ordinal))
             {
-                return "연구의 중앙 시작점입니다. 활성화하면 동서남북의 첫 연구 선택지가 열립니다.";
+                return "강화하면 네 방향의 첫 연구가 열립니다.";
             }
 
             if (id.StartsWith("stat.", StringComparison.Ordinal))
@@ -5711,54 +6119,66 @@ namespace CursorHunter.Progression
                      id.StartsWith("stat.cooldown.", StringComparison.Ordinal) ||
                      id.StartsWith("stat.critical.", StringComparison.Ordinal)))
                 {
-                    return "기본 능력치는 플레이어 전투 설정의 기준값을 사용합니다.";
+                    return "플레이어 전투 기본값을 사용합니다.";
                 }
                 if (id.StartsWith("stat.fieldDuration.", StringComparison.Ordinal) &&
                     id.EndsWith(".01", StringComparison.Ordinal))
                 {
-                    return "일반 필드 지속 시간의 기준값은 현재 게임 정보에서 가져옵니다.";
+                    return "일반 필드 지속 시간의 기준값입니다.";
                 }
 
-                string value = node.ValueLabel ?? string.Empty;
                 if (id.StartsWith("stat.attack.", StringComparison.Ordinal))
-                    return "공격력이 " + value + "만큼 증가합니다.";
+                    return "공격력을 높입니다.";
                 if (id.StartsWith("stat.radius.", StringComparison.Ordinal))
-                    return "자동 공격 반경이 " + value.TrimStart('+') + "만큼 넓어집니다.";
+                    return "자동 공격 반경을 넓힙니다.";
                 if (id.StartsWith("stat.cooldown.", StringComparison.Ordinal))
-                    return "자동 공격 대기 시간이 " + value.TrimStart('-').Replace("s", "초") + " 줄어듭니다.";
+                    return "공격 간격을 줄입니다.";
                 if (id.StartsWith("stat.critical.", StringComparison.Ordinal))
-                    return "치명타 확률이 " + value + "p 증가합니다.";
+                    return "치명타 확률을 높입니다.";
                 if (id.StartsWith("stat.boss.", StringComparison.Ordinal))
-                    return "보스 피해 배율이 " + value.Replace("x", "배") + " 증가합니다.";
+                    return "보스에게 주는 피해를 높입니다.";
                 if (id.StartsWith("stat.fieldDuration.", StringComparison.Ordinal))
-                    return "일반 필드가 " + value.Replace("s", "초") + " 동안 지속됩니다.";
+                    return "일반 필드 지속 시간을 늘립니다.";
             }
 
             if (id.StartsWith("skill.", StringComparison.Ordinal))
             {
                 string skillId = GetEntityRootId(id, "skill.");
-                string skillName = GetLocalizedEntityName(skillId, skillId);
                 if (string.Equals(id, skillId, StringComparison.Ordinal))
-                    return skillName + " 스킬을 해금합니다. 스킬의 전투 수치는 전체 게임 정보에서 확인할 수 있습니다.";
+                    return "배우면 전투에서 사용할 수 있습니다.";
                 if (id.EndsWith(".damage", StringComparison.Ordinal))
-                    return "피해량이 " + (node.ValueLabel ?? string.Empty).Replace("x", "배") + "로 증가합니다.";
+                    return "스킬 피해량을 높입니다.";
                 if (id.EndsWith(".radius", StringComparison.Ordinal))
-                    return "효과 범위가 " + (node.ValueLabel ?? string.Empty).Replace("x", "배") + "로 증가합니다.";
+                    return "스킬 범위를 넓힙니다.";
                 if (id.EndsWith(".cooldown", StringComparison.Ordinal))
-                    return "재사용 대기 시간이 " + (node.ValueLabel ?? string.Empty).Replace("x", "배") + "로 줄어듭니다.";
+                    return "스킬 재사용 시간을 줄입니다.";
             }
 
             if (id.StartsWith("monster.", StringComparison.Ordinal))
             {
                 string monsterId = GetEntityRootId(id, "monster.");
-                string monsterName = GetLocalizedEntityName(monsterId, monsterId);
                 if (string.Equals(id, monsterId, StringComparison.Ordinal))
-                    return "이 몬스터를 전투에 해금합니다. 처치 보상과 젬스톤 드롭 정보는 게임 정보에서 확인할 수 있습니다.";
+                {
+                    switch (monsterId)
+                    {
+                        case "monster.01": return "기본 몬스터입니다.";
+                        case "monster.02": return "시각 크기와 피격 영역이 0.62배입니다.";
+                        case "monster.03": return "이동 속도가 1.8배입니다.";
+                        case "monster.04": return "4초마다 1.2초간 모습을 감춰 공격을 피합니다.";
+                        case "monster.05": return "4.5초마다 1.7초간 방패를 들어 피해를 65% 줄입니다.";
+                        case "monster.06": return "3.5초마다 순간이동해 위치를 바꿉니다.";
+                        case "monster.07": return "체력이 기본값의 2.5배입니다.";
+                        case "monster.08": return "시각 크기 2배, 피격 영역 1.8배입니다.";
+                        case "monster.09": return "3.5초마다 반경 2.75 안의 아군 체력을 20% 회복합니다.";
+                        case "monster.10": return "4초마다 반경 3.5 안의 쓰러진 아군을 체력 30%로 되살립니다.";
+                        default: return "해금하면 전투에 등장합니다.";
+                    }
+                }
                 if (id.IndexOf(".production.", StringComparison.Ordinal) >= 0)
-                    return "한 번의 생성 주기마다 " + (node.ValueLabel ?? string.Empty) + "마리가 등장합니다.";
+                    return "한 번에 " + (node.ValueLabel ?? string.Empty) + "마리 생성.";
             }
 
-            return "현재 게임 데이터에 정의된 효과를 적용합니다. 상세 수치는 전체 게임 정보에서 확인할 수 있습니다.";
+            return "연구 효과를 적용합니다.";
         }
 
         private string GetLocalizedNodeTitle(TraitNodeDefinition node)
@@ -5843,16 +6263,16 @@ namespace CursorHunter.Progression
                 case "skill.meteor": return "메테오";
                 case "skill.dragonBreath": return "드래곤 브레스";
                 case "skill.cursorAura": return "펫 동료";
-                case "monster.01": return "가넷 그루터기";
-                case "monster.02": return "토파즈 동굴박쥐";
-                case "monster.03": return "호박 버섯";
-                case "monster.04": return "자수정 가면유령";
-                case "monster.05": return "수정 전갈";
-                case "monster.06": return "사파이어 눈요정";
-                case "monster.07": return "빙결 거미";
-                case "monster.08": return "다이아 철골렘";
-                case "monster.09": return "드래곤 불꽃봉오리";
-                case "monster.10": return "고대 해골군주";
+                case "monster.01": return "그루터기";
+                case "monster.02": return "박쥐";
+                case "monster.03": return "버섯";
+                case "monster.04": return "가면유령";
+                case "monster.05": return "전갈";
+                case "monster.06": return "눈요정";
+                case "monster.07": return "거미";
+                case "monster.08": return "골렘";
+                case "monster.09": return "봉오리";
+                case "monster.10": return "해골군주";
                 default: return string.IsNullOrEmpty(fallback) ? id : fallback;
             }
         }
@@ -5973,7 +6393,7 @@ namespace CursorHunter.Progression
         {
             if (_activeTab == TraitTab.Stat)
             {
-                return new Vector2(18f, 18f);
+                return new Vector2(27f, 27f);
             }
 
             return new Vector2(
@@ -6171,6 +6591,19 @@ namespace CursorHunter.Progression
             }
 
             return -1;
+        }
+
+        private static int GetMonsterUnlockGemstoneIndex(string monsterNodeId)
+        {
+            switch (monsterNodeId)
+            {
+                case "monster.02": return 1; // Topaz
+                case "monster.04": return 2; // Amethyst
+                case "monster.06": return 3; // Sapphire
+                case "monster.08": return 4; // Diamond
+                case "monster.09": return 5; // Dragon Gem
+                default: return -1;
+            }
         }
 
         private void HideAuthoredPlaceholders()
@@ -6539,33 +6972,16 @@ namespace CursorHunter.Progression
             if (_owner != null) _owner.SetGraphDragCursor(true);
         }
 
+        public override void OnDrag(PointerEventData eventData)
+        {
+            base.OnDrag(eventData);
+            if (_owner != null) _owner.RefreshNodeTooltipPosition();
+        }
+
         public override void OnEndDrag(PointerEventData eventData)
         {
             base.OnEndDrag(eventData);
             if (_owner != null) _owner.SetGraphDragCursor(false);
-        }
-    }
-
-    /// <summary>Keeps the hover card open while the pointer moves onto it.</summary>
-    public sealed class TraitNodeTooltipPointerRelay : MonoBehaviour,
-        IPointerEnterHandler,
-        IPointerExitHandler
-    {
-        private TraitScreenController _owner;
-
-        public void Bind(TraitScreenController owner)
-        {
-            _owner = owner;
-        }
-
-        public void OnPointerEnter(PointerEventData eventData)
-        {
-            if (_owner != null) _owner.HandleTooltipPointerEnter();
-        }
-
-        public void OnPointerExit(PointerEventData eventData)
-        {
-            if (_owner != null) _owner.HandleTooltipPointerExit();
         }
     }
 

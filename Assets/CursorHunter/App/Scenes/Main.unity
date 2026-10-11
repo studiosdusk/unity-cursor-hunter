@@ -15559,7 +15559,7 @@ MonoBehaviour:
   - {fileID: 21300000, guid: d8527bbb0c6fabd4fa5a81df3a311acc, type: 3}
   - {fileID: 21300000, guid: 27c7f323c4c073a419bda2ab90cc40ea, type: 3}
   - {fileID: 21300000, guid: 58ecdefa4b1d13344a5d2d437e661188, type: 3}
-  - {fileID: 21300000, guid: 170b99d1e420c684a975dab96970ac8c, type: 3}
+  - {fileID: 21300000, guid: 6c63eea5ac3d47f41a4ada2581ce61f3, type: 3}
   - {fileID: 21300000, guid: e8a4f1b855cceee4cb4ec88d35ca7636, type: 3}
   petIcons:
   - {fileID: 21300000, guid: 7668aef2c90f84f47b9b9c0650bce440, type: 3}
@@ -15567,7 +15567,7 @@ MonoBehaviour:
   initialTab: 0
   transitionSeconds: 0.14
   nodeCellSize: {x: 106, y: 106}
-  nodeGridSpacing: {x: 18, y: 18}
+  nodeGridSpacing: {x: 27, y: 27}
   connectorWidth: 18
   connectorThickness: 3
   categoryHeaderHeight: 28

@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Monster03
   m_EditorClassIdentifier: CursorHunter.Data::CursorHunter.Data.MonsterDefinition
   monsterId: monster.03
-  displayName: 호박 버섯
+  displayName: 버섯
   prefabKey: Walker/Walker_Mushroom
   visualPrefab: {fileID: 7181800864280875092, guid: 5199f7f24931ec249be66cc4e940a24d, type: 3}
   baseStats:

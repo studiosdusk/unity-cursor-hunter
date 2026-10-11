@@ -39,14 +39,14 @@ false인 항목도 삭제하지 않고 ID로 구분한다. 배열 인덱스를 I
 정식 [v3 스키마](game-information-v3.schema.json)와 [전체 예제](game-information-v3.example.json)를 따른다.
 이전 v2 예제·스키마는 과거 기록이며 v3 런 입력으로 사용할 수 없다.
 
-## 몬스터 특성과 이동 프로필
+## 몬스터 특성과 행동 프로필
 
 JSON `behaviorType`과 `MonsterCombatSnapshot.BehaviorType`은 이전 데이터 호환을 위해
 `Contracts.MonsterBehaviorType.None=0`으로 유지한다. 신규 특성은 Data의
 `MonsterBehaviorProfile` 에셋으로 구성한다. 프로필의 체력·이동속도·비주얼 크기·명중
-영역 배율은 곱해지며, 이동 모드는 프로필 목록에서 마지막으로 지정한 값이 선택된다.
-최종 수치는 `SpawnSnapshot`의 movement mode, speed, scale, hit area, orbit 값으로
-Combat에 전달된다.
+영역 배율은 곱해지며, 이동 모드와 특수 능력은 프로필 목록에서 마지막으로 지정한 값이
+선택된다. 최종 수치는 `SpawnSnapshot`의 이동·크기·명중 영역·특수 능력 필드로 Combat에
+전달된다.
 
 ```text
 MonsterDefinition.BaseStats
@@ -57,9 +57,25 @@ MonsterDefinition.BaseStats
  → MonsterRoot/MonsterBehaviorController
 ```
 
-첫 데이터 연결은 .01 기본, .02 빠른, .03 고체력, .04 소형, .05 대형·저속,
-.06 원형 이동, .07~.10 기본이다. 나중에 종별 외형은 `MonsterDefinition.VisualPrefab`으로
-수동 교체한다. 기존 `behaviorType` JSON 필드는 계속 0만 허용한다.
+각 몬스터의 특성은 실제 전투에서 아래 설정으로 실행된다.
+
+| ID | 이름 | 전투 특성 |
+|---|---|---|
+| monster.01 | 그루터기 | 기본 몬스터 |
+| monster.02 | 박쥐 | 시각·피격 영역 0.62배 |
+| monster.03 | 버섯 | 이동 속도 1.8배 |
+| monster.04 | 가면유령 | 4초마다 1.2초간 사라져 피격 회피 |
+| monster.05 | 전갈 | 4.5초마다 1.7초간 피해 65% 감소 |
+| monster.06 | 눈요정 | 3.5초마다 이동 영역 안의 무작위 위치로 순간이동 |
+| monster.07 | 거미 | 체력 2.5배 |
+| monster.08 | 골렘 | 시각 크기 2배, 피격 영역 1.8배 |
+| monster.09 | 봉오리 | 3.5초마다 반경 2.75 내 아군 체력을 최대 체력의 20% 회복 |
+| monster.10 | 해골군주 | 4초마다 반경 3.5 내 쓰러진 아군을 최대 체력의 30%로 부활 |
+
+시체는 부활 가능 시간을 위해 6초 동안 유지한다. 부활한 개체는 처치 보상을 한 번만
+정산하므로 반복 부활로 재화를 복제하지 않는다. 능력 시계는 런 진행 시간을 사용해
+일시정지 중에는 멈춘다. 종별 외형은 `MonsterDefinition.VisualPrefab`으로 유지한다.
+기존 `behaviorType` JSON 필드는 계속 0만 허용한다.
 
 ## 전투에서 값을 읽는 실제 API
 
@@ -78,7 +94,7 @@ RunCoordinator.Start에 CombatSnapshot/커서 증가량/SpawnPlan, ConfigureSkil
 | 자동 공격 여부 / 주기 | controller.CombatSnapshot.AutoAttackEnabled / AutoAttackIntervalSeconds |
 | 스킬 정보 | ConfigureSkills로 받은 SkillCombatSnapshot의 SkillId, Unlocked, Damage, RadiusWorldUnits, CooldownSeconds |
 | 몬스터 생성 | SpawnPlan.Entries[i].Snapshot의 MonsterId, MaxHealth, PackSize, SpawnIntervalSeconds, AliveLimit |
-| 몬스터 특성 | SpawnPlan.Entries[i].Snapshot.BehaviorType 또는 개체 WalkerStumpTarget.BehaviorType |
+| 몬스터 특성 | SpawnPlan.Entries[i].Snapshot의 MovementMode, MoveSpeed, VisualScale, SpecialAbility 및 능력 수치 |
 | 가넷 / 추가 젬 보상 | SpawnSnapshot.GarnetReward / BonusDropCurrencyId, BonusDropAmount, BonusDropChancePercent |
 | 개체 현재 체력 | WalkerStumpTarget.CurrentHealth (MaxHealth는 시작/최대 체력) |
 | 런 진행 | controller.ElapsedSeconds, RemainingSeconds, DefeatedCount, GarnetEarned, EffectiveDamage |

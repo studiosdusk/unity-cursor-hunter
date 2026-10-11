@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Monster09
   m_EditorClassIdentifier: CursorHunter.Data::CursorHunter.Data.MonsterDefinition
   monsterId: monster.09
-  displayName: 드래곤 불꽃봉오리
+  displayName: 봉오리
   prefabKey: Bud/Bud_Fire
   visualPrefab: {fileID: 966642935848207410, guid: 98aa1099a03998a459993b2dd6ca19a4, type: 3}
   baseStats:
@@ -29,4 +29,4 @@ MonoBehaviour:
     bonusDropAmount: 1
     bonusDropChancePercent: 100
   behaviorProfiles:
-  - {fileID: 11400000, guid: 75d93b8c58314c00931fce8caf12af10, type: 2}
+  - {fileID: 11400000, guid: 44b2ab2a85c64ca59a08b02b0653a315, type: 2}

@@ -28,12 +28,21 @@ namespace CursorHunter.Combat
         private float _orbitRadius;
         private float _orbitAngleDegrees;
         private float _orbitAngularSpeedDegrees;
+        private MonsterSpecialAbility _specialAbility;
+        private float _specialAbilityIntervalSeconds;
+        private float _specialAbilityDurationSeconds;
+        private float _specialAbilityRadius;
+        private float _specialAbilityStrength;
+        private float _nextSpecialAbilityAt;
+        private float _specialEffectEndsAt;
         private float _lastElapsedSeconds;
         private float _nextActionAt;
         private float _hitStopUntil;
         private SeededRandom _actionRandom;
         private bool _isMoveAction;
         private bool _isConfigured;
+        private bool _isVanished;
+        private bool _isShielded;
 
         internal bool IsHitStopped =>
             _isConfigured && _runController != null &&
@@ -88,6 +97,7 @@ namespace CursorHunter.Combat
             }
 
             _lastElapsedSeconds = elapsedSeconds;
+            AdvanceSpecialAbility(elapsedSeconds);
             _target.SetMoving(_isMoveAction && movedInCurrentAction);
         }
 
@@ -178,6 +188,18 @@ namespace CursorHunter.Combat
             _boundsMax = movementBounds.max;
             _lastElapsedSeconds = runController.ElapsedSeconds;
             _nextActionAt = _lastElapsedSeconds + ActionDurationSeconds;
+            _specialAbility = snapshot.SpecialAbility;
+            _specialAbilityIntervalSeconds = snapshot.SpecialAbilityIntervalSeconds;
+            _specialAbilityDurationSeconds = snapshot.SpecialAbilityDurationSeconds;
+            _specialAbilityRadius = snapshot.SpecialAbilityRadius;
+            _specialAbilityStrength = snapshot.SpecialAbilityStrength;
+            _nextSpecialAbilityAt = _lastElapsedSeconds +
+                _specialAbilityIntervalSeconds;
+            _specialEffectEndsAt = 0f;
+            _isVanished = false;
+            _isShielded = false;
+            target.SetVulnerable(true);
+            target.SetShielded(false, 0f);
             _hitStopUntil = 0f;
             _actionRandom = new SeededRandom(behaviorSeed);
             _isConfigured = true;
@@ -237,6 +259,133 @@ namespace CursorHunter.Combat
                 360f);
             SetRootPosition(
                 _orbitCenter + DirectionFromDegrees(_orbitAngleDegrees) * _orbitRadius);
+        }
+
+        internal void ResetSpecialPresentation()
+        {
+            SetVanished(false);
+            SetShielded(false);
+            _specialEffectEndsAt = 0f;
+        }
+
+        internal void ResumeAfterRevive()
+        {
+            ResetSpecialPresentation();
+            if (!_isConfigured || _runController == null)
+            {
+                return;
+            }
+
+            _lastElapsedSeconds = _runController.ElapsedSeconds;
+            _nextActionAt = _lastElapsedSeconds + ActionDurationSeconds;
+            _nextSpecialAbilityAt = _lastElapsedSeconds +
+                _specialAbilityIntervalSeconds;
+            _hitStopUntil = 0f;
+            ChooseNextAction();
+        }
+
+        private void AdvanceSpecialAbility(float elapsedSeconds)
+        {
+            if (_specialEffectEndsAt > 0f && elapsedSeconds >= _specialEffectEndsAt)
+            {
+                SetVanished(false);
+                SetShielded(false);
+                _specialEffectEndsAt = 0f;
+            }
+
+            if (_specialAbility == MonsterSpecialAbility.None ||
+                elapsedSeconds < _nextSpecialAbilityAt ||
+                _target == null || !_target.IsActive)
+            {
+                return;
+            }
+
+            _nextSpecialAbilityAt = elapsedSeconds +
+                _specialAbilityIntervalSeconds;
+            switch (_specialAbility)
+            {
+                case MonsterSpecialAbility.Vanish:
+                    SetVanished(true);
+                    _specialEffectEndsAt = elapsedSeconds +
+                        Mathf.Max(0.2f, _specialAbilityDurationSeconds);
+                    break;
+                case MonsterSpecialAbility.Shield:
+                    SetShielded(true);
+                    _specialEffectEndsAt = elapsedSeconds +
+                        Mathf.Max(0.2f, _specialAbilityDurationSeconds);
+                    break;
+                case MonsterSpecialAbility.Teleport:
+                    TeleportToNewPosition();
+                    break;
+                case MonsterSpecialAbility.HealNearby:
+                    MonsterCombatTarget.HealNearbyAllies(
+                        _target,
+                        _specialAbilityRadius,
+                        _specialAbilityStrength);
+                    break;
+                case MonsterSpecialAbility.ReviveNearby:
+                    MonsterCombatTarget.ReviveNearbyAllies(
+                        _target,
+                        _specialAbilityRadius,
+                        _specialAbilityStrength);
+                    break;
+            }
+        }
+
+        private void SetVanished(bool vanished)
+        {
+            if (_isVanished == vanished)
+            {
+                return;
+            }
+
+            _isVanished = vanished;
+            if (visualRoot != null)
+            {
+                visualRoot.gameObject.SetActive(!vanished);
+            }
+            if (_target != null)
+            {
+                _target.SetVulnerable(!vanished);
+            }
+        }
+
+        private void SetShielded(bool shielded)
+        {
+            if (_isShielded == shielded)
+            {
+                return;
+            }
+
+            _isShielded = shielded;
+            if (_target != null)
+            {
+                _target.SetShielded(shielded, _specialAbilityStrength);
+            }
+        }
+
+        private void TeleportToNewPosition()
+        {
+            if (_actionRandom == null)
+            {
+                return;
+            }
+
+            Vector2 previous = transform.position;
+            Vector2 destination = previous;
+            float minimumDistanceSquared = 1f;
+            for (int attempt = 0; attempt < 5; attempt++)
+            {
+                destination = new Vector2(
+                    _actionRandom.NextFloat(_boundsMin.x, _boundsMax.x),
+                    _actionRandom.NextFloat(_boundsMin.y, _boundsMax.y));
+                if ((destination - previous).sqrMagnitude >= minimumDistanceSquared)
+                {
+                    break;
+                }
+            }
+
+            SetRootPosition(destination);
         }
 
         private void ChooseNextAction()

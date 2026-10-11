@@ -141,7 +141,7 @@
         "id (고정 식별자)": {
           "원본값": "monster.01",
           "설명": "코드·저장 데이터·다른 JSON 항목이 함께 사용하는 고정 식별자입니다. 표시 이름과 다르며 임의 변경 시 저장 이관이 필요합니다.",
-          "한국어뜻": "가넷 그루터기"
+          "한국어뜻": "그루터기"
         },
         "enabled (사용 가능 여부)": {
           "원본값": true,
@@ -178,14 +178,14 @@
         },
         "behaviorType (몬스터 행동 특성)": {
           "원본값": 0,
-          "설명": "기존 MonsterBehaviorType 필드의 숫자 코드이며 현재 0=None만 허용합니다. 신규 종별 행동·스탯은 MonsterDefinition의 MonsterBehaviorProfile 에셋에서 구성합니다."
+          "설명": "이전 전투 JSON 호환용 MonsterBehaviorType 숫자 코드입니다. 현재 0=None을 유지하며, 종별 실제 특수 능력은 Data의 MonsterBehaviorProfile에서 MonsterSpecialAbility 스냅샷 필드로 전달합니다."
         }
       },
       {
         "id (고정 식별자)": {
           "원본값": "monster.02",
           "설명": "코드·저장 데이터·다른 JSON 항목이 함께 사용하는 고정 식별자입니다. 표시 이름과 다르며 임의 변경 시 저장 이관이 필요합니다.",
-          "한국어뜻": "토파즈 동굴박쥐"
+          "한국어뜻": "박쥐"
         },
         "enabled (사용 가능 여부)": {
           "원본값": false,
@@ -222,14 +222,14 @@
         },
         "behaviorType (몬스터 행동 특성)": {
           "원본값": 0,
-          "설명": "기존 MonsterBehaviorType 필드의 숫자 코드이며 현재 0=None만 허용합니다. 신규 종별 행동·스탯은 MonsterDefinition의 MonsterBehaviorProfile 에셋에서 구성합니다."
+          "설명": "이전 전투 JSON 호환용 MonsterBehaviorType 숫자 코드입니다. 현재 0=None을 유지하며, 종별 실제 특수 능력은 Data의 MonsterBehaviorProfile에서 MonsterSpecialAbility 스냅샷 필드로 전달합니다."
         }
       },
       {
         "id (고정 식별자)": {
           "원본값": "monster.03",
           "설명": "코드·저장 데이터·다른 JSON 항목이 함께 사용하는 고정 식별자입니다. 표시 이름과 다르며 임의 변경 시 저장 이관이 필요합니다.",
-          "한국어뜻": "호박 버섯"
+          "한국어뜻": "버섯"
         },
         "enabled (사용 가능 여부)": {
           "원본값": false,
@@ -266,14 +266,14 @@
         },
         "behaviorType (몬스터 행동 특성)": {
           "원본값": 0,
-          "설명": "기존 MonsterBehaviorType 필드의 숫자 코드이며 현재 0=None만 허용합니다. 신규 종별 행동·스탯은 MonsterDefinition의 MonsterBehaviorProfile 에셋에서 구성합니다."
+          "설명": "이전 전투 JSON 호환용 MonsterBehaviorType 숫자 코드입니다. 현재 0=None을 유지하며, 종별 실제 특수 능력은 Data의 MonsterBehaviorProfile에서 MonsterSpecialAbility 스냅샷 필드로 전달합니다."
         }
       },
       {
         "id (고정 식별자)": {
           "원본값": "monster.04",
           "설명": "코드·저장 데이터·다른 JSON 항목이 함께 사용하는 고정 식별자입니다. 표시 이름과 다르며 임의 변경 시 저장 이관이 필요합니다.",
-          "한국어뜻": "자수정 가면유령"
+          "한국어뜻": "가면유령"
         },
         "enabled (사용 가능 여부)": {
           "원본값": false,
@@ -310,14 +310,14 @@
         },
         "behaviorType (몬스터 행동 특성)": {
           "원본값": 0,
-          "설명": "기존 MonsterBehaviorType 필드의 숫자 코드이며 현재 0=None만 허용합니다. 신규 종별 행동·스탯은 MonsterDefinition의 MonsterBehaviorProfile 에셋에서 구성합니다."
+          "설명": "이전 전투 JSON 호환용 MonsterBehaviorType 숫자 코드입니다. 현재 0=None을 유지하며, 종별 실제 특수 능력은 Data의 MonsterBehaviorProfile에서 MonsterSpecialAbility 스냅샷 필드로 전달합니다."
         }
       },
       {
         "id (고정 식별자)": {
           "원본값": "monster.05",
           "설명": "코드·저장 데이터·다른 JSON 항목이 함께 사용하는 고정 식별자입니다. 표시 이름과 다르며 임의 변경 시 저장 이관이 필요합니다.",
-          "한국어뜻": "수정 전갈"
+          "한국어뜻": "전갈"
         },
         "enabled (사용 가능 여부)": {
           "원본값": false,
@@ -354,14 +354,14 @@
         },
         "behaviorType (몬스터 행동 특성)": {
           "원본값": 0,
-          "설명": "기존 MonsterBehaviorType 필드의 숫자 코드이며 현재 0=None만 허용합니다. 신규 종별 행동·스탯은 MonsterDefinition의 MonsterBehaviorProfile 에셋에서 구성합니다."
+          "설명": "이전 전투 JSON 호환용 MonsterBehaviorType 숫자 코드입니다. 현재 0=None을 유지하며, 종별 실제 특수 능력은 Data의 MonsterBehaviorProfile에서 MonsterSpecialAbility 스냅샷 필드로 전달합니다."
         }
       },
       {
         "id (고정 식별자)": {
           "원본값": "monster.06",
           "설명": "코드·저장 데이터·다른 JSON 항목이 함께 사용하는 고정 식별자입니다. 표시 이름과 다르며 임의 변경 시 저장 이관이 필요합니다.",
-          "한국어뜻": "사파이어 눈요정"
+          "한국어뜻": "눈요정"
         },
         "enabled (사용 가능 여부)": {
           "원본값": false,
@@ -398,14 +398,14 @@
         },
         "behaviorType (몬스터 행동 특성)": {
           "원본값": 0,
-          "설명": "기존 MonsterBehaviorType 필드의 숫자 코드이며 현재 0=None만 허용합니다. 신규 종별 행동·스탯은 MonsterDefinition의 MonsterBehaviorProfile 에셋에서 구성합니다."
+          "설명": "이전 전투 JSON 호환용 MonsterBehaviorType 숫자 코드입니다. 현재 0=None을 유지하며, 종별 실제 특수 능력은 Data의 MonsterBehaviorProfile에서 MonsterSpecialAbility 스냅샷 필드로 전달합니다."
         }
       },
       {
         "id (고정 식별자)": {
           "원본값": "monster.07",
           "설명": "코드·저장 데이터·다른 JSON 항목이 함께 사용하는 고정 식별자입니다. 표시 이름과 다르며 임의 변경 시 저장 이관이 필요합니다.",
-          "한국어뜻": "빙결 거미"
+          "한국어뜻": "거미"
         },
         "enabled (사용 가능 여부)": {
           "원본값": false,
@@ -442,14 +442,14 @@
         },
         "behaviorType (몬스터 행동 특성)": {
           "원본값": 0,
-          "설명": "기존 MonsterBehaviorType 필드의 숫자 코드이며 현재 0=None만 허용합니다. 신규 종별 행동·스탯은 MonsterDefinition의 MonsterBehaviorProfile 에셋에서 구성합니다."
+          "설명": "이전 전투 JSON 호환용 MonsterBehaviorType 숫자 코드입니다. 현재 0=None을 유지하며, 종별 실제 특수 능력은 Data의 MonsterBehaviorProfile에서 MonsterSpecialAbility 스냅샷 필드로 전달합니다."
         }
       },
       {
         "id (고정 식별자)": {
           "원본값": "monster.08",
           "설명": "코드·저장 데이터·다른 JSON 항목이 함께 사용하는 고정 식별자입니다. 표시 이름과 다르며 임의 변경 시 저장 이관이 필요합니다.",
-          "한국어뜻": "다이아 철골렘"
+          "한국어뜻": "골렘"
         },
         "enabled (사용 가능 여부)": {
           "원본값": false,
@@ -486,14 +486,14 @@
         },
         "behaviorType (몬스터 행동 특성)": {
           "원본값": 0,
-          "설명": "기존 MonsterBehaviorType 필드의 숫자 코드이며 현재 0=None만 허용합니다. 신규 종별 행동·스탯은 MonsterDefinition의 MonsterBehaviorProfile 에셋에서 구성합니다."
+          "설명": "이전 전투 JSON 호환용 MonsterBehaviorType 숫자 코드입니다. 현재 0=None을 유지하며, 종별 실제 특수 능력은 Data의 MonsterBehaviorProfile에서 MonsterSpecialAbility 스냅샷 필드로 전달합니다."
         }
       },
       {
         "id (고정 식별자)": {
           "원본값": "monster.09",
           "설명": "코드·저장 데이터·다른 JSON 항목이 함께 사용하는 고정 식별자입니다. 표시 이름과 다르며 임의 변경 시 저장 이관이 필요합니다.",
-          "한국어뜻": "드래곤 불꽃봉오리"
+          "한국어뜻": "봉오리"
         },
         "enabled (사용 가능 여부)": {
           "원본값": false,
@@ -530,14 +530,14 @@
         },
         "behaviorType (몬스터 행동 특성)": {
           "원본값": 0,
-          "설명": "기존 MonsterBehaviorType 필드의 숫자 코드이며 현재 0=None만 허용합니다. 신규 종별 행동·스탯은 MonsterDefinition의 MonsterBehaviorProfile 에셋에서 구성합니다."
+          "설명": "이전 전투 JSON 호환용 MonsterBehaviorType 숫자 코드입니다. 현재 0=None을 유지하며, 종별 실제 특수 능력은 Data의 MonsterBehaviorProfile에서 MonsterSpecialAbility 스냅샷 필드로 전달합니다."
         }
       },
       {
         "id (고정 식별자)": {
           "원본값": "monster.10",
           "설명": "코드·저장 데이터·다른 JSON 항목이 함께 사용하는 고정 식별자입니다. 표시 이름과 다르며 임의 변경 시 저장 이관이 필요합니다.",
-          "한국어뜻": "고대 해골군주"
+          "한국어뜻": "해골군주"
         },
         "enabled (사용 가능 여부)": {
           "원본값": false,
@@ -574,7 +574,7 @@
         },
         "behaviorType (몬스터 행동 특성)": {
           "원본값": 0,
-          "설명": "기존 MonsterBehaviorType 필드의 숫자 코드이며 현재 0=None만 허용합니다. 신규 종별 행동·스탯은 MonsterDefinition의 MonsterBehaviorProfile 에셋에서 구성합니다."
+          "설명": "이전 전투 JSON 호환용 MonsterBehaviorType 숫자 코드입니다. 현재 0=None을 유지하며, 종별 실제 특수 능력은 Data의 MonsterBehaviorProfile에서 MonsterSpecialAbility 스냅샷 필드로 전달합니다."
         }
       }
     ],

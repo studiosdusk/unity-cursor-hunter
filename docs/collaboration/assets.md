@@ -25,12 +25,18 @@
 | field.normal | Combat | [Map_3_Jungle Age.prefab](../../Assets/DownLoadAssets/Map/2D%20Maps%20-%20Age%20Battle%20Stages/Prefabs/Landscape/Map/Map_3_Jungle%20Age.prefab) |
 | field.boss | Combat | [Map_13_Medieval Age.prefab](../../Assets/DownLoadAssets/Map/2D%20Maps%20-%20Age%20Battle%20Stages/Prefabs/Landscape/Map/Map_13_Medieval%20Age.prefab) |
 | monster.shared-root | Combat | [MonsterRoot.prefab](../../Assets/CursorHunter/Combat/Prefabs/Monsters/MonsterRoot.prefab) |
-| monster.behavior-profile.basic | Data | [Basic.asset](../../Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Basic.asset) — 10종 정의에서 재사용하는 기본 이동 프로필 |
+| monster.behavior-profile.basic | Data | [Basic.asset](../../Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Basic.asset) — 기본 이동 프로필 |
 | monster.behavior-profile.fast | Data | [Fast.asset](../../Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Fast.asset) |
 | monster.behavior-profile.high-health | Data | [HighHealth.asset](../../Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/HighHealth.asset) |
 | monster.behavior-profile.small | Data | [Small.asset](../../Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Small.asset) |
 | monster.behavior-profile.large-slow | Data | [LargeSlow.asset](../../Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/LargeSlow.asset) |
 | monster.behavior-profile.circular | Data | [Circular.asset](../../Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Circular.asset) |
+| monster.behavior-profile.vanish | Data | [Vanish.asset](../../Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Vanish.asset) |
+| monster.behavior-profile.shield | Data | [Shield.asset](../../Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Shield.asset) |
+| monster.behavior-profile.teleport | Data | [Teleport.asset](../../Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Teleport.asset) |
+| monster.behavior-profile.healer | Data | [Healer.asset](../../Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Healer.asset) |
+| monster.behavior-profile.resurrector | Data | [Resurrector.asset](../../Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Resurrector.asset) |
+| monster.behavior-profile.giant | Data | [Giant.asset](../../Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Giant.asset) |
 | monster.golem | Combat | [Golem_Iron.prefab](../../Assets/DownLoadAssets/MonsterAsset/2D%20Minimal-EnemyMonster/EnemyMonster%202/Prefabs/Golem/Golem_Iron.prefab) |
 | boss.v4 | Combat | [Golem_Iron.prefab](../../Assets/DownLoadAssets/MonsterAsset/2D%20Minimal-EnemyMonster/EnemyMonster%202/Prefabs/Golem/Golem_Iron.prefab) |
 | skill.fireball | Combat | [FX_AOE_Fireball.prefab](../../Assets/DownLoadAssets/Eric%20VFX%20Studio/Game%20VFX%20-%20Stylized%20AOE%20Bundle/Prefabs/URP/FX_AOE_Fireball.prefab) |
@@ -103,9 +109,14 @@ PDF가 아닌 이 문서에 유지한다.
 
 ## 젬스톤 표시·해금 매핑
 
-젬스톤 슬롯은 보스 처치로 자동 추가하지 않는다. `Stat → 젬 수집`의 해금 노드를
-구매하면 해당 색상 아이콘이 목록에 처음 나타나고, 이후 발견 노드 구매 횟수가 그
-종류의 랜덤 등장 가중치를 올린다. 시작 가중치는 가넷 70, 토파즈 20, 자수정 8,
-사파이어 3, 다이아몬드 1이며, 발견 강화는 각각 +5·+3·+2·+1이다. 해금된 종류만
-가중치 합으로 100% 정규화한다. 노드 ID·비용·아이콘 순서는
-[trait-ui-assets.md](trait-ui-assets.md)의 젬스톤 표가 단일 기준이다.
+가넷은 기본 해금이다. 나머지 젬스톤은 해당 종류를 드롭하는 몬스터를 해금하면
+전투 데이터에서 공급 상태가 열린다. 연구 트리에서는 새 종류를 처음 공급하는 몬스터
+노드의 우측 상단에 젬스톤 아이콘을 표시한다.
+
+| 몬스터 | 새로 열리는 젬스톤 |
+|---|---|
+| 박쥐 (monster.02) | 토파즈 |
+| 가면유령 (monster.04) | 자수정 |
+| 눈요정 (monster.06) | 사파이어 |
+| 골렘 (monster.08) | 다이아몬드 |
+| 봉오리 (monster.09) | 드래곤 젬 |

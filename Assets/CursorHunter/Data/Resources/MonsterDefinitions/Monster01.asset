@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Monster01
   m_EditorClassIdentifier: CursorHunter.Data::CursorHunter.Data.MonsterDefinition
   monsterId: monster.01
-  displayName: 가넷 그루터기
+  displayName: 그루터기
   prefabKey: Walker/Walker_Stump
   visualPrefab: {fileID: 5377580900226821509, guid: 76b40faaa9f5b364486f174c85bc38f5, type: 3}
   baseStats:

@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Monster08
   m_EditorClassIdentifier: CursorHunter.Data::CursorHunter.Data.MonsterDefinition
   monsterId: monster.08
-  displayName: 다이아 철골렘
+  displayName: 골렘
   prefabKey: Golem/Golem_Iron
   visualPrefab: {fileID: 3296661359835857684, guid: 84ccd47ae94098f489358e7e865939be, type: 3}
   baseStats:
@@ -29,4 +29,4 @@ MonoBehaviour:
     bonusDropAmount: 1
     bonusDropChancePercent: 100
   behaviorProfiles:
-  - {fileID: 11400000, guid: 75d93b8c58314c00931fce8caf12af10, type: 2}
+  - {fileID: 11400000, guid: 01a7d3c08a6e4d03b4b2771043f81329, type: 2}

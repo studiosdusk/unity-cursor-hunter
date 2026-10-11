@@ -467,5 +467,53 @@
     "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/Prefabs/Skeleton/Skeleton_Warlord.prefab",
     "guid": "1fb07fcfb1fba2e46b61c34b043f72a0",
     "status": "runtime-applied"
+  },
+  {
+    "design_id": "monster.behavior-profile.vanish",
+    "owner": "Data",
+    "path": "Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Vanish.asset",
+    "guid": "d56cfff401af4e5ab650c502e9aca9b3",
+    "status": "runtime-applied",
+    "note": "사라짐 능력 프로필"
+  },
+  {
+    "design_id": "monster.behavior-profile.shield",
+    "owner": "Data",
+    "path": "Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Shield.asset",
+    "guid": "ac42c96b714f44d19200eeaebfee7fc7",
+    "status": "runtime-applied",
+    "note": "주기 방패 능력 프로필"
+  },
+  {
+    "design_id": "monster.behavior-profile.teleport",
+    "owner": "Data",
+    "path": "Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Teleport.asset",
+    "guid": "9a945c3bd638416992231cb585dd44f3",
+    "status": "runtime-applied",
+    "note": "순간이동 능력 프로필"
+  },
+  {
+    "design_id": "monster.behavior-profile.healer",
+    "owner": "Data",
+    "path": "Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Healer.asset",
+    "guid": "44b2ab2a85c64ca59a08b02b0653a315",
+    "status": "runtime-applied",
+    "note": "주변 회복 능력 프로필"
+  },
+  {
+    "design_id": "monster.behavior-profile.resurrector",
+    "owner": "Data",
+    "path": "Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Resurrector.asset",
+    "guid": "a4ee211e582848afac19c68578115ee3",
+    "status": "runtime-applied",
+    "note": "주변 부활 능력 프로필"
+  },
+  {
+    "design_id": "monster.behavior-profile.giant",
+    "owner": "Data",
+    "path": "Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Giant.asset",
+    "guid": "01a7d3c08a6e4d03b4b2771043f81329",
+    "status": "runtime-applied",
+    "note": "대형 몬스터 프로필"
   }
 ]

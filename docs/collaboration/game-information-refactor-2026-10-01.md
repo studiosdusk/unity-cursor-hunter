@@ -3,7 +3,8 @@
 > 아래 내용은 유물 제거·전투 정보 v3 분리 이전의 기록이다. 현재 기준은
 > [최신 인수인계](current-state-handoff-v0.0.4.md)와 [연결 계약](contracts.md)이다.
 > 현재 game-data.en.json에는 progression/entities/fieldHelp/implementation/유물 정보가 없으며,
-> 성장 설정은 progression-config.en.json으로 분리했다. 몬스터 behaviorType은 None=0만 준비했다.
+> 성장 설정은 progression-config.en.json으로 분리했다. 레거시 `behaviorType`은 None=0을 유지하고,
+> 종별 실제 특수 능력은 별도 `MonsterSpecialAbility` 스냅샷 필드와 Data 행동 프로필로 전달한다.
 
 # 2026-10-01 게임 정보 JSON / 성장 구조 개편
 
@@ -190,19 +191,19 @@ JSON v2 일반 전투에서는 JSON에서 읽은 값이 우선한다.
 
 | ID | 콘셉트 이름 | 공급 젬 | 프리팹 |
 |---|---|---|---|
-| monster.01 | 가넷 그루터기 | gem.garnet | Walker/Walker_Stump |
-| monster.02 | 토파즈 동굴박쥐 | gem.topaz | Bat/Bat_Cave |
-| monster.03 | 호박 버섯 | gem.topaz | Walker/Walker_Mushroom |
-| monster.04 | 자수정 가면유령 | gem.amethyst | Ghost/Ghost_Mask |
-| monster.05 | 수정 전갈 | gem.amethyst | Scorpion/Scorpion_Purple |
-| monster.06 | 사파이어 눈요정 | gem.sapphire | Fairy/Fairy_Snow |
-| monster.07 | 빙결 거미 | gem.sapphire | Spider/Spider_Frozen |
-| monster.08 | 다이아 철골렘 | gem.diamond | Golem/Golem_Iron |
-| monster.09 | 드래곤 불꽃봉오리 | gem.dragon | Bud/Bud_Fire |
-| monster.10 | 고대 해골군주 | gem.dragon | Skeleton/Skeleton_Warlord |
+| monster.01 | 그루터기 | gem.garnet | Walker/Walker_Stump |
+| monster.02 | 박쥐 | gem.topaz | Bat/Bat_Cave |
+| monster.03 | 버섯 | gem.topaz | Walker/Walker_Mushroom |
+| monster.04 | 가면유령 | gem.amethyst | Ghost/Ghost_Mask |
+| monster.05 | 전갈 | gem.amethyst | Scorpion/Scorpion_Purple |
+| monster.06 | 눈요정 | gem.sapphire | Fairy/Fairy_Snow |
+| monster.07 | 거미 | gem.sapphire | Spider/Spider_Frozen |
+| monster.08 | 골렘 | gem.diamond | Golem/Golem_Iron |
+| monster.09 | 봉오리 | gem.dragon | Bud/Bud_Fire |
+| monster.10 | 해골군주 | gem.dragon | Skeleton/Skeleton_Warlord |
 
-일반 몬스터는 공격하지 않는 수확 대상이며, 위 콘셉트는 외형·재화 역할을 정의한다.
-종별 이동/특수 공격을 새로 구현한 것은 아니다.
+일반 몬스터는 공격하지 않는 수확 대상이다. 종별 특수 능력의 실제 구성은
+`docs/collaboration/contracts.md`의 몬스터 행동 프로필 표를 따른다.
 기본종은 무료, 다음 종은 앞 종에서 획득 가능한 재화로 순차 구매한다.
 자기 자신이 드롭하는 젬으로 자기 해금을 결제하는 순환 잠금을 만들지 않는다.
 모든 해금 종은 누적 등장하며 종별 주기와 생산량을 각각 적용한다.

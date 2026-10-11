@@ -581,6 +581,12 @@ namespace CursorHunter.Combat
                 return true;
             }
 
+            if (target is MonsterCombatTarget monsterTarget &&
+                !monsterTarget.TryClaimKillSettlement())
+            {
+                return true;
+            }
+
             if (_defeatedCount == int.MaxValue ||
                 !TryAddNonNegative(
                     _garnetEarned,

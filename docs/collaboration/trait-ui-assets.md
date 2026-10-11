@@ -22,6 +22,22 @@
 `BasicFrame_SquareSolid01_Demo01.png`를 9-slice 패널로 재사용한다. 이전 본문의 탭별 행,
 고정 우측 상세 패널, 탭별 스크린샷은 과거 레이아웃 기록이다.
 
+일반 몬스터 10종의 이름과 실제 전투 특성은 아래 표를 기준으로 한다. 잠금이 풀린
+몬스터 중 새 젬스톤을 공급하는 종은 아이콘 우측 상단에 해당 젬스톤을 표시한다.
+
+| ID | 이름 | 실제 전투 특성 | 처음 공급하는 젬스톤 |
+|---|---|---|---|
+| monster.01 | 그루터기 | 기본 몬스터 | 가넷 (시작 공급원) |
+| monster.02 | 박쥐 | 시각·피격 영역 0.62배 | 토파즈 |
+| monster.03 | 버섯 | 이동 속도 1.8배 | — |
+| monster.04 | 가면유령 | 4초마다 1.2초 은신 | 자수정 |
+| monster.05 | 전갈 | 4.5초마다 1.7초간 피해 65% 감소 | — |
+| monster.06 | 눈요정 | 3.5초마다 순간이동 | 사파이어 |
+| monster.07 | 거미 | 체력 2.5배 | — |
+| monster.08 | 골렘 | 시각 크기 2배, 피격 영역 1.8배 | 다이아몬드 |
+| monster.09 | 봉오리 | 3.5초마다 반경 2.75 내 아군 체력 20% 회복 | 드래곤 젬 |
+| monster.10 | 해골군주 | 4초마다 반경 3.5 내 쓰러진 아군을 체력 30%로 부활 | — |
+
 # 특성 화면 데이터·에셋 매핑
 
 특성 화면 프로토타입의 실제 적용 매핑이다. 원본 파일을 복제하지 않고
@@ -32,11 +48,11 @@
 최종 전투 배경은 전투 맵의 `SpriteRenderer`/프리팹을 사용하고 이 타일은 보조 레이어로
 남긴다.
 
-## 현재 적용 기준 · v0.0.4 최신 확정안 · 2026-09-18
+## 과거 데이터 기록 · v0.0.4 · 2026-09-18
 
-아래 표가 현재 `TraitCatalog.CreateRuntimeDemo()`와 `Main.unity` 직렬화 배열의 기준이다.
-이전 버전의 상세 표는 에셋 후보를 추적하기 위한 기록으로 남겨 두며, 노드 수·ID·표시명은
-아래 표를 우선한다.
+아래 표는 개편 전 `TraitCatalog.CreateRuntimeDemo()` 데이터 기록이며 현재 런타임 기준이
+아니다. 최신 설정은 위의 현재 UI/특성 표와 실제 `progression-config.en.json`,
+`MonsterDefinition` 에셋을 따른다.
 
 | 탭 | 카테고리/행 | 노드 수 | 화면 동작 |
 |---|---|---:|---|
@@ -53,7 +69,7 @@
 |---|---|---|
 | `gemstoneIcons` | 0 가넷, 1 토파즈, 2 자수정, 3 사파이어, 4 다이아몬드, 5 드래곤 젬 | `Icon_ItemIcons/512/ItemIcon_Gem_Pentagon_Red.png`, `...Yellow.png`, `...Purple.png`, `...Blue.png`, `...Green.png`, `...Gray.png` |
 | `skillIcons` | 0 파이어볼, 1 라이트닝, 2 프리즈닝, 3 허리케인, 4 메테오, 5 드래곤 브레스 | `IconMisc/Icon_Fire01_512.png`, `Icon_ItemIcons/512/ItemIcon_Badge_Energy.png`, `IconMisc/Icon_Shield05_512.png`, `IconMisc/Skill1.png`, `Icon_ItemIcons/512/ItemIcon_Weapon_Hammer.png`, `IconPack/2D Minimal-IconPack/Icons/512/Misc_Dragon_01_Red.png` |
-| `monsterIcons` | 0~19 = Monster1~20 | 지정 경로 `Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites`의 Body 스프라이트 20개 |
+| `monsterIcons` | 0~9 = monster.01~monster.10 | 지정 경로 `Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites`의 Body 스프라이트 10개 |
 | `lootIcons` | 0~19 일반 전리품, 20~24 보스 전리품 | `Icon_ItemIcons/512/ItemIcon_Bag02.png`, `ItemIcon_Coin.png`, `ItemIcon_Bag01.png`를 의미에 맞춰 반복 매핑 |
 | `petIcons` | 0 펫 1 | `Icon_ItemIcons/512/ItemIcon_Fox.png` |
 
@@ -134,63 +150,49 @@
 |---|---|---|
 | `stat.attack` 공격력 | 공격력 1~100 (10개) | `attackIcon` · 512px 검 |
 | `stat.radius` 반경 | 작은 원 → 영역 1~5 → 1/32 → 1/16 → 1/8 → 1/4 → 전체 (11개) | `radiusIcon` · 512px 방패 |
-| `stat.multiClick` 다중 클릭 | 1회 → 더블 → 트리플 → 쿼드 → 자동 무한 (5개) | `clickIcon` · 512px 활 |
+| `stat.cooldown` 공격 간격 | 런 기본값에서 공격 간격 강화 (5개) | `timerIcon` · 512px 타이머 |
 | `stat.critical` 치명타 | 0% → 5% → 10% → 20% → 30% → 50% → 75% → 100% (8개) | `criticalIcon` · 512px 별 |
-| `stat.gemstone` 젬 수집 | 수집 5 + 해금·발견 15 (20개) | 수집은 가방, 해금·발견은 보석별 아이콘 |
 | `stat.boss` 보스 공격력 | 보스 공격력 1~5 (5개) | `bossIcon` · 512px 해골 |
-| `stat.fieldDuration` 일반 필드 시간 | 15초 → 20초 → 25초 → 30초 → 35초 → 40초 → 45초 → 50초 → 55초 → 60초 (10개) | `timerIcon` · 512px 타이머 |
+| `stat.fieldDuration` 일반 필드 시간 | 15초 → 20초 → 25초 → 30초 (4개) | `timerIcon` · 512px 타이머 |
 
 ### 현재 스탯 노드별 에셋 매핑
 
 아래 ID와 아이콘 매핑이 현재 기획·카탈로그의 기준이다. 모든 Stat 노드는 같은
-정사각형 셀과 카테고리별 아이콘을 사용하고, 젬스톤 해금·발견 노드만 해당
-젬스톤 색상 아이콘으로 교체한다. 42개 스탯·8회/16회 클릭·이전 5단계 반경
-표는 폐기된 캡처용 기록이며 현재 구현·기획에 사용하지 않는다.
+정사각형 셀과 카테고리별 아이콘을 사용한다. 42개 스탯·8회/16회 클릭·이전 5단계
+반경 표는 폐기된 캡처용 기록이며 현재 구현·기획에 사용하지 않는다.
 
 | 노드 ID 범위 | 표시 순서 | 적용 에셋 |
 |---|---|---|
 | `stat.attack.01~10` | 공격력 1 → 3 → 6 → 10 → 16 → 24 → 35 → 50 → 70 → 100 | `Icon_ItemIcons/512/ItemIcon_Weapon_Sword.png` |
 | `stat.radius.01~11` | 작은 원 → 영역 1~5 → 1/32 → 1/16 → 1/8 → 1/4 → 화면 전체 | `Icon_ItemIcons/512/ItemIcon_Weapon_Shield.png` |
-| `stat.multiClick.01~05` | 1회 → 더블 → 트리플 → 쿼드 → 자동 무한 | `Icon_ItemIcons/512/ItemIcon_Weapon_Bow.png` |
+| `stat.cooldown.01~05` | 기본 공격 간격 강화 | `IconMisc/Icon_Timer.png` |
 | `stat.critical.01~08` | 0% → 5% → 10% → 20% → 30% → 50% → 75% → 100% | `Icon_ItemIcons/512/ItemIcon_Star.png` |
-| `stat.gemstone.01~05` | 접촉 클릭 → 접촉 자동 → 자석 → 자석 반경 확대 1~2 → 화면 전체 자동 | `Icon_ItemIcons/512/ItemIcon_Bag01.png` |
-| `stat.gemstone.unlock.*` / `stat.gemstone.rate.*.01~02` | 토파즈·자수정·사파이어·다이아몬드·드래곤 젬 해금·발견 I/II | 해당 `gemstoneIcons` 색상 아이콘 |
 | `stat.boss.01~05` | 보스 공격력 1 → 2 → 3 → 4 → 5 | `Icon_ItemIcons/512/ItemIcon_Skull02.png` |
 
 스킬 행의 해금 노드는 실제 스킬 아이콘을 사용하고 후속 피해량·범위·쿨타임 노드는
-검·방패·타이머 공통 아이콘을 사용한다. 몬스터 행은 `monsterIcons[0..19]`를
-Monster1~Monster20에 순서대로 매핑하고, 생산량 I/II/III은 같은 Body 스프라이트를
+검·방패·타이머 공통 아이콘을 사용한다. 몬스터 행은 `monsterIcons[0..9]`를
+monster.01~monster.10에 순서대로 매핑하고, 생산량 I/II/III은 같은 Body 스프라이트를
 재사용한다.
 
-## 젬스톤 해금·랜덤 드롭 UI
+## 몬스터 해금과 젬스톤 표시
 
-젬스톤은 보스 처치로 자동 추가하지 않고 **Stat → 젬 수집** 행의 해금 노드로
-추가한다. 게임 시작에는 가넷만 표시하며, 토파즈·자수정·사파이어·다이아몬드·
-드래곤 젬은 해당 해금 노드를 구매할 때까지 이름·아이콘·보유량을 숨긴다.
+가넷은 기본 공급원이다. 나머지 젬스톤은 해당 종류를 공급하는 몬스터를 해금하면
+`GameInformationBuilder`가 사용 가능 상태로 계산한다. 별도의 젬스톤 해금·확률 강화
+노드나 랜덤 젬 등장 가중치는 사용하지 않는다.
 
-해금 노드는 `토파즈 → 자수정 → 사파이어 → 다이아몬드 → 드래곤 젬` 순서의
-선행 조건을 가진다. 해금된 보석만 랜덤 드롭 표에 참여하며, 발견 I·II 노드는
-해당 보석의 가중치만 올린 뒤 전체 합을 100%로 다시 정규화한다.
+새 젬스톤을 처음 공급하는 몬스터의 연구 노드 우측 상단에 `gemstoneIcons` 배열의
+색상 아이콘을 표시한다. 잠겨 이름을 숨긴 몬스터에는 배지를 보여주지 않는다.
 
-`W = min(최대 가중치, 기본 가중치 + 발견 강화 수 × 강화당 가중치)`  
-`P = W / 해금된 보석의 W 합 × 100`
+| 몬스터 노드 | 해금되는 젬스톤 | `gemstoneIcons` 인덱스 |
+|---|---|---:|
+| monster.02 박쥐 | 토파즈 | 1 |
+| monster.04 가면유령 | 자수정 | 2 |
+| monster.06 눈요정 | 사파이어 | 3 |
+| monster.08 골렘 | 다이아몬드 | 4 |
+| monster.09 봉오리 | 드래곤 젬 | 5 |
 
-| 젬스톤 | 해금 Stat 노드 | 기본 가중치 | 강화 1회 | 확률 강화 노드 | 적용 아이콘 |
-|---|---|---:|---:|---:|---|
-| 가넷 | 시작 | 70 | 0 | 없음 | `Icon_ItemIcons/512/ItemIcon_Gem_Pentagon_Red.png` |
-| 토파즈 | `stat.gemstone.unlock.topaz` | 20 | +5 | 2 | `Icon_ItemIcons/512/ItemIcon_Gem_Pentagon_Yellow.png` |
-| 자수정 | `stat.gemstone.unlock.amethyst` | 12 | +4 | 2 | `Icon_ItemIcons/512/ItemIcon_Gem_Pentagon_Purple.png` |
-| 사파이어 | `stat.gemstone.unlock.sapphire` | 8 | +3 | 2 | `Icon_ItemIcons/512/ItemIcon_Gem_Pentagon_Blue.png` |
-| 다이아몬드 | `stat.gemstone.unlock.diamond` | 4 | +2 | 2 | `Icon_ItemIcons/512/ItemIcon_Gem_Pentagon_Green.png` |
-| 드래곤 젬 | `stat.gemstone.unlock.dragon` | 2 | +1 | 2 | `Icon_ItemIcons/512/ItemIcon_Gem_Pentagon_Gray.png` |
-
-Stat의 젬 수집 행은 접촉 클릭 → 접촉 자동 → 자석 → 자석 반경 확대 1~2 →
-화면 전체 자동 수집의 5개 상태를 가진다. 이 수집 방식은 젬 종류 해금·발견
-확률 노드와 같은 행에 배치하지만 서로 다른 노드 ID로 저장한다.
-
-각 전투·정산·특성 화면은 현재 해금된 젬스톤만 표시하고, Main 최상위 메뉴에는
-보유 젬스톤 HUD를 표시하지 않는다. `TraitScreenController.TryRollGemstoneDrop`은
-Combat이 전달한 0~1 난수로 해금된 후보만 결정론적으로 선택한다.
+가넷은 시작부터 공급되므로 배지를 붙이지 않는다. 같은 젬을 공급하는 후속 몬스터에는
+새 젬 해금 배지를 반복 표시하지 않는다.
 
 ## 스킬 아이콘 배열
 
@@ -215,50 +217,39 @@ Combat이 전달한 0~1 난수로 해금된 후보만 결정론적으로 선택�
 
 ## 실행 화면 캡처
 
-Unity 6000.3.13f1 `Main.unity` Game View에서 캡처한다. 기본 캡처는 새 게임
-(가넷만 표시) 기준이며, 젬스톤 해금 예시는 Stat 행의 해금 노드를 구매한 상태로
-별도 저장한다. 최신 캡처는 잠금·해금·확률 표시가 반영된 후 다시 생성한다.
+과거 캡처 자료이며 현재 노드 배치와 해금 규칙의 검증 자료로 사용하지 않는다. 새 화면은
+Unity 6000.3.13f1 `Main.unity` Game View에서 다시 캡처한다.
 
 | 탭 | 캡처 파일 |
 |---|---|
 | 스탯 | [trait-stat.png](./screenshots/trait-stat.png) |
 | 스킬 | [trait-skill.png](./screenshots/trait-skill.png) |
 | 몬스터 | [trait-monster.png](./screenshots/trait-monster.png) |
-| 젬스톤 해금 예시 | [trait-gemstone-unlocked.png](./screenshots/trait-gemstone-unlocked.png) |
+| 몬스터 해금 예시 | [trait-gemstone-unlocked.png](./screenshots/trait-gemstone-unlocked.png) |
 
 ## 몬스터 아이콘 배열
 
-`TraitScreenController.monsterIcons`의 0번 인덱스는 `Monster1`, 19번 인덱스는
-`Monster20`에 매핑한다.
+`TraitScreenController.monsterIcons`의 0~9번 인덱스는 각각 `monster.01`~`monster.10`에
+매핑한다.
 모든 이미지는 사용자가 지정한
 `Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2` 아래의
 `ResourcesData/Sprites`에서 가져온 `Body.png` 또는 동일 역할의 `Body_Fire.png`다.
 
-| 노드 | 원본 변형 | 적용 스프라이트 |
+| ID / 이름 | 원본 변형 | 적용 스프라이트 |
 |---|---|---|
-| Monster1 | Alien_Vampire | `Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Alien/Alien_Vampire/Body.png` |
-| Monster2 | Alien_Wizard | `Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Alien/Alien_Wizard/Body.png` |
-| Monster3 | Ant_Honey | `Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Ant/Ant_Honey/Body.png` |
-| Monster4 | Ant_Jelly | `Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Ant/Ant_Jelly/Body.png` |
-| Monster5 | Ant_Worker | `Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Ant/Ant_Worker/Body.png` |
-| Monster6 | Ant_Yellow | `Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Ant/Ant_Yellow/Body.png` |
-| Monster7 | Bat_Cave | `Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Bat/Bat_Cave/Body.png` |
-| Monster8 | Bat_Pig | `Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Bat/Bat_Pig/Body.png` |
-| Monster9 | Bat_Skull | `Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Bat/Bat_Skull/Body.png` |
-| Monster10 | Bee_Devil | `Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Bee/Bee_Devil/Body.png` |
-| Monster11 | Bee_Honey | `Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Bee/Bee_Honey/Body.png` |
-| Monster12 | Bee_Hornet | `Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Bee/Bee_Hornet/Body.png` |
-| Monster13 | Bud_Bomb | `Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Bud/Bud_Bomb/Body.png` |
-| Monster14 | Bud_Fire | `Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Bud/Bud_Fire/Body_Fire.png` |
-| Monster15 | Bud_Flower | `Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Bud/Bud_Flower/Body.png` |
-| Monster16 | Cactus_Green | `Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Cactus/Cactus_Green/Body.png` |
-| Monster17 | Cactus_Snow | `Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Cactus/Cactus_Snow/Body.png` |
-| Monster18 | Dragonfly_Armor | `Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Dragonfly/Dragonfly_Armor/Body.png` |
-| Monster19 | Dragonfly_Bot | `Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Dragonfly/Dragonfly_Bot/Body.png` |
-| Monster20 | Dragonfly_Green | `Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Dragonfly/Dragonfly_Green/Body.png` |
+| monster.01 그루터기 | Walker_Stump | `.../Walker/Walker_Stump/Body.png` |
+| monster.02 박쥐 | Bat_Cave | `.../Bat/Bat_Cave/Body.png` |
+| monster.03 버섯 | Walker_Mushroom | `.../Walker/Walker_Mushroom/Body.png` |
+| monster.04 가면유령 | Ghost_Mask | `.../Ghost/Ghost_Mask/Body.png` |
+| monster.05 전갈 | Scorpion_Purple | `.../Scorpion/Scorpion_Purple/Body.png` |
+| monster.06 눈요정 | Fairy_Snow | `.../Fairy/Fairy_Snow/Body.png` |
+| monster.07 거미 | Spider_Frozen | `.../Spider/Spider_Frozen/Body.png` |
+| monster.08 골렘 | Golem_Iron | `.../Golem/Golem_Iron/Body.png` |
+| monster.09 봉오리 | Bud_Fire | `.../Bud/Bud_Fire/Body_Fire.png` |
+| monster.10 해골군주 | Skeleton_Warlord | `.../Skeleton/Skeleton_Warlord/Body.png` |
 
-몬스터 표시명과 원본 변형명은 분리되어 있으므로, 이후 최종 네이밍을 정해도
-배열 순서와 전투 ID는 유지한다.
+위 경로는 앞서 표시한 `ResourcesData/Sprites/` 아래의 상대 경로다. 아이콘 이름,
+몬스터 ID, 전투 프리팹은 각기 분리되어 있지만 현재 열 종의 표시는 위 이름을 사용한다.
 
 ## 한국어 폰트
 
