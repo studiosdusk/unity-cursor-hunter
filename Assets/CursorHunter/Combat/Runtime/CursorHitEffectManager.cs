@@ -25,9 +25,8 @@ namespace CursorHunter.Combat
         [Tooltip("Total visible particles across all configured variants.")]
         [SerializeField, Range(1, 4096)] private int maximumVisibleEffects = 256;
         [SerializeField, Range(0.05f, 1f)] private float lifetimeSeconds = 0.5f;
+        [Tooltip("Effect size relative to the monster's visible body in world units. 1 matches its longest side.")]
         [SerializeField, Min(0.01f)] private float sizeMultiplier = 1.2f;
-        [SerializeField, Min(0.01f)] private float minimumSize = 0.5f;
-        [SerializeField, Min(0.01f)] private float maximumSize = 2.5f;
         [SerializeField] private Vector3 spawnOffset = new Vector3(0f, 0f, -0.02f);
         [SerializeField] private int sortingOrder = 200;
         [Tooltip("Presentation-only seed; never consumes combat or UnityEngine.Random state.")]
@@ -179,8 +178,8 @@ namespace CursorHunter.Combat
             }
             // Select only initialized variants, including consecutive repeats, for any list size.
             int variant = (int)(_random.NextUInt64() % (ulong)_emitters.Length);
-            float size = Mathf.Clamp(hit.HitEffectSizeWorldUnits * sizeMultiplier,
-                minimumSize, maximumSize);
+            float size = hit.HitEffectSizeWorldUnits * sizeMultiplier;
+            if (!IsFinite(size) || size <= 0f) return;
             var parameters = new ParticleSystem.EmitParams
             {
                 position = hit.HitEffectPosition + spawnOffset,
@@ -298,8 +297,6 @@ namespace CursorHunter.Combat
         {
             lifetimeSeconds = Mathf.Clamp(IsFinite(lifetimeSeconds) ? lifetimeSeconds : 0.5f, 0.05f, 1f);
             sizeMultiplier = Mathf.Clamp(IsFinite(sizeMultiplier) ? sizeMultiplier : 1.2f, 0.01f, 10f);
-            minimumSize = Mathf.Clamp(IsFinite(minimumSize) ? minimumSize : 0.5f, 0.01f, 10f);
-            maximumSize = Mathf.Clamp(IsFinite(maximumSize) ? maximumSize : 2.5f, minimumSize, 10f);
             if (!IsFinite(spawnOffset)) spawnOffset = Vector3.zero;
             _configurationDirty = true;
         }
