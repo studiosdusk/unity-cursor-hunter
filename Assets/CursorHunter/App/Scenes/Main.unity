@@ -31163,14 +31163,6 @@ PrefabInstance:
     m_TransformParent: {fileID: 2188000105}
     m_Modifications:
     - target: {fileID: 100002, guid: 47e506996d944c1fa594c04998ce3ef5, type: 3}
-      propertyPath: maximumSize
-      value: 3
-      objectReference: {fileID: 0}
-    - target: {fileID: 100002, guid: 47e506996d944c1fa594c04998ce3ef5, type: 3}
-      propertyPath: minimumSize
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 100002, guid: 47e506996d944c1fa594c04998ce3ef5, type: 3}
       propertyPath: sizeMultiplier
       value: 2
       objectReference: {fileID: 0}

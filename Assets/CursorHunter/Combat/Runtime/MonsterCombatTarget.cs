@@ -128,6 +128,29 @@ namespace CursorHunter.Combat
 
         public bool TryGetHitEffectBounds(out Bounds bounds)
         {
+            // Renderers are cached at spawn; sample their current world bounds without
+            // allocating or looking up components on each hit. Visual and hitbox scale
+            // can differ, and health bar renderers are excluded from this cache.
+            bounds = default;
+            bool hasVisualBounds = false;
+            for (int index = 0; index < _visualRenderers.Length; index++)
+            {
+                SpriteRenderer renderer = _visualRenderers[index];
+                if (renderer == null || renderer.sprite == null || !renderer.enabled ||
+                    !renderer.gameObject.activeInHierarchy) continue;
+                if (!hasVisualBounds)
+                {
+                    bounds = renderer.bounds;
+                    hasVisualBounds = true;
+                }
+                else
+                {
+                    bounds.Encapsulate(renderer.bounds);
+                }
+            }
+            if (hasVisualBounds) return true;
+
+            // Keep collider-only targets usable in sandboxes and legacy prefabs.
             bounds = hitEffectCollider != null ? hitEffectCollider.bounds : default;
             return hitEffectCollider != null && hitEffectCollider.enabled &&
                 hitEffectCollider.gameObject.activeInHierarchy;
