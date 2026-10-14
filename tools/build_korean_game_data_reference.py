@@ -578,6 +578,7 @@ TRANSLATIONS = {
     "gem.diamond": "다이아몬드",
     "gem.dragon": "드래곤 젬",
     "skill.fireball": "파이어볼",
+    "skill.tornado": "토네이도",
     "skill.lightning": "라이트닝 볼트",
     "skill.freeze": "프리즈닝",
     "skill.hurricane": "허리케인",
@@ -815,7 +816,7 @@ def build_reference(document):
             "읽는법": "영문키 (한글명) 아래에 원본값과 설명을 표시합니다. 영어 문구·ID의 뜻은 한국어뜻을 참고하세요.",
             "수정주의": "수치 변경은 영어 원본에서만 합니다. 이 파일을 수정해도 게임은 바뀌지 않습니다.",
             "재생성방법": "python3 tools/build_korean_game_data_reference.py --patch 출력을 apply_patch로 적용합니다.",
-            "포함범위": "전투 시작 정보의 모든 필드: 스탯·전투 규칙·젬 6종·몬스터 10종과 행동 특성·스킬 7종. 성장 설정은 별도 파일이며 포함하지 않습니다."
+            "포함범위": "전투 시작 정보의 모든 필드: 스탯·전투 규칙·젬 6종·몬스터 10종과 행동 특성·토네이도 스킬. 성장 설정은 별도 파일이며 포함하지 않습니다."
         },
         "전체데이터해설": annotate(document)
     }

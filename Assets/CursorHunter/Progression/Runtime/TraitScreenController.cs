@@ -601,8 +601,13 @@ namespace CursorHunter.Progression
                 if (node == null || string.IsNullOrEmpty(node.Id) ||
                     (data.version < 2 && !loadedNodes.Add(node.Id)))
                 {
-                    // Removed gemstone gates, extra monsters and duration levels are refunded.
-                    if (data.version < 2 && data.spentCosts != null && i < data.spentCosts.Count)
+                    // Retired skills have no replacement node. Return their
+                    // recorded spend when loading a save from the old tree.
+                    bool retiredSkill = !string.IsNullOrEmpty(data.purchasedNodeIds[i]) &&
+                        (data.purchasedNodeIds[i].StartsWith("skill.", StringComparison.Ordinal) ||
+                         data.purchasedNodeIds[i].StartsWith("pet.cursor.", StringComparison.Ordinal));
+                    if ((data.version < 2 || retiredSkill) &&
+                        data.spentCosts != null && i < data.spentCosts.Count)
                     {
                         int refund = Math.Max(0, data.spentCosts[i]);
                         string currency = data.spentCurrencyIds != null && i < data.spentCurrencyIds.Count
@@ -2693,7 +2698,7 @@ namespace CursorHunter.Progression
                     GetMonsterBehaviorLabel(monster.id, monster.behaviorType));
             }
 
-            CreateSummarySection(_summaryOverlayContent, "스킬과 펫 정보", GetTabAccent(TraitTab.Skill));
+            CreateSummarySection(_summaryOverlayContent, "스킬 정보", GetTabAccent(TraitTab.Skill));
             foreach (var skill in information.skills)
             {
                 TraitNodeDefinition skillNode = FindNode(skill.id);
@@ -2705,9 +2710,6 @@ namespace CursorHunter.Progression
                     skillTitle + " · " + skill.id,
                     GetTabAccent(TraitTab.Skill));
                 AddLocalizedInfo("해금 상태", "enabled", skill.enabled ? "해금" : "잠김");
-                AddLocalizedInfo("범위", "radiusWorldUnits", skill.radiusWorldUnits);
-                AddLocalizedInfo("피해량", "damage", skill.damage);
-                AddLocalizedInfo("재사용 대기 시간(초)", "cooldownSeconds", skill.cooldownSeconds);
             }
 
             CreateSummarySection(_summaryOverlayContent, "통합 연구 트리 전체 진행도", AvailableColor);
@@ -6256,6 +6258,7 @@ namespace CursorHunter.Progression
         {
             switch (id)
             {
+                case "skill.tornado": return "토네이도";
                 case "skill.fireball": return "파이어볼";
                 case "skill.lightning": return "라이트닝 볼트";
                 case "skill.freeze": return "빙결";

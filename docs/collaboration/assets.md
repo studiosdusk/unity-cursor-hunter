@@ -1,4 +1,10 @@
-> 2026-10-01 변경: 아래 v0.0.4 본문은 개편 전 기록입니다. 현재 JSON·노드 UI·몬스터 10종·유물·자동 반경/쿨타임·30초 규칙은 [새 구현 기준](game-information-refactor-2026-10-01.md)및 [최신 v3 인수인계](current-state-handoff-v0.0.4.md)를 우선합니다. 기존 캡처는 현재 UI 검증 자료가 아닙니다.
+> 2026-10-14 스킬 변경: 아래의 이전 스킬 후보 표는 기록용이다. 현재 전투 스킬은 [자동 스킬 기획서](../skill-design.md)의 토네이도 하나이며, 그 컨트롤러와 오브젝트는 프로젝트 소유 프리팹이다.
+
+| 현재 스킬 | 컨트롤러 | 전투 오브젝트 | 시각 원본 |
+|---|---|---|---|
+| `skill.tornado` | [TornadoSkillController.prefab](../../Assets/CursorHunter/Combat/Prefabs/Skills/TornadoSkillController.prefab) | [TornadoObject.prefab](../../Assets/CursorHunter/Combat/Prefabs/Skills/TornadoObject.prefab) | [FX_SnowTornado_Loop.prefab](../../Assets/DownLoadAssets/Eric%20VFX%20Studio/Game%20VFX%20-%20Tornado%20Collection/Prefab/URP/FX_SnowTornado_Loop.prefab) |
+
+> 2026-10-01 변경: 아래 v0.0.4 본문은 개편 전 기록입니다. 기존 캡처는 현재 UI 검증 자료가 아닙니다.
 
 # 에셋 후보와 기획 매핑
 

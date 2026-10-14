@@ -9,54 +9,15 @@ namespace CursorHunter.Contracts
     /// </summary>
     public readonly struct SkillCombatSnapshot
     {
-        public SkillCombatSnapshot(
-            string skillId,
-            bool unlocked,
-            float damageMultiplier,
-            float radiusMultiplier,
-            float cooldownMultiplier,
-            long damage = 1L,
-            float radiusWorldUnits = 1f,
-            float cooldownSeconds = 1f)
+        public SkillCombatSnapshot(string skillId, bool unlocked)
         {
-            Damage = damage;
-            RadiusWorldUnits = radiusWorldUnits;
-            CooldownSeconds = cooldownSeconds;
             SkillId = skillId ?? string.Empty;
             Unlocked = unlocked;
-            DamageMultiplier = SanitizeMultiplier(damageMultiplier);
-            RadiusMultiplier = SanitizeMultiplier(radiusMultiplier);
-            CooldownMultiplier = cooldownMultiplier > 0f &&
-                                 !float.IsNaN(cooldownMultiplier) &&
-                                 !float.IsInfinity(cooldownMultiplier)
-                ? cooldownMultiplier
-                : 1f;
         }
 
-        public long Damage { get; }
-        public float RadiusWorldUnits { get; }
-        public float CooldownSeconds { get; }
         public string SkillId { get; }
         public bool Unlocked { get; }
-        public float DamageMultiplier { get; }
-        public float RadiusMultiplier { get; }
-        public float CooldownMultiplier { get; }
-
-        public bool IsValid =>
-            !string.IsNullOrWhiteSpace(SkillId) &&
-            Damage > 0L && RadiusWorldUnits > 0f && CooldownSeconds > 0f &&
-            !float.IsNaN(RadiusWorldUnits) && !float.IsInfinity(RadiusWorldUnits) &&
-            !float.IsNaN(CooldownSeconds) && !float.IsInfinity(CooldownSeconds) &&
-            DamageMultiplier > 0f &&
-            RadiusMultiplier > 0f &&
-            CooldownMultiplier > 0f;
-
-        private static float SanitizeMultiplier(float value)
-        {
-            return value > 0f && !float.IsNaN(value) && !float.IsInfinity(value)
-                ? value
-                : 1f;
-        }
+        public bool IsValid => !string.IsNullOrWhiteSpace(SkillId);
     }
 
     /// <summary>

@@ -31,8 +31,8 @@ namespace CursorHunter.Contracts
                 !Positive(rules.bossFieldDurationSeconds) || rules.globalAliveLimit < 1 || rules.globalAliveLimit > 80 ||
                 rules.perMonsterAliveLimit < 1 || rules.perMonsterAliveLimit > rules.globalAliveLimit)
                 return Fail("Invalid combat rules (maximum 80 alive targets).", out error);
-            if (gemstones.Length != 6 || monsters.Length != 10 || skills.Length != 7)
-                return Fail("Expected 6 gemstones, 10 monsters and 7 skills.", out error);
+            if (gemstones.Length != 6 || monsters.Length != 10 || skills.Length != 1)
+                return Fail("Expected 6 gemstones, 10 monsters and the tornado skill.", out error);
             string[] gemIds = { "gem.garnet", "gem.topaz", "gem.amethyst", "gem.sapphire", "gem.diamond", "gem.dragon" };
             for (int i = 0; i < gemstones.Length; i++)
             {
@@ -52,15 +52,8 @@ namespace CursorHunter.Contracts
                     monster.behaviorType != MonsterBehaviorType.None)
                     return Fail("Invalid monster data.", out error);
             }
-            string[] skillIds = { "skill.fireball", "skill.lightning", "skill.freeze", "skill.hurricane", "skill.meteor", "skill.dragonBreath", "skill.cursorAura" };
-            for (int i = 0; i < skills.Length; i++)
-            {
-                var skill = skills[i];
-                if (skill == null || skill.id != skillIds[i] || skill.damage < 1 ||
-                    !Positive(skill.radiusWorldUnits) || !Positive(skill.cooldownSeconds) ||
-                    skill.cooldownSeconds < 0.05f)
-                    return Fail("Invalid skill data.", out error);
-            }
+            if (skills[0] == null || skills[0].id != "skill.tornado")
+                return Fail("Invalid tornado skill data.", out error);
             return true;
         }
 
@@ -81,8 +74,7 @@ namespace CursorHunter.Contracts
             for (int i = 0; i < skills.Length; i++)
             {
                 var value = skills[i];
-                skillSnapshots[i] = new SkillCombatSnapshot(value.id, value.enabled, 1f, 1f, 1f,
-                    value.damage, value.radiusWorldUnits, value.cooldownSeconds);
+                skillSnapshots[i] = new SkillCombatSnapshot(value.id, value.enabled);
             }
             var monsterSnapshots = new MonsterCombatSnapshot[monsters.Length];
             for (int i = 0; i < monsters.Length; i++)
@@ -159,9 +151,6 @@ namespace CursorHunter.Contracts
     {
         public string id;
         public bool enabled;
-        public long damage;
-        public float radiusWorldUnits;
-        public float cooldownSeconds;
     }
 
 }

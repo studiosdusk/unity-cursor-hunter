@@ -283,7 +283,8 @@ namespace CursorHunter.App
                 uiRootController.EnterCombat();
             }
 
-            combatRunController.ConfigureSkills(progressionSnapshot == null ? null : progressionSnapshot.Skills);
+            combatRunController.ConfigureSkills(
+                progressionSnapshot == null ? null : progressionSnapshot.Skills);
             cursorController.SetRangeMultiplier(
                 combatRunController.PlayerCombatStatsRuntime.AttackRangeMultiplier);
             cursorController.ShowCursorImage();

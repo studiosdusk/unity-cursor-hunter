@@ -33,8 +33,7 @@ namespace CursorHunter.Combat
             new Dictionary<string, long>(StringComparer.Ordinal);
 
         private RunRequest _runRequest;
-        private SkillCombatSnapshot[] _skills = Array.Empty<SkillCombatSnapshot>();
-        private float[] _nextSkillAt = Array.Empty<float>();
+        private TornadoSkillController _tornadoController;
         private SeededRandom _random;
         private float _elapsedSeconds;
         private Vector2 _previousAttackCenter;
@@ -73,6 +72,7 @@ namespace CursorHunter.Combat
         public int DefeatedCount => _defeatedCount;
         public long GarnetEarned => _garnetEarned;
         public long EffectiveDamage => _effectiveDamage;
+        public LayerMask EnemyLayers => enemyLayers;
         public CombatSnapshot CombatSnapshot => playerCombatStatsRuntime != null
             ? playerCombatStatsRuntime.Snapshot
             : default;
@@ -90,6 +90,7 @@ namespace CursorHunter.Combat
             overlapBufferCapacity = Mathf.Max(512, overlapBufferCapacity);
             _overlapBuffer = new Collider2D[overlapBufferCapacity];
             ResolvePlayerCombatStatsRuntime();
+            _tornadoController = GetComponentInChildren<TornadoSkillController>(true);
         }
 
         private void ResolvePlayerCombatStatsRuntime()
@@ -411,44 +412,45 @@ namespace CursorHunter.Combat
 
         public void ConfigureSkills(IReadOnlyList<SkillCombatSnapshot> skills)
         {
-            int count = skills == null ? 0 : skills.Count;
-            _skills = new SkillCombatSnapshot[count];
-            _nextSkillAt = new float[count];
-            for (int i = 0; i < count; i++)
+            _tornadoController?.StopSkill();
+            if (!IsRunning) return;
+
+            bool savedAcquired = false;
+            if (skills != null)
             {
-                if (!skills[i].IsValid) throw new ArgumentException("Invalid skill snapshot.");
-                _skills[i] = skills[i];
-                _nextSkillAt[i] = _elapsedSeconds + skills[i].CooldownSeconds;
+                for (int i = 0; i < skills.Count; i++)
+                {
+                    SkillCombatSnapshot skill = skills[i];
+                    if (!skill.IsValid)
+                        throw new ArgumentException("Invalid skill snapshot.");
+                    if (skill.SkillId == TornadoSkillController.SkillId)
+                        savedAcquired |= skill.Unlocked;
+                }
             }
+
+            if (_tornadoController == null)
+                _tornadoController = GetComponentInChildren<TornadoSkillController>(true);
+            if (_tornadoController == null ||
+                !_tornadoController.IsAcquiredForRun(savedAcquired)) return;
+            if (!_tornadoController.isActiveAndEnabled)
+            {
+                Debug.LogError("Place an active TornadoSkillController under CombatManager in the scene.", this);
+                return;
+            }
+
+            if (!_tornadoController.ConfigureForRun(
+                    this, _runRequest.RunId, _runRequest.Seed))
+                Debug.LogError("Tornado could not be configured. Check its object prefab and world camera.",
+                    _tornadoController);
         }
 
-        public void TryUseSkills(Vector2 center)
+        public bool TryApplySkillDamage(RunId runId, ICombatTarget target, long rawDamage)
         {
-            if (!IsRunning || _elapsedSeconds >= _runRequest.DurationSeconds) return;
-            var filter = new ContactFilter2D { useLayerMask = true, useTriggers = true };
-            filter.SetLayerMask(enemyLayers);
-            bool transformsSynced = false;
-            for (int i = 0; i < _skills.Length && IsRunning; i++)
-            {
-                var skill = _skills[i];
-                if (!skill.Unlocked || _elapsedSeconds < _nextSkillAt[i]) continue;
-                if (!transformsSynced) { Physics2D.SyncTransforms(); transformsSynced = true; }
-                _nextSkillAt[i] = _elapsedSeconds + skill.CooldownSeconds;
-                int count = Physics2D.OverlapCircle(center, skill.RadiusWorldUnits, filter, _overlapBuffer);
-                _uniqueTargets.Clear();
-                for (int j = 0; j < count; j++)
-                {
-                    var collider = _overlapBuffer[j];
-                    var target = collider == null ? null : collider.GetComponentInParent<MonsterCombatTarget>();
-                    if (target != null && target.RunId == _runRequest.RunId && target.IsActive && target.IsRegistered)
-                        _uniqueTargets.Add(target);
-                }
-                foreach (var target in _uniqueTargets)
-                {
-                    if (!IsRunning) break;
-                    ApplyBundle(target, skill.Damage, CombatDamageSource.Skill);
-                }
-            }
+            return IsRunning && _elapsedSeconds < _runRequest.DurationSeconds &&
+                   runId == _runRequest.RunId && target != null &&
+                   target.RunId == runId && target.IsActive && target.IsRegistered &&
+                   rawDamage > 0L &&
+                   ApplyBundle(target, rawDamage, CombatDamageSource.Skill);
         }
 
         public bool TryCompleteRun(
@@ -469,6 +471,7 @@ namespace CursorHunter.Combat
             _lastBasicHitAt.Clear();
             ResetAttackPath();
             playerCombatStatsRuntime.SetRunActive(false);
+            _tornadoController?.StopSkill();
 
             PresentationReset?.Invoke();
             result = CreateResult(
@@ -495,6 +498,7 @@ namespace CursorHunter.Combat
             _lastBasicHitAt.Clear();
             ResetAttackPath();
             playerCombatStatsRuntime.SetRunActive(false);
+            _tornadoController?.StopSkill();
 
             PresentationReset?.Invoke();
             result = CreateResult(

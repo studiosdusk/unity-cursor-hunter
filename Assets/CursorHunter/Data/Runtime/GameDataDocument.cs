@@ -65,7 +65,7 @@ namespace CursorHunter.Data
                 return Fail("Missing game document sections/version/locale.", out error);
             if (!information.TryValidate(out error)) return false;
             if (progression.categories == null ||
-                progression.categories.Length != 23 || progression.bossRewards == null || progression.bossRewards.Length != 5 ||
+                progression.categories.Length != 17 || progression.bossRewards == null || progression.bossRewards.Length != 5 ||
                 (progression.savedProgressPolicy != "overlay" && progression.savedProgressPolicy != "fileOnly") ||
                 progression.initialBossTier < 0 || progression.initialBossTier > 5)
                 return Fail("Invalid progression configuration.", out error);
@@ -124,6 +124,8 @@ namespace CursorHunter.Data
                     return Fail("Missing monster/category/visual key.", out error);
             foreach (var skill in information.skills)
                 if (!categories.Contains(skill.id)) return Fail("Missing skill category.", out error);
+            if (!nodes.ContainsKey("skill.tornado"))
+                return Fail("Missing tornado unlock node.", out error);
             for (int i = 0; i < progression.bossRewards.Length; i++)
             {
                 var boss = progression.bossRewards[i];
@@ -163,9 +165,8 @@ namespace CursorHunter.Data
                         default: return false;
                     }
                 case "skills":
-                    return (node.id == category.id && node.operation == "enable") ||
-                        ((node.id == category.id + ".damage" || node.id == category.id + ".radius" ||
-                          node.id == category.id + ".cooldown") && node.operation == "multiply" && node.value > 0);
+                    if (category.id != "skill.tornado") return false;
+                    return node.id == category.id && node.operation == "enable";
                 case "monsters":
                     return (node.id == category.id && node.operation == "enable") ||
                         (node.id.StartsWith(category.id + ".production.", StringComparison.Ordinal) && node.operation == "set" &&
@@ -183,7 +184,6 @@ namespace CursorHunter.Data
     {
         public string savedProgressPolicy;
         public int initialBossTier;
-        public bool scaleSkillDamageWithAttack;
         public UpgradeCategoryData[] categories;
         public BossRewardData[] bossRewards;
     }

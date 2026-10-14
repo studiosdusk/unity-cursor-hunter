@@ -14,6 +14,7 @@
 두 한국어 파일은 사람이 읽는 참고서이며 게임에서 읽지 않는다.
 
 전투 개발자: [실제 조회 API와 값 대응표](contracts.md#전투에서-값을-읽는-실제-api).
+앞으로 구현할 자동 스킬의 공통 설계 기준은 [자동 스킬 기획서](../skill-design.md)를 따른다.
 유물 제거·몬스터 특성 자리·전투 데이터 분리 및 미완료 범위: [최신 인수인계](current-state-handoff-v0.0.4.md).
 
 현재 구현 기준: [전투 정보 v3 인수인계](current-state-handoff-v0.0.4.md). 이전 [v2 개편 기록](game-information-refactor-2026-10-01.md)은 과거 자료다. Unity **6000.3.13f1**.

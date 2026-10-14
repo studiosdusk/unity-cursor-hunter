@@ -41,8 +41,8 @@
     },
     "skills": {
       "type": "array",
-      "minItems": 7,
-      "maxItems": 7,
+      "minItems": 1,
+      "maxItems": 1,
       "items": {
         "$ref": "#/$defs/skill"
       }
@@ -191,38 +191,14 @@
       "additionalProperties": false,
       "required": [
         "id",
-        "enabled",
-        "damage",
-        "radiusWorldUnits",
-        "cooldownSeconds"
+        "enabled"
       ],
       "properties": {
         "id": {
-          "enum": [
-            "skill.fireball",
-            "skill.lightning",
-            "skill.freeze",
-            "skill.hurricane",
-            "skill.meteor",
-            "skill.dragonBreath",
-            "skill.cursorAura"
-          ]
+          "const": "skill.tornado"
         },
         "enabled": {
           "type": "boolean"
-        },
-        "damage": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 9223372036854775807
-        },
-        "radiusWorldUnits": {
-          "type": "number",
-          "minimum": 5e-324
-        },
-        "cooldownSeconds": {
-          "type": "number",
-          "minimum": 0.05
         }
       }
     },

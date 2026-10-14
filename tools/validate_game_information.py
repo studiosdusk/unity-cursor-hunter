@@ -36,8 +36,8 @@ def main():
         "attackCooldownSeconds": values("stat.cooldown", example["stats"]["attackCooldownSeconds"]),
         "monsters": [dict(m, prefabKey=entities[m["id"]]["prefabKey"],
                           unlockCurrencyId=categories[m["id"]]["nodes"][0]["currencyId"]) for m in example["monsters"]],
-        "skills": [dict(s, currencyId=categories[s["id"]]["nodes"][0]["currencyId"],
-                        damageCoefficient=s["damage"]) for s in example["skills"]]
+        "skills": [dict(s, currencyId=categories[s["id"]]["nodes"][0]["currencyId"])
+                   for s in example["skills"]]
     }
     errors = []
     def check(ok, message):
@@ -50,7 +50,7 @@ def main():
     gems = ["gem." + name for name in ["garnet", "topaz", "amethyst", "sapphire", "diamond", "dragon"]]
     check([g["id"] for g in example["gemstones"]] == gems, "Gemstone IDs/order changed")
     check(len(data["monsters"]) == len(example["monsters"]) == 10, "Expected 10 monsters")
-    check(len(data["skills"]) == len(example["skills"]) == 7, "Expected 7 skills including cursor aura")
+    check(len(data["skills"]) == len(example["skills"]) == 1, "Expected the tornado skill")
     check(data["normalFieldDurationSeconds"] == [15, 20, 25, 30], "Normal duration must stop at 30")
     check(all(finite_positive(v) and v >= .05 for v in data["attackCooldownSeconds"]), "Invalid cooldown")
     check(all(data["attackCooldownSeconds"][i] > data["attackCooldownSeconds"][i+1] for i in range(4)), "Cooldown upgrades must decrease")
@@ -69,7 +69,7 @@ def main():
         if definition.exists():
             text = definition.read_text()
             check(f"monsterId: {expected_id}" in text, "Wrong monster asset ID")
-            match = re.search(r"prefab: \{fileID: (\d+), guid: ([0-9a-f]+), type: 3\}", text)
+            match = re.search(r"visualPrefab: \{fileID: (\d+), guid: ([0-9a-f]+), type: 3\}", text)
             check(bool(match), f"Missing prefab: {expected_id}")
             if match:
                 prefab = ROOT / "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/Prefabs" / (monster["prefabKey"] + ".prefab")
@@ -80,7 +80,25 @@ def main():
     check(known_currencies == set(gems), "Some currencies have no attainable monster source")
     for skill in data["skills"]:
         check(skill["currencyId"] in known_currencies, "Unattainable skill currency")
-        check(all(finite_positive(skill[key]) for key in ["damageCoefficient", "radiusWorldUnits", "cooldownSeconds"]), "Invalid skill numeric data")
+        check(skill["id"] == "skill.tornado", "Unexpected skill ID")
+    tornado_controller = BASE / "Combat/Prefabs/Skills/TornadoSkillController.prefab"
+    tornado_object = BASE / "Combat/Prefabs/Skills/TornadoObject.prefab"
+    check(tornado_controller.exists(), "Missing tornado controller prefab")
+    check(tornado_object.exists(), "Missing tornado object prefab")
+    if tornado_controller.exists() and tornado_object.exists():
+        controller_guid = (tornado_controller.with_suffix(".prefab.meta")).read_text().split("guid: ")[1].splitlines()[0]
+        object_guid = (tornado_object.with_suffix(".prefab.meta")).read_text().split("guid: ")[1].splitlines()[0]
+        check(object_guid in tornado_controller.read_text(), "Tornado controller does not reference its pooled object")
+        check("2c00aae28c77fcd47ba0036f2a5a4865" in tornado_object.read_text(), "Tornado object does not reference the selected snow effect")
+        for relative, parent in (("App/Scenes/Main.unity", "2188000105"),
+                                 ("Combat/Scenes/CombatSandbox.unity", "201")):
+            scene_text = (BASE / relative).read_text()
+            check(f"m_SourcePrefab: {{fileID: 100100000, guid: {controller_guid}, type: 3}}" in scene_text,
+                  f"Tornado controller is not a prefab instance in {relative}")
+            check(f"m_TransformParent: {{fileID: {parent}}}" in scene_text,
+                  f"Tornado controller is not under the combat manager in {relative}")
+            check("tornadoControllerPrefab:" not in scene_text,
+                  f"Old runtime-instantiated tornado controller remains in {relative}")
 
     controller = (BASE / "Progression/Runtime/TraitScreenController.cs").read_text()
     check("CreateGameInformationJson" in controller and "SourceJson" in controller, "Summary must use captured JSON")
@@ -115,7 +133,7 @@ def main():
                         errors.append(f"C# syntax: {path.relative_to(ROOT)}:{node.start_point.row+1} {node.type}")
                     stack.extend(node.children)
     if errors: raise SystemExit("\n".join(errors))
-    print("PASS: JSON sections, 10 monsters, 7 skills, currency reachability, prefab IDs, TMP, scene and render settings" + (", C# syntax" if args.syntax else ""))
+    print("PASS: JSON sections, 10 monsters, tornado skill, currency reachability, prefab IDs, TMP, scene and render settings" + (", C# syntax" if args.syntax else ""))
     print("Unity import, semantic compilation and gameplay were NOT run.")
 
 if __name__ == "__main__":

@@ -192,7 +192,6 @@ namespace CursorHunter.App
                 ResetAttackPath();
             }
 
-            combatRunController.TryUseSkills(hitBox.bounds.center);
         }
     }
 }

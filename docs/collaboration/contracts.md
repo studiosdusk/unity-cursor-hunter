@@ -1,4 +1,4 @@
-# 런과 플레이어 상태 연결 계약 — JSON v3 (2026-10-01)
+# 런과 플레이어 상태 연결 계약 — JSON v3 (2026-10-14)
 
 ## 전투에 필요한 현재 정보만 전달한다
 
@@ -29,7 +29,7 @@ information 래퍼, progression, entities, fieldHelp, implementation, relics는 
 | rules | criticalDamageMultiplier, globalAliveLimit, perMonsterAliveLimit, bossFieldDurationSeconds |
 | gemstones[6] | id, enabled, amount |
 | monsters[10] | id, enabled, productionCount, hitPoints, spawnIntervalSeconds, garnetReward, gemstoneId, gemstoneAmount, gemstoneChancePercent, behaviorType |
-| skills[7] | id, enabled, damage, radiusWorldUnits, cooldownSeconds |
+| skills[1] | id=`skill.tornado`, enabled |
 
 HP/공격력/피해/재화는 Int64. 시간은 초, 반경은 월드 단위, 확률은 0~100이다.
 productionCount는 1회 생성 마릿수다. gems.enabled는 공급 몬스터 활성 여부이며 잔액과 독립적이다.
@@ -92,18 +92,18 @@ RunCoordinator.Start에 CombatSnapshot/커서 증가량/SpawnPlan, ConfigureSkil
 | 치명타 확률 / 피해 배율 | controller.CombatSnapshot.CriticalChancePercent / CriticalDamageMultiplier |
 | 보스 피해 배율 | controller.CombatSnapshot.BossDamageMultiplier |
 | 자동 공격 여부 / 주기 | controller.CombatSnapshot.AutoAttackEnabled / AutoAttackIntervalSeconds |
-| 스킬 정보 | ConfigureSkills로 받은 SkillCombatSnapshot의 SkillId, Unlocked, Damage, RadiusWorldUnits, CooldownSeconds |
+| 스킬 정보 | ConfigureSkills로 받은 SkillCombatSnapshot의 SkillId, Unlocked. 실제 수치는 Main 씬의 TornadoSkillController 인스턴스 Inspector 기본값에서 계산. Editor Play Mode에서는 해당 컨트롤러의 `Skill Acquired` 토글로 해금 상태를 시험할 수 있음 |
 | 몬스터 생성 | SpawnPlan.Entries[i].Snapshot의 MonsterId, MaxHealth, PackSize, SpawnIntervalSeconds, AliveLimit |
 | 몬스터 특성 | SpawnPlan.Entries[i].Snapshot의 MovementMode, MoveSpeed, VisualScale, SpecialAbility 및 능력 수치 |
 | 가넷 / 추가 젬 보상 | SpawnSnapshot.GarnetReward / BonusDropCurrencyId, BonusDropAmount, BonusDropChancePercent |
-| 개체 현재 체력 | WalkerStumpTarget.CurrentHealth (MaxHealth는 시작/최대 체력) |
+| 개체 현재 체력 | MonsterCombatTarget.CurrentHealth (MaxHealth는 시작/최대 체력) |
 | 런 진행 | controller.ElapsedSeconds, RemainingSeconds, DefeatedCount, GarnetEarned, EffectiveDamage |
 | 일반/보스 제한 시간 | snapshot.NormalFieldDurationSeconds / BossFieldDurationSeconds |
 | 생성 상한 | snapshot.GlobalAliveLimit / PerMonsterAliveLimit |
 | 전체 시작 정보 | snapshot.SourceJson → GameInformationJson.TryDeserialize (App에서만) |
 
-CombatRunController 내부에서는 _combatSnapshot과 _skills를 읽는다.
-외부에 Skills getter나 전체 ProgressionCombatSnapshot getter가 현재 존재하지 않는다.
+CombatRunController는 현재 런의 CombatSnapshot과 RunId를 사용한다.
+외부에 Skills getter나 전체 ProgressionCombatSnapshot getter는 없다.
 신규 Combat 하위 시스템에는 초기화 경로에서 필요한 스냅샷을 명시적으로 전달한다.
 
 App에서 전체 시작 정보를 검사하는 메서드 예시(기존 App 클래스 안에 넣는 예시이지 이미 존재하는 메서드는 아님):
