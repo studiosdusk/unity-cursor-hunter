@@ -729,3 +729,16 @@
   기존 풀 재사용·수명주기·난수 분리·관리 힙 할당 0B 검사도 통과했다.
   `python3 tools/validate_collaboration.py`, `git diff --check` 통과.
   배치 테스트는 화면 없이 실행했으며 실제 Main의 시각 검증은 수행하지 않았다.
+
+### 2026-10-14 · Combat — 헤드샷 자동 스킬 코어
+
+- `skill.headshot` 컨트롤러와 풀링 효과 프리팹을 Main의 `CombatManager` 및 CombatSandbox에 배치했다. 지정한 `FX_Aim_Explode_Visual`을 프로젝트 소유 효과 프리팹에 중첩했고, 원본의 `HitBox`를 한 번의 폭발 범위 판정에 사용한다.
+- 적이 없으면 쿨타임을 소비하지 않고 대기한다. 지목한 적을 폭발 전까지 추적하고 사라지면 마지막 위치에서 폭발한다. 주 대상은 일반전에서 남은 체력만큼의 원시 피해, 보스전에서 기본 공격력 10배의 원시 피해를 받는다. 주변 적에게는 기본 공격력 2배를 한 번 적용한다. 실제 방어·치명타·보스 배율·보상은 기존 공통 피해 경로를 사용한다.
+- 일시정지와 런 종료 시 발동·피해·파티클을 멈추고, 이전 런의 효과는 반환한다. 에디터 `Skill Acquired`만 연결했으며 실제 구매 노드·강화는 범위 밖이다. 사용자가 Main에 놓은 별도 원본 VFX 인스턴스는 보존하고 재생만 껐다.
+- 격리 Unity 6000.3.13f1 프로젝트에서 Combat PlayMode 8개를 통과했다. `python3 tools/validate_collaboration.py`와 `git diff --check`도 통과했다. 원본 프로젝트는 다른 Unity 인스턴스가 열고 있어 배치 검증하지 못했고 Main의 시각 확인은 미실행이다.
+
+### 2026-10-14 · Combat — 몬스터 Y 위치 기반 표시 순서
+
+- 공용 `MonsterRoot`의 `VisualRoot`에 `SortingGroup`을 구성하고 카메라 화면에서 아래에 있는 몬스터일수록 더 큰 Sorting Order를 적용한다. 생성 직후와 이동·순간이동으로 위치를 바꾼 직후에만 다시 계산한다.
+- 종별 외형의 기존 내부 SortingGroup 및 SpriteRenderer 순서는 유지한다. 몬스터 외형의 순서는 0~199로 제한해 타격 이펙트(200)와 체력바(250)가 앞에 남게 했다.
+- `python3 tools/validate_collaboration.py`와 `git diff --check`를 통과했다. Unity 컴파일과 실제 화면 검증은 미실행이다.

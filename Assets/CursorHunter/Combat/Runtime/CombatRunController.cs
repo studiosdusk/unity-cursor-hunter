@@ -34,6 +34,7 @@ namespace CursorHunter.Combat
 
         private RunRequest _runRequest;
         private TornadoSkillController _tornadoController;
+        private HeadshotSkillController _headshotController;
         private SeededRandom _random;
         private float _elapsedSeconds;
         private Vector2 _previousAttackCenter;
@@ -73,6 +74,7 @@ namespace CursorHunter.Combat
         public long GarnetEarned => _garnetEarned;
         public long EffectiveDamage => _effectiveDamage;
         public LayerMask EnemyLayers => enemyLayers;
+        public bool IsBossRun => _isRunning && _runRequest.Mode == RunMode.Boss;
         public CombatSnapshot CombatSnapshot => playerCombatStatsRuntime != null
             ? playerCombatStatsRuntime.Snapshot
             : default;
@@ -91,6 +93,7 @@ namespace CursorHunter.Combat
             _overlapBuffer = new Collider2D[overlapBufferCapacity];
             ResolvePlayerCombatStatsRuntime();
             _tornadoController = GetComponentInChildren<TornadoSkillController>(true);
+            _headshotController = GetComponentInChildren<HeadshotSkillController>(true);
         }
 
         private void ResolvePlayerCombatStatsRuntime()
@@ -413,9 +416,11 @@ namespace CursorHunter.Combat
         public void ConfigureSkills(IReadOnlyList<SkillCombatSnapshot> skills)
         {
             _tornadoController?.StopSkill();
+            _headshotController?.StopSkill();
             if (!IsRunning) return;
 
-            bool savedAcquired = false;
+            bool tornadoAcquired = false;
+            bool headshotAcquired = false;
             if (skills != null)
             {
                 for (int i = 0; i < skills.Count; i++)
@@ -424,24 +429,38 @@ namespace CursorHunter.Combat
                     if (!skill.IsValid)
                         throw new ArgumentException("Invalid skill snapshot.");
                     if (skill.SkillId == TornadoSkillController.SkillId)
-                        savedAcquired |= skill.Unlocked;
+                        tornadoAcquired |= skill.Unlocked;
+                    if (skill.SkillId == HeadshotSkillController.SkillId)
+                        headshotAcquired |= skill.Unlocked;
                 }
             }
 
             if (_tornadoController == null)
                 _tornadoController = GetComponentInChildren<TornadoSkillController>(true);
-            if (_tornadoController == null ||
-                !_tornadoController.IsAcquiredForRun(savedAcquired)) return;
-            if (!_tornadoController.isActiveAndEnabled)
+            if (_tornadoController != null &&
+                _tornadoController.IsAcquiredForRun(tornadoAcquired))
             {
-                Debug.LogError("Place an active TornadoSkillController under CombatManager in the scene.", this);
-                return;
+                if (!_tornadoController.isActiveAndEnabled)
+                    Debug.LogError("Place an active TornadoSkillController under CombatManager in the scene.", this);
+                else if (!_tornadoController.ConfigureForRun(
+                             this, _runRequest.RunId, _runRequest.Seed))
+                    Debug.LogError("Tornado could not be configured. Check its object prefab and world camera.",
+                        _tornadoController);
             }
 
-            if (!_tornadoController.ConfigureForRun(
+            if (_headshotController == null)
+                _headshotController = GetComponentInChildren<HeadshotSkillController>(true);
+            if (_headshotController == null ||
+                !_headshotController.IsAcquiredForRun(headshotAcquired)) return;
+            if (!_headshotController.isActiveAndEnabled)
+            {
+                Debug.LogError("Place an active HeadshotSkillController under CombatManager in the scene.", this);
+                return;
+            }
+            if (!_headshotController.ConfigureForRun(
                     this, _runRequest.RunId, _runRequest.Seed))
-                Debug.LogError("Tornado could not be configured. Check its object prefab and world camera.",
-                    _tornadoController);
+                Debug.LogError("Headshot could not be configured. Check its effect prefab.",
+                    _headshotController);
         }
 
         public bool TryApplySkillDamage(RunId runId, ICombatTarget target, long rawDamage)
@@ -472,6 +491,7 @@ namespace CursorHunter.Combat
             ResetAttackPath();
             playerCombatStatsRuntime.SetRunActive(false);
             _tornadoController?.StopSkill();
+            _headshotController?.StopSkill();
 
             PresentationReset?.Invoke();
             result = CreateResult(
@@ -499,6 +519,7 @@ namespace CursorHunter.Combat
             ResetAttackPath();
             playerCombatStatsRuntime.SetRunActive(false);
             _tornadoController?.StopSkill();
+            _headshotController?.StopSkill();
 
             PresentationReset?.Invoke();
             result = CreateResult(

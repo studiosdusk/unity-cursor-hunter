@@ -324,6 +324,8 @@ namespace CursorHunter.Combat
                     return false;
                 }
 
+                target.ConfigureVisualSorting(worldCamera);
+
                 if (target.EnsureCombatCollider() == null ||
                     !TryGetMovementBounds(out Bounds movementBounds))
                 {
