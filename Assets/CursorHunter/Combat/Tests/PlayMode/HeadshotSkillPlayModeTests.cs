@@ -37,9 +37,9 @@ namespace CursorHunter.Combat.Tests
             Assert.That(controller, Is.Not.Null);
             SetField(sandbox, "_autoHit", false);
             SetField(controller, "editorSkillAcquired", true);
-            SetField(controller, "firstCastDelaySeconds", 0f);
-            SetField(controller, "explosionDelaySeconds", 0.5f);
-            SetField(controller, "effectDurationSeconds", 1f);
+            SetBaseStat(controller, "FirstCastDelaySeconds", 0f);
+            SetBaseStat(controller, "ExplosionDelaySeconds", 0.5f);
+            SetBaseStat(controller, "EffectDurationSeconds", 1f);
             combat.ConfigureSkills(null);
 
             combat.AdvanceTime(0.01f);
@@ -118,10 +118,10 @@ namespace CursorHunter.Combat.Tests
                 sandbox.GetComponentInChildren<HeadshotSkillController>(true);
             SetField(sandbox, "_autoHit", false);
             SetField(controller, "editorSkillAcquired", true);
-            SetField(controller, "firstCastDelaySeconds", 0f);
-            SetField(controller, "explosionDelaySeconds", 0.5f);
-            SetField(controller, "effectDurationSeconds", 0.7f);
-            SetField(controller, "baseCooldownSeconds", 0.8f);
+            SetBaseStat(controller, "FirstCastDelaySeconds", 0f);
+            SetBaseStat(controller, "ExplosionDelaySeconds", 0.5f);
+            SetBaseStat(controller, "EffectDurationSeconds", 0.7f);
+            SetBaseStat(controller, "CooldownSeconds", 0.8f);
             combat.ConfigureSkills(null);
             combat.AdvanceTime(0.01f);
             yield return null;
@@ -235,9 +235,9 @@ namespace CursorHunter.Combat.Tests
             boss.Initialize(new SpawnSnapshot("boss.v1", "sandbox", 5000L, 1f, 1, 1, 0L),
                 bossRunId);
             SetField(controller, "editorSkillAcquired", true);
-            SetField(controller, "firstCastDelaySeconds", 0f);
-            SetField(controller, "explosionDelaySeconds", 0.1f);
-            SetField(controller, "bossDamageMultiplier", 10f);
+            SetBaseStat(controller, "FirstCastDelaySeconds", 0f);
+            SetBaseStat(controller, "ExplosionDelaySeconds", 0.1f);
+            SetBaseStat(controller, "BossDamageMultiplier", 10f);
             combat.ConfigureSkills(null);
             combat.AdvanceTime(0.01f);
             yield return null;
@@ -251,6 +251,19 @@ namespace CursorHunter.Combat.Tests
             Assert.Ignore("The sandbox scene is loaded through the Editor PlayMode runner.");
             yield break;
 #endif
+        }
+
+        private static void SetBaseStat(object instance, string name, object value)
+        {
+            FieldInfo field = instance.GetType().GetField("baseStat",
+                BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.That(field, Is.Not.Null);
+            object basis = field.GetValue(instance);
+            FieldInfo statField = basis.GetType().GetField(name,
+                BindingFlags.Public | BindingFlags.Instance);
+            Assert.That(statField, Is.Not.Null, name);
+            statField.SetValue(basis, value);
+            field.SetValue(instance, basis);
         }
 
         private static void SetField(object instance, string name, object value)

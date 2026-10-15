@@ -166,7 +166,23 @@
   "skills": [
     {
       "id": "skill.tornado",
-      "enabled": false
+      "enabled": false,
+      "upgrades": []
+    },
+    {
+      "id": "skill.headshot",
+      "enabled": false,
+      "upgrades": []
+    },
+    {
+      "id": "skill.thunder",
+      "enabled": false,
+      "upgrades": []
+    },
+    {
+      "id": "skill.flame_exhaust",
+      "enabled": false,
+      "upgrades": []
     }
   ],
   "rules": {

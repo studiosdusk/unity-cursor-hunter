@@ -28,24 +28,21 @@ namespace CursorHunter.Combat
         [SerializeField, Range(0f, 0.4f)] private float topViewportPadding = 0.15f;
 
         [Header("Base balance")]
-        [SerializeField, Min(1)] private int baseCount = 1;
-        [SerializeField, Min(0.1f)] private float baseDurationSeconds = 5f;
-        [SerializeField, Min(0.01f)] private float baseDamageMultiplier = 2f;
-        [SerializeField, Min(0.1f)] private float baseCooldownSeconds = 8f;
-        [SerializeField, Min(0f)] private float firstCastDelaySeconds = 1f;
-        [SerializeField, Min(0.1f)] private float hitIntervalSeconds = 0.5f;
+        [SerializeField] private TornadoBaseStat baseStat = new TornadoBaseStat
+        {
+            Count = 1,
+            DurationSeconds = 5f,
+            DamageMultiplier = 2f,
+            CooldownSeconds = 8f,
+            FirstCastDelaySeconds = 1f,
+            HitIntervalSeconds = 0.5f,
+            MoveSpeedWorldUnitsPerSecond = 1f,
+            DirectionChangeSeconds = 3f,
+            StopChanceOnDirectionChange = 0.25f,
+            StopDurationSeconds = 0.75f,
+            ShrinkOutSeconds = 1f
+        };
         [SerializeField, Min(0f)] private float fieldEdgePaddingWorldUnits = 1.5f;
-
-        [Header("Movement and finish")]
-        [SerializeField, Min(0f), InspectorName("Move Speed (World Units/Second)"),
-         Tooltip("Movement speed of every active tornado. Changes during Play Mode apply immediately.")]
-        private float moveSpeedWorldUnitsPerSecond = 1f;
-        [SerializeField, Min(0.1f)] private float directionChangeSeconds = 3f;
-        [SerializeField, Range(0f, 1f)] private float stopChanceOnDirectionChange = 0.25f;
-        [SerializeField, Min(0f)] private float stopDurationSeconds = 0.75f;
-        [SerializeField, Min(0f), InspectorName("Shrink Out Seconds"),
-         Tooltip("During the final seconds of its lifetime, a tornado shrinks to zero. Set to 0 to disable.")]
-        private float shrinkOutSeconds = 1f;
 
         [Header("Pool")]
         [SerializeField, Range(1, 64)] private int maximumPooledObjects = 16;
@@ -59,10 +56,7 @@ namespace CursorHunter.Combat
         private SeededRandom _random;
         private RunId _runId;
         private float _nextCastAt;
-        private float _duration;
-        private float _cooldown;
-        private long _damage;
-        private int _count;
+        private TornadoRuntimeStat _runtime;
         private int _syncedFrame = -1;
         private bool _configured;
         private bool _visualsPaused;
@@ -72,7 +66,7 @@ namespace CursorHunter.Combat
         public int ActiveObjectCount => _active.Count;
         public int PooledObjectCount => _active.Count + _free.Count;
         internal float MoveSpeedWorldUnitsPerSecond =>
-            Mathf.Max(0f, moveSpeedWorldUnitsPerSecond);
+            _runtime.MoveSpeedWorldUnitsPerSecond;
         internal bool IsAcquiredForRun(bool savedAcquired) =>
             savedAcquired || Application.isEditor && editorSkillAcquired;
 
@@ -83,11 +77,14 @@ namespace CursorHunter.Combat
         }
 
         internal bool ConfigureForRun(
-            CombatRunController combat, RunId runId, ulong seed)
+            CombatRunController combat, RunId runId, ulong seed,
+            SkillCombatSnapshot skill = default)
         {
             StopSkill();
             if (combat == null || !runId.IsValid || tornadoObjectPrefab == null)
                 return false;
+            if (!string.IsNullOrEmpty(skill.SkillId) &&
+                (skill.SkillId != SkillId || !skill.IsValid)) return false;
             if (!tornadoObjectPrefab.HasHitbox)
             {
                 Debug.LogError("TornadoObject needs an enabled trigger BoxCollider2D hit area.",
@@ -105,27 +102,21 @@ namespace CursorHunter.Combat
             _combat = combat;
             _runId = runId;
             _random = new SeededRandom(seed ^ 0x70524E41444FUL);
-            int requestedCount = Mathf.Max(1, baseCount);
-            _count = Mathf.Min(requestedCount, maximumPooledObjects);
-            if (_count < requestedCount)
+            _runtime = new TornadoRuntimeStat(baseStat, skill,
+                combat.CombatSnapshot.AttackPower, maximumPooledObjects);
+            if (_runtime.Count < SkillStatMath.AddCount(baseStat.Count,
+                    skill, "count"))
                 Debug.LogWarning("Tornado count exceeds the pool limit; increase Maximum Pooled Objects.", this);
-            _duration = Mathf.Max(0.1f, baseDurationSeconds);
-            _cooldown = Mathf.Max(0.1f, baseCooldownSeconds);
-            double scaledDamage = combat.CombatSnapshot.AttackPower *
-                (double)baseDamageMultiplier;
-            _damage = scaledDamage >= long.MaxValue
-                ? long.MaxValue
-                : Math.Max(1L, (long)Math.Round(scaledDamage,
-                    MidpointRounding.AwayFromZero));
-            _nextCastAt = combat.ElapsedSeconds + firstCastDelaySeconds;
+            _nextCastAt = combat.ElapsedSeconds + _runtime.FirstCastDelaySeconds;
             _configured = true;
             _visualsPaused = false;
             _overflowLogged = false;
             _poolExhaustionLogged = false;
             _syncedFrame = -1;
 
-            int needed = Mathf.CeilToInt(_duration / _cooldown + 1f) * _count;
-            needed = Mathf.Clamp(needed, _count, maximumPooledObjects);
+            int needed = Mathf.CeilToInt(_runtime.DurationSeconds /
+                _runtime.CooldownSeconds + 1f) * _runtime.Count;
+            needed = Mathf.Clamp(needed, _runtime.Count, maximumPooledObjects);
             while (PooledObjectCount < needed)
             {
                 TornadoObject instance = Instantiate(tornadoObjectPrefab, transform);
@@ -169,7 +160,7 @@ namespace CursorHunter.Combat
             if (now >= _nextCastAt)
             {
                 Cast(now, bounds);
-                _nextCastAt = now + _cooldown;
+                _nextCastAt = now + _runtime.CooldownSeconds;
             }
 
             for (int i = _active.Count - 1; i >= 0; i--)
@@ -190,22 +181,23 @@ namespace CursorHunter.Combat
         private void Cast(float now, Rect bounds)
         {
             _syncedFrame = -1;
-            if (_free.Count < _count && !_poolExhaustionLogged)
+            if (_free.Count < _runtime.Count && !_poolExhaustionLogged)
             {
                 _poolExhaustionLogged = true;
                 Debug.LogWarning("Tornado pool exhausted; some objects in this cast will be skipped.", this);
             }
-            for (int i = 0; i < _count && _free.Count > 0; i++)
+            for (int i = 0; i < _runtime.Count && _free.Count > 0; i++)
             {
                 TornadoObject instance = _free.Pop();
                 Vector2 position = new Vector2(
                     _random.NextFloat(bounds.xMin, bounds.xMax),
                     _random.NextFloat(bounds.yMin, bounds.yMax));
-                instance.Activate(this, _runId, position, now, _duration,
-                    directionChangeSeconds,
-                    hitIntervalSeconds,
-                    stopChanceOnDirectionChange, stopDurationSeconds,
-                    shrinkOutSeconds, _damage);
+                instance.Activate(this, _runId, position, now,
+                    _runtime.DurationSeconds, _runtime.DirectionChangeSeconds,
+                    _runtime.HitIntervalSeconds,
+                    _runtime.StopChanceOnDirectionChange,
+                    _runtime.StopDurationSeconds,
+                    _runtime.ShrinkOutSeconds, _runtime.Damage);
                 _active.Add(instance);
             }
         }
@@ -293,6 +285,7 @@ namespace CursorHunter.Combat
             _combat = null;
             _runId = default;
             _random = null;
+            _runtime = default;
             _visualsPaused = false;
         }
 

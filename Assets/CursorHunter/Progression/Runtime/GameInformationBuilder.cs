@@ -59,6 +59,8 @@ namespace CursorHunter.Progression
                         case "skills":
                             var skill = skills[category.id];
                             if (node.operation == "enable") skill.enabled = true;
+                            else if (node.operation == "add")
+                                AddSkillUpgrade(skill, node.statId, (float)node.value);
                             break;
                     }
                 }
@@ -73,6 +75,27 @@ namespace CursorHunter.Progression
             }
             if (!result.TryValidate(out string error)) throw new InvalidOperationException("Resolved game data: " + error);
             return result;
+        }
+
+        private static void AddSkillUpgrade(SkillInformation skill,
+            string statId, float delta)
+        {
+            var upgrades = skill.upgrades == null
+                ? new List<SkillStatUpgradeInformation>()
+                : new List<SkillStatUpgradeInformation>(skill.upgrades);
+            for (int i = 0; i < upgrades.Count; i++)
+            {
+                if (upgrades[i].statId != statId) continue;
+                upgrades[i].delta += delta;
+                skill.upgrades = upgrades.ToArray();
+                return;
+            }
+            upgrades.Add(new SkillStatUpgradeInformation
+            {
+                statId = statId,
+                delta = delta
+            });
+            skill.upgrades = upgrades.ToArray();
         }
 
         public static CursorCombatStatBonusesSnapshot CreateCursorCombatStatBonusesSnapshot(

@@ -30,7 +30,7 @@
         "$ref": "#/$defs/entity"
       },
       "minItems": 28,
-      "maxItems": 28
+      "maxItems": 31
     }
   },
   "$defs": {
@@ -95,6 +95,10 @@
             "enable",
             "tier"
           ]
+        },
+        "statId": {
+          "type": "string",
+          "minLength": 1
         },
         "value": {
           "type": "number",

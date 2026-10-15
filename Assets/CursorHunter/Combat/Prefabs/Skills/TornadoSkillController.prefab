@@ -45,17 +45,18 @@ MonoBehaviour:
   horizontalViewportPadding: 0.02
   bottomViewportPadding: 0.09
   topViewportPadding: 0.15
-  baseCount: 1
-  baseDurationSeconds: 5
-  baseDamageMultiplier: 2
-  baseCooldownSeconds: 8
-  firstCastDelaySeconds: 1
-  hitIntervalSeconds: 0.5
+  baseStat:
+    Count: 1
+    DurationSeconds: 5
+    DamageMultiplier: 2
+    CooldownSeconds: 8
+    FirstCastDelaySeconds: 1
+    HitIntervalSeconds: 0.5
+    MoveSpeedWorldUnitsPerSecond: 1
+    DirectionChangeSeconds: 3
+    StopChanceOnDirectionChange: 0.25
+    StopDurationSeconds: 0.75
+    ShrinkOutSeconds: 1
   fieldEdgePaddingWorldUnits: 1.5
-  moveSpeedWorldUnitsPerSecond: 1
-  directionChangeSeconds: 3
-  stopChanceOnDirectionChange: 0.25
-  stopDurationSeconds: 0.75
-  shrinkOutSeconds: 1
   maximumPooledObjects: 16
   editorSkillAcquired: 0

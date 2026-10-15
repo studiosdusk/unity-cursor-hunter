@@ -166,7 +166,23 @@
   "skills(스킬)": [
     {
       "id(고정 식별자)": "skill.tornado",
-      "enabled(사용 가능 여부)": false
+      "enabled(사용 가능 여부)": false,
+      "upgrades(스킬 강화 증가량)": []
+    },
+    {
+      "id(고정 식별자)": "skill.headshot",
+      "enabled(사용 가능 여부)": false,
+      "upgrades(스킬 강화 증가량)": []
+    },
+    {
+      "id(고정 식별자)": "skill.thunder",
+      "enabled(사용 가능 여부)": false,
+      "upgrades(스킬 강화 증가량)": []
+    },
+    {
+      "id(고정 식별자)": "skill.flame_exhaust",
+      "enabled(사용 가능 여부)": false,
+      "upgrades(스킬 강화 증가량)": []
     }
   ],
   "rules(전투 공통 규칙)": {

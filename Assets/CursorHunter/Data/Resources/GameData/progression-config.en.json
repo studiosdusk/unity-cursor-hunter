@@ -1319,6 +1319,24 @@
       "prefabKey": "Combat/Prefabs/Skills/TornadoSkillController"
     },
     {
+      "id": "skill.headshot",
+      "displayName": "Headshot",
+      "description": "Marks a target before an explosion.",
+      "prefabKey": "Combat/Prefabs/Skills/HeadshotSkillController"
+    },
+    {
+      "id": "skill.thunder",
+      "displayName": "Thunder",
+      "description": "Strikes one randomly selected enemy.",
+      "prefabKey": "Combat/Prefabs/Skills/ThunderSkillController"
+    },
+    {
+      "id": "skill.flame_exhaust",
+      "displayName": "Flame Exhaust",
+      "description": "Launches a smaller cursor in a random direction.",
+      "prefabKey": "Combat/Prefabs/Skills/FlameExhaustSkillController"
+    },
+    {
       "id": "monster.01",
       "displayName": "Stump",
       "description": "Basic monster.",

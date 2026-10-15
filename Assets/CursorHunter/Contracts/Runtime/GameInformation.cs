@@ -31,8 +31,9 @@ namespace CursorHunter.Contracts
                 !Positive(rules.bossFieldDurationSeconds) || rules.globalAliveLimit < 1 || rules.globalAliveLimit > 80 ||
                 rules.perMonsterAliveLimit < 1 || rules.perMonsterAliveLimit > rules.globalAliveLimit)
                 return Fail("Invalid combat rules (maximum 80 alive targets).", out error);
-            if (gemstones.Length != 6 || monsters.Length != 10 || skills.Length != 1)
-                return Fail("Expected 6 gemstones, 10 monsters and the tornado skill.", out error);
+            if (gemstones.Length != 6 || monsters.Length != 10 ||
+                (skills.Length != 1 && skills.Length != 4))
+                return Fail("Expected 6 gemstones, 10 monsters and 1 or 4 skills.", out error);
             string[] gemIds = { "gem.garnet", "gem.topaz", "gem.amethyst", "gem.sapphire", "gem.diamond", "gem.dragon" };
             for (int i = 0; i < gemstones.Length; i++)
             {
@@ -52,8 +53,25 @@ namespace CursorHunter.Contracts
                     monster.behaviorType != MonsterBehaviorType.None)
                     return Fail("Invalid monster data.", out error);
             }
-            if (skills[0] == null || skills[0].id != "skill.tornado")
-                return Fail("Invalid tornado skill data.", out error);
+            string[] skillIds = { "skill.tornado", "skill.headshot",
+                "skill.thunder", "skill.flame_exhaust" };
+            for (int i = 0; i < skills.Length; i++)
+            {
+                SkillInformation skill = skills[i];
+                if (skill == null || skill.id != skillIds[i])
+                    return Fail("Invalid skill ID/order.", out error);
+                if (skill.upgrades == null) continue;
+                var seen = new System.Collections.Generic.HashSet<string>(
+                    StringComparer.Ordinal);
+                for (int j = 0; j < skill.upgrades.Length; j++)
+                {
+                    SkillStatUpgradeInformation upgrade = skill.upgrades[j];
+                    if (upgrade == null || !seen.Add(upgrade.statId) ||
+                        !new SkillStatUpgrade(upgrade.statId,
+                            upgrade.delta).IsValidFor(skill.id))
+                        return Fail("Invalid skill upgrade.", out error);
+                }
+            }
             return true;
         }
 
@@ -74,7 +92,14 @@ namespace CursorHunter.Contracts
             for (int i = 0; i < skills.Length; i++)
             {
                 var value = skills[i];
-                skillSnapshots[i] = new SkillCombatSnapshot(value.id, value.enabled);
+                SkillStatUpgrade[] upgrades = value.upgrades == null
+                    ? Array.Empty<SkillStatUpgrade>()
+                    : new SkillStatUpgrade[value.upgrades.Length];
+                for (int j = 0; j < upgrades.Length; j++)
+                    upgrades[j] = new SkillStatUpgrade(
+                        value.upgrades[j].statId, value.upgrades[j].delta);
+                skillSnapshots[i] = new SkillCombatSnapshot(value.id,
+                    value.enabled, upgrades);
             }
             var monsterSnapshots = new MonsterCombatSnapshot[monsters.Length];
             for (int i = 0; i < monsters.Length; i++)
@@ -151,6 +176,14 @@ namespace CursorHunter.Contracts
     {
         public string id;
         public bool enabled;
+        public SkillStatUpgradeInformation[] upgrades;
+    }
+
+    [Serializable]
+    public sealed class SkillStatUpgradeInformation
+    {
+        public string statId;
+        public float delta;
     }
 
 }

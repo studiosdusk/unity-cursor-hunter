@@ -88,7 +88,8 @@ def validate_documents():
         assert progression["savedProgressPolicy"] in ("overlay", "fileOnly")
         assert info["schemaVersion"] == 3 and info["balanceVersion"] >= 1
         assert len(info["gemstones"]) == 6 and len(info["monsters"]) == 10
-        assert len(info["skills"]) == 1
+        assert [skill["id"] for skill in info["skills"]] == [
+            "skill.tornado", "skill.headshot", "skill.thunder", "skill.flame_exhaust"]
         stats, rules = info["stats"], info["rules"]
         assert 1 <= stats["attackPower"] <= 9223372036854775807
         assert stats["attackRadiusWorldUnits"] > 0 and stats["attackCooldownSeconds"] >= .05
@@ -135,7 +136,8 @@ def validate_documents():
             definition = ROOT / f"Assets/CursorHunter/Data/Resources/MonsterDefinitions/Monster{monster['id'][-2:]}.asset"
             assert "prefabKey: " + entities[monster["id"]]["prefabKey"] in definition.read_text()
         for skill in info["skills"]:
-            assert skill["id"] == "skill.tornado" and skill["id"] in categories
+            assert skill["id"] in entities
+            assert skill.get("upgrades", []) == []
         for gem in info["gemstones"]:
             assert 0 <= gem["amount"] <= 9223372036854775807
         assert len(progression["bossRewards"]) == 5

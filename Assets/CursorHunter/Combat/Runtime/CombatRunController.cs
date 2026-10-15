@@ -36,6 +36,7 @@ namespace CursorHunter.Combat
         private TornadoSkillController _tornadoController;
         private HeadshotSkillController _headshotController;
         private ThunderSkillController _thunderController;
+        private FlameExhaustSkillController _flameExhaustController;
         private SeededRandom _random;
         private float _elapsedSeconds;
         private Vector2 _previousAttackCenter;
@@ -96,6 +97,7 @@ namespace CursorHunter.Combat
             _tornadoController = GetComponentInChildren<TornadoSkillController>(true);
             _headshotController = GetComponentInChildren<HeadshotSkillController>(true);
             _thunderController = GetComponentInChildren<ThunderSkillController>(true);
+            _flameExhaustController = GetComponentInChildren<FlameExhaustSkillController>(true);
         }
 
         private void ResolvePlayerCombatStatsRuntime()
@@ -199,7 +201,7 @@ namespace CursorHunter.Combat
             }
 
             _runRequest = request;
-            ConfigureSkills(null);
+            StopAllSkills();
             _random = new SeededRandom(request.Seed ^ 0xC17C17UL);
             _elapsedSeconds = 0f;
             _lastBasicHitAt.Clear();
@@ -250,6 +252,7 @@ namespace CursorHunter.Combat
             _lastBasicHitAt.Clear();
             ResetAttackPath();
             playerCombatStatsRuntime.SetRunActive(false);
+            StopAllSkills();
             PresentationReset?.Invoke();
             return true;
         }
@@ -415,71 +418,99 @@ namespace CursorHunter.Combat
             }
         }
 
-        public void ConfigureSkills(IReadOnlyList<SkillCombatSnapshot> skills)
+        public bool ConfigureSkills(IReadOnlyList<SkillCombatSnapshot> skills)
         {
-            _tornadoController?.StopSkill();
-            _headshotController?.StopSkill();
-            _thunderController?.StopSkill();
-            if (!IsRunning) return;
+            StopAllSkills();
+            if (!_isPrepared && !_isRunning) return false;
 
-            bool tornadoAcquired = false;
-            bool headshotAcquired = false;
-            bool thunderAcquired = false;
+            SkillCombatSnapshot tornado = new SkillCombatSnapshot(
+                TornadoSkillController.SkillId, false);
+            SkillCombatSnapshot headshot = new SkillCombatSnapshot(
+                HeadshotSkillController.SkillId, false);
+            SkillCombatSnapshot thunder = new SkillCombatSnapshot(
+                ThunderSkillController.SkillId, false);
+            SkillCombatSnapshot flameExhaust = new SkillCombatSnapshot(
+                FlameExhaustSkillController.SkillId, false);
             if (skills != null)
             {
+                var seen = new HashSet<string>(StringComparer.Ordinal);
                 for (int i = 0; i < skills.Count; i++)
                 {
                     SkillCombatSnapshot skill = skills[i];
-                    if (!skill.IsValid)
-                        throw new ArgumentException("Invalid skill snapshot.");
+                    if (!skill.IsValid || !seen.Add(skill.SkillId))
+                        return false;
                     if (skill.SkillId == TornadoSkillController.SkillId)
-                        tornadoAcquired |= skill.Unlocked;
-                    if (skill.SkillId == HeadshotSkillController.SkillId)
-                        headshotAcquired |= skill.Unlocked;
-                    if (skill.SkillId == ThunderSkillController.SkillId)
-                        thunderAcquired |= skill.Unlocked;
+                        tornado = skill;
+                    else if (skill.SkillId == HeadshotSkillController.SkillId)
+                        headshot = skill;
+                    else if (skill.SkillId == ThunderSkillController.SkillId)
+                        thunder = skill;
+                    else if (skill.SkillId == FlameExhaustSkillController.SkillId)
+                        flameExhaust = skill;
                 }
             }
 
             if (_tornadoController == null)
                 _tornadoController = GetComponentInChildren<TornadoSkillController>(true);
             if (_tornadoController != null &&
-                _tornadoController.IsAcquiredForRun(tornadoAcquired))
+                _tornadoController.IsAcquiredForRun(tornado.Unlocked))
             {
                 if (!_tornadoController.isActiveAndEnabled)
-                    Debug.LogError("Place an active TornadoSkillController under CombatManager in the scene.", this);
+                    return false;
                 else if (!_tornadoController.ConfigureForRun(
-                             this, _runRequest.RunId, _runRequest.Seed))
-                    Debug.LogError("Tornado could not be configured. Check its object prefab and world camera.",
-                        _tornadoController);
+                             this, _runRequest.RunId, _runRequest.Seed, tornado))
+                    return false;
             }
+            else if (tornado.Unlocked) return false;
 
             if (_headshotController == null)
                 _headshotController = GetComponentInChildren<HeadshotSkillController>(true);
             if (_headshotController != null &&
-                _headshotController.IsAcquiredForRun(headshotAcquired))
+                _headshotController.IsAcquiredForRun(headshot.Unlocked))
             {
                 if (!_headshotController.isActiveAndEnabled)
-                    Debug.LogError("Place an active HeadshotSkillController under CombatManager in the scene.", this);
+                    return false;
                 else if (!_headshotController.ConfigureForRun(
-                             this, _runRequest.RunId, _runRequest.Seed))
-                    Debug.LogError("Headshot could not be configured. Check its effect prefab.",
-                        _headshotController);
+                             this, _runRequest.RunId, _runRequest.Seed, headshot))
+                    return false;
             }
+            else if (headshot.Unlocked) return false;
 
             if (_thunderController == null)
                 _thunderController = GetComponentInChildren<ThunderSkillController>(true);
-            if (_thunderController == null ||
-                !_thunderController.IsAcquiredForRun(thunderAcquired)) return;
-            if (!_thunderController.isActiveAndEnabled)
+            if (_thunderController != null &&
+                _thunderController.IsAcquiredForRun(thunder.Unlocked))
             {
-                Debug.LogError("Place an active ThunderSkillController under CombatManager in the scene.", this);
-                return;
+                if (!_thunderController.isActiveAndEnabled)
+                    return false;
+                else if (!_thunderController.ConfigureForRun(
+                             this, _runRequest.RunId, _runRequest.Seed, thunder))
+                    return false;
             }
-            if (!_thunderController.ConfigureForRun(
-                    this, _runRequest.RunId, _runRequest.Seed))
-                Debug.LogError("Thunder could not be configured. Check its effect prefab.",
-                    _thunderController);
+            else if (thunder.Unlocked) return false;
+
+            if (_flameExhaustController == null)
+                _flameExhaustController = GetComponentInChildren<FlameExhaustSkillController>(true);
+            if (_flameExhaustController != null &&
+                _flameExhaustController.IsAcquiredForRun(flameExhaust.Unlocked))
+            {
+                if (!_flameExhaustController.isActiveAndEnabled)
+                    return false;
+                else if (!_flameExhaustController.ConfigureForRun(
+                             this, _runRequest.RunId, _runRequest.Seed,
+                             flameExhaust))
+                    return false;
+            }
+            else if (flameExhaust.Unlocked) return false;
+            return true;
+        }
+
+        private void StopAllSkills()
+        {
+            _tornadoController?.StopSkill();
+            _headshotController?.StopSkill();
+            _thunderController?.StopSkill();
+            _flameExhaustController?.StopSkill();
         }
 
         public bool TryApplySkillDamage(RunId runId, ICombatTarget target, long rawDamage)
@@ -512,6 +543,7 @@ namespace CursorHunter.Combat
             _tornadoController?.StopSkill();
             _headshotController?.StopSkill();
             _thunderController?.StopSkill();
+            _flameExhaustController?.StopSkill();
 
             PresentationReset?.Invoke();
             result = CreateResult(
@@ -541,6 +573,7 @@ namespace CursorHunter.Combat
             _tornadoController?.StopSkill();
             _headshotController?.StopSkill();
             _thunderController?.StopSkill();
+            _flameExhaustController?.StopSkill();
 
             PresentationReset?.Invoke();
             result = CreateResult(

@@ -10,14 +10,99 @@ namespace CursorHunter.Contracts
     public readonly struct SkillCombatSnapshot
     {
         public SkillCombatSnapshot(string skillId, bool unlocked)
+            : this(skillId, unlocked, null)
+        {
+        }
+
+        public SkillCombatSnapshot(string skillId, bool unlocked,
+            SkillStatUpgrade[] upgrades)
         {
             SkillId = skillId ?? string.Empty;
             Unlocked = unlocked;
+            _upgrades = upgrades == null
+                ? Array.Empty<SkillStatUpgrade>()
+                : (SkillStatUpgrade[])upgrades.Clone();
+            _upgradeView = Array.AsReadOnly(_upgrades);
         }
 
+        private readonly SkillStatUpgrade[] _upgrades;
+        private readonly IReadOnlyList<SkillStatUpgrade> _upgradeView;
         public string SkillId { get; }
         public bool Unlocked { get; }
-        public bool IsValid => !string.IsNullOrWhiteSpace(SkillId);
+        public IReadOnlyList<SkillStatUpgrade> Upgrades =>
+            _upgradeView ?? Array.Empty<SkillStatUpgrade>();
+        public bool IsValid
+        {
+            get
+            {
+                if (!SkillStatUpgrade.IsKnownSkill(SkillId)) return false;
+                var seen = new HashSet<string>(StringComparer.Ordinal);
+                for (int i = 0; i < Upgrades.Count; i++)
+                    if (!Upgrades[i].IsValidFor(SkillId) ||
+                        !seen.Add(Upgrades[i].StatId)) return false;
+                return true;
+            }
+        }
+
+        public float GetUpgrade(string statId)
+        {
+            for (int i = 0; i < Upgrades.Count; i++)
+                if (Upgrades[i].StatId == statId) return Upgrades[i].Delta;
+            return 0f;
+        }
+    }
+
+    /// <summary>One already-aggregated additive upgrade for a skill stat.</summary>
+    public readonly struct SkillStatUpgrade
+    {
+        public SkillStatUpgrade(string statId, float delta)
+        {
+            StatId = statId ?? string.Empty;
+            Delta = delta;
+        }
+
+        public string StatId { get; }
+        public float Delta { get; }
+
+        public bool IsValidFor(string skillId)
+        {
+            return !float.IsNaN(Delta) && !float.IsInfinity(Delta) &&
+                (StatId != "count" || Delta == (float)Math.Floor(Delta)) &&
+                IsAllowed(skillId, StatId);
+        }
+
+        public static bool IsKnownSkill(string skillId)
+        {
+            return skillId == "skill.tornado" || skillId == "skill.headshot" ||
+                skillId == "skill.thunder" || skillId == "skill.flame_exhaust";
+        }
+
+        public static bool IsAllowed(string skillId, string statId)
+        {
+            if (statId == "cooldownSeconds") return IsKnownSkill(skillId);
+            switch (skillId)
+            {
+                case "skill.tornado":
+                    return statId == "count" || statId == "durationSeconds" ||
+                        statId == "damageMultiplier" || statId == "firstCastDelaySeconds" ||
+                        statId == "hitIntervalSeconds" || statId == "moveSpeedWorldUnitsPerSecond" ||
+                        statId == "directionChangeSeconds" || statId == "stopChanceOnDirectionChange" ||
+                        statId == "stopDurationSeconds" || statId == "shrinkOutSeconds";
+                case "skill.headshot":
+                    return statId == "firstCastDelaySeconds" ||
+                        statId == "explosionDelaySeconds" || statId == "effectDurationSeconds" ||
+                        statId == "splashDamageMultiplier" || statId == "bossDamageMultiplier";
+                case "skill.thunder":
+                    return statId == "firstCastDelaySeconds" ||
+                        statId == "impactDelaySeconds" || statId == "effectDurationSeconds" ||
+                        statId == "damageMultiplier";
+                case "skill.flame_exhaust":
+                    // The established upgrade direction is cooldown only.
+                    return false;
+                default:
+                    return false;
+            }
+        }
     }
 
     /// <summary>

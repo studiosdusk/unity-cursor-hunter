@@ -104,6 +104,44 @@ namespace CursorHunter.App.Tests
         }
 
         [Test]
+        public void PurchasedSkillDeltasAreSummedAndCaptured()
+        {
+            var document = GameDataDocument.Load();
+            UpgradeCategoryData category = System.Array.Find(
+                document.progression.categories,
+                value => value.id == "skill.tornado");
+            var nodes = new List<UpgradeNodeData>(category.nodes)
+            {
+                new UpgradeNodeData
+                {
+                    id = "skill.tornado.testCooldownA",
+                    operation = "add", statId = "cooldownSeconds", value = -0.25
+                },
+                new UpgradeNodeData
+                {
+                    id = "skill.tornado.testCooldownB",
+                    operation = "add", statId = "cooldownSeconds", value = -0.5
+                }
+            };
+            category.nodes = nodes.ToArray();
+            var purchased = new HashSet<string>
+            {
+                "skill.tornado.testCooldownA", "skill.tornado.testCooldownB"
+            };
+            GameInformation result = Build(document, purchased);
+            Assert.That(result.skills[0].upgrades, Has.Length.EqualTo(1));
+            Assert.That(result.skills[0].upgrades[0].delta,
+                Is.EqualTo(-0.75f));
+            var captured = result.ToCombatSnapshot(
+                GameInformationJson.Serialize(result));
+            result.skills[0].upgrades[0].delta = -99f;
+            Assert.That(captured.Skills[0].GetUpgrade("cooldownSeconds"),
+                Is.EqualTo(-0.75f));
+            Assert.That(document.information.skills[0].upgrades,
+                Is.Empty);
+        }
+
+        [Test]
         public void MissingTornadoUnlockIsRejected()
         {
             var document = GameDataDocument.Load();
@@ -131,7 +169,7 @@ namespace CursorHunter.App.Tests
             document.progression.savedProgressPolicy = "eraseSave";
             Assert.That(document.TryValidate(out _), Is.False);
             document = GameDataDocument.Load();
-            document.progression.categories[2].nodes[1].value = -1;
+            document.progression.categories[2].nodes[1].value = 1;
             Assert.That(document.TryValidate(out _), Is.False);
             Assert.That(GameDataDocument.TryParse("{}", "{}", out _, out _), Is.False);
             Assert.That(GameDataDocument.TryParse(null, null, out _, out _), Is.False);

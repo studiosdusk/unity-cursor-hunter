@@ -29,7 +29,7 @@ information 래퍼, progression, entities, fieldHelp, implementation, relics는 
 | rules | criticalDamageMultiplier, globalAliveLimit, perMonsterAliveLimit, bossFieldDurationSeconds |
 | gemstones[6] | id, enabled, amount |
 | monsters[10] | id, enabled, productionCount, hitPoints, spawnIntervalSeconds, garnetReward, gemstoneId, gemstoneAmount, gemstoneChancePercent, behaviorType |
-| skills[1] | id=`skill.tornado`, enabled |
+| skills[4] | `skill.tornado`, `skill.headshot`, `skill.thunder`, `skill.flame_exhaust`의 id, enabled, upgrades[statId, delta] |
 
 HP/공격력/피해/재화는 Int64. 시간은 초, 반경은 월드 단위, 확률은 0~100이다.
 productionCount는 1회 생성 마릿수다. gems.enabled는 공급 몬스터 활성 여부이며 잔액과 독립적이다.
@@ -82,7 +82,9 @@ MonsterDefinition.BaseStats
 아래 controller는 현재 CombatRunController, snapshot은 App이 캡처한 ProgressionCombatSnapshot이다.
 전역 변수나 새로 추가한 전체 데이터 getter를 뜻하지 않는다.
 HuntManager.BeginPrototypeRun이 전체 정보와 커서 증가량 스냅샷을 만들고,
-RunCoordinator.Start에 CombatSnapshot/커서 증가량/SpawnPlan, ConfigureSkills에 스킬 목록을 전달한다.
+RunCoordinator.Start에 CombatSnapshot/커서 증가량/스킬 목록/SpawnPlan을 전달한다.
+CombatRunController는 PrepareRun 이후 CommitStart 이전에 네 스킬의 BaseStat과
+UpgradeStat을 합쳐 이번 런의 RuntimeStat으로 고정한다.
 
 | 정보 | 실제 프로퍼티 |
 |---|---|
@@ -92,7 +94,7 @@ RunCoordinator.Start에 CombatSnapshot/커서 증가량/SpawnPlan, ConfigureSkil
 | 치명타 확률 / 피해 배율 | controller.CombatSnapshot.CriticalChancePercent / CriticalDamageMultiplier |
 | 보스 피해 배율 | controller.CombatSnapshot.BossDamageMultiplier |
 | 자동 공격 여부 / 주기 | controller.CombatSnapshot.AutoAttackEnabled / AutoAttackIntervalSeconds |
-| 스킬 정보 | ConfigureSkills로 받은 SkillCombatSnapshot의 SkillId, Unlocked. 실제 수치는 Main 씬의 TornadoSkillController 인스턴스 Inspector 기본값에서 계산. Editor Play Mode에서는 해당 컨트롤러의 `Skill Acquired` 토글로 해금 상태를 시험할 수 있음 |
+| 스킬 정보 | SkillCombatSnapshot의 SkillId, Unlocked, Upgrades와 각 스킬 프리팹/Main override의 BaseStat을 합친 RuntimeStat. Editor Play Mode에서는 `Skill Acquired` 토글로 저장 구매 없이 시험 가능 |
 | 몬스터 생성 | SpawnPlan.Entries[i].Snapshot의 MonsterId, MaxHealth, PackSize, SpawnIntervalSeconds, AliveLimit |
 | 몬스터 특성 | SpawnPlan.Entries[i].Snapshot의 MovementMode, MoveSpeed, VisualScale, SpecialAbility 및 능력 수치 |
 | 가넷 / 추가 젬 보상 | SpawnSnapshot.GarnetReward / BonusDropCurrencyId, BonusDropAmount, BonusDropChancePercent |
@@ -149,7 +151,7 @@ Data 참조가 없는 Combat 어셈블리에서 위 파싱 메서드를 호출�
 
 ## 검증·아직 없는 기능
 
-Python 정적 검사와 12개 데이터 테스트, C# 구문 검사. Unity 컴파일·게임·Editor 테스트는 실행하지 않았다.
+2026-10-15 자동 스킬 4종 스탯 개편 후 Python 데이터·협업 계약 검사와 Unity 6000.3.13f1 격리 프로젝트의 EditMode 99개, PlayMode 13개를 통과했다. Main 화면에서 실제 이펙트와 발동 타이밍을 수동으로 확인하는 작업은 남아 있다.
 스킬 고유 투사체/빙결/틱/브레스, 보스 패턴/패링, 전체 Localization, 영속 RunId journal은 미완료다.
 프로세스 내 중복 정산 방지와 PlayerPrefs 저장의 기존 한계는 남아 있다.
 메인 스레드 흐름을 유지하며 읽기 전용 배열만으로 전체 시스템의 멀티스레드 안전성을 주장하지 않는다.

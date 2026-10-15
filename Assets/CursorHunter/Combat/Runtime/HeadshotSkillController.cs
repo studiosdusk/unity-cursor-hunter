@@ -20,12 +20,15 @@ namespace CursorHunter.Combat
         [SerializeField] private HeadshotEffect effectPrefab;
 
         [Header("Base balance")]
-        [SerializeField, Min(0.1f)] private float baseCooldownSeconds = 5f;
-        [SerializeField, Min(0f)] private float firstCastDelaySeconds = 1f;
-        [SerializeField, Min(0f)] private float explosionDelaySeconds = 1.15f;
-        [SerializeField, Min(0.1f)] private float effectDurationSeconds = 2.5f;
-        [SerializeField, Min(0.01f)] private float splashDamageMultiplier = 2f;
-        [SerializeField, Min(0.01f)] private float bossDamageMultiplier = 10f;
+        [SerializeField] private HeadshotBaseStat baseStat = new HeadshotBaseStat
+        {
+            CooldownSeconds = 5f,
+            FirstCastDelaySeconds = 1f,
+            ExplosionDelaySeconds = 1.15f,
+            EffectDurationSeconds = 2.5f,
+            SplashDamageMultiplier = 2f,
+            BossDamageMultiplier = 10f
+        };
 
         [Header("Pool")]
         [SerializeField, Min(1)] private int maximumPooledEffects = 16;
@@ -42,8 +45,7 @@ namespace CursorHunter.Combat
         private SeededRandom _random;
         private RunId _runId;
         private float _nextCastAt;
-        private long _splashDamage;
-        private long _bossDamage;
+        private HeadshotRuntimeStat _runtime;
         private bool _configured;
         private bool _visualsPaused;
         private bool _poolWarningLogged;
@@ -54,28 +56,28 @@ namespace CursorHunter.Combat
         internal bool IsAcquiredForRun(bool savedAcquired) =>
             savedAcquired || Application.isEditor && editorSkillAcquired;
 
-        internal bool ConfigureForRun(CombatRunController combat, RunId runId, ulong seed)
+        internal bool ConfigureForRun(CombatRunController combat, RunId runId,
+            ulong seed, SkillCombatSnapshot skill = default)
         {
             StopSkill();
             if (combat == null || !runId.IsValid || effectPrefab == null ||
                 !effectPrefab.HasHitbox)
                 return false;
+            if (!string.IsNullOrEmpty(skill.SkillId) &&
+                (skill.SkillId != SkillId || !skill.IsValid)) return false;
 
             _combat = combat;
             _runId = runId;
             _random = new SeededRandom(seed ^ 0x4845414453484F54UL);
-            _nextCastAt = combat.ElapsedSeconds + Mathf.Max(0f, firstCastDelaySeconds);
-            _splashDamage = ScaleDamage(combat.CombatSnapshot.AttackPower,
-                splashDamageMultiplier);
-            _bossDamage = ScaleDamage(combat.CombatSnapshot.AttackPower,
-                bossDamageMultiplier);
+            _runtime = new HeadshotRuntimeStat(baseStat, skill,
+                combat.CombatSnapshot.AttackPower);
+            _nextCastAt = combat.ElapsedSeconds + _runtime.FirstCastDelaySeconds;
             _configured = true;
             _visualsPaused = false;
             _poolWarningLogged = false;
 
-            float cooldown = Mathf.Max(0.1f, baseCooldownSeconds);
-            float duration = Mathf.Max(0.1f, effectDurationSeconds);
-            int needed = Mathf.Clamp(Mathf.CeilToInt(duration / cooldown) + 1,
+            int needed = Mathf.Clamp(Mathf.CeilToInt(
+                _runtime.EffectDurationSeconds / _runtime.CooldownSeconds) + 1,
                 1, Mathf.Max(1, maximumPooledEffects));
             while (PooledEffectCount < needed)
             {
@@ -145,10 +147,10 @@ namespace CursorHunter.Combat
             MonsterCombatTarget target = _eligibleTargets[index];
             HeadshotEffect next = _free.Pop();
             next.Activate(this, _runId, target, now,
-                Mathf.Max(0f, explosionDelaySeconds),
-                Mathf.Max(effectDurationSeconds, explosionDelaySeconds + 0.1f));
+                _runtime.ExplosionDelaySeconds,
+                _runtime.EffectDurationSeconds);
             _active.Add(next);
-            _nextCastAt = now + Mathf.Max(0.1f, baseCooldownSeconds);
+            _nextCastAt = now + _runtime.CooldownSeconds;
         }
 
         internal bool IsCurrentRun(RunId runId) =>
@@ -164,7 +166,8 @@ namespace CursorHunter.Combat
                 primary.RunId == runId &&
                 primary.IsActive && primary.IsRegistered)
             {
-                long damage = _combat.IsBossRun ? _bossDamage : primary.CurrentHealth;
+                long damage = _combat.IsBossRun
+                    ? _runtime.BossDamage : primary.CurrentHealth;
                 _combat.TryApplySkillDamage(runId, primary, damage);
             }
 
@@ -191,7 +194,8 @@ namespace CursorHunter.Combat
             foreach (MonsterCombatTarget target in _uniqueTargets)
             {
                 if (!IsCurrentRun(runId)) break;
-                _combat.TryApplySkillDamage(runId, target, _splashDamage);
+                _combat.TryApplySkillDamage(runId, target,
+                    _runtime.SplashDamage);
             }
         }
 
@@ -211,18 +215,12 @@ namespace CursorHunter.Combat
             _combat = null;
             _random = null;
             _runId = default;
+            _runtime = default;
             _configured = false;
             _visualsPaused = false;
         }
 
         private void OnDisable() => StopSkill();
 
-        private static long ScaleDamage(long attackPower, float multiplier)
-        {
-            double value = attackPower * (double)Mathf.Max(0.01f, multiplier);
-            return value >= long.MaxValue
-                ? long.MaxValue
-                : Math.Max(1L, (long)Math.Round(value, MidpointRounding.AwayFromZero));
-        }
     }
 }

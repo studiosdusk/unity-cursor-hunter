@@ -20,8 +20,9 @@ class CombatInformationV3Tests(unittest.TestCase):
             "schemaVersion", "balanceVersion", "stats", "rules", "gemstones", "monsters", "skills"})
         self.assertEqual(self.info["schemaVersion"], 3)
         self.assertEqual(len(self.info["monsters"]), 10)
-        self.assertEqual(len(self.info["skills"]), 1)
-        self.assertEqual(self.info["skills"][0]["id"], "skill.tornado")
+        self.assertEqual([s["id"] for s in self.info["skills"]], [
+            "skill.tornado", "skill.headshot", "skill.thunder",
+            "skill.flame_exhaust"])
         for old in ("relic", "fragment", "progression", "entities", "fieldHelp", "implementation"):
             self.assertNotIn(old, json.dumps(self.info))
 

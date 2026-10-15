@@ -37,7 +37,7 @@ def main():
         "monsters": [dict(m, prefabKey=entities[m["id"]]["prefabKey"],
                           unlockCurrencyId=categories[m["id"]]["nodes"][0]["currencyId"]) for m in example["monsters"]],
         "skills": [dict(s, currencyId=categories[s["id"]]["nodes"][0]["currencyId"])
-                   for s in example["skills"]]
+                   for s in example["skills"] if s["id"] in categories]
     }
     errors = []
     def check(ok, message):
@@ -50,7 +50,9 @@ def main():
     gems = ["gem." + name for name in ["garnet", "topaz", "amethyst", "sapphire", "diamond", "dragon"]]
     check([g["id"] for g in example["gemstones"]] == gems, "Gemstone IDs/order changed")
     check(len(data["monsters"]) == len(example["monsters"]) == 10, "Expected 10 monsters")
-    check(len(data["skills"]) == len(example["skills"]) == 1, "Expected the tornado skill")
+    check([s["id"] for s in example["skills"]] ==
+          ["skill.tornado", "skill.headshot", "skill.thunder", "skill.flame_exhaust"],
+          "Expected four skill IDs")
     check(data["normalFieldDurationSeconds"] == [15, 20, 25, 30], "Normal duration must stop at 30")
     check(all(finite_positive(v) and v >= .05 for v in data["attackCooldownSeconds"]), "Invalid cooldown")
     check(all(data["attackCooldownSeconds"][i] > data["attackCooldownSeconds"][i+1] for i in range(4)), "Cooldown upgrades must decrease")
@@ -80,7 +82,7 @@ def main():
     check(known_currencies == set(gems), "Some currencies have no attainable monster source")
     for skill in data["skills"]:
         check(skill["currencyId"] in known_currencies, "Unattainable skill currency")
-        check(skill["id"] == "skill.tornado", "Unexpected skill ID")
+        check(skill["id"] == "skill.tornado", "Unexpected purchased skill category")
     tornado_controller = BASE / "Combat/Prefabs/Skills/TornadoSkillController.prefab"
     tornado_object = BASE / "Combat/Prefabs/Skills/TornadoObject.prefab"
     check(tornado_controller.exists(), "Missing tornado controller prefab")
@@ -133,7 +135,7 @@ def main():
                         errors.append(f"C# syntax: {path.relative_to(ROOT)}:{node.start_point.row+1} {node.type}")
                     stack.extend(node.children)
     if errors: raise SystemExit("\n".join(errors))
-    print("PASS: JSON sections, 10 monsters, tornado skill, currency reachability, prefab IDs, TMP, scene and render settings" + (", C# syntax" if args.syntax else ""))
+    print("PASS: JSON sections, 10 monsters, four skill IDs, currency reachability, prefab IDs, TMP, scene and render settings" + (", C# syntax" if args.syntax else ""))
     print("Unity import, semantic compilation and gameplay were NOT run.")
 
 if __name__ == "__main__":

@@ -1,10 +1,11 @@
-> 2026-10-14 스킬 변경: 아래의 이전 스킬 후보 표는 기록용이다. 현재 전투 스킬은 [자동 스킬 기획서](../skill-design.md)의 토네이도와 에디터 해금 시험용 헤드샷이다. 두 스킬의 컨트롤러와 오브젝트는 프로젝트 소유 프리팹이다.
+> 2026-10-15 스킬 변경: 아래의 이전 스킬 후보 표는 기록용이다. 현재 전투 스킬은 [자동 스킬 기획서](../skill-design.md)의 토네이도·헤드샷·벼락·화염 배기다. 각 스킬의 컨트롤러와 전투 오브젝트는 프로젝트 소유 프리팹이다.
 
 | 현재 스킬 | 컨트롤러 | 전투 오브젝트 | 시각 원본 |
 |---|---|---|---|
 | `skill.tornado` | [TornadoSkillController.prefab](../../Assets/CursorHunter/Combat/Prefabs/Skills/TornadoSkillController.prefab) | [TornadoObject.prefab](../../Assets/CursorHunter/Combat/Prefabs/Skills/TornadoObject.prefab) | [FX_SnowTornado_Loop.prefab](../../Assets/DownLoadAssets/Eric%20VFX%20Studio/Game%20VFX%20-%20Tornado%20Collection/Prefab/URP/FX_SnowTornado_Loop.prefab) |
 | `skill.headshot` | [HeadshotSkillController.prefab](../../Assets/CursorHunter/Combat/Prefabs/Skills/HeadshotSkillController.prefab) | [HeadshotEffect.prefab](../../Assets/CursorHunter/Combat/Prefabs/Skills/HeadshotEffect.prefab) | [FX_Aim_Explode_Visual.prefab](../../Assets/DownLoadAssets/Eric%20VFX%20Studio/Game%20VFX%20-%20Cartoon%20Skill%20Collection%20Vol2/Prefabs/URP/FX_Aim_Explode_Visual.prefab) |
 | `skill.thunder` | [ThunderSkillController.prefab](../../Assets/CursorHunter/Combat/Prefabs/Skills/ThunderSkillController.prefab) | [ThunderEffect.prefab](../../Assets/CursorHunter/Combat/Prefabs/Skills/ThunderEffect.prefab) | [FX_Cartoon Thunder_Visual.prefab](../../Assets/DownLoadAssets/Eric%20VFX%20Studio/Game%20VFX%20-%20Cartoon%20Skill%20Collection%20Vol2/Prefabs/URP/FX_Cartoon%20Thunder_Visual.prefab) |
+| `skill.flame_exhaust` | [FlameExhaustSkillController.prefab](../../Assets/CursorHunter/Combat/Prefabs/Skills/FlameExhaustSkillController.prefab) | [FlameExhaustProjectile.prefab](../../Assets/CursorHunter/Combat/Prefabs/Skills/FlameExhaustProjectile.prefab), [FlameExhaustHitEffect.prefab](../../Assets/CursorHunter/Combat/Prefabs/Skills/FlameExhaustHitEffect.prefab) | [FX_MagicSlash02_Fire.prefab](../../Assets/DownLoadAssets/Eric%20VFX%20Studio/Game%20VFX%20-%20Magic%20Slash%20Collection/Prefabs/URP/FX_MagicSlash02_Fire.prefab) |
 
 > 2026-10-01 변경: 아래 v0.0.4 본문은 개편 전 기록입니다. 기존 캡처는 현재 UI 검증 자료가 아닙니다.
 

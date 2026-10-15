@@ -20,11 +20,14 @@ namespace CursorHunter.Combat
         [SerializeField] private ThunderEffect effectPrefab;
 
         [Header("Base balance")]
-        [SerializeField, Min(0.1f)] private float baseCooldownSeconds = 2f;
-        [SerializeField, Min(0f)] private float firstCastDelaySeconds;
-        [SerializeField, Min(0f)] private float impactDelaySeconds = 0.1f;
-        [SerializeField, Min(0.1f)] private float effectDurationSeconds = 0.5f;
-        [SerializeField, Min(0.01f)] private float damageMultiplier = 4f;
+        [SerializeField] private ThunderBaseStat baseStat = new ThunderBaseStat
+        {
+            CooldownSeconds = 2f,
+            FirstCastDelaySeconds = 0f,
+            ImpactDelaySeconds = 0.1f,
+            EffectDurationSeconds = 0.5f,
+            DamageMultiplier = 4f
+        };
 
         [Header("Pool")]
         [SerializeField, Min(1)] private int maximumPooledEffects = 8;
@@ -38,7 +41,7 @@ namespace CursorHunter.Combat
         private SeededRandom _random;
         private RunId _runId;
         private float _nextCastAt;
-        private long _damage;
+        private ThunderRuntimeStat _runtime;
         private bool _configured;
         private bool _visualsPaused;
         private bool _poolWarningLogged;
@@ -49,24 +52,27 @@ namespace CursorHunter.Combat
         internal bool IsAcquiredForRun(bool savedAcquired) =>
             savedAcquired || Application.isEditor && editorSkillAcquired;
 
-        internal bool ConfigureForRun(CombatRunController combat, RunId runId, ulong seed)
+        internal bool ConfigureForRun(CombatRunController combat, RunId runId,
+            ulong seed, SkillCombatSnapshot skill = default)
         {
             StopSkill();
             if (combat == null || !runId.IsValid || effectPrefab == null)
                 return false;
+            if (!string.IsNullOrEmpty(skill.SkillId) &&
+                (skill.SkillId != SkillId || !skill.IsValid)) return false;
 
             _combat = combat;
             _runId = runId;
             _random = new SeededRandom(seed ^ 0x5448554E444552UL);
-            _nextCastAt = combat.ElapsedSeconds + Mathf.Max(0f, firstCastDelaySeconds);
-            _damage = ScaleDamage(combat.CombatSnapshot.AttackPower, damageMultiplier);
+            _runtime = new ThunderRuntimeStat(baseStat, skill,
+                combat.CombatSnapshot.AttackPower);
+            _nextCastAt = combat.ElapsedSeconds + _runtime.FirstCastDelaySeconds;
             _configured = true;
             _visualsPaused = false;
             _poolWarningLogged = false;
 
-            float cooldown = Mathf.Max(0.1f, baseCooldownSeconds);
-            float duration = Mathf.Max(effectDurationSeconds, impactDelaySeconds + 0.01f);
-            int needed = Mathf.Clamp(Mathf.CeilToInt(duration / cooldown) + 1,
+            int needed = Mathf.Clamp(Mathf.CeilToInt(
+                _runtime.EffectDurationSeconds / _runtime.CooldownSeconds) + 1,
                 1, Mathf.Max(1, maximumPooledEffects));
             while (PooledEffectCount < needed)
             {
@@ -136,10 +142,10 @@ namespace CursorHunter.Combat
             MonsterCombatTarget target = _eligibleTargets[index];
             ThunderEffect next = _free.Pop();
             next.Activate(this, _runId, target, now,
-                Mathf.Max(0f, impactDelaySeconds),
-                Mathf.Max(effectDurationSeconds, impactDelaySeconds + 0.01f));
+                _runtime.ImpactDelaySeconds,
+                _runtime.EffectDurationSeconds);
             _active.Add(next);
-            _nextCastAt = now + Mathf.Max(0.1f, baseCooldownSeconds);
+            _nextCastAt = now + _runtime.CooldownSeconds;
         }
 
         internal bool IsCurrentRun(RunId runId) =>
@@ -153,7 +159,7 @@ namespace CursorHunter.Combat
                 !target.IsActive || !target.IsRegistered)
                 return;
 
-            _combat.TryApplySkillDamage(runId, target, _damage);
+            _combat.TryApplySkillDamage(runId, target, _runtime.Damage);
         }
 
         internal void StopSkill()
@@ -170,18 +176,12 @@ namespace CursorHunter.Combat
             _combat = null;
             _random = null;
             _runId = default;
+            _runtime = default;
             _configured = false;
             _visualsPaused = false;
         }
 
         private void OnDisable() => StopSkill();
 
-        private static long ScaleDamage(long attackPower, float multiplier)
-        {
-            double value = attackPower * (double)Mathf.Max(0.01f, multiplier);
-            return value >= long.MaxValue
-                ? long.MaxValue
-                : Math.Max(1L, (long)Math.Round(value, MidpointRounding.AwayFromZero));
-        }
     }
 }

@@ -31,8 +31,8 @@ namespace CursorHunter.Combat.Tests
             Assert.That(controller, Is.Not.Null);
             SetField(sandbox, "_autoHit", false);
             SetField(controller, "editorSkillAcquired", true);
-            SetField(controller, "impactDelaySeconds", 0.5f);
-            SetField(controller, "effectDurationSeconds", 0.8f);
+            SetBaseStat(controller, "ImpactDelaySeconds", 0.5f);
+            SetBaseStat(controller, "EffectDurationSeconds", 0.8f);
             combat.ConfigureSkills(null);
 
             combat.AdvanceTime(0.01f);
@@ -98,7 +98,7 @@ namespace CursorHunter.Combat.Tests
                 sandbox.GetComponentInChildren<ThunderSkillController>(true);
             SetField(sandbox, "_autoHit", false);
             SetField(controller, "editorSkillAcquired", true);
-            SetField(controller, "impactDelaySeconds", 0.5f);
+            SetBaseStat(controller, "ImpactDelaySeconds", 0.5f);
             combat.ConfigureSkills(null);
             combat.AdvanceTime(0.01f);
             yield return null;
@@ -202,6 +202,19 @@ namespace CursorHunter.Combat.Tests
                 Is.GreaterThan(0.1f));
             Assert.That(Vector3.Distance(hitPoint.position, bounds.center),
                 Is.LessThan(0.01f));
+        }
+
+        private static void SetBaseStat(object instance, string name, object value)
+        {
+            FieldInfo field = instance.GetType().GetField("baseStat",
+                BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.That(field, Is.Not.Null);
+            object basis = field.GetValue(instance);
+            FieldInfo statField = basis.GetType().GetField(name,
+                BindingFlags.Public | BindingFlags.Instance);
+            Assert.That(statField, Is.Not.Null, name);
+            statField.SetValue(basis, value);
+            field.SetValue(instance, basis);
         }
 
         private static void SetField(object instance, string name, object value)

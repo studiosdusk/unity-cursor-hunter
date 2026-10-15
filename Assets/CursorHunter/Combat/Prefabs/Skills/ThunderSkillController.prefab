@@ -41,9 +41,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: CursorHunter.Combat::CursorHunter.Combat.ThunderSkillController
   editorSkillAcquired: 0
   effectPrefab: {fileID: 100002, guid: c0e0aaefa3144389b2ec4b2f3fb11471, type: 3}
-  baseCooldownSeconds: 2
-  firstCastDelaySeconds: 0
-  impactDelaySeconds: 0.1
-  effectDurationSeconds: 0.5
-  damageMultiplier: 4
+  baseStat:
+    CooldownSeconds: 2
+    FirstCastDelaySeconds: 0
+    ImpactDelaySeconds: 0.1
+    EffectDurationSeconds: 0.5
+    DamageMultiplier: 4
   maximumPooledEffects: 8

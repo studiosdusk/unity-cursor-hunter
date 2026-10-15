@@ -41,8 +41,8 @@
     },
     "skills": {
       "type": "array",
-      "minItems": 1,
-      "maxItems": 1,
+      "minItems": 4,
+      "maxItems": 4,
       "items": {
         "$ref": "#/$defs/skill"
       }
@@ -195,11 +195,24 @@
       ],
       "properties": {
         "id": {
-          "const": "skill.tornado"
+          "enum": ["skill.tornado", "skill.headshot", "skill.thunder", "skill.flame_exhaust"]
         },
         "enabled": {
           "type": "boolean"
+        },
+        "upgrades": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/skillUpgrade"}
         }
+      }
+    },
+    "skillUpgrade": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["statId", "delta"],
+      "properties": {
+        "statId": {"type": "string", "minLength": 1},
+        "delta": {"type": "number"}
       }
     },
     "rules": {

@@ -65,7 +65,8 @@ namespace CursorHunter.Data
                 return Fail("Missing game document sections/version/locale.", out error);
             if (!information.TryValidate(out error)) return false;
             if (progression.categories == null ||
-                progression.categories.Length != 17 || progression.bossRewards == null || progression.bossRewards.Length != 5 ||
+                progression.categories.Length < 17 || progression.categories.Length > 20 ||
+                progression.bossRewards == null || progression.bossRewards.Length != 5 ||
                 (progression.savedProgressPolicy != "overlay" && progression.savedProgressPolicy != "fileOnly") ||
                 progression.initialBossTier < 0 || progression.initialBossTier > 5)
                 return Fail("Invalid progression configuration.", out error);
@@ -122,8 +123,10 @@ namespace CursorHunter.Data
                 if (!categories.Contains(monster.id) || FindEntity(monster.id) == null ||
                     string.IsNullOrWhiteSpace(FindEntity(monster.id).prefabKey))
                     return Fail("Missing monster/category/visual key.", out error);
-            foreach (var skill in information.skills)
-                if (!categories.Contains(skill.id)) return Fail("Missing skill category.", out error);
+            // New skills may have a combat controller before their purchase
+            // nodes and costs are designed. Tornado keeps its existing node.
+            if (!categories.Contains("skill.tornado"))
+                return Fail("Missing tornado skill category.", out error);
             if (!nodes.ContainsKey("skill.tornado"))
                 return Fail("Missing tornado unlock node.", out error);
             for (int i = 0; i < progression.bossRewards.Length; i++)
@@ -165,8 +168,13 @@ namespace CursorHunter.Data
                         default: return false;
                     }
                 case "skills":
-                    if (category.id != "skill.tornado") return false;
-                    return node.id == category.id && node.operation == "enable";
+                    if (!SkillStatUpgrade.IsKnownSkill(category.id)) return false;
+                    if (node.id == category.id && node.operation == "enable")
+                        return true;
+                    return node.operation == "add" &&
+                        node.id.StartsWith(category.id + ".", StringComparison.Ordinal) &&
+                        SkillStatUpgrade.IsAllowed(category.id, node.statId) &&
+                        (node.statId != "count" || node.value == Math.Floor(node.value));
                 case "monsters":
                     return (node.id == category.id && node.operation == "enable") ||
                         (node.id.StartsWith(category.id + ".production.", StringComparison.Ordinal) && node.operation == "set" &&
@@ -205,6 +213,7 @@ namespace CursorHunter.Data
         public string prerequisiteNodeId;
         public bool startsUnlocked;
         public string operation;
+        public string statId;
         public double value;
     }
     [Serializable] public sealed class BossRewardData

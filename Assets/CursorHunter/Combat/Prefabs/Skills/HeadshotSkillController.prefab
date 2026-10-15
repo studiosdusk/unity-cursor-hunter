@@ -41,10 +41,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: CursorHunter.Combat::CursorHunter.Combat.HeadshotSkillController
   editorSkillAcquired: 0
   effectPrefab: {fileID: 100002, guid: 88b10f3e156b4cac8654aca0bf157ef7, type: 3}
-  baseCooldownSeconds: 5
-  firstCastDelaySeconds: 1
-  explosionDelaySeconds: 1.15
-  effectDurationSeconds: 2.5
-  splashDamageMultiplier: 2
-  bossDamageMultiplier: 10
+  baseStat:
+    CooldownSeconds: 5
+    FirstCastDelaySeconds: 1
+    ExplosionDelaySeconds: 1.15
+    EffectDurationSeconds: 2.5
+    SplashDamageMultiplier: 2
+    BossDamageMultiplier: 10
   maximumPooledEffects: 16

@@ -36,8 +36,7 @@ namespace CursorHunter.Combat.Tests
             Assert.That(controller, Is.Not.Null);
             typeof(TornadoSkillController).GetField("editorSkillAcquired",
                 BindingFlags.NonPublic | BindingFlags.Instance).SetValue(controller, true);
-            typeof(TornadoSkillController).GetField("baseCount",
-                BindingFlags.NonPublic | BindingFlags.Instance).SetValue(controller, 3);
+            SetBaseStat(controller, "Count", 3);
             combat.ConfigureSkills(
                 new[] { new SkillCombatSnapshot(TornadoSkillController.SkillId, false) });
 
@@ -57,18 +56,21 @@ namespace CursorHunter.Combat.Tests
                 break;
             }
             Assert.That(tornado, Is.Not.Null);
-            typeof(TornadoSkillController).GetField("moveSpeedWorldUnitsPerSecond",
-                BindingFlags.NonPublic | BindingFlags.Instance).SetValue(controller, 0f);
+            float capturedMoveSpeed = CapturedMoveSpeed(controller);
+            SetBaseStat(controller, "MoveSpeedWorldUnitsPerSecond", 0f);
             Vector3 before = tornado.transform.position;
             combat.AdvanceTime(0.2f);
             yield return null;
-            Assert.That(Vector3.Distance(tornado.transform.position, before), Is.LessThan(0.001f));
-            typeof(TornadoSkillController).GetField("moveSpeedWorldUnitsPerSecond",
-                BindingFlags.NonPublic | BindingFlags.Instance).SetValue(controller, 2f);
+            Assert.That(CapturedMoveSpeed(controller),
+                Is.EqualTo(capturedMoveSpeed));
+            Assert.That(Vector3.Distance(tornado.transform.position, before),
+                Is.GreaterThan(0.01f),
+                "An Inspector edit must not change the active run snapshot.");
+            SetBaseStat(controller, "MoveSpeedWorldUnitsPerSecond", 2f);
             combat.AdvanceTime(0.2f);
             yield return null;
-            Assert.That(Vector3.Distance(tornado.transform.position, before), Is.GreaterThan(0.01f),
-                "Changing Move Speed should affect an active tornado.");
+            Assert.That(CapturedMoveSpeed(controller),
+                Is.EqualTo(capturedMoveSpeed));
             combat.AdvanceTime(4.05f);
             yield return null;
             Assert.That(tornado.transform.localScale.x, Is.InRange(0.3f, 0.8f),
@@ -107,14 +109,13 @@ namespace CursorHunter.Combat.Tests
                 sandbox.GetComponentInChildren<TornadoSkillController>(true);
             Assert.That(controller, Is.Not.Null,
                 "The controller must already be placed in the scene.");
-            typeof(TornadoSkillController).GetField("baseCount",
-                BindingFlags.NonPublic | BindingFlags.Instance).SetValue(controller, 3);
+            SetBaseStat(controller, "Count", 2);
+            SetBaseStat(controller, "MoveSpeedWorldUnitsPerSecond", 0f);
             combat.ConfigureSkills(
-                new[] { new SkillCombatSnapshot(TornadoSkillController.SkillId, true) });
+                new[] { new SkillCombatSnapshot(TornadoSkillController.SkillId,
+                    true, new[] { new SkillStatUpgrade("count", 1f) }) });
             Assert.That(sandbox.GetComponentsInChildren<TornadoSkillController>(true),
                 Has.Length.EqualTo(1), "Starting a run must reuse the scene controller.");
-            typeof(TornadoSkillController).GetField("moveSpeedWorldUnitsPerSecond",
-                BindingFlags.NonPublic | BindingFlags.Instance).SetValue(controller, 0f);
 
             combat.AdvanceTime(1.05f);
             yield return null;
@@ -179,6 +180,29 @@ namespace CursorHunter.Combat.Tests
             Assert.Ignore("The sandbox scene is loaded through the Editor PlayMode runner.");
             yield break;
 #endif
+        }
+
+        private static float CapturedMoveSpeed(TornadoSkillController controller)
+        {
+            PropertyInfo property = typeof(TornadoSkillController).GetProperty(
+                "MoveSpeedWorldUnitsPerSecond",
+                BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.That(property, Is.Not.Null);
+            return (float)property.GetValue(controller);
+        }
+
+        private static void SetBaseStat(TornadoSkillController controller,
+            string name, object value)
+        {
+            FieldInfo field = typeof(TornadoSkillController).GetField("baseStat",
+                BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.That(field, Is.Not.Null);
+            object basis = field.GetValue(controller);
+            FieldInfo statField = basis.GetType().GetField(name,
+                BindingFlags.Public | BindingFlags.Instance);
+            Assert.That(statField, Is.Not.Null, name);
+            statField.SetValue(basis, value);
+            field.SetValue(controller, basis);
         }
     }
 }
