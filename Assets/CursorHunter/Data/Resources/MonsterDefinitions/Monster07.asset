@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Monster07
   m_EditorClassIdentifier: CursorHunter.Data::CursorHunter.Data.MonsterDefinition
   monsterId: monster.07
-  displayName: 거미
+  displayName: 벌집
   prefabKey: Spider/Spider_Frozen
   visualPrefab: {fileID: 2133663529494808259, guid: 17ea98e5ecd9de54ea50864524bea75e, type: 3}
   baseStats:
@@ -29,4 +29,4 @@ MonoBehaviour:
     bonusDropAmount: 1
     bonusDropChancePercent: 100
   behaviorProfiles:
-  - {fileID: 11400000, guid: 73574b06f4534f82a5d102718018a3cd, type: 2}
+  - {fileID: 11400000, guid: ae22e549ee464746876ea87545e33da2, type: 2}

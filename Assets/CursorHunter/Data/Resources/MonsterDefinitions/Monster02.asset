@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Monster02
   m_EditorClassIdentifier: CursorHunter.Data::CursorHunter.Data.MonsterDefinition
   monsterId: monster.02
-  displayName: 박쥐
+  displayName: 여왕벌
   prefabKey: Bat/Bat_Cave
   visualPrefab: {fileID: 4248380182268442837, guid: 00905adb4ac771b49845393f1de2b943, type: 3}
   baseStats:
@@ -29,4 +29,4 @@ MonoBehaviour:
     bonusDropAmount: 1
     bonusDropChancePercent: 100
   behaviorProfiles:
-  - {fileID: 11400000, guid: 27244024086e4476abc73bc422f6e10c, type: 2}
+  - {fileID: 11400000, guid: 83e980cdfb5d4021aac4028b280d24d1, type: 2}

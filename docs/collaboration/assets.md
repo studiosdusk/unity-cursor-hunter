@@ -20,6 +20,7 @@
 | gem.sapphire | Progression | [ItemIcon_Gem_Pentagon_Blue.png](../../Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Icon_ItemIcons/512/ItemIcon_Gem_Pentagon_Blue.png) |
 | gem.diamond | Progression | [ItemIcon_Gem_Pentagon_Green.png](../../Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Icon_ItemIcons/512/ItemIcon_Gem_Pentagon_Green.png) *(프로토타입 임시 색상)* |
 | ui.trait.node | Progression | 런타임 4면 선 + 평면 Image (`TraitScreenController.cs`) |
+| ui.trait.drag-cursor | Progression | [UI_Common_Hand_01.png](../../Assets/DownLoadAssets/IconPack/2D%20Minimal-IconPack/Icons/128/UI_Common_Hand_01.png) — 드래그 중 손 모양 커서 |
 | ui.trait.tabs | Progression | [TabMenu_Top_White.prefab](../../Assets/DownLoadAssets/GUI-CasualFantasy/Prefabs/Prefabs_Component_UI_Etc/TabMenu_Top_White.prefab) |
 | ui.boss.hp | Combat | [StatusBar_White.prefab](../../Assets/DownLoadAssets/GUI-CasualFantasy/Prefabs/Prefabs_Component_UI_Etc/StatusBar_White.prefab) |
 | field.normal | Combat | [Map_3_Jungle Age.prefab](../../Assets/DownLoadAssets/Map/2D%20Maps%20-%20Age%20Battle%20Stages/Prefabs/Landscape/Map/Map_3_Jungle%20Age.prefab) |
@@ -57,31 +58,28 @@
 `TraitScreenController`는 Canvas 픽셀 퍼펙트와 1.18배 글자 배율을 적용한다. 작은
 원본 아이콘을 확대해 생기는 흐림은 새 매핑에 사용하지 않는다.
 
-| 역할 | 적용 스프라이트 | 선택 이유 |
+| 역할 | 적용 스프라이트 | 번호 |
 |---|---|---|
-| 공격력 | `Icon_ItemIcons/512/ItemIcon_Weapon_Sword.png` | 공격·무기 의미가 즉시 읽힘 |
-| 반경 | `Icon_ItemIcons/512/ItemIcon_Weapon_Shield.png` | 보호 범위와 외곽 반경을 연상 |
-| 다중 클릭 | `Icon_ItemIcons/512/ItemIcon_Weapon_Bow.png` | 반복 발사·다중 타격을 표현 |
-| 치명타 | `Icon_ItemIcons/512/ItemIcon_Star.png` | 강조 타격·확률 수치와 조합 |
-| 젬 수집 | `Icon_ItemIcons/512/ItemIcon_Bag01.png` | 수집 기능을 가방으로 구분 |
-| 보스 피해 | `Icon_ItemIcons/512/ItemIcon_Skull02.png` | 보스 전용 피해 가지를 구분 |
+| 공격력 | `ItemIcon_Weapon_Sword.png` | AS-09904 |
+| 공격 반경 | `UI_ETC_Target_02_Blue.png` | AS-12757 |
+| 공격 간격 | `CardFrame01_Demo_Slider_Icon.png` | AS-09635 |
+| 치명타 | `Icon_Fire02.png` | AS-09982 |
+| 젬 수집 | `ItemIcon_Bag01.png` | 기존 매핑 유지 |
+| 보스 피해 배수 | `Icon_Skull03.png` | AS-10024 |
+| 일반 필드 시간 | `Icon_Timer.png` | AS-10047 |
 
-스킬 행의 첫 노드는 스킬마다 서로 다른 불·번개·방패·책·별 계열 아이콘을 배정하고,
-후속 수치 노드는 검(공격력)·방패(범위)·타이머(쿨타임)로 통일한다. 전체 배열과 GUID는
+특성 화면의 노드 아이콘은 스킬별로 통일한다. 지정되지 않은 스킬 중 허리케인은 바람을
+연상시키는 날개, 메테오는 화염 충돌 아이콘으로 구성했다. 전체 배열과 GUID는
 [특성 UI 에셋 매핑](trait-ui-assets.md)과 [asset-map.json](asset-map.json)을 함께 갱신한다.
 
-| 스킬 행 | UI 아이콘 | 경로 |
+| 스킬 행 | UI 아이콘 | 번호 |
 |---|---|---|
-| 파이어볼 | 불꽃 | `IconMisc/Icon_Fire01_512.png` |
-| 라이트닝 볼트 | 에너지 번개 | `Icon_ItemIcons/512/ItemIcon_Badge_Energy.png` |
-| 프리즈 | 푸른 방패 | `IconMisc/Icon_Shield05_512.png` |
-| 허리케인 | 하강 소용돌이 | `IconMisc/Skill1.png` |
-| 메테오 | 망치 충돌 | `Icon_ItemIcons/512/ItemIcon_Weapon_Hammer.png` |
-| 체인 라이트닝 | 번개 문양 | `IconMisc/Skill2.png` |
-| 블리자드 | 얼음 방패 | `IconMisc/Icon_Shield01_512.png` |
-| 아케인 버스트 | 청록 마법서 | `Icon_ItemIcons/512/ItemIcon_Book02_Teal.png` |
-| 스타폴 | 큰 별 | `IconMisc/Icon_Star03_l.png` |
-| 드래곤 브레스 | 강한 불꽃 | `IconMisc/Icon_Fire01_512.png` |
+| 파이어볼 | `Misc_Fire_01_Red.png` | AS-12435 |
+| 라이트닝 볼트 | `Stat_Skill_01.png` | AS-12514 |
+| 빙결 | `Economy_Gem_07_Blue.png` | AS-12140 |
+| 허리케인 | `Misc_Wing_01.png` (바람 대용) | AS-12485 |
+| 메테오 | `Skill1.png` (화염 충돌 대용) | AS-10050 |
+| 드래곤 브레스 | `Misc_Dragon_01_Red.png` | AS-12429 |
 
 ## 조정·추가 제작
 - 다이아몬드: 현재 특성 화면은 `512/ItemIcon_Gem_Pentagon_Green.png`를 프로토타입
@@ -115,7 +113,7 @@ PDF가 아닌 이 문서에 유지한다.
 
 | 몬스터 | 새로 열리는 젬스톤 |
 |---|---|
-| 박쥐 (monster.02) | 토파즈 |
+| 여왕벌 (monster.02) | 토파즈 |
 | 가면유령 (monster.04) | 자수정 |
 | 눈요정 (monster.06) | 사파이어 |
 | 골렘 (monster.08) | 다이아몬드 |
