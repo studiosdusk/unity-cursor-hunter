@@ -742,3 +742,16 @@
 - 공용 `MonsterRoot`의 `VisualRoot`에 `SortingGroup`을 구성하고 카메라 화면에서 아래에 있는 몬스터일수록 더 큰 Sorting Order를 적용한다. 생성 직후와 이동·순간이동으로 위치를 바꾼 직후에만 다시 계산한다.
 - 종별 외형의 기존 내부 SortingGroup 및 SpriteRenderer 순서는 유지한다. 몬스터 외형의 순서는 0~199로 제한해 타격 이펙트(200)와 체력바(250)가 앞에 남게 했다.
 - `python3 tools/validate_collaboration.py`와 `git diff --check`를 통과했다. Unity 컴파일과 실제 화면 검증은 미실행이다.
+
+### 2026-10-15 · Combat — 벼락 단일 대상 자동 스킬 코어
+
+- `skill.thunder`는 전투 시작 즉시 준비되고, 적이 없으면 쿨타임을 소비하지 않는다. 무작위 적 1명을 지목해 0.1초 뒤 기본 공격력의 4배를 한 번 공통 피해 경로로 전달한다. 기본 쿨타임은 2초이며 모든 수치는 Main 컨트롤러에서 조절한다.
+- `ThunderEffect` 루트의 자식으로 사용자 지정 `FX_Cartoon Thunder_Visual`을 중첩했다. 파티클은 시각 전용이고 단일 대상 판정은 루트·컨트롤러가 처리한다. 타격 전 대상이 죽으면 마지막 위치에서 연출만 끝내고 재지목·범위 피해는 없다.
+- Main과 CombatSandbox에 컨트롤러를 배치하고 에디터 `Skill Acquired` 시험 토글을 제공했다. 실제 구매 해금·강화는 아직 연결하지 않았다.
+- 사용자가 Main에 배치한 별도 원본 Thunder VFX 인스턴스는 보존하고 자동 반복 재생을 막기 위해 비활성화했다.
+- Unity 6000.3.13f1 격리 프로젝트에서 벼락 PlayMode 3개와 전체 Combat PlayMode 11개를 통과했다. 생성·단일 타격·대상 사망·대기·일시정지·런 종료를 확인했고, Main 씬의 컨트롤러와 중첩 VFX 참조도 로드 검사로 확인했다. `python3 tools/validate_collaboration.py`도 통과했다. 실제 Main 화면의 시각적 타격 타이밍은 아직 확인하지 않았다.
+
+### 2026-10-15 · Combat — 벼락 HitPoint 위치
+
+- 벼락 연출의 `HitPoint`를 몬스터 루트 대신 체력바를 제외한 스프라이트 영역의 중심에 배치한다. 대상이 타격 전에 움직이면 중심을 다시 읽고, 죽으면 마지막 위치를 유지한다. 스프라이트가 없는 시험용 대상은 피격 콜라이더 중심을 사용한다.
+- Unity 6000.3.13f1 격리 프로젝트에서 벼락 PlayMode 3개와 전체 Combat PlayMode 11개를 통과했다. `python3 tools/validate_collaboration.py`와 변경 경로의 `git diff --check`도 통과했다.

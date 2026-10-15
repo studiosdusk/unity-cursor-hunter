@@ -35,6 +35,7 @@ namespace CursorHunter.Combat
         private RunRequest _runRequest;
         private TornadoSkillController _tornadoController;
         private HeadshotSkillController _headshotController;
+        private ThunderSkillController _thunderController;
         private SeededRandom _random;
         private float _elapsedSeconds;
         private Vector2 _previousAttackCenter;
@@ -94,6 +95,7 @@ namespace CursorHunter.Combat
             ResolvePlayerCombatStatsRuntime();
             _tornadoController = GetComponentInChildren<TornadoSkillController>(true);
             _headshotController = GetComponentInChildren<HeadshotSkillController>(true);
+            _thunderController = GetComponentInChildren<ThunderSkillController>(true);
         }
 
         private void ResolvePlayerCombatStatsRuntime()
@@ -417,10 +419,12 @@ namespace CursorHunter.Combat
         {
             _tornadoController?.StopSkill();
             _headshotController?.StopSkill();
+            _thunderController?.StopSkill();
             if (!IsRunning) return;
 
             bool tornadoAcquired = false;
             bool headshotAcquired = false;
+            bool thunderAcquired = false;
             if (skills != null)
             {
                 for (int i = 0; i < skills.Count; i++)
@@ -432,6 +436,8 @@ namespace CursorHunter.Combat
                         tornadoAcquired |= skill.Unlocked;
                     if (skill.SkillId == HeadshotSkillController.SkillId)
                         headshotAcquired |= skill.Unlocked;
+                    if (skill.SkillId == ThunderSkillController.SkillId)
+                        thunderAcquired |= skill.Unlocked;
                 }
             }
 
@@ -450,17 +456,30 @@ namespace CursorHunter.Combat
 
             if (_headshotController == null)
                 _headshotController = GetComponentInChildren<HeadshotSkillController>(true);
-            if (_headshotController == null ||
-                !_headshotController.IsAcquiredForRun(headshotAcquired)) return;
-            if (!_headshotController.isActiveAndEnabled)
+            if (_headshotController != null &&
+                _headshotController.IsAcquiredForRun(headshotAcquired))
             {
-                Debug.LogError("Place an active HeadshotSkillController under CombatManager in the scene.", this);
+                if (!_headshotController.isActiveAndEnabled)
+                    Debug.LogError("Place an active HeadshotSkillController under CombatManager in the scene.", this);
+                else if (!_headshotController.ConfigureForRun(
+                             this, _runRequest.RunId, _runRequest.Seed))
+                    Debug.LogError("Headshot could not be configured. Check its effect prefab.",
+                        _headshotController);
+            }
+
+            if (_thunderController == null)
+                _thunderController = GetComponentInChildren<ThunderSkillController>(true);
+            if (_thunderController == null ||
+                !_thunderController.IsAcquiredForRun(thunderAcquired)) return;
+            if (!_thunderController.isActiveAndEnabled)
+            {
+                Debug.LogError("Place an active ThunderSkillController under CombatManager in the scene.", this);
                 return;
             }
-            if (!_headshotController.ConfigureForRun(
+            if (!_thunderController.ConfigureForRun(
                     this, _runRequest.RunId, _runRequest.Seed))
-                Debug.LogError("Headshot could not be configured. Check its effect prefab.",
-                    _headshotController);
+                Debug.LogError("Thunder could not be configured. Check its effect prefab.",
+                    _thunderController);
         }
 
         public bool TryApplySkillDamage(RunId runId, ICombatTarget target, long rawDamage)
@@ -492,6 +511,7 @@ namespace CursorHunter.Combat
             playerCombatStatsRuntime.SetRunActive(false);
             _tornadoController?.StopSkill();
             _headshotController?.StopSkill();
+            _thunderController?.StopSkill();
 
             PresentationReset?.Invoke();
             result = CreateResult(
@@ -520,6 +540,7 @@ namespace CursorHunter.Combat
             playerCombatStatsRuntime.SetRunActive(false);
             _tornadoController?.StopSkill();
             _headshotController?.StopSkill();
+            _thunderController?.StopSkill();
 
             PresentationReset?.Invoke();
             result = CreateResult(
