@@ -1337,6 +1337,12 @@
       "prefabKey": "Combat/Prefabs/Skills/FlameExhaustSkillController"
     },
     {
+      "id": "skill.magic_ball",
+      "displayName": "Magic Ball",
+      "description": "A magic sphere bounces around the field and damages enemies it touches.",
+      "prefabKey": "Combat/Prefabs/Skills/MagicBallSkillController"
+    },
+    {
       "id": "monster.01",
       "displayName": "Stump",
       "description": "Basic monster.",

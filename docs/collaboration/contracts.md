@@ -29,7 +29,7 @@ information 래퍼, progression, entities, fieldHelp, implementation, relics는 
 | rules | criticalDamageMultiplier, globalAliveLimit, perMonsterAliveLimit, bossFieldDurationSeconds |
 | gemstones[6] | id, enabled, amount |
 | monsters[10] | id, enabled, productionCount, hitPoints, spawnIntervalSeconds, garnetReward, gemstoneId, gemstoneAmount, gemstoneChancePercent, behaviorType |
-| skills[4] | `skill.tornado`, `skill.headshot`, `skill.thunder`, `skill.flame_exhaust`의 id, enabled, upgrades[statId, delta] |
+| skills[5] | `skill.tornado`, `skill.headshot`, `skill.thunder`, `skill.flame_exhaust`, `skill.magic_ball`의 id, enabled, upgrades[statId, delta] |
 
 HP/공격력/피해/재화는 Int64. 시간은 초, 반경은 월드 단위, 확률은 0~100이다.
 productionCount는 1회 생성 마릿수다. gems.enabled는 공급 몬스터 활성 여부이며 잔액과 독립적이다.
@@ -83,8 +83,10 @@ MonsterDefinition.BaseStats
 전역 변수나 새로 추가한 전체 데이터 getter를 뜻하지 않는다.
 HuntManager.BeginPrototypeRun이 전체 정보와 커서 증가량 스냅샷을 만들고,
 RunCoordinator.Start에 CombatSnapshot/커서 증가량/스킬 목록/SpawnPlan을 전달한다.
-CombatRunController는 PrepareRun 이후 CommitStart 이전에 네 스킬의 BaseStat과
+CombatRunController는 PrepareRun 이후 CommitStart 이전에 다섯 스킬의 BaseStat과
 UpgradeStat을 합쳐 이번 런의 RuntimeStat으로 고정한다.
+매직볼은 단일 오브젝트가 런 종료까지 유지되어 쿨타임 증가량을 받지 않는다.
+허용된 증가량 ID는 `moveSpeedWorldUnitsPerSecond`, `sizeMultiplier`, `damageMultiplier`다.
 
 | 정보 | 실제 프로퍼티 |
 |---|---|

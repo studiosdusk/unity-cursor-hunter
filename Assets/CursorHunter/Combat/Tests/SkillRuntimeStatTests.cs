@@ -89,5 +89,34 @@ namespace CursorHunter.Combat.Tests
                 new[] { new SkillStatUpgrade("count", 1f) });
             Assert.That(invalid.IsValid, Is.False);
         }
+
+        [Test]
+        public void MagicBallResolvesOnlyItsThreePlannedUpgrades()
+        {
+            var basis = new MagicBallBaseStat
+            {
+                FirstCastDelaySeconds = 0f,
+                MoveSpeedWorldUnitsPerSecond = 7f,
+                SizeMultiplier = 1f,
+                DamageMultiplier = 1f,
+                SameTargetHitCooldownSeconds = 0.5f
+            };
+            var snapshot = new SkillCombatSnapshot("skill.magic_ball", true,
+                new[]
+                {
+                    new SkillStatUpgrade("moveSpeedWorldUnitsPerSecond", 2f),
+                    new SkillStatUpgrade("sizeMultiplier", 0.25f),
+                    new SkillStatUpgrade("damageMultiplier", 0.5f)
+                });
+            Assert.That(snapshot.IsValid, Is.True);
+            var runtime = new MagicBallRuntimeStat(basis, snapshot, 10L);
+            Assert.That(runtime.MoveSpeedWorldUnitsPerSecond, Is.EqualTo(9f));
+            Assert.That(runtime.SizeMultiplier, Is.EqualTo(1.25f));
+            Assert.That(runtime.Damage, Is.EqualTo(15L));
+            Assert.That(runtime.SameTargetHitCooldownSeconds, Is.EqualTo(0.5f));
+            Assert.That(new SkillCombatSnapshot("skill.magic_ball", true,
+                new[] { new SkillStatUpgrade("cooldownSeconds", -1f) }).IsValid,
+                Is.False);
+        }
     }
 }

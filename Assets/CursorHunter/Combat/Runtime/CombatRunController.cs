@@ -37,6 +37,7 @@ namespace CursorHunter.Combat
         private HeadshotSkillController _headshotController;
         private ThunderSkillController _thunderController;
         private FlameExhaustSkillController _flameExhaustController;
+        private MagicBallSkillController _magicBallController;
         private SeededRandom _random;
         private float _elapsedSeconds;
         private Vector2 _previousAttackCenter;
@@ -98,6 +99,7 @@ namespace CursorHunter.Combat
             _headshotController = GetComponentInChildren<HeadshotSkillController>(true);
             _thunderController = GetComponentInChildren<ThunderSkillController>(true);
             _flameExhaustController = GetComponentInChildren<FlameExhaustSkillController>(true);
+            _magicBallController = GetComponentInChildren<MagicBallSkillController>(true);
         }
 
         private void ResolvePlayerCombatStatsRuntime()
@@ -431,6 +433,8 @@ namespace CursorHunter.Combat
                 ThunderSkillController.SkillId, false);
             SkillCombatSnapshot flameExhaust = new SkillCombatSnapshot(
                 FlameExhaustSkillController.SkillId, false);
+            SkillCombatSnapshot magicBall = new SkillCombatSnapshot(
+                MagicBallSkillController.SkillId, false);
             if (skills != null)
             {
                 var seen = new HashSet<string>(StringComparer.Ordinal);
@@ -447,6 +451,8 @@ namespace CursorHunter.Combat
                         thunder = skill;
                     else if (skill.SkillId == FlameExhaustSkillController.SkillId)
                         flameExhaust = skill;
+                    else if (skill.SkillId == MagicBallSkillController.SkillId)
+                        magicBall = skill;
                 }
             }
 
@@ -502,6 +508,20 @@ namespace CursorHunter.Combat
                     return false;
             }
             else if (flameExhaust.Unlocked) return false;
+
+            if (_magicBallController == null)
+                _magicBallController = GetComponentInChildren<MagicBallSkillController>(true);
+            if (_magicBallController != null &&
+                _magicBallController.IsAcquiredForRun(magicBall.Unlocked))
+            {
+                if (!_magicBallController.isActiveAndEnabled)
+                    return false;
+                else if (!_magicBallController.ConfigureForRun(
+                             this, _runRequest.RunId, _runRequest.Seed,
+                             magicBall))
+                    return false;
+            }
+            else if (magicBall.Unlocked) return false;
             return true;
         }
 
@@ -511,6 +531,7 @@ namespace CursorHunter.Combat
             _headshotController?.StopSkill();
             _thunderController?.StopSkill();
             _flameExhaustController?.StopSkill();
+            _magicBallController?.StopSkill();
         }
 
         public bool TryApplySkillDamage(RunId runId, ICombatTarget target, long rawDamage)
@@ -544,6 +565,7 @@ namespace CursorHunter.Combat
             _headshotController?.StopSkill();
             _thunderController?.StopSkill();
             _flameExhaustController?.StopSkill();
+            _magicBallController?.StopSkill();
 
             PresentationReset?.Invoke();
             result = CreateResult(
@@ -574,6 +596,7 @@ namespace CursorHunter.Combat
             _headshotController?.StopSkill();
             _thunderController?.StopSkill();
             _flameExhaustController?.StopSkill();
+            _magicBallController?.StopSkill();
 
             PresentationReset?.Invoke();
             result = CreateResult(

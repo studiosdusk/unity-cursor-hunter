@@ -74,12 +74,14 @@ namespace CursorHunter.Contracts
         public static bool IsKnownSkill(string skillId)
         {
             return skillId == "skill.tornado" || skillId == "skill.headshot" ||
-                skillId == "skill.thunder" || skillId == "skill.flame_exhaust";
+                skillId == "skill.thunder" || skillId == "skill.flame_exhaust" ||
+                skillId == "skill.magic_ball";
         }
 
         public static bool IsAllowed(string skillId, string statId)
         {
-            if (statId == "cooldownSeconds") return IsKnownSkill(skillId);
+            if (statId == "cooldownSeconds")
+                return IsKnownSkill(skillId) && skillId != "skill.magic_ball";
             switch (skillId)
             {
                 case "skill.tornado":
@@ -99,6 +101,9 @@ namespace CursorHunter.Contracts
                 case "skill.flame_exhaust":
                     // The established upgrade direction is cooldown only.
                     return false;
+                case "skill.magic_ball":
+                    return statId == "moveSpeedWorldUnitsPerSecond" ||
+                        statId == "sizeMultiplier" || statId == "damageMultiplier";
                 default:
                     return false;
             }

@@ -784,3 +784,12 @@
 - Contracts의 `SkillCombatSnapshot`에 복사 방어된 증가량 목록을 추가하고, Progression이 구매한 `add` 노드를 stat ID별로 합산한다. GameInformation·영문 원본 데이터·스키마·한국어 참고본은 네 스킬을 지원한다. 현재 구매 노드는 토네이도 해금만 있으며 강화 항목·단계·비용과 나머지 스킬의 해금 노드는 후속 기획이다.
 - HuntManager가 전투 진입 시 스킬 스냅샷을 RunCoordinator에 전달한다. CombatRunController는 `PrepareRun` 뒤 스폰과 `CommitStart` 전에 네 컨트롤러를 준비하며, 준비 실패 시 런을 취소한다. 런 도중에는 RuntimeStat만 사용한다.
 - Unity 6000.3.13f1 격리 프로젝트에서 EditMode 99개와 PlayMode 13개를 통과했다. Main 씬 override 값, 증가량 복사·합산, 네 스킬 계산, 토네이도 개수 증가를 확인했다. Python 데이터 검증과 협업 계약 검증도 통과했다. Main 실제 화면 수동 검증과 전체 정보 화면의 최종값 표시는 후속이다.
+
+### 2026-10-16 · Combat/App/Contracts/Data — 매직볼 코어
+
+- `MagicBallSkillController`와 단일 재사용 `MagicBallObject`를 추가했다. 공급사 `Magic_Sphere_blue_Visual`은 게임 소유 루트 아래 시각 자식이다. 자식 `HItBox`의 원형 트리거가 적 타격 범위를, 루트의 원형 트리거가 벽 반사 범위를 정한다. 런 시드로 지정된 여덟 방향 중 하나를 선택해 화면 중앙에서 출발하고, 루트 콜라이더를 고려한 카메라 안쪽 경계에서 반사한다. 런 종료까지 공 한 개만 유지한다.
+- 이동 경로를 원형 검사하고 접촉 중인 같은 적의 반복 피해를 막는다. 재접촉 최소 간격, 속도, 크기, 피해 배율, 첫 생성 시각, 화면 여백과 방향 목록은 컨트롤러 Inspector에서 조정한다. 이동속도·크기·피해 배율의 런 스냅샷 항목을 예약했다.
+- Main과 CombatSandbox에 컨트롤러를 배치하고 `skill.magic_ball` ID를 데이터·스키마·계약에 추가했다. 구매 노드와 강화 단계는 후속 작업이며 Main은 에디터 획득 토글로 시험한다.
+- Unity 6000.3.13f1 임시 복제 프로젝트에서 매직볼 런타임 수치 EditMode 3개, Combat PlayMode 전체 14개를 통과했다. Python 데이터·협업 검증도 통과했다. Main 실제 화면에서의 비주얼 크기와 플레이 감각은 수동 확인이 필요하다.
+- 사용자 추가 `HItBox` 자식의 `CircleCollider2D`를 적 타격 범위로 연결했다. 루트 콜라이더는 벽 반사 경계에 사용한다. 자식 범위 안이면서 루트 범위 밖인 적의 피격을 PlayMode에서 확인했고, Combat PlayMode 전체 14개를 다시 통과했다.
+- 매직볼 생성점을 화면 안쪽 전투 영역에서 런 시드 기반 무작위 위치로 바꾸고, 루트 콜라이더가 벽에 닿을 때 `Vector2.Reflect`로 해당 벽의 법선을 따라 반사한다. 여덟 기본 출발 방향은 축에서 22.5도 비껴나도록 조정했다. PlayMode에서 화면 내부 생성·비스듬한 입사각 반사를 확인했고 Combat 전체 14개와 Python 정적 검증을 통과했다.

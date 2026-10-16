@@ -32,8 +32,8 @@ namespace CursorHunter.Contracts
                 rules.perMonsterAliveLimit < 1 || rules.perMonsterAliveLimit > rules.globalAliveLimit)
                 return Fail("Invalid combat rules (maximum 80 alive targets).", out error);
             if (gemstones.Length != 6 || monsters.Length != 10 ||
-                (skills.Length != 1 && skills.Length != 4))
-                return Fail("Expected 6 gemstones, 10 monsters and 1 or 4 skills.", out error);
+                (skills.Length != 1 && skills.Length != 4 && skills.Length != 5))
+                return Fail("Expected 6 gemstones, 10 monsters and 1, 4 or 5 skills.", out error);
             string[] gemIds = { "gem.garnet", "gem.topaz", "gem.amethyst", "gem.sapphire", "gem.diamond", "gem.dragon" };
             for (int i = 0; i < gemstones.Length; i++)
             {
@@ -54,7 +54,7 @@ namespace CursorHunter.Contracts
                     return Fail("Invalid monster data.", out error);
             }
             string[] skillIds = { "skill.tornado", "skill.headshot",
-                "skill.thunder", "skill.flame_exhaust" };
+                "skill.thunder", "skill.flame_exhaust", "skill.magic_ball" };
             for (int i = 0; i < skills.Length; i++)
             {
                 SkillInformation skill = skills[i];

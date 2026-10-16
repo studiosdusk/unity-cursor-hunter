@@ -18,6 +18,7 @@ namespace CursorHunter.Combat
         private int _targetCount = 8;
         private bool _autoHit = true;
         private bool _tornadoEnabled;
+        private bool _magicBallEnabled;
 
         private void Start()
         {
@@ -63,14 +64,16 @@ namespace CursorHunter.Combat
                 target.Initialize(new SpawnSnapshot("sandbox", "sandbox", 100000L, 1f, 1, 80, 0L),
                     _combat.CurrentRunId);
             }
-            ConfigureTornado();
+            ConfigureSkills();
         }
 
-        private void ConfigureTornado()
+        private void ConfigureSkills()
         {
-            _combat.ConfigureSkills(_tornadoEnabled
-                ? new[] { new SkillCombatSnapshot(TornadoSkillController.SkillId, true) }
-                : null);
+            _combat.ConfigureSkills(new[]
+            {
+                new SkillCombatSnapshot(TornadoSkillController.SkillId, _tornadoEnabled),
+                new SkillCombatSnapshot(MagicBallSkillController.SkillId, _magicBallEnabled)
+            });
         }
 
         private void LateUpdate()
@@ -81,7 +84,7 @@ namespace CursorHunter.Combat
         private void OnGUI()
         {
             if (_combat == null) return;
-            GUILayout.BeginArea(new Rect(12f, 12f, 430f, 210f), GUI.skin.box);
+            GUILayout.BeginArea(new Rect(12f, 12f, 530f, 240f), GUI.skin.box);
             GUILayout.Label("Cursor hit VFX | fixed snapshot | no save data");
             GUILayout.BeginHorizontal();
             if (GUILayout.Button("8 targets")) { _targetCount = 8; Restart(); }
@@ -94,7 +97,13 @@ namespace CursorHunter.Combat
             if (tornadoEnabled != _tornadoEnabled)
             {
                 _tornadoEnabled = tornadoEnabled;
-                ConfigureTornado();
+                ConfigureSkills();
+            }
+            bool magicBallEnabled = GUILayout.Toggle(_magicBallEnabled, "Magic Ball skill");
+            if (magicBallEnabled != _magicBallEnabled)
+            {
+                _magicBallEnabled = magicBallEnabled;
+                ConfigureSkills();
             }
             if (GUILayout.Button("Hit once")) _combat.TryAttack(_attack, false);
             if (GUILayout.Button(_combat.IsPaused ? "Resume" : "Pause"))

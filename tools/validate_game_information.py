@@ -51,8 +51,9 @@ def main():
     check([g["id"] for g in example["gemstones"]] == gems, "Gemstone IDs/order changed")
     check(len(data["monsters"]) == len(example["monsters"]) == 10, "Expected 10 monsters")
     check([s["id"] for s in example["skills"]] ==
-          ["skill.tornado", "skill.headshot", "skill.thunder", "skill.flame_exhaust"],
-          "Expected four skill IDs")
+          ["skill.tornado", "skill.headshot", "skill.thunder", "skill.flame_exhaust",
+           "skill.magic_ball"],
+          "Expected five skill IDs")
     check(data["normalFieldDurationSeconds"] == [15, 20, 25, 30], "Normal duration must stop at 30")
     check(all(finite_positive(v) and v >= .05 for v in data["attackCooldownSeconds"]), "Invalid cooldown")
     check(all(data["attackCooldownSeconds"][i] > data["attackCooldownSeconds"][i+1] for i in range(4)), "Cooldown upgrades must decrease")
@@ -102,6 +103,30 @@ def main():
             check("tornadoControllerPrefab:" not in scene_text,
                   f"Old runtime-instantiated tornado controller remains in {relative}")
 
+    magic_controller = BASE / "Combat/Prefabs/Skills/MagicBallSkillController.prefab"
+    magic_object = BASE / "Combat/Prefabs/Skills/MagicBallObject.prefab"
+    magic_visual = ROOT / "Assets/DownLoadAssets/118 sprite effects bundle/25 sprite effects/_prefabs/Magic_Sphere_blue_Visual.prefab"
+    for path in (magic_controller, magic_object, magic_visual):
+        check(path.exists(), f"Missing Magic Ball prefab: {path}")
+    if all(path.exists() for path in (magic_controller, magic_object, magic_visual)):
+        magic_controller_guid = magic_controller.with_suffix(".prefab.meta").read_text().split("guid: ")[1].splitlines()[0]
+        magic_object_guid = magic_object.with_suffix(".prefab.meta").read_text().split("guid: ")[1].splitlines()[0]
+        magic_visual_guid = magic_visual.with_suffix(".prefab.meta").read_text().split("guid: ")[1].splitlines()[0]
+        check(magic_object_guid in magic_controller.read_text(), "Magic Ball controller does not reference its ball")
+        check(magic_visual_guid in magic_object.read_text(), "Magic Ball object does not contain the selected visual")
+        magic_object_text = magic_object.read_text()
+        check("boundaryCollider: {fileID: 100002}" in magic_object_text and
+              "hitbox: {fileID: 5411213688557413086}" in magic_object_text and
+              magic_object_text.count("CircleCollider2D:") >= 2,
+              "Magic Ball needs separate root boundary and child attack circles")
+        for relative, parent in (("App/Scenes/Main.unity", "2188000105"),
+                                 ("Combat/Scenes/CombatSandbox.unity", "201")):
+            scene_text = (BASE / relative).read_text()
+            check(re.search(r"m_TransformParent: \{fileID: " + parent +
+                            r"\}[\s\S]*?m_SourcePrefab: \{fileID: 100100000, guid: " +
+                            magic_controller_guid + r", type: 3\}", scene_text),
+                  f"Magic Ball controller is not under the combat manager in {relative}")
+
     controller = (BASE / "Progression/Runtime/TraitScreenController.cs").read_text()
     check("CreateGameInformationJson" in controller and "SourceJson" in controller, "Summary must use captured JSON")
     check("GetGemstoneDropWeight" not in controller, "Old weighted gemstone unlock path remains")
@@ -135,7 +160,7 @@ def main():
                         errors.append(f"C# syntax: {path.relative_to(ROOT)}:{node.start_point.row+1} {node.type}")
                     stack.extend(node.children)
     if errors: raise SystemExit("\n".join(errors))
-    print("PASS: JSON sections, 10 monsters, four skill IDs, currency reachability, prefab IDs, TMP, scene and render settings" + (", C# syntax" if args.syntax else ""))
+    print("PASS: JSON sections, 10 monsters, five skill IDs, currency reachability, prefab IDs, TMP, scene and render settings" + (", C# syntax" if args.syntax else ""))
     print("Unity import, semantic compilation and gameplay were NOT run.")
 
 if __name__ == "__main__":

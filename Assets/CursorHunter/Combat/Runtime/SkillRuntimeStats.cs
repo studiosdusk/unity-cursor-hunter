@@ -232,4 +232,40 @@ namespace CursorHunter.Combat
         internal long Damage { get; }
         internal float HitEffectDurationSeconds { get; }
     }
+
+    [Serializable]
+    internal struct MagicBallBaseStat
+    {
+        [Min(0f)] public float FirstCastDelaySeconds;
+        [Min(0.01f)] public float MoveSpeedWorldUnitsPerSecond;
+        [Min(0.01f)] public float SizeMultiplier;
+        [Min(0.01f)] public float DamageMultiplier;
+        [Min(0f)] public float SameTargetHitCooldownSeconds;
+    }
+
+    internal readonly struct MagicBallRuntimeStat
+    {
+        internal MagicBallRuntimeStat(MagicBallBaseStat basis,
+            SkillCombatSnapshot upgrades, long attackPower)
+        {
+            FirstCastDelaySeconds = Mathf.Max(0f, basis.FirstCastDelaySeconds);
+            MoveSpeedWorldUnitsPerSecond = SkillStatMath.Add(
+                basis.MoveSpeedWorldUnitsPerSecond, upgrades,
+                "moveSpeedWorldUnitsPerSecond", 0.01f);
+            SizeMultiplier = SkillStatMath.Add(basis.SizeMultiplier,
+                upgrades, "sizeMultiplier", 0.01f);
+            DamageMultiplier = SkillStatMath.Add(basis.DamageMultiplier,
+                upgrades, "damageMultiplier", 0.01f);
+            Damage = SkillStatMath.ScaleDamage(attackPower, DamageMultiplier);
+            SameTargetHitCooldownSeconds = Mathf.Max(0f,
+                basis.SameTargetHitCooldownSeconds);
+        }
+
+        internal float FirstCastDelaySeconds { get; }
+        internal float MoveSpeedWorldUnitsPerSecond { get; }
+        internal float SizeMultiplier { get; }
+        internal float DamageMultiplier { get; }
+        internal long Damage { get; }
+        internal float SameTargetHitCooldownSeconds { get; }
+    }
 }
