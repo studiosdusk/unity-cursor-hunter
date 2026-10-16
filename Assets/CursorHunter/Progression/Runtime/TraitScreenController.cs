@@ -4226,9 +4226,9 @@ namespace CursorHunter.Progression
                 new Vector2(0.5f, 0.5f),
                 new Vector2(0.5f, 0.5f),
                 Vector2.zero,
-                new Vector2(overlayWidth * 0.96f, overlayHeight * 0.78f),
+                new Vector2(overlayWidth * 0.58f, overlayHeight * 0.44f),
                 relicRevealGlowSprite,
-                new Color(1f, 0.72f, 0.24f, 0.30f),
+                new Color(1f, 0.91f, 0.70f, 0.16f),
                 new Vector2(0.5f, 0.5f));
             glow.GetComponent<Image>().raycastTarget = false;
 
@@ -4238,21 +4238,22 @@ namespace CursorHunter.Progression
                 new Vector2(0.5f, 0.5f),
                 new Vector2(0.5f, 0.5f),
                 Vector2.zero,
-                new Vector2(overlayWidth * 0.72f, overlayWidth * 0.72f),
+                new Vector2(58f, 76f),
                 relicRevealSparkleSprite,
-                new Color(1f, 0.91f, 0.61f, 0.46f),
+                new Color(1f, 0.96f, 0.84f, 0.46f),
                 new Vector2(0.5f, 0.5f));
             flash.GetComponent<Image>().preserveAspect = true;
 
-            const int sparkCount = 16;
+            const int sparkCount = 12;
             var revealSparks = new List<RectTransform>(sparkCount);
             var revealSparkTargets = new List<Vector2>(sparkCount);
             var revealSparkBaseRotations = new List<float>(sparkCount);
             for (int sparkIndex = 0; sparkIndex < sparkCount; sparkIndex++)
             {
-                float angle = (360f / sparkCount) * sparkIndex;
+                float angle = (360f / sparkCount) * sparkIndex +
+                    (sparkIndex % 2 == 0 ? -8f : 11f);
                 float radians = angle * Mathf.Deg2Rad;
-                float radius = overlayHeight * (sparkIndex % 2 == 0 ? 0.43f : 0.35f);
+                float radius = overlayHeight * (sparkIndex % 2 == 0 ? 0.32f : 0.26f);
                 Vector2 target = new Vector2(
                     Mathf.Cos(radians) * radius,
                     Mathf.Sin(radians) * radius);
@@ -4265,11 +4266,11 @@ namespace CursorHunter.Progression
                     new Vector2(0.5f, 0.5f),
                     new Vector2(0.5f, 0.5f),
                     Vector2.zero,
-                    sparkIndex % 3 == 0 ? new Vector2(11f, 26f) : new Vector2(23f, 23f),
+                    sparkIndex % 3 == 0 ? new Vector2(8f, 8f) : new Vector2(15f, 19f),
                     sparkSprite,
                     sparkIndex % 4 == 0
-                        ? new Color(1f, 0.96f, 0.76f, 1f)
-                        : new Color(1f, 0.78f, 0.35f, 0.96f),
+                        ? new Color(1f, 0.98f, 0.88f, 0.82f)
+                        : new Color(0.80f, 0.89f, 1f, 0.62f),
                     new Vector2(0.5f, 0.5f));
                 spark.GetComponent<Image>().preserveAspect = true;
                 revealSparks.Add(spark);
@@ -4414,12 +4415,12 @@ namespace CursorHunter.Progression
                     ? Mathf.Lerp(0.48f, 1.12f, 1f - Mathf.Pow(1f - t / 0.72f, 3f))
                     : Mathf.Lerp(1.12f, 1f, (t - 0.72f) / 0.28f);
                 overlay.localScale = Vector3.one * pop;
-                burstGroup.alpha = Mathf.SmoothStep(0f, 0.96f, Mathf.Min(1f, t * 2f));
+                burstGroup.alpha = Mathf.SmoothStep(0f, 0.72f, Mathf.Min(1f, t * 2f));
                 float spread = Mathf.SmoothStep(0f, 1f, Mathf.Min(1f, t * 1.5f));
-                burst.localScale = Vector3.one * Mathf.Lerp(0.72f, 1.08f, spread);
-                burst.localRotation = Quaternion.Euler(0f, 0f, Mathf.Lerp(-22f, 4f, eased));
-                flash.localScale = Vector3.one * Mathf.Lerp(0.22f, 0.92f, spread);
-                flash.localRotation = Quaternion.Euler(0f, 0f, Mathf.Lerp(-24f, 12f, eased));
+                burst.localScale = Vector3.one * Mathf.Lerp(0.88f, 1.02f, spread);
+                burst.localRotation = Quaternion.Euler(0f, 0f, Mathf.Lerp(-8f, 2f, eased));
+                flash.localScale = Vector3.one * Mathf.Lerp(0.48f, 0.82f, spread);
+                flash.localRotation = Quaternion.Euler(0f, 0f, Mathf.Lerp(-9f, 7f, eased));
                 for (int sparkIndex = 0; sparkIndex < revealSparks.Count; sparkIndex++)
                 {
                     RectTransform spark = revealSparks[sparkIndex];
@@ -4528,10 +4529,15 @@ namespace CursorHunter.Progression
 
         private void RequestRelicRevealDismiss()
         {
-            if (_relicRevealOverlay != null)
+            if (_relicRevealOverlay == null)
             {
-                _relicRevealDismissRequested = true;
+                return;
             }
+
+            // Hide the modal synchronously. The reveal coroutine may be paused
+            // or unable to finish its return animation in a test session.
+            CancelRelicReveal();
+            PlayPendingRelicReveal();
         }
 
         private void CancelRelicReveal()
@@ -4555,8 +4561,10 @@ namespace CursorHunter.Progression
 
             if (_relicRevealOverlay != null)
             {
-                Destroy(_relicRevealOverlay);
+                GameObject overlay = _relicRevealOverlay;
                 _relicRevealOverlay = null;
+                overlay.SetActive(false);
+                Destroy(overlay);
             }
 
             _relicRevealDismissRequested = false;
