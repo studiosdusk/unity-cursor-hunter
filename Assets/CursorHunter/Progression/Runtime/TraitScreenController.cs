@@ -7978,20 +7978,17 @@ namespace CursorHunter.Progression
                     beforeValue = beforeSkill.enabled ? "전투 사용 가능" : "전투 사용 불가";
                     afterValue = afterSkill.enabled ? "전투 사용 가능" : "전투 사용 불가";
                 }
-                else if (id.EndsWith(".damage", StringComparison.Ordinal))
+                else if (nodeData != null && nodeData.operation == "add" &&
+                         !string.IsNullOrEmpty(nodeData.statId))
                 {
-                    beforeValue = "피해 " + beforeSkill.damage.ToString("N0", CultureInfo.InvariantCulture);
-                    afterValue = "피해 " + afterSkill.damage.ToString("N0", CultureInfo.InvariantCulture);
-                }
-                else if (id.EndsWith(".radius", StringComparison.Ordinal))
-                {
-                    beforeValue = "범위 " + FormatCompactNumber(beforeSkill.radiusWorldUnits) + "u";
-                    afterValue = "범위 " + FormatCompactNumber(afterSkill.radiusWorldUnits) + "u";
+                    beforeValue = "누적 증가량 " + FormatCompactNumber(
+                        GetSkillUpgradeDelta(beforeSkill, nodeData.statId));
+                    afterValue = "누적 증가량 " + FormatCompactNumber(
+                        GetSkillUpgradeDelta(afterSkill, nodeData.statId));
                 }
                 else
                 {
-                    beforeValue = "재사용 " + FormatCompactNumber(beforeSkill.cooldownSeconds) + "초";
-                    afterValue = "재사용 " + FormatCompactNumber(afterSkill.cooldownSeconds) + "초";
+                    return string.Empty;
                 }
             }
             else if (id.StartsWith("monster.", StringComparison.Ordinal))
@@ -8068,6 +8065,18 @@ namespace CursorHunter.Progression
             foreach (SkillInformation skill in information.skills)
                 if (skill != null && string.Equals(skill.id, id, StringComparison.Ordinal)) return skill;
             return null;
+        }
+
+        private static float GetSkillUpgradeDelta(SkillInformation skill, string statId)
+        {
+            if (skill == null || skill.upgrades == null) return 0f;
+            foreach (SkillStatUpgradeInformation upgrade in skill.upgrades)
+            {
+                if (upgrade != null && string.Equals(upgrade.statId, statId,
+                        StringComparison.Ordinal))
+                    return upgrade.delta;
+            }
+            return 0f;
         }
 
         private static MonsterInformation FindMonster(GameInformation information, string id)
