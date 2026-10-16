@@ -1,4 +1,15 @@
-> 2026-10-01 변경: 아래 v0.0.4 본문은 개편 전 기록입니다. 현재 JSON·노드 UI·몬스터 10종·유물·자동 반경/쿨타임·30초 규칙은 [새 구현 기준](game-information-refactor-2026-10-01.md)및 [최신 v3 인수인계](current-state-handoff-v0.0.4.md)를 우선합니다. 기존 캡처는 현재 UI 검증 자료가 아닙니다.
+> 현재 전투 스킬은 [자동 스킬 기획서](../skill-design.md)의 토네이도·헤드샷·벼락·화염 배기·매직볼·레이저다. 각 스킬의 컨트롤러와 전투 오브젝트는 프로젝트 소유 프리팹이다.
+
+| 현재 스킬 | 컨트롤러 | 전투 오브젝트 | 시각 원본 |
+|---|---|---|---|
+| `skill.tornado` | [TornadoSkillController.prefab](../../Assets/CursorHunter/Combat/Prefabs/Skills/TornadoSkillController.prefab) | [TornadoObject.prefab](../../Assets/CursorHunter/Combat/Prefabs/Skills/TornadoObject.prefab) | [FX_SnowTornado_Loop.prefab](../../Assets/DownLoadAssets/Eric%20VFX%20Studio/Game%20VFX%20-%20Tornado%20Collection/Prefab/URP/FX_SnowTornado_Loop.prefab) |
+| `skill.headshot` | [HeadshotSkillController.prefab](../../Assets/CursorHunter/Combat/Prefabs/Skills/HeadshotSkillController.prefab) | [HeadshotEffect.prefab](../../Assets/CursorHunter/Combat/Prefabs/Skills/HeadshotEffect.prefab) | [FX_Aim_Explode_Visual.prefab](../../Assets/DownLoadAssets/Eric%20VFX%20Studio/Game%20VFX%20-%20Cartoon%20Skill%20Collection%20Vol2/Prefabs/URP/FX_Aim_Explode_Visual.prefab) |
+| `skill.thunder` | [ThunderSkillController.prefab](../../Assets/CursorHunter/Combat/Prefabs/Skills/ThunderSkillController.prefab) | [ThunderEffect.prefab](../../Assets/CursorHunter/Combat/Prefabs/Skills/ThunderEffect.prefab) | [FX_Cartoon Thunder_Visual.prefab](../../Assets/DownLoadAssets/Eric%20VFX%20Studio/Game%20VFX%20-%20Cartoon%20Skill%20Collection%20Vol2/Prefabs/URP/FX_Cartoon%20Thunder_Visual.prefab) |
+| `skill.flame_exhaust` | [FlameExhaustSkillController.prefab](../../Assets/CursorHunter/Combat/Prefabs/Skills/FlameExhaustSkillController.prefab) | [FlameExhaustProjectile.prefab](../../Assets/CursorHunter/Combat/Prefabs/Skills/FlameExhaustProjectile.prefab), [FlameExhaustHitEffect.prefab](../../Assets/CursorHunter/Combat/Prefabs/Skills/FlameExhaustHitEffect.prefab) | [FX_MagicSlash02_Fire.prefab](../../Assets/DownLoadAssets/Eric%20VFX%20Studio/Game%20VFX%20-%20Magic%20Slash%20Collection/Prefabs/URP/FX_MagicSlash02_Fire.prefab) |
+| `skill.magic_ball` | [MagicBallSkillController.prefab](../../Assets/CursorHunter/Combat/Prefabs/Skills/MagicBallSkillController.prefab) | [MagicBallObject.prefab](../../Assets/CursorHunter/Combat/Prefabs/Skills/MagicBallObject.prefab) | [Magic_Sphere_blue_Visual.prefab](../../Assets/DownLoadAssets/118%20sprite%20effects%20bundle/25%20sprite%20effects/_prefabs/Magic_Sphere_blue_Visual.prefab) |
+| `skill.laser` | [LaserSkillController.prefab](../../Assets/CursorHunter/Combat/Prefabs/Skills/LaserSkillController.prefab) | [LaserEffect.prefab](../../Assets/CursorHunter/Combat/Prefabs/Skills/LaserEffect.prefab) | [Lazer_normal_Visual.prefab](../../Assets/DownLoadAssets/118%20sprite%20effects%20bundle/15%20effects/_prefabs/Lazer_normal_Visual.prefab) |
+
+> 2026-10-01 변경: 아래 v0.0.4 본문은 개편 전 기록입니다. 기존 캡처는 현재 UI 검증 자료가 아닙니다.
 
 # 에셋 후보와 기획 매핑
 
@@ -9,6 +20,10 @@
 
 ## 재사용 방식
 원본 Assets/DownLoadAssets는 기본적으로 보존한다. 각 모듈 소유 폴더에 Variant 또는 시각 래퍼를 만든다. GUID는 원본 추적용이며 런타임 로더 구현이 아니다.
+2026-10-16 전투의 박쥐·전갈·눈요정·거미·골렘·봉오리·해골군주는
+`Combat/Art/MonsterDeath`의 반복하지 않는 Dead 클립을 사용한다. 각 종의
+`Combat/Prefabs/Monsters/Visuals` 프리팹 Variant가 Animator Override Controller로
+해당 클립만 교체하며, MonsterDefinition은 이 Variant를 참조한다.
 2026-10-05 사용자 요청에 따라 예외적으로 `EnemyMonster 2/Animations`의 17종 Animator Controller에 Walker와 같은 전이·파라미터를 직접 적용했다. 각 종의 클립, 컨트롤러 GUID, 50개 프리팹 연결은 유지한다.
 아래 링크의 에셋을 Unity에서 선택한 뒤 스프라이트 모드, pivot, 픽셀 크기, sorting, URP 머티리얼, emission/loop/stop을 점검한다.
 
@@ -20,17 +35,24 @@
 | gem.sapphire | Progression | [ItemIcon_Gem_Pentagon_Blue.png](../../Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Icon_ItemIcons/512/ItemIcon_Gem_Pentagon_Blue.png) |
 | gem.diamond | Progression | [ItemIcon_Gem_Pentagon_Green.png](../../Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Icon_ItemIcons/512/ItemIcon_Gem_Pentagon_Green.png) *(프로토타입 임시 색상)* |
 | ui.trait.node | Progression | 런타임 4면 선 + 평면 Image (`TraitScreenController.cs`) |
+| ui.trait.drag-cursor | Progression | [UI_Common_Hand_01.png](../../Assets/DownLoadAssets/IconPack/2D%20Minimal-IconPack/Icons/128/UI_Common_Hand_01.png) — 드래그 중 손 모양 커서 |
 | ui.trait.tabs | Progression | [TabMenu_Top_White.prefab](../../Assets/DownLoadAssets/GUI-CasualFantasy/Prefabs/Prefabs_Component_UI_Etc/TabMenu_Top_White.prefab) |
 | ui.boss.hp | Combat | [StatusBar_White.prefab](../../Assets/DownLoadAssets/GUI-CasualFantasy/Prefabs/Prefabs_Component_UI_Etc/StatusBar_White.prefab) |
 | field.normal | Combat | [Map_3_Jungle Age.prefab](../../Assets/DownLoadAssets/Map/2D%20Maps%20-%20Age%20Battle%20Stages/Prefabs/Landscape/Map/Map_3_Jungle%20Age.prefab) |
 | field.boss | Combat | [Map_13_Medieval Age.prefab](../../Assets/DownLoadAssets/Map/2D%20Maps%20-%20Age%20Battle%20Stages/Prefabs/Landscape/Map/Map_13_Medieval%20Age.prefab) |
 | monster.shared-root | Combat | [MonsterRoot.prefab](../../Assets/CursorHunter/Combat/Prefabs/Monsters/MonsterRoot.prefab) |
-| monster.behavior-profile.basic | Data | [Basic.asset](../../Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Basic.asset) — 10종 정의에서 재사용하는 기본 이동 프로필 |
+| monster.behavior-profile.basic | Data | [Basic.asset](../../Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Basic.asset) — 기본 이동 프로필 |
 | monster.behavior-profile.fast | Data | [Fast.asset](../../Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Fast.asset) |
 | monster.behavior-profile.high-health | Data | [HighHealth.asset](../../Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/HighHealth.asset) |
 | monster.behavior-profile.small | Data | [Small.asset](../../Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Small.asset) |
 | monster.behavior-profile.large-slow | Data | [LargeSlow.asset](../../Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/LargeSlow.asset) |
 | monster.behavior-profile.circular | Data | [Circular.asset](../../Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Circular.asset) |
+| monster.behavior-profile.vanish | Data | [Vanish.asset](../../Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Vanish.asset) |
+| monster.behavior-profile.shield | Data | [Shield.asset](../../Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Shield.asset) |
+| monster.behavior-profile.teleport | Data | [Teleport.asset](../../Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Teleport.asset) |
+| monster.behavior-profile.healer | Data | [Healer.asset](../../Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Healer.asset) |
+| monster.behavior-profile.resurrector | Data | [Resurrector.asset](../../Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Resurrector.asset) |
+| monster.behavior-profile.giant | Data | [Giant.asset](../../Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Giant.asset) |
 | monster.golem | Combat | [Golem_Iron.prefab](../../Assets/DownLoadAssets/MonsterAsset/2D%20Minimal-EnemyMonster/EnemyMonster%202/Prefabs/Golem/Golem_Iron.prefab) |
 | boss.v4 | Combat | [Golem_Iron.prefab](../../Assets/DownLoadAssets/MonsterAsset/2D%20Minimal-EnemyMonster/EnemyMonster%202/Prefabs/Golem/Golem_Iron.prefab) |
 | skill.fireball | Combat | [FX_AOE_Fireball.prefab](../../Assets/DownLoadAssets/Eric%20VFX%20Studio/Game%20VFX%20-%20Stylized%20AOE%20Bundle/Prefabs/URP/FX_AOE_Fireball.prefab) |
@@ -51,31 +73,28 @@
 `TraitScreenController`는 Canvas 픽셀 퍼펙트와 1.18배 글자 배율을 적용한다. 작은
 원본 아이콘을 확대해 생기는 흐림은 새 매핑에 사용하지 않는다.
 
-| 역할 | 적용 스프라이트 | 선택 이유 |
+| 역할 | 적용 스프라이트 | 번호 |
 |---|---|---|
-| 공격력 | `Icon_ItemIcons/512/ItemIcon_Weapon_Sword.png` | 공격·무기 의미가 즉시 읽힘 |
-| 반경 | `Icon_ItemIcons/512/ItemIcon_Weapon_Shield.png` | 보호 범위와 외곽 반경을 연상 |
-| 다중 클릭 | `Icon_ItemIcons/512/ItemIcon_Weapon_Bow.png` | 반복 발사·다중 타격을 표현 |
-| 치명타 | `Icon_ItemIcons/512/ItemIcon_Star.png` | 강조 타격·확률 수치와 조합 |
-| 젬 수집 | `Icon_ItemIcons/512/ItemIcon_Bag01.png` | 수집 기능을 가방으로 구분 |
-| 보스 피해 | `Icon_ItemIcons/512/ItemIcon_Skull02.png` | 보스 전용 피해 가지를 구분 |
+| 공격력 | `ItemIcon_Weapon_Sword.png` | AS-09904 |
+| 공격 반경 | `UI_ETC_Target_02_Blue.png` | AS-12757 |
+| 공격 간격 | `CardFrame01_Demo_Slider_Icon.png` | AS-09635 |
+| 치명타 | `Icon_Fire02.png` | AS-09982 |
+| 젬 수집 | `ItemIcon_Bag01.png` | 기존 매핑 유지 |
+| 보스 피해 배수 | `Icon_Skull03.png` | AS-10024 |
+| 일반 필드 시간 | `Icon_Timer.png` | AS-10047 |
 
-스킬 행의 첫 노드는 스킬마다 서로 다른 불·번개·방패·책·별 계열 아이콘을 배정하고,
-후속 수치 노드는 검(공격력)·방패(범위)·타이머(쿨타임)로 통일한다. 전체 배열과 GUID는
+특성 화면의 노드 아이콘은 스킬별로 통일한다. 지정되지 않은 스킬 중 허리케인은 바람을
+연상시키는 날개, 메테오는 화염 충돌 아이콘으로 구성했다. 전체 배열과 GUID는
 [특성 UI 에셋 매핑](trait-ui-assets.md)과 [asset-map.json](asset-map.json)을 함께 갱신한다.
 
-| 스킬 행 | UI 아이콘 | 경로 |
+| 스킬 행 | UI 아이콘 | 번호 |
 |---|---|---|
-| 파이어볼 | 불꽃 | `IconMisc/Icon_Fire01_512.png` |
-| 라이트닝 볼트 | 에너지 번개 | `Icon_ItemIcons/512/ItemIcon_Badge_Energy.png` |
-| 프리즈 | 푸른 방패 | `IconMisc/Icon_Shield05_512.png` |
-| 허리케인 | 하강 소용돌이 | `IconMisc/Skill1.png` |
-| 메테오 | 망치 충돌 | `Icon_ItemIcons/512/ItemIcon_Weapon_Hammer.png` |
-| 체인 라이트닝 | 번개 문양 | `IconMisc/Skill2.png` |
-| 블리자드 | 얼음 방패 | `IconMisc/Icon_Shield01_512.png` |
-| 아케인 버스트 | 청록 마법서 | `Icon_ItemIcons/512/ItemIcon_Book02_Teal.png` |
-| 스타폴 | 큰 별 | `IconMisc/Icon_Star03_l.png` |
-| 드래곤 브레스 | 강한 불꽃 | `IconMisc/Icon_Fire01_512.png` |
+| 파이어볼 | `Misc_Fire_01_Red.png` | AS-12435 |
+| 라이트닝 볼트 | `Stat_Skill_01.png` | AS-12514 |
+| 빙결 | `Economy_Gem_07_Blue.png` | AS-12140 |
+| 허리케인 | `Misc_Wing_01.png` (바람 대용) | AS-12485 |
+| 메테오 | `Skill1.png` (화염 충돌 대용) | AS-10050 |
+| 드래곤 브레스 | `Misc_Dragon_01_Red.png` | AS-12429 |
 
 ## 조정·추가 제작
 - 다이아몬드: 현재 특성 화면은 `512/ItemIcon_Gem_Pentagon_Green.png`를 프로토타입
@@ -103,9 +122,14 @@ PDF가 아닌 이 문서에 유지한다.
 
 ## 젬스톤 표시·해금 매핑
 
-젬스톤 슬롯은 보스 처치로 자동 추가하지 않는다. `Stat → 젬 수집`의 해금 노드를
-구매하면 해당 색상 아이콘이 목록에 처음 나타나고, 이후 발견 노드 구매 횟수가 그
-종류의 랜덤 등장 가중치를 올린다. 시작 가중치는 가넷 70, 토파즈 20, 자수정 8,
-사파이어 3, 다이아몬드 1이며, 발견 강화는 각각 +5·+3·+2·+1이다. 해금된 종류만
-가중치 합으로 100% 정규화한다. 노드 ID·비용·아이콘 순서는
-[trait-ui-assets.md](trait-ui-assets.md)의 젬스톤 표가 단일 기준이다.
+가넷은 기본 해금이다. 나머지 젬스톤은 해당 종류를 드롭하는 몬스터를 해금하면
+전투 데이터에서 공급 상태가 열린다. 연구 트리에서는 새 종류를 처음 공급하는 몬스터
+노드의 우측 상단에 젬스톤 아이콘을 표시한다.
+
+| 몬스터 | 새로 열리는 젬스톤 |
+|---|---|
+| 여왕벌 (monster.02) | 토파즈 |
+| 가면유령 (monster.04) | 자수정 |
+| 눈요정 (monster.06) | 사파이어 |
+| 골렘 (monster.08) | 다이아몬드 |
+| 봉오리 (monster.09) | 드래곤 젬 |

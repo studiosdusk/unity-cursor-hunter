@@ -88,7 +88,9 @@ def validate_documents():
         assert progression["savedProgressPolicy"] in ("overlay", "fileOnly")
         assert info["schemaVersion"] == 3 and info["balanceVersion"] >= 1
         assert len(info["gemstones"]) == 6 and len(info["monsters"]) == 10
-        assert len(info["skills"]) == 7
+        assert [skill["id"] for skill in info["skills"]] == [
+            "skill.tornado", "skill.headshot", "skill.thunder", "skill.flame_exhaust",
+            "skill.magic_ball", "skill.laser"]
         stats, rules = info["stats"], info["rules"]
         assert 1 <= stats["attackPower"] <= 9223372036854775807
         assert stats["attackRadiusWorldUnits"] > 0 and stats["attackCooldownSeconds"] >= .05
@@ -101,9 +103,10 @@ def validate_documents():
         for entry in document["entities"]:
             assert entry["displayName"] and entry["description"]
         categories = {entry["id"]: entry for entry in progression["categories"]}
-        assert len(categories) == len(progression["categories"]) == 23
+        assert len(categories) == len(progression["categories"]) == 17
         nodes = {n["id"]: n for c in progression["categories"] for n in c["nodes"]}
-        assert len(nodes) == sum(len(c["nodes"]) for c in categories.values()) == 111
+        assert len(nodes) == sum(len(c["nodes"]) for c in categories.values()) == 84
+        assert [node["id"] for node in categories["skill.tornado"]["nodes"]] == ["skill.tornado"]
         currency = {g["id"] for g in info["gemstones"]}
         ordered_nodes = set()
         for c in categories.values():
@@ -112,7 +115,7 @@ def validate_documents():
                 assert not n["prerequisiteNodeId"] or n["prerequisiteNodeId"] in ordered_nodes, "Nodes must follow prerequisite order"
                 ordered_nodes.add(n["id"])
                 assert n["cost"] >= 0 and n["currencyId"] in currency
-                assert n["operation"] in ("baseline", "set", "add", "enable", "multiply")
+                assert n["operation"] in ("baseline", "set", "add", "enable", "tier")
                 assert isinstance(n["startsUnlocked"], bool) and 0 <= n["requiredBossTier"] <= 5
                 assert n["displayName"] and n["description"] and math.isfinite(n["value"])
                 seen, current = {n["id"]}, n["prerequisiteNodeId"]
@@ -134,8 +137,8 @@ def validate_documents():
             definition = ROOT / f"Assets/CursorHunter/Data/Resources/MonsterDefinitions/Monster{monster['id'][-2:]}.asset"
             assert "prefabKey: " + entities[monster["id"]]["prefabKey"] in definition.read_text()
         for skill in info["skills"]:
-            assert skill["id"] in categories and skill["damage"] > 0
-            assert skill["radiusWorldUnits"] > 0 and skill["cooldownSeconds"] >= .05
+            assert skill["id"] in entities
+            assert skill.get("upgrades", []) == []
         for gem in info["gemstones"]:
             assert 0 <= gem["amount"] <= 9223372036854775807
         assert len(progression["bossRewards"]) == 5
@@ -146,7 +149,7 @@ def validate_documents():
 
 def main():
     validate_documents()
-    print("PASS: English-only runtime input, Korean detailed/key-only references, separate growth configuration, 23 categories / 111 nodes, behaviorType=0, no relic data, schema, references and rewards")
+    print("PASS: English-only runtime input, Korean detailed/key-only references, separate growth configuration, 17 categories / 84 nodes, behaviorType=0, no relic data, schema, references and rewards")
     print("No Unity or game execution.")
 
 if __name__ == "__main__":

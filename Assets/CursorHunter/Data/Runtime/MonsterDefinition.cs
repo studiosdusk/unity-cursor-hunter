@@ -156,6 +156,11 @@ namespace CursorHunter.Data
             MonsterMovementMode movementMode = MonsterMovementMode.BoundedWander;
             float orbitRadius = 0.65f;
             float orbitAngularSpeedDegrees = 90f;
+            MonsterSpecialAbility specialAbility = MonsterSpecialAbility.None;
+            float specialAbilityIntervalSeconds = 4f;
+            float specialAbilityDurationSeconds = 1f;
+            float specialAbilityRadius = 3f;
+            float specialAbilityStrength = 0.3f;
 
             if (behaviorProfiles != null)
             {
@@ -188,6 +193,19 @@ namespace CursorHunter.Data
                         orbitRadius = profile.OrbitRadius;
                         orbitAngularSpeedDegrees = profile.OrbitAngularSpeedDegrees;
                     }
+
+                    // Species definitions use one explicit ability profile at
+                    // most; later non-empty profiles intentionally take precedence.
+                    if (profile.SpecialAbility != MonsterSpecialAbility.None)
+                    {
+                        specialAbility = profile.SpecialAbility;
+                        specialAbilityIntervalSeconds =
+                            profile.SpecialAbilityIntervalSeconds;
+                        specialAbilityDurationSeconds =
+                            profile.SpecialAbilityDurationSeconds;
+                        specialAbilityRadius = profile.SpecialAbilityRadius;
+                        specialAbilityStrength = profile.SpecialAbilityStrength;
+                    }
                 }
             }
 
@@ -209,7 +227,12 @@ namespace CursorHunter.Data
                 stats.HitAreaWidth * hitAreaScaleMultiplier,
                 stats.HitAreaHeight * hitAreaScaleMultiplier,
                 orbitRadius,
-                orbitAngularSpeedDegrees);
+                orbitAngularSpeedDegrees,
+                specialAbility,
+                specialAbilityIntervalSeconds,
+                specialAbilityDurationSeconds,
+                specialAbilityRadius,
+                specialAbilityStrength);
         }
 
         private void OnValidate()

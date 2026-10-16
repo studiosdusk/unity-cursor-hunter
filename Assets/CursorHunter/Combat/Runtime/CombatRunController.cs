@@ -33,8 +33,10 @@ namespace CursorHunter.Combat
             new Dictionary<string, long>(StringComparer.Ordinal);
 
         private RunRequest _runRequest;
-        private SkillCombatSnapshot[] _skills = Array.Empty<SkillCombatSnapshot>();
-        private float[] _nextSkillAt = Array.Empty<float>();
+        private readonly List<IRunSkillController> _skillControllers =
+            new List<IRunSkillController>(6);
+        private readonly Dictionary<string, IRunSkillController> _skillControllersById =
+            new Dictionary<string, IRunSkillController>(StringComparer.Ordinal);
         private SeededRandom _random;
         private float _elapsedSeconds;
         private Vector2 _previousAttackCenter;
@@ -73,6 +75,8 @@ namespace CursorHunter.Combat
         public int DefeatedCount => _defeatedCount;
         public long GarnetEarned => _garnetEarned;
         public long EffectiveDamage => _effectiveDamage;
+        public LayerMask EnemyLayers => enemyLayers;
+        public bool IsBossRun => _isRunning && _runRequest.Mode == RunMode.Boss;
         public CombatSnapshot CombatSnapshot => playerCombatStatsRuntime != null
             ? playerCombatStatsRuntime.Snapshot
             : default;
@@ -90,6 +94,7 @@ namespace CursorHunter.Combat
             overlapBufferCapacity = Mathf.Max(512, overlapBufferCapacity);
             _overlapBuffer = new Collider2D[overlapBufferCapacity];
             ResolvePlayerCombatStatsRuntime();
+            RefreshSkillControllers();
         }
 
         private void ResolvePlayerCombatStatsRuntime()
@@ -193,7 +198,7 @@ namespace CursorHunter.Combat
             }
 
             _runRequest = request;
-            ConfigureSkills(null);
+            StopAllSkills();
             _random = new SeededRandom(request.Seed ^ 0xC17C17UL);
             _elapsedSeconds = 0f;
             _lastBasicHitAt.Clear();
@@ -244,6 +249,7 @@ namespace CursorHunter.Combat
             _lastBasicHitAt.Clear();
             ResetAttackPath();
             playerCombatStatsRuntime.SetRunActive(false);
+            StopAllSkills();
             PresentationReset?.Invoke();
             return true;
         }
@@ -409,46 +415,85 @@ namespace CursorHunter.Combat
             }
         }
 
-        public void ConfigureSkills(IReadOnlyList<SkillCombatSnapshot> skills)
+        public bool ConfigureSkills(IReadOnlyList<SkillCombatSnapshot> skills)
         {
-            int count = skills == null ? 0 : skills.Count;
-            _skills = new SkillCombatSnapshot[count];
-            _nextSkillAt = new float[count];
-            for (int i = 0; i < count; i++)
+            StopAllSkills();
+            if (!_isPrepared && !_isRunning) return false;
+            if (!RefreshSkillControllers()) return false;
+
+            var snapshots = new Dictionary<string, SkillCombatSnapshot>(
+                StringComparer.Ordinal);
+            if (skills != null)
             {
-                if (!skills[i].IsValid) throw new ArgumentException("Invalid skill snapshot.");
-                _skills[i] = skills[i];
-                _nextSkillAt[i] = _elapsedSeconds + skills[i].CooldownSeconds;
+                for (int i = 0; i < skills.Count; i++)
+                {
+                    SkillCombatSnapshot skill = skills[i];
+                    if (!skill.IsValid || snapshots.ContainsKey(skill.SkillId))
+                        return false;
+                    snapshots.Add(skill.SkillId, skill);
+                }
+            }
+            foreach (SkillCombatSnapshot skill in snapshots.Values)
+                if (skill.Unlocked && !_skillControllersById.ContainsKey(skill.SkillId))
+                    return false;
+
+            for (int i = 0; i < _skillControllers.Count; i++)
+            {
+                IRunSkillController controller = _skillControllers[i];
+                if (!snapshots.TryGetValue(controller.Id, out SkillCombatSnapshot skill))
+                    skill = new SkillCombatSnapshot(controller.Id, false);
+                if (!controller.IsAcquiredForRun(skill.Unlocked)) continue;
+
+                MonoBehaviour component = (MonoBehaviour)controller;
+                if (component.isActiveAndEnabled &&
+                    controller.ConfigureForRun(this, _runRequest.RunId,
+                        _runRequest.Seed, skill)) continue;
+                StopAllSkills();
+                return false;
+            }
+            return true;
+        }
+
+        private bool RefreshSkillControllers()
+        {
+            _skillControllers.Clear();
+            _skillControllersById.Clear();
+            MonoBehaviour[] components = GetComponentsInChildren<MonoBehaviour>(true);
+            for (int i = 0; i < components.Length; i++)
+            {
+                if (!(components[i] is IRunSkillController controller)) continue;
+                if (!SkillStatUpgrade.IsKnownSkill(controller.Id) ||
+                    _skillControllersById.ContainsKey(controller.Id))
+                {
+                    Debug.LogError("Duplicate or unknown skill controller: " +
+                        controller.Id, components[i]);
+                    _skillControllers.Clear();
+                    _skillControllersById.Clear();
+                    return false;
+                }
+                _skillControllersById.Add(controller.Id, controller);
+                _skillControllers.Add(controller);
+            }
+            return true;
+        }
+
+        private void StopAllSkills()
+        {
+            for (int i = 0; i < _skillControllers.Count; i++)
+            {
+                IRunSkillController controller = _skillControllers[i];
+                if (controller is MonoBehaviour component && component != null)
+                    controller.StopSkill();
             }
         }
 
-        public void TryUseSkills(Vector2 center)
+        public bool TryApplySkillDamage(RunId runId, ICombatTarget target, long rawDamage)
         {
-            if (!IsRunning || _elapsedSeconds >= _runRequest.DurationSeconds) return;
-            var filter = new ContactFilter2D { useLayerMask = true, useTriggers = true };
-            filter.SetLayerMask(enemyLayers);
-            bool transformsSynced = false;
-            for (int i = 0; i < _skills.Length && IsRunning; i++)
-            {
-                var skill = _skills[i];
-                if (!skill.Unlocked || _elapsedSeconds < _nextSkillAt[i]) continue;
-                if (!transformsSynced) { Physics2D.SyncTransforms(); transformsSynced = true; }
-                _nextSkillAt[i] = _elapsedSeconds + skill.CooldownSeconds;
-                int count = Physics2D.OverlapCircle(center, skill.RadiusWorldUnits, filter, _overlapBuffer);
-                _uniqueTargets.Clear();
-                for (int j = 0; j < count; j++)
-                {
-                    var collider = _overlapBuffer[j];
-                    var target = collider == null ? null : collider.GetComponentInParent<MonsterCombatTarget>();
-                    if (target != null && target.RunId == _runRequest.RunId && target.IsActive && target.IsRegistered)
-                        _uniqueTargets.Add(target);
-                }
-                foreach (var target in _uniqueTargets)
-                {
-                    if (!IsRunning) break;
-                    ApplyBundle(target, skill.Damage, CombatDamageSource.Skill);
-                }
-            }
+            return IsRunning && _elapsedSeconds < _runRequest.DurationSeconds &&
+                   runId == _runRequest.RunId && target != null &&
+                   target.RunId == runId && target.IsActive && target.IsRegistered &&
+                   rawDamage > 0L &&
+                   ApplyBundle(target, rawDamage, CombatDamageSource.Skill);
         }
 
         public bool TryCompleteRun(
@@ -469,6 +514,7 @@ namespace CursorHunter.Combat
             _lastBasicHitAt.Clear();
             ResetAttackPath();
             playerCombatStatsRuntime.SetRunActive(false);
+            StopAllSkills();
 
             PresentationReset?.Invoke();
             result = CreateResult(
@@ -495,6 +541,7 @@ namespace CursorHunter.Combat
             _lastBasicHitAt.Clear();
             ResetAttackPath();
             playerCombatStatsRuntime.SetRunActive(false);
+            StopAllSkills();
 
             PresentationReset?.Invoke();
             result = CreateResult(
@@ -577,6 +624,12 @@ namespace CursorHunter.Combat
             }
 
             if (!killed)
+            {
+                return true;
+            }
+
+            if (target is MonsterCombatTarget monsterTarget &&
+                !monsterTarget.TryClaimKillSettlement())
             {
                 return true;
             }

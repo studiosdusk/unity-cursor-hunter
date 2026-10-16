@@ -9,53 +9,106 @@ namespace CursorHunter.Contracts
     /// </summary>
     public readonly struct SkillCombatSnapshot
     {
-        public SkillCombatSnapshot(
-            string skillId,
-            bool unlocked,
-            float damageMultiplier,
-            float radiusMultiplier,
-            float cooldownMultiplier,
-            long damage = 1L,
-            float radiusWorldUnits = 1f,
-            float cooldownSeconds = 1f)
+        public SkillCombatSnapshot(string skillId, bool unlocked)
+            : this(skillId, unlocked, null)
         {
-            Damage = damage;
-            RadiusWorldUnits = radiusWorldUnits;
-            CooldownSeconds = cooldownSeconds;
-            SkillId = skillId ?? string.Empty;
-            Unlocked = unlocked;
-            DamageMultiplier = SanitizeMultiplier(damageMultiplier);
-            RadiusMultiplier = SanitizeMultiplier(radiusMultiplier);
-            CooldownMultiplier = cooldownMultiplier > 0f &&
-                                 !float.IsNaN(cooldownMultiplier) &&
-                                 !float.IsInfinity(cooldownMultiplier)
-                ? cooldownMultiplier
-                : 1f;
         }
 
-        public long Damage { get; }
-        public float RadiusWorldUnits { get; }
-        public float CooldownSeconds { get; }
+        public SkillCombatSnapshot(string skillId, bool unlocked,
+            SkillStatUpgrade[] upgrades)
+        {
+            SkillId = skillId ?? string.Empty;
+            Unlocked = unlocked;
+            _upgrades = upgrades == null
+                ? Array.Empty<SkillStatUpgrade>()
+                : (SkillStatUpgrade[])upgrades.Clone();
+            _upgradeView = Array.AsReadOnly(_upgrades);
+        }
+
+        private readonly SkillStatUpgrade[] _upgrades;
+        private readonly IReadOnlyList<SkillStatUpgrade> _upgradeView;
         public string SkillId { get; }
         public bool Unlocked { get; }
-        public float DamageMultiplier { get; }
-        public float RadiusMultiplier { get; }
-        public float CooldownMultiplier { get; }
-
-        public bool IsValid =>
-            !string.IsNullOrWhiteSpace(SkillId) &&
-            Damage > 0L && RadiusWorldUnits > 0f && CooldownSeconds > 0f &&
-            !float.IsNaN(RadiusWorldUnits) && !float.IsInfinity(RadiusWorldUnits) &&
-            !float.IsNaN(CooldownSeconds) && !float.IsInfinity(CooldownSeconds) &&
-            DamageMultiplier > 0f &&
-            RadiusMultiplier > 0f &&
-            CooldownMultiplier > 0f;
-
-        private static float SanitizeMultiplier(float value)
+        public IReadOnlyList<SkillStatUpgrade> Upgrades =>
+            _upgradeView ?? Array.Empty<SkillStatUpgrade>();
+        public bool IsValid
         {
-            return value > 0f && !float.IsNaN(value) && !float.IsInfinity(value)
-                ? value
-                : 1f;
+            get
+            {
+                if (!SkillStatUpgrade.IsKnownSkill(SkillId)) return false;
+                var seen = new HashSet<string>(StringComparer.Ordinal);
+                for (int i = 0; i < Upgrades.Count; i++)
+                    if (!Upgrades[i].IsValidFor(SkillId) ||
+                        !seen.Add(Upgrades[i].StatId)) return false;
+                return true;
+            }
+        }
+
+        public float GetUpgrade(string statId)
+        {
+            for (int i = 0; i < Upgrades.Count; i++)
+                if (Upgrades[i].StatId == statId) return Upgrades[i].Delta;
+            return 0f;
+        }
+    }
+
+    /// <summary>One already-aggregated additive upgrade for a skill stat.</summary>
+    public readonly struct SkillStatUpgrade
+    {
+        public SkillStatUpgrade(string statId, float delta)
+        {
+            StatId = statId ?? string.Empty;
+            Delta = delta;
+        }
+
+        public string StatId { get; }
+        public float Delta { get; }
+
+        public bool IsValidFor(string skillId)
+        {
+            return !float.IsNaN(Delta) && !float.IsInfinity(Delta) &&
+                (StatId != "count" || Delta == (float)Math.Floor(Delta)) &&
+                IsAllowed(skillId, StatId);
+        }
+
+        public static bool IsKnownSkill(string skillId)
+        {
+            return skillId == "skill.tornado" || skillId == "skill.headshot" ||
+                skillId == "skill.thunder" || skillId == "skill.flame_exhaust" ||
+                skillId == "skill.magic_ball" || skillId == "skill.laser";
+        }
+
+        public static bool IsAllowed(string skillId, string statId)
+        {
+            if (statId == "cooldownSeconds")
+                return IsKnownSkill(skillId) && skillId != "skill.magic_ball";
+            switch (skillId)
+            {
+                case "skill.tornado":
+                    return statId == "count" || statId == "durationSeconds" ||
+                        statId == "damageMultiplier" || statId == "firstCastDelaySeconds" ||
+                        statId == "hitIntervalSeconds" || statId == "moveSpeedWorldUnitsPerSecond" ||
+                        statId == "directionChangeSeconds" || statId == "stopChanceOnDirectionChange" ||
+                        statId == "stopDurationSeconds" || statId == "shrinkOutSeconds";
+                case "skill.headshot":
+                    return statId == "firstCastDelaySeconds" ||
+                        statId == "explosionDelaySeconds" || statId == "effectDurationSeconds" ||
+                        statId == "splashDamageMultiplier" || statId == "bossDamageMultiplier";
+                case "skill.thunder":
+                    return statId == "firstCastDelaySeconds" ||
+                        statId == "impactDelaySeconds" || statId == "effectDurationSeconds" ||
+                        statId == "damageMultiplier";
+                case "skill.flame_exhaust":
+                    // The established upgrade direction is cooldown only.
+                    return false;
+                case "skill.magic_ball":
+                    return statId == "moveSpeedWorldUnitsPerSecond" ||
+                        statId == "sizeMultiplier" || statId == "damageMultiplier";
+                case "skill.laser":
+                    return statId == "sizeMultiplier" || statId == "damageMultiplier";
+                default:
+                    return false;
+            }
         }
     }
 

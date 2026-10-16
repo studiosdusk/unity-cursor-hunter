@@ -29,8 +29,8 @@
       "items": {
         "$ref": "#/$defs/entity"
       },
-      "minItems": 34,
-      "maxItems": 34
+      "minItems": 28,
+      "maxItems": 33
     }
   },
   "$defs": {
@@ -92,8 +92,13 @@
             "set",
             "add",
             "multiply",
-            "enable"
+            "enable",
+            "tier"
           ]
+        },
+        "statId": {
+          "type": "string",
+          "minLength": 1
         },
         "value": {
           "type": "number",
@@ -185,7 +190,6 @@
       "required": [
         "savedProgressPolicy",
         "initialBossTier",
-        "scaleSkillDamageWithAttack",
         "categories",
         "bossRewards"
       ],
@@ -201,16 +205,13 @@
           "minimum": 0,
           "maximum": 5
         },
-        "scaleSkillDamageWithAttack": {
-          "type": "boolean"
-        },
         "categories": {
           "type": "array",
           "items": {
             "$ref": "#/$defs/category"
           },
-          "minItems": 23,
-          "maxItems": 23
+          "minItems": 17,
+          "maxItems": 17
         },
         "bossRewards": {
           "type": "array",

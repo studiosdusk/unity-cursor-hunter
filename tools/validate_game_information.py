@@ -36,8 +36,8 @@ def main():
         "attackCooldownSeconds": values("stat.cooldown", example["stats"]["attackCooldownSeconds"]),
         "monsters": [dict(m, prefabKey=entities[m["id"]]["prefabKey"],
                           unlockCurrencyId=categories[m["id"]]["nodes"][0]["currencyId"]) for m in example["monsters"]],
-        "skills": [dict(s, currencyId=categories[s["id"]]["nodes"][0]["currencyId"],
-                        damageCoefficient=s["damage"]) for s in example["skills"]]
+        "skills": [dict(s, currencyId=categories[s["id"]]["nodes"][0]["currencyId"])
+                   for s in example["skills"] if s["id"] in categories]
     }
     errors = []
     def check(ok, message):
@@ -50,11 +50,18 @@ def main():
     gems = ["gem." + name for name in ["garnet", "topaz", "amethyst", "sapphire", "diamond", "dragon"]]
     check([g["id"] for g in example["gemstones"]] == gems, "Gemstone IDs/order changed")
     check(len(data["monsters"]) == len(example["monsters"]) == 10, "Expected 10 monsters")
-    check(len(data["skills"]) == len(example["skills"]) == 7, "Expected 7 skills including cursor aura")
+    check([s["id"] for s in example["skills"]] ==
+          ["skill.tornado", "skill.headshot", "skill.thunder", "skill.flame_exhaust",
+           "skill.magic_ball", "skill.laser"],
+          "Expected six skill IDs")
     check(data["normalFieldDurationSeconds"] == [15, 20, 25, 30], "Normal duration must stop at 30")
     check(all(finite_positive(v) and v >= .05 for v in data["attackCooldownSeconds"]), "Invalid cooldown")
     check(all(data["attackCooldownSeconds"][i] > data["attackCooldownSeconds"][i+1] for i in range(4)), "Cooldown upgrades must decrease")
     known_currencies = {"gem.garnet"}
+    death_variants = {
+        2: "Bat", 5: "Scorpion", 6: "Fairy", 7: "Spider",
+        8: "Golem", 9: "Bud", 10: "Skeleton",
+    }
     ids = set()
     for index, monster in enumerate(data["monsters"], 1):
         expected_id = f"monster.{index:02}"
@@ -69,18 +76,104 @@ def main():
         if definition.exists():
             text = definition.read_text()
             check(f"monsterId: {expected_id}" in text, "Wrong monster asset ID")
-            match = re.search(r"prefab: \{fileID: (\d+), guid: ([0-9a-f]+), type: 3\}", text)
+            match = re.search(r"visualPrefab: \{fileID: (\d+), guid: ([0-9a-f]+), type: 3\}", text)
             check(bool(match), f"Missing prefab: {expected_id}")
             if match:
-                prefab = ROOT / "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/Prefabs" / (monster["prefabKey"] + ".prefab")
-                check(prefab.exists(), f"Missing prefab path: {prefab}")
-                if prefab.exists():
-                    check(match[2] in Path(str(prefab) + ".meta").read_text(), "Prefab GUID mismatch")
-                    check(f"--- !u!1 &{match[1]}\n" in prefab.read_text(), "Prefab root fileID missing")
+                source = ROOT / "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/Prefabs" / (monster["prefabKey"] + ".prefab")
+                check(source.exists(), f"Missing prefab path: {source}")
+                if source.exists():
+                    source_guid = re.search(r"^guid: ([0-9a-f]+)$", Path(str(source) + ".meta").read_text(), re.MULTILINE)[1]
+                    if index in death_variants:
+                        species = death_variants[index]
+                        variant = BASE / "Combat/Prefabs/Monsters/Visuals" / (source.stem + "_Combat.prefab")
+                        controller = variant.with_name(species + "_DeathOnce.overrideController")
+                        clip = BASE / "Combat/Art/MonsterDeath" / species / "Dead.anim"
+                        for asset in (variant, controller, clip):
+                            check(asset.exists(), f"Missing death asset: {asset}")
+                        if all(asset.exists() for asset in (variant, controller, clip)):
+                            variant_guid = re.search(r"^guid: ([0-9a-f]+)$", Path(str(variant) + ".meta").read_text(), re.MULTILINE)[1]
+                            controller_guid = re.search(r"^guid: ([0-9a-f]+)$", Path(str(controller) + ".meta").read_text(), re.MULTILINE)[1]
+                            clip_guid = re.search(r"^guid: ([0-9a-f]+)$", Path(str(clip) + ".meta").read_text(), re.MULTILINE)[1]
+                            check(match[2] == variant_guid, f"Death variant GUID mismatch: {expected_id}")
+                            check(f"m_SourcePrefab: {{fileID: 100100000, guid: {source_guid}, type: 3}}" in variant.read_text(),
+                                  f"Death variant source mismatch: {expected_id}")
+                            check(f"objectReference: {{fileID: 22100000, guid: {controller_guid}, type: 2}}" in variant.read_text(),
+                                  f"Death controller missing from variant: {expected_id}")
+                            check(f"m_OverrideClip: {{fileID: 7400000, guid: {clip_guid}, type: 2}}" in controller.read_text(),
+                                  f"Nonlooping death clip missing from controller: {expected_id}")
+                            check("m_LoopTime: 0" in clip.read_text(), f"Death clip still loops: {expected_id}")
+                    else:
+                        check(match[2] == source_guid, f"Prefab GUID mismatch: {expected_id}")
+                        check(f"--- !u!1 &{match[1]}\n" in source.read_text(), f"Prefab root fileID missing: {expected_id}")
     check(known_currencies == set(gems), "Some currencies have no attainable monster source")
     for skill in data["skills"]:
         check(skill["currencyId"] in known_currencies, "Unattainable skill currency")
-        check(all(finite_positive(skill[key]) for key in ["damageCoefficient", "radiusWorldUnits", "cooldownSeconds"]), "Invalid skill numeric data")
+        check(skill["id"] == "skill.tornado", "Unexpected purchased skill category")
+    tornado_controller = BASE / "Combat/Prefabs/Skills/TornadoSkillController.prefab"
+    tornado_object = BASE / "Combat/Prefabs/Skills/TornadoObject.prefab"
+    check(tornado_controller.exists(), "Missing tornado controller prefab")
+    check(tornado_object.exists(), "Missing tornado object prefab")
+    if tornado_controller.exists() and tornado_object.exists():
+        controller_guid = (tornado_controller.with_suffix(".prefab.meta")).read_text().split("guid: ")[1].splitlines()[0]
+        object_guid = (tornado_object.with_suffix(".prefab.meta")).read_text().split("guid: ")[1].splitlines()[0]
+        check(object_guid in tornado_controller.read_text(), "Tornado controller does not reference its pooled object")
+        check("2c00aae28c77fcd47ba0036f2a5a4865" in tornado_object.read_text(), "Tornado object does not reference the selected snow effect")
+        for relative, parent in (("App/Scenes/Main.unity", "2188000105"),
+                                 ("Combat/Scenes/CombatSandbox.unity", "201")):
+            scene_text = (BASE / relative).read_text()
+            check(f"m_SourcePrefab: {{fileID: 100100000, guid: {controller_guid}, type: 3}}" in scene_text,
+                  f"Tornado controller is not a prefab instance in {relative}")
+            check(f"m_TransformParent: {{fileID: {parent}}}" in scene_text,
+                  f"Tornado controller is not under the combat manager in {relative}")
+            check("tornadoControllerPrefab:" not in scene_text,
+                  f"Old runtime-instantiated tornado controller remains in {relative}")
+
+    magic_controller = BASE / "Combat/Prefabs/Skills/MagicBallSkillController.prefab"
+    magic_object = BASE / "Combat/Prefabs/Skills/MagicBallObject.prefab"
+    magic_visual = ROOT / "Assets/DownLoadAssets/118 sprite effects bundle/25 sprite effects/_prefabs/Magic_Sphere_blue_Visual.prefab"
+    for path in (magic_controller, magic_object, magic_visual):
+        check(path.exists(), f"Missing Magic Ball prefab: {path}")
+    if all(path.exists() for path in (magic_controller, magic_object, magic_visual)):
+        magic_controller_guid = magic_controller.with_suffix(".prefab.meta").read_text().split("guid: ")[1].splitlines()[0]
+        magic_object_guid = magic_object.with_suffix(".prefab.meta").read_text().split("guid: ")[1].splitlines()[0]
+        magic_visual_guid = magic_visual.with_suffix(".prefab.meta").read_text().split("guid: ")[1].splitlines()[0]
+        check(magic_object_guid in magic_controller.read_text(), "Magic Ball controller does not reference its ball")
+        check(magic_visual_guid in magic_object.read_text(), "Magic Ball object does not contain the selected visual")
+        magic_object_text = magic_object.read_text()
+        check("boundaryCollider: {fileID: 100002}" in magic_object_text and
+              "hitbox: {fileID: 5411213688557413086}" in magic_object_text and
+              magic_object_text.count("CircleCollider2D:") >= 2,
+              "Magic Ball needs separate root boundary and child attack circles")
+        for relative, parent in (("App/Scenes/Main.unity", "2188000105"),
+                                 ("Combat/Scenes/CombatSandbox.unity", "201")):
+            scene_text = (BASE / relative).read_text()
+            check(re.search(r"m_TransformParent: \{fileID: " + parent +
+                            r"\}[\s\S]*?m_SourcePrefab: \{fileID: 100100000, guid: " +
+                            magic_controller_guid + r", type: 3\}", scene_text),
+                  f"Magic Ball controller is not under the combat manager in {relative}")
+
+    laser_controller = BASE / "Combat/Prefabs/Skills/LaserSkillController.prefab"
+    laser_effect = BASE / "Combat/Prefabs/Skills/LaserEffect.prefab"
+    laser_visual = ROOT / "Assets/DownLoadAssets/118 sprite effects bundle/15 effects/_prefabs/Lazer_normal_Visual.prefab"
+    for path in (laser_controller, laser_effect, laser_visual):
+        check(path.exists(), f"Missing Laser prefab: {path}")
+    if all(path.exists() for path in (laser_controller, laser_effect, laser_visual)):
+        laser_controller_guid = laser_controller.with_suffix(".prefab.meta").read_text().split("guid: ")[1].splitlines()[0]
+        laser_effect_guid = laser_effect.with_suffix(".prefab.meta").read_text().split("guid: ")[1].splitlines()[0]
+        laser_visual_guid = laser_visual.with_suffix(".prefab.meta").read_text().split("guid: ")[1].splitlines()[0]
+        check(laser_effect_guid in laser_controller.read_text(), "Laser controller does not reference its effect")
+        laser_effect_text = laser_effect.read_text()
+        check(laser_visual_guid in laser_effect_text, "Laser effect does not contain the selected visual")
+        check("hitbox: {fileID: 300102}" in laser_effect_text and
+              "BoxCollider2D:" in laser_effect_text and "m_IsTrigger: 1" in laser_effect_text,
+              "Laser effect needs a child rectangular trigger HitBox")
+        for relative, parent in (("App/Scenes/Main.unity", "2188000105"),
+                                 ("Combat/Scenes/CombatSandbox.unity", "201")):
+            scene_text = (BASE / relative).read_text()
+            check(re.search(r"m_TransformParent: \{fileID: " + parent +
+                            r"\}[\s\S]*?m_SourcePrefab: \{fileID: 100100000, guid: " +
+                            laser_controller_guid + r", type: 3\}", scene_text),
+                  f"Laser controller is not under the combat manager in {relative}")
 
     controller = (BASE / "Progression/Runtime/TraitScreenController.cs").read_text()
     check("CreateGameInformationJson" in controller and "SourceJson" in controller, "Summary must use captured JSON")
@@ -115,7 +208,7 @@ def main():
                         errors.append(f"C# syntax: {path.relative_to(ROOT)}:{node.start_point.row+1} {node.type}")
                     stack.extend(node.children)
     if errors: raise SystemExit("\n".join(errors))
-    print("PASS: JSON sections, 10 monsters, 7 skills, currency reachability, prefab IDs, TMP, scene and render settings" + (", C# syntax" if args.syntax else ""))
+    print("PASS: JSON sections, 10 monsters, six skill IDs, currency reachability, prefab IDs, TMP, scene and render settings" + (", C# syntax" if args.syntax else ""))
     print("Unity import, semantic compilation and gameplay were NOT run.")
 
 if __name__ == "__main__":

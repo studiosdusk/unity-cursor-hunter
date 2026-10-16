@@ -333,6 +333,66 @@ namespace CursorHunter.Combat.Tests
             Assert.That(_manager.EmittedCount, Is.EqualTo(1));
         }
 
+        [TestCase(0.1f, 1f)]
+        [TestCase(0.62f, 1f)]
+        [TestCase(1f, 1f)]
+        [TestCase(2f, 1f)]
+        [TestCase(4f, 1f)]
+        [TestCase(1f, -2f)]
+        public void LethalHitScalesWithVisibleBodyRatherThanHitboxOrHealthBar(
+            float visualScale, float parentScale)
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(MonsterPath);
+            var target = Object.Instantiate(prefab, _root.transform).GetComponent<MonsterCombatTarget>();
+            target.transform.position = new Vector3(2f, 3f, 0f);
+            target.transform.localScale = new Vector3(parentScale, Mathf.Abs(parentScale), 1f);
+            var sprite = Sprite.Create(Texture2D.whiteTexture, new Rect(0f, 0f, 1f, 1f),
+                new Vector2(0.5f, 0.5f), 1f);
+            try
+            {
+                var body = new GameObject("Body").AddComponent<SpriteRenderer>();
+                body.transform.SetParent(target.transform.Find("VisualRoot"), false);
+                body.transform.localPosition = Vector3.up * 0.5f;
+                body.transform.localScale = new Vector3(0.7f, 0.9f, 1f);
+                body.sprite = sprite;
+                var bar = new GameObject("HealthBar").AddComponent<MonsterHealthBarView>();
+                bar.transform.SetParent(target.transform, false);
+                bar.Initialize(1L);
+                bar.transform.localScale = Vector3.one * 20f;
+                target.Initialize(new SpawnSnapshot("test", "test", 1L, 1f, 1, 80, 0L,
+                    string.Empty, 0L, 0f, visualScale: visualScale), _combat.CurrentRunId);
+                Physics2D.SyncTransforms();
+
+                Vector3 center = body.bounds.center;
+                float bodySize = 0.9f * visualScale * Mathf.Abs(parentScale);
+                CombatDamageApplied captured = default;
+                _combat.DamageApplied += hit => captured = hit;
+                ApplyHit.Invoke(_combat, new object[] { target, 0L, CombatDamageSource.CursorAttack });
+                Assert.That(target.IsDead, Is.True);
+                Assert.That(captured.HitEffectPosition, Is.EqualTo(center));
+                Assert.That(captured.HitEffectSizeWorldUnits, Is.EqualTo(bodySize).Within(0.001f));
+                Assert.That(_manager.ActiveCount, Is.EqualTo(1));
+                var particles = new ParticleSystem.Particle[1];
+                foreach (var emitter in _emitters)
+                    if (emitter.GetParticles(particles) > 0)
+                        Assert.That(particles[0].startSize, Is.EqualTo(bodySize * 1.2f).Within(0.001f),
+                            "Small and large monsters must keep the same effect-to-body ratio.");
+            }
+            finally { Object.DestroyImmediate(sprite); }
+        }
+
+        [Test]
+        public void TargetWithoutSpriteUsesHitboxBounds()
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(MonsterPath);
+            var target = Object.Instantiate(prefab, _root.transform).GetComponent<MonsterCombatTarget>();
+            target.Initialize(new SpawnSnapshot("test", "test", 100L, 1f, 1, 80, 0L),
+                _combat.CurrentRunId);
+            Physics2D.SyncTransforms();
+            Assert.That(target.TryGetHitEffectBounds(out Bounds bounds), Is.True);
+            Assert.That(bounds, Is.EqualTo(target.transform.Find("HitArea").GetComponent<Collider2D>().bounds));
+        }
+
         [Test]
         public void SweepAndDuplicateCollidersEmitOncePerTargetCooldown()
         {

@@ -47,7 +47,12 @@ namespace CursorHunter.Contracts
             float hitAreaWidth = 1f,
             float hitAreaHeight = 1.2f,
             float orbitRadius = 0.65f,
-            float orbitAngularSpeedDegrees = 90f)
+            float orbitAngularSpeedDegrees = 90f,
+            MonsterSpecialAbility specialAbility = MonsterSpecialAbility.None,
+            float specialAbilityIntervalSeconds = 4f,
+            float specialAbilityDurationSeconds = 1f,
+            float specialAbilityRadius = 3f,
+            float specialAbilityStrength = 0.3f)
         {
             MonsterId = monsterId ?? string.Empty;
             PrefabKey = prefabKey ?? string.Empty;
@@ -69,6 +74,17 @@ namespace CursorHunter.Contracts
             OrbitAngularSpeedDegrees = IsFinitePositive(orbitAngularSpeedDegrees)
                 ? orbitAngularSpeedDegrees
                 : 90f;
+            SpecialAbility = specialAbility;
+            SpecialAbilityIntervalSeconds = IsFinitePositive(specialAbilityIntervalSeconds)
+                ? specialAbilityIntervalSeconds
+                : 4f;
+            SpecialAbilityDurationSeconds = IsFiniteNonNegative(specialAbilityDurationSeconds)
+                ? specialAbilityDurationSeconds
+                : 1f;
+            SpecialAbilityRadius = IsFinitePositive(specialAbilityRadius)
+                ? specialAbilityRadius
+                : 3f;
+            SpecialAbilityStrength = SanitizeUnit(specialAbilityStrength);
         }
 
         public string MonsterId { get; }
@@ -89,6 +105,11 @@ namespace CursorHunter.Contracts
         public float HitAreaHeight { get; }
         public float OrbitRadius { get; }
         public float OrbitAngularSpeedDegrees { get; }
+        public MonsterSpecialAbility SpecialAbility { get; }
+        public float SpecialAbilityIntervalSeconds { get; }
+        public float SpecialAbilityDurationSeconds { get; }
+        public float SpecialAbilityRadius { get; }
+        public float SpecialAbilityStrength { get; }
 
         public bool IsValid =>
             !string.IsNullOrWhiteSpace(MonsterId) &&
@@ -111,11 +132,23 @@ namespace CursorHunter.Contracts
             IsFinitePositive(HitAreaHeight) &&
             IsFinitePositive(OrbitRadius) &&
             IsFinitePositive(OrbitAngularSpeedDegrees) &&
+            Enum.IsDefined(typeof(MonsterSpecialAbility), SpecialAbility) &&
+            IsFinitePositive(SpecialAbilityIntervalSeconds) &&
+            IsFiniteNonNegative(SpecialAbilityDurationSeconds) &&
+            IsFinitePositive(SpecialAbilityRadius) &&
+            SpecialAbilityStrength >= 0f && SpecialAbilityStrength <= 1f &&
+            !float.IsNaN(SpecialAbilityStrength) &&
+            !float.IsInfinity(SpecialAbilityStrength) &&
             BehaviorType == MonsterBehaviorType.None;
 
         private static bool IsFinitePositive(float value)
         {
             return value > 0f && !float.IsNaN(value) && !float.IsInfinity(value);
+        }
+
+        private static bool IsFiniteNonNegative(float value)
+        {
+            return value >= 0f && !float.IsNaN(value) && !float.IsInfinity(value);
         }
 
         private static float SanitizePercent(float value)
@@ -126,6 +159,13 @@ namespace CursorHunter.Contracts
             }
 
             return value < 0f ? 0f : value > 100f ? 100f : value;
+        }
+
+        private static float SanitizeUnit(float value)
+        {
+            return float.IsNaN(value) || float.IsInfinity(value)
+                ? 0f
+                : value < 0f ? 0f : value > 1f ? 1f : value;
         }
     }
 }

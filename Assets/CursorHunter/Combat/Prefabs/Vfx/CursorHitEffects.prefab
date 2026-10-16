@@ -52,8 +52,6 @@ MonoBehaviour:
   maximumVisibleEffects: 256
   lifetimeSeconds: 0.5
   sizeMultiplier: 1.2
-  minimumSize: 0.5
-  maximumSize: 2.5
   spawnOffset: {x: 0, y: 0, z: -0.02}
   sortingOrder: 200
   visualRandomSeed: 19770419

@@ -35,9 +35,8 @@ namespace CursorHunter.Progression
 
             var monsters = new Dictionary<string, MonsterInformation>(StringComparer.Ordinal);
             var skills = new Dictionary<string, SkillInformation>(StringComparer.Ordinal);
-            var skillDamageMultipliers = new Dictionary<string, double>(StringComparer.Ordinal);
             foreach (var monster in result.monsters) monsters.Add(monster.id, monster);
-            foreach (var skill in result.skills) { skills.Add(skill.id, skill); skillDamageMultipliers.Add(skill.id, 1d); }
+            foreach (var skill in result.skills) skills.Add(skill.id, skill);
 
             foreach (var category in document.progression.categories)
             {
@@ -60,22 +59,12 @@ namespace CursorHunter.Progression
                         case "skills":
                             var skill = skills[category.id];
                             if (node.operation == "enable") skill.enabled = true;
-                            else if (node.id.EndsWith(".damage", StringComparison.Ordinal)) skillDamageMultipliers[skill.id] *= node.value;
-                            else if (node.id.EndsWith(".radius", StringComparison.Ordinal)) skill.radiusWorldUnits *= (float)node.value;
-                            else if (node.id.EndsWith(".cooldown", StringComparison.Ordinal)) skill.cooldownSeconds *= (float)node.value;
+                            else if (node.operation == "add")
+                                AddSkillUpgrade(skill, node.statId, (float)node.value);
                             break;
                     }
                 }
             }
-            long baseAttackPower = cursorStatDefaults.HasValue
-                ? cursorStatDefaults.Value.AttackPower
-                : document.information.stats.attackPower;
-            double attackRatio = document.progression.scaleSkillDamageWithAttack
-                ? (double)result.stats.attackPower / baseAttackPower
-                : 1d;
-            foreach (var skill in result.skills)
-                skill.damage = ScaleDamage(skill.damage, skillDamageMultipliers[skill.id] * attackRatio);
-
             foreach (var gem in result.gemstones)
             {
                 gem.amount = Math.Max(0, wallet(gem.id));
@@ -86,6 +75,27 @@ namespace CursorHunter.Progression
             }
             if (!result.TryValidate(out string error)) throw new InvalidOperationException("Resolved game data: " + error);
             return result;
+        }
+
+        private static void AddSkillUpgrade(SkillInformation skill,
+            string statId, float delta)
+        {
+            var upgrades = skill.upgrades == null
+                ? new List<SkillStatUpgradeInformation>()
+                : new List<SkillStatUpgradeInformation>(skill.upgrades);
+            for (int i = 0; i < upgrades.Count; i++)
+            {
+                if (upgrades[i].statId != statId) continue;
+                upgrades[i].delta += delta;
+                skill.upgrades = upgrades.ToArray();
+                return;
+            }
+            upgrades.Add(new SkillStatUpgradeInformation
+            {
+                statId = statId,
+                delta = delta
+            });
+            skill.upgrades = upgrades.ToArray();
         }
 
         public static CursorCombatStatBonusesSnapshot CreateCursorCombatStatBonusesSnapshot(
@@ -201,13 +211,6 @@ namespace CursorHunter.Progression
         private static long AddNonNegative(long value, long delta)
         {
             return delta > long.MaxValue - value ? long.MaxValue : value + delta;
-        }
-
-        private static long ScaleDamage(long value, double multiplier)
-        {
-            double scaled = value * multiplier;
-            if (double.IsNaN(scaled) || scaled <= 0) throw new InvalidOperationException("Invalid damage calculation.");
-            return scaled >= long.MaxValue ? long.MaxValue : Math.Max(1L, (long)Math.Round(scaled, MidpointRounding.AwayFromZero));
         }
 
         public static bool IsInitiallyPurchased(GameDataDocument document, UpgradeCategoryData category, UpgradeNodeData node)

@@ -44,22 +44,15 @@
   {
     "design_id": "trait.stat.radius.icon",
     "owner": "Progression",
-    "path": "Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Icon_ItemIcons/512/ItemIcon_Weapon_Shield.png",
-    "guid": "d57fcc99df0714fa8b5dc8e3e3132f14",
-    "status": "runtime-applied"
-  },
-  {
-    "design_id": "trait.stat.multi-click.icon",
-    "owner": "Progression",
-    "path": "Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Icon_ItemIcons/512/ItemIcon_Weapon_Bow.png",
-    "guid": "41a812f0b7e094dde92f3f5fe64429e5",
+    "path": "Assets/DownLoadAssets/IconPack/2D Minimal-IconPack/Icons/512/UI_ETC_Target_02_Blue.png",
+    "guid": "8725c96846cc04e13b9bd0282edb30dd",
     "status": "runtime-applied"
   },
   {
     "design_id": "trait.stat.critical.icon",
     "owner": "Progression",
-    "path": "Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Icon_ItemIcons/512/ItemIcon_Star.png",
-    "guid": "2cc5e317ec48f435aac4bb12606baa4f",
+    "path": "Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/IconMisc/Icon_Fire02.png",
+    "guid": "97b49874aed4b43788d90720bf2b2023",
     "status": "runtime-applied"
   },
   {
@@ -72,8 +65,8 @@
   {
     "design_id": "trait.stat.boss-damage.icon",
     "owner": "Progression",
-    "path": "Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Icon_ItemIcons/512/ItemIcon_Skull02.png",
-    "guid": "5a893ec9b0d664a2ca122e47efbf71f8",
+    "path": "Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/IconMisc/Icon_Skull03.png",
+    "guid": "d77571e140f0144daaad2a7e4ba19c7c",
     "status": "runtime-applied"
   },
   {
@@ -212,36 +205,29 @@
   {
     "design_id": "trait.skill.fireball.icon",
     "owner": "Progression",
-    "path": "Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/IconMisc/Icon_Fire01_512.png",
-    "guid": "393781675fedf45caa73b42273c43781",
+    "path": "Assets/DownLoadAssets/IconPack/2D Minimal-IconPack/Icons/512/Misc_Fire_01_Red.png",
+    "guid": "a70c8c3de09a6455cbaf0b8cf355d184",
     "status": "runtime-applied"
   },
   {
     "design_id": "trait.skill.lightning.icon",
     "owner": "Progression",
-    "path": "Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Icon_ItemIcons/512/ItemIcon_Badge_Energy.png",
-    "guid": "38d138f4bd4964678b146f843d742bd8",
-    "status": "runtime-applied"
-  },
-  {
-    "design_id": "trait.skill.freezing.icon",
-    "owner": "Progression",
-    "path": "Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/IconMisc/Icon_Shield05_512.png",
-    "guid": "1e4f2d388537b4ac6a27a560d6dce4d0",
+    "path": "Assets/DownLoadAssets/IconPack/2D Minimal-IconPack/Icons/512/Stat_Skill_01.png",
+    "guid": "38a8954969c164e11966eb392a34b908",
     "status": "runtime-applied"
   },
   {
     "design_id": "trait.skill.hurricane.icon",
     "owner": "Progression",
-    "path": "Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/IconMisc/Skill1.png",
-    "guid": "c96f62a4ab65749128908e5360e39126",
+    "path": "Assets/DownLoadAssets/IconPack/2D Minimal-IconPack/Icons/512/Misc_Wing_01.png",
+    "guid": "fcd38e409ef5e4edaa3bd7133ec1ec42",
     "status": "runtime-applied"
   },
   {
     "design_id": "trait.skill.meteor.icon",
     "owner": "Progression",
-    "path": "Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Icon_ItemIcons/512/ItemIcon_Weapon_Hammer.png",
-    "guid": "671e13c2a7e8a4415adcc42790d2be55",
+    "path": "Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/IconMisc/Skill1.png",
+    "guid": "c96f62a4ab65749128908e5360e39126",
     "status": "runtime-applied"
   },
   {
@@ -249,28 +235,28 @@
     "owner": "Progression",
     "path": "Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/IconMisc/Skill2.png",
     "guid": "13756a141b0b84db08f0c80f06bb5d45",
-    "status": "runtime-applied"
+    "status": "candidate-not-runtime-verified"
   },
   {
     "design_id": "trait.skill.blizzard.icon",
     "owner": "Progression",
     "path": "Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/IconMisc/Icon_Shield01_512.png",
     "guid": "a46687af72a9a46c6b4abdcdb124292d",
-    "status": "runtime-applied"
+    "status": "candidate-not-runtime-verified"
   },
   {
     "design_id": "trait.skill.arcane-burst.icon",
     "owner": "Progression",
     "path": "Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Icon_ItemIcons/512/ItemIcon_Book02_Teal.png",
     "guid": "8f756722bce404cbc9d04307acec2e27",
-    "status": "runtime-applied"
+    "status": "candidate-not-runtime-verified"
   },
   {
     "design_id": "trait.skill.starfall.icon",
     "owner": "Progression",
     "path": "Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/IconMisc/Icon_Star03_l.png",
     "guid": "bb40abbe6aba34274a8ecf7298f767a2",
-    "status": "runtime-applied"
+    "status": "candidate-not-runtime-verified"
   },
   {
     "design_id": "trait.skill.dragon-breath.icon",
@@ -310,8 +296,8 @@
   {
     "design_id": "trait.skill.freeze.icon",
     "owner": "Progression",
-    "path": "Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/IconMisc/Icon_Shield05_512.png",
-    "guid": "1e4f2d388537b4ac6a27a560d6dce4d0",
+    "path": "Assets/DownLoadAssets/IconPack/2D Minimal-IconPack/Icons/512/Economy_Gem_07_Blue.png",
+    "guid": "381b4004bc4324decb6e29a822246072",
     "status": "runtime-applied"
   },
   {
@@ -345,8 +331,8 @@
   {
     "design_id": "trait.monster.monster2.icon",
     "owner": "Progression",
-    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Bat/Bat_Cave/Body.png",
-    "guid": "46fa022d7d7f6e741ab54b2481f73084",
+    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Fly/Fly_Iron/Body.png",
+    "guid": "2d4b5fe9210026e4f9646afa8d381ba8",
     "status": "runtime-applied"
   },
   {
@@ -373,8 +359,8 @@
   {
     "design_id": "trait.monster.monster4.icon",
     "owner": "Progression",
-    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Ghost/Ghost_Mask/Body.png",
-    "guid": "05f79d22c8aa05941922a68b388ed9cd",
+    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Alien/Alien_Vampire/Body.png",
+    "guid": "fb2ef077ca7cff145b786fe98437bf42",
     "status": "runtime-applied"
   },
   {
@@ -387,8 +373,8 @@
   {
     "design_id": "trait.monster.monster5.icon",
     "owner": "Progression",
-    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Scorpion/Scorpion_Purple/Body.png",
-    "guid": "7e2cacd5ae582be4b8a01ec0292d35b7",
+    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Golem/Golem_Iron/Body.png",
+    "guid": "58ecdefa4b1d13344a5d2d437e661188",
     "status": "runtime-applied"
   },
   {
@@ -401,8 +387,8 @@
   {
     "design_id": "trait.monster.monster6.icon",
     "owner": "Progression",
-    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Fairy/Fairy_Snow/Body.png",
-    "guid": "d8527bbb0c6fabd4fa5a81df3a311acc",
+    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Cactus/Cactus_Snow/Body.png",
+    "guid": "0760c09a431bc7243a8a3895187b7ea1",
     "status": "runtime-applied"
   },
   {
@@ -415,8 +401,8 @@
   {
     "design_id": "trait.monster.monster7.icon",
     "owner": "Progression",
-    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Spider/Spider_Frozen/Body.png",
-    "guid": "27c7f323c4c073a419bda2ab90cc40ea",
+    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Skeleton/Skeleton_Soldier/Body.png",
+    "guid": "fce62f34b0be7a94295f5b4a12f24dca",
     "status": "runtime-applied"
   },
   {
@@ -429,8 +415,8 @@
   {
     "design_id": "trait.monster.monster8.icon",
     "owner": "Progression",
-    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Golem/Golem_Iron/Body.png",
-    "guid": "58ecdefa4b1d13344a5d2d437e661188",
+    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Scorpion/Scorpion_Stone/Body.png",
+    "guid": "2fd0633512126e646a8fe810019b0737",
     "status": "runtime-applied"
   },
   {
@@ -443,8 +429,8 @@
   {
     "design_id": "trait.monster.monster9.icon",
     "owner": "Progression",
-    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Bud/Bud_Fire/Leg.png",
-    "guid": "170b99d1e420c684a975dab96970ac8c",
+    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Bud/Bud_Fire/Body_Fire.png",
+    "guid": "6c63eea5ac3d47f41a4ada2581ce61f3",
     "status": "runtime-applied"
   },
   {
@@ -457,8 +443,8 @@
   {
     "design_id": "trait.monster.monster10.icon",
     "owner": "Progression",
-    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Skeleton/Skeleton_Warlord/Body.png",
-    "guid": "e8a4f1b855cceee4cb4ec88d35ca7636",
+    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Walker/Walker_Box/Body.png",
+    "guid": "9ed7185891b014c4a8a16be35bb06d34",
     "status": "runtime-applied"
   },
   {
@@ -467,5 +453,82 @@
     "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/Prefabs/Skeleton/Skeleton_Warlord.prefab",
     "guid": "1fb07fcfb1fba2e46b61c34b043f72a0",
     "status": "runtime-applied"
+  },
+  {
+    "design_id": "monster.behavior-profile.vanish",
+    "owner": "Data",
+    "path": "Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Vanish.asset",
+    "guid": "d56cfff401af4e5ab650c502e9aca9b3",
+    "status": "runtime-applied",
+    "note": "사라짐 능력 프로필"
+  },
+  {
+    "design_id": "monster.behavior-profile.shield",
+    "owner": "Data",
+    "path": "Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Shield.asset",
+    "guid": "ac42c96b714f44d19200eeaebfee7fc7",
+    "status": "runtime-applied",
+    "note": "주기 방패 능력 프로필"
+  },
+  {
+    "design_id": "monster.behavior-profile.teleport",
+    "owner": "Data",
+    "path": "Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Teleport.asset",
+    "guid": "9a945c3bd638416992231cb585dd44f3",
+    "status": "runtime-applied",
+    "note": "순간이동 능력 프로필"
+  },
+  {
+    "design_id": "monster.behavior-profile.healer",
+    "owner": "Data",
+    "path": "Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Healer.asset",
+    "guid": "44b2ab2a85c64ca59a08b02b0653a315",
+    "status": "runtime-applied",
+    "note": "주변 회복 능력 프로필"
+  },
+  {
+    "design_id": "monster.behavior-profile.resurrector",
+    "owner": "Data",
+    "path": "Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Resurrector.asset",
+    "guid": "a4ee211e582848afac19c68578115ee3",
+    "status": "runtime-applied",
+    "note": "주변 부활 능력 프로필"
+  },
+  {
+    "design_id": "monster.behavior-profile.giant",
+    "owner": "Data",
+    "path": "Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Giant.asset",
+    "guid": "01a7d3c08a6e4d03b4b2771043f81329",
+    "status": "runtime-applied",
+    "note": "대형 몬스터 프로필"
+  },
+  {
+    "design_id": "trait.stat.attack-interval.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Frame/CardFrame01_Demo_Slider_Icon.png",
+    "guid": "2ec93f10f96b7458d9718d95c2487da8",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "trait.stat.field-duration.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/IconMisc/Icon_Timer.png",
+    "guid": "cb04b83a8c3a045558cd1f05866cf45e",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "trait.pet.companion.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Ghost/Ghost_Baby/Body.png",
+    "guid": "8cded0ec98bef594eaa5de79773364e3",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "ui.trait.drag-cursor",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/IconPack/2D Minimal-IconPack/Icons/128/UI_Common_Hand_01.png",
+    "guid": "87129087663ba4d509b75eb67c6a60c0",
+    "status": "runtime-applied",
+    "note": "드래그 중 48px 커서로 축소해 표시"
   }
 ]

@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: Monster06
   m_EditorClassIdentifier: CursorHunter.Data::CursorHunter.Data.MonsterDefinition
   monsterId: monster.06
-  displayName: 사파이어 눈요정
+  displayName: 눈요정
   prefabKey: Fairy/Fairy_Snow
-  visualPrefab: {fileID: 8251008516348628987, guid: 1c1a3180575dcef419ba8e5dd252dc04, type: 3}
+  visualPrefab: {fileID: 7769163388410658323, guid: 6b3d913f0654749b0a6e53692ec8044a, type: 3}
   baseStats:
     maxHealth: 120
     spawnIntervalSeconds: 1.95
@@ -29,4 +29,4 @@ MonoBehaviour:
     bonusDropAmount: 1
     bonusDropChancePercent: 100
   behaviorProfiles:
-  - {fileID: 11400000, guid: 73574b06f4534f82a5d102718018a3cd, type: 2}
+  - {fileID: 11400000, guid: 9a945c3bd638416992231cb585dd44f3, type: 2}

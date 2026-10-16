@@ -31,8 +31,10 @@ namespace CursorHunter.Contracts
                 !Positive(rules.bossFieldDurationSeconds) || rules.globalAliveLimit < 1 || rules.globalAliveLimit > 80 ||
                 rules.perMonsterAliveLimit < 1 || rules.perMonsterAliveLimit > rules.globalAliveLimit)
                 return Fail("Invalid combat rules (maximum 80 alive targets).", out error);
-            if (gemstones.Length != 6 || monsters.Length != 10 || skills.Length != 7)
-                return Fail("Expected 6 gemstones, 10 monsters and 7 skills.", out error);
+            if (gemstones.Length != 6 || monsters.Length != 10 ||
+                (skills.Length != 1 && skills.Length != 4 && skills.Length != 5 &&
+                 skills.Length != 6))
+                return Fail("Expected 6 gemstones, 10 monsters and 1, 4, 5 or 6 skills.", out error);
             string[] gemIds = { "gem.garnet", "gem.topaz", "gem.amethyst", "gem.sapphire", "gem.diamond", "gem.dragon" };
             for (int i = 0; i < gemstones.Length; i++)
             {
@@ -52,14 +54,25 @@ namespace CursorHunter.Contracts
                     monster.behaviorType != MonsterBehaviorType.None)
                     return Fail("Invalid monster data.", out error);
             }
-            string[] skillIds = { "skill.fireball", "skill.lightning", "skill.freeze", "skill.hurricane", "skill.meteor", "skill.dragonBreath", "skill.cursorAura" };
+            string[] skillIds = { "skill.tornado", "skill.headshot",
+                "skill.thunder", "skill.flame_exhaust", "skill.magic_ball",
+                "skill.laser" };
             for (int i = 0; i < skills.Length; i++)
             {
-                var skill = skills[i];
-                if (skill == null || skill.id != skillIds[i] || skill.damage < 1 ||
-                    !Positive(skill.radiusWorldUnits) || !Positive(skill.cooldownSeconds) ||
-                    skill.cooldownSeconds < 0.05f)
-                    return Fail("Invalid skill data.", out error);
+                SkillInformation skill = skills[i];
+                if (skill == null || skill.id != skillIds[i])
+                    return Fail("Invalid skill ID/order.", out error);
+                if (skill.upgrades == null) continue;
+                var seen = new System.Collections.Generic.HashSet<string>(
+                    StringComparer.Ordinal);
+                for (int j = 0; j < skill.upgrades.Length; j++)
+                {
+                    SkillStatUpgradeInformation upgrade = skill.upgrades[j];
+                    if (upgrade == null || !seen.Add(upgrade.statId) ||
+                        !new SkillStatUpgrade(upgrade.statId,
+                            upgrade.delta).IsValidFor(skill.id))
+                        return Fail("Invalid skill upgrade.", out error);
+                }
             }
             return true;
         }
@@ -81,8 +94,14 @@ namespace CursorHunter.Contracts
             for (int i = 0; i < skills.Length; i++)
             {
                 var value = skills[i];
-                skillSnapshots[i] = new SkillCombatSnapshot(value.id, value.enabled, 1f, 1f, 1f,
-                    value.damage, value.radiusWorldUnits, value.cooldownSeconds);
+                SkillStatUpgrade[] upgrades = value.upgrades == null
+                    ? Array.Empty<SkillStatUpgrade>()
+                    : new SkillStatUpgrade[value.upgrades.Length];
+                for (int j = 0; j < upgrades.Length; j++)
+                    upgrades[j] = new SkillStatUpgrade(
+                        value.upgrades[j].statId, value.upgrades[j].delta);
+                skillSnapshots[i] = new SkillCombatSnapshot(value.id,
+                    value.enabled, upgrades);
             }
             var monsterSnapshots = new MonsterCombatSnapshot[monsters.Length];
             for (int i = 0; i < monsters.Length; i++)
@@ -159,9 +178,14 @@ namespace CursorHunter.Contracts
     {
         public string id;
         public bool enabled;
-        public long damage;
-        public float radiusWorldUnits;
-        public float cooldownSeconds;
+        public SkillStatUpgradeInformation[] upgrades;
+    }
+
+    [Serializable]
+    public sealed class SkillStatUpgradeInformation
+    {
+        public string statId;
+        public float delta;
     }
 
 }

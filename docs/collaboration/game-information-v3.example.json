@@ -165,53 +165,34 @@
   ],
   "skills": [
     {
-      "id": "skill.fireball",
-      "enabled": true,
-      "damage": 4,
-      "radiusWorldUnits": 1.5,
-      "cooldownSeconds": 4.5
+      "id": "skill.tornado",
+      "enabled": false,
+      "upgrades": []
     },
     {
-      "id": "skill.lightning",
+      "id": "skill.headshot",
       "enabled": false,
-      "damage": 8,
-      "radiusWorldUnits": 2,
-      "cooldownSeconds": 6
+      "upgrades": []
     },
     {
-      "id": "skill.freeze",
+      "id": "skill.thunder",
       "enabled": false,
-      "damage": 12,
-      "radiusWorldUnits": 1.875,
-      "cooldownSeconds": 7
+      "upgrades": []
     },
     {
-      "id": "skill.hurricane",
+      "id": "skill.flame_exhaust",
       "enabled": false,
-      "damage": 36,
-      "radiusWorldUnits": 2.8125,
-      "cooldownSeconds": 9
+      "upgrades": []
     },
     {
-      "id": "skill.meteor",
+      "id": "skill.magic_ball",
       "enabled": false,
-      "damage": 40,
-      "radiusWorldUnits": 3.4375,
-      "cooldownSeconds": 12
+      "upgrades": []
     },
     {
-      "id": "skill.dragonBreath",
+      "id": "skill.laser",
       "enabled": false,
-      "damage": 250,
-      "radiusWorldUnits": 5.625,
-      "cooldownSeconds": 18
-    },
-    {
-      "id": "skill.cursorAura",
-      "enabled": false,
-      "damage": 1,
-      "radiusWorldUnits": 2,
-      "cooldownSeconds": 1.5
+      "upgrades": []
     }
   ],
   "rules": {

@@ -1,0 +1,62 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &100000
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 100001}
+  - component: {fileID: 100002}
+  m_Layer: 0
+  m_Name: TornadoSkillController
+  m_TagString: Untagged
+  m_IsActive: 1
+--- !u!4 &100001
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100000}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+--- !u!114 &100002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a727c576f7e4b209eaf368aa0508c7e, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: CursorHunter.Combat::CursorHunter.Combat.TornadoSkillController
+  tornadoObjectPrefab: {fileID: 100002, guid: 7d13093b795d4fe9a572219bf923569f, type: 3}
+  worldCamera: {fileID: 0}
+  spawnPlaneZ: 0
+  horizontalViewportPadding: 0.02
+  bottomViewportPadding: 0.09
+  topViewportPadding: 0.15
+  baseStat:
+    Count: 1
+    DurationSeconds: 5
+    DamageMultiplier: 2
+    CooldownSeconds: 8
+    FirstCastDelaySeconds: 1
+    HitIntervalSeconds: 0.5
+    MoveSpeedWorldUnitsPerSecond: 1
+    DirectionChangeSeconds: 3
+    StopChanceOnDirectionChange: 0.25
+    StopDurationSeconds: 0.75
+    ShrinkOutSeconds: 1
+  fieldEdgePaddingWorldUnits: 1.5
+  maximumPooledObjects: 16
+  editorSkillAcquired: 0

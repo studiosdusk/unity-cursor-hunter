@@ -12,15 +12,17 @@ class CombatInformationV3Tests(unittest.TestCase):
 
     def test_complete_pipeline_static_contract(self):
         document = validate_documents()
-        self.assertEqual(len(document["progression"]["categories"]), 23)
-        self.assertEqual(sum(len(c["nodes"]) for c in document["progression"]["categories"]), 111)
+        self.assertEqual(len(document["progression"]["categories"]), 17)
+        self.assertEqual(sum(len(c["nodes"]) for c in document["progression"]["categories"]), 84)
 
     def test_only_resolved_combat_sections_remain(self):
         self.assertEqual(set(self.info), {
             "schemaVersion", "balanceVersion", "stats", "rules", "gemstones", "monsters", "skills"})
         self.assertEqual(self.info["schemaVersion"], 3)
         self.assertEqual(len(self.info["monsters"]), 10)
-        self.assertEqual(len(self.info["skills"]), 7)
+        self.assertEqual([s["id"] for s in self.info["skills"]], [
+            "skill.tornado", "skill.headshot", "skill.thunder",
+            "skill.flame_exhaust", "skill.magic_ball", "skill.laser"])
         for old in ("relic", "fragment", "progression", "entities", "fieldHelp", "implementation"):
             self.assertNotIn(old, json.dumps(self.info))
 
@@ -73,9 +75,9 @@ class CombatInformationV3Tests(unittest.TestCase):
             for retired in ("RelicInformation", "LootFragmentCurrencyId", "_fragmentBalances", "GrantLootFragments"):
                 self.assertNotIn(retired, source, str(path))
         for relative in ("Contracts/Runtime/GameInformation.cs", "Contracts/Runtime/ProgressionCombatSnapshot.cs",
-                         "Contracts/Runtime/SpawnSnapshot.cs", "Combat/Runtime/WalkerStumpTarget.cs"):
+                         "Contracts/Runtime/SpawnSnapshot.cs", "Combat/Runtime/MonsterCombatTarget.cs"):
             self.assertIn("MonsterBehaviorType", (base / relative).read_text())
-        self.assertIn("monster.BehaviorType", (base / "App/Runtime/HuntManager.cs").read_text())
+        self.assertIn("authored.BehaviorType", (base / "App/Runtime/HuntManager.cs").read_text())
 
 
 if __name__ == "__main__":

@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: Monster10
   m_EditorClassIdentifier: CursorHunter.Data::CursorHunter.Data.MonsterDefinition
   monsterId: monster.10
-  displayName: 고대 해골군주
+  displayName: 판도라 상자
   prefabKey: Skeleton/Skeleton_Warlord
-  visualPrefab: {fileID: 4249803776319479360, guid: 1fb07fcfb1fba2e46b61c34b043f72a0, type: 3}
+  visualPrefab: {fileID: 2625415614136960199, guid: 947519fa8f8194135b34e788dd766e0e, type: 3}
   baseStats:
     maxHealth: 450
     spawnIntervalSeconds: 2.55
@@ -29,4 +29,4 @@ MonoBehaviour:
     bonusDropAmount: 1
     bonusDropChancePercent: 100
   behaviorProfiles:
-  - {fileID: 11400000, guid: 75d93b8c58314c00931fce8caf12af10, type: 2}
+  - {fileID: 11400000, guid: a4ee211e582848afac19c68578115ee3, type: 2}

@@ -17,6 +17,9 @@ namespace CursorHunter.Combat
         private int _runSequence;
         private int _targetCount = 8;
         private bool _autoHit = true;
+        private bool _tornadoEnabled;
+        private bool _magicBallEnabled;
+        private bool _laserEnabled;
 
         private void Start()
         {
@@ -62,6 +65,17 @@ namespace CursorHunter.Combat
                 target.Initialize(new SpawnSnapshot("sandbox", "sandbox", 100000L, 1f, 1, 80, 0L),
                     _combat.CurrentRunId);
             }
+            ConfigureSkills();
+        }
+
+        private void ConfigureSkills()
+        {
+            _combat.ConfigureSkills(new[]
+            {
+                new SkillCombatSnapshot(TornadoSkillController.SkillId, _tornadoEnabled),
+                new SkillCombatSnapshot(MagicBallSkillController.SkillId, _magicBallEnabled),
+                new SkillCombatSnapshot(LaserSkillController.SkillId, _laserEnabled)
+            });
         }
 
         private void LateUpdate()
@@ -72,7 +86,7 @@ namespace CursorHunter.Combat
         private void OnGUI()
         {
             if (_combat == null) return;
-            GUILayout.BeginArea(new Rect(12f, 12f, 430f, 180f), GUI.skin.box);
+            GUILayout.BeginArea(new Rect(12f, 12f, 530f, 240f), GUI.skin.box);
             GUILayout.Label("Cursor hit VFX | fixed snapshot | no save data");
             GUILayout.BeginHorizontal();
             if (GUILayout.Button("8 targets")) { _targetCount = 8; Restart(); }
@@ -81,6 +95,24 @@ namespace CursorHunter.Combat
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
             _autoHit = GUILayout.Toggle(_autoHit, "Auto hit");
+            bool tornadoEnabled = GUILayout.Toggle(_tornadoEnabled, "Tornado skill");
+            if (tornadoEnabled != _tornadoEnabled)
+            {
+                _tornadoEnabled = tornadoEnabled;
+                ConfigureSkills();
+            }
+            bool magicBallEnabled = GUILayout.Toggle(_magicBallEnabled, "Magic Ball skill");
+            if (magicBallEnabled != _magicBallEnabled)
+            {
+                _magicBallEnabled = magicBallEnabled;
+                ConfigureSkills();
+            }
+            bool laserEnabled = GUILayout.Toggle(_laserEnabled, "Laser skill");
+            if (laserEnabled != _laserEnabled)
+            {
+                _laserEnabled = laserEnabled;
+                ConfigureSkills();
+            }
             if (GUILayout.Button("Hit once")) _combat.TryAttack(_attack, false);
             if (GUILayout.Button(_combat.IsPaused ? "Resume" : "Pause"))
             {

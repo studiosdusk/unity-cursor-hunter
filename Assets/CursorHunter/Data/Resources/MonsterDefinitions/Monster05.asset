@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: Monster05
   m_EditorClassIdentifier: CursorHunter.Data::CursorHunter.Data.MonsterDefinition
   monsterId: monster.05
-  displayName: 수정 전갈
+  displayName: 갑옷병사
   prefabKey: Scorpion/Scorpion_Purple
-  visualPrefab: {fileID: 3991827156076009884, guid: c6d4b2a09041c4444ac1b1e6cffc0c78, type: 3}
+  visualPrefab: {fileID: 561586964182505770, guid: 7a8d59dbeae2e4c37b145007772eaac7, type: 3}
   baseStats:
     maxHealth: 80
     spawnIntervalSeconds: 1.7999999999999998
@@ -29,4 +29,4 @@ MonoBehaviour:
     bonusDropAmount: 1
     bonusDropChancePercent: 100
   behaviorProfiles:
-  - {fileID: 11400000, guid: 03e0a195361d4bcc9b1c9dfb1e540376, type: 2}
+  - {fileID: 11400000, guid: ac42c96b714f44d19200eeaebfee7fc7, type: 2}

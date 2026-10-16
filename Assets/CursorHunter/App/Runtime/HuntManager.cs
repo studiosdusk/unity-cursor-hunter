@@ -260,6 +260,8 @@ namespace CursorHunter.App
                     runRequest,
                     combatSnapshot,
                     cursorStatBonuses,
+                    progressionSnapshot == null
+                        ? null : progressionSnapshot.Skills,
                     spawnPlan,
                     out string failureReason))
             {
@@ -283,7 +285,6 @@ namespace CursorHunter.App
                 uiRootController.EnterCombat();
             }
 
-            combatRunController.ConfigureSkills(progressionSnapshot == null ? null : progressionSnapshot.Skills);
             cursorController.SetRangeMultiplier(
                 combatRunController.PlayerCombatStatsRuntime.AttackRangeMultiplier);
             cursorController.ShowCursorImage();
@@ -794,7 +795,12 @@ namespace CursorHunter.App
                     authored.HitAreaWidth,
                     authored.HitAreaHeight,
                     authored.OrbitRadius,
-                    authored.OrbitAngularSpeedDegrees);
+                    authored.OrbitAngularSpeedDegrees,
+                    authored.SpecialAbility,
+                    authored.SpecialAbilityIntervalSeconds,
+                    authored.SpecialAbilityDurationSeconds,
+                    authored.SpecialAbilityRadius,
+                    authored.SpecialAbilityStrength);
             }
 
             return authored;
