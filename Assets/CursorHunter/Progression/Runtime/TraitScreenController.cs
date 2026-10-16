@@ -7986,16 +7986,6 @@ namespace CursorHunter.Progression
                     beforeValue = beforeSkill.enabled ? "전투 사용 가능" : "전투 사용 불가";
                     afterValue = afterSkill.enabled ? "전투 사용 가능" : "전투 사용 불가";
                 }
-                else if (id.EndsWith(".damage", StringComparison.Ordinal))
-                {
-                    beforeValue = "피해 " + beforeSkill.damage.ToString("N0", CultureInfo.InvariantCulture);
-                    afterValue = "피해 " + afterSkill.damage.ToString("N0", CultureInfo.InvariantCulture);
-                }
-                else if (id.EndsWith(".radius", StringComparison.Ordinal))
-                {
-                    beforeValue = "범위 " + FormatCompactNumber(beforeSkill.radiusWorldUnits) + "u";
-                    afterValue = "범위 " + FormatCompactNumber(afterSkill.radiusWorldUnits) + "u";
-                }
                 else if (nodeData != null && nodeData.operation == "add" &&
                          !string.IsNullOrEmpty(nodeData.statId))
                 {
@@ -8006,8 +7996,7 @@ namespace CursorHunter.Progression
                 }
                 else
                 {
-                    beforeValue = "재사용 " + FormatCompactNumber(beforeSkill.cooldownSeconds) + "초";
-                    afterValue = "재사용 " + FormatCompactNumber(afterSkill.cooldownSeconds) + "초";
+                    return string.Empty;
                 }
             }
             else if (id.StartsWith("monster.", StringComparison.Ordinal))

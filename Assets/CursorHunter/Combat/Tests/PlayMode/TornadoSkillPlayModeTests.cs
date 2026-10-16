@@ -145,7 +145,7 @@ namespace CursorHunter.Combat.Tests
             int skillHits = 0;
             combat.DamageApplied += hit =>
             {
-                if (hit.Source == CombatDamageSource.Skill && hit.Target == target)
+                if (hit.Source == CombatDamageSource.Skill && ReferenceEquals(hit.Target, target))
                     skillHits++;
             };
             combat.AdvanceTime(0.25f);
