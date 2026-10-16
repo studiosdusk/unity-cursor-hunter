@@ -63,17 +63,17 @@
     {
       "key": "ui.attack",
       "ko": "공격력",
-      "en": "Attack"
+      "en": "Attack Power"
     },
     {
       "key": "ui.radius",
-      "ko": "자동 반경",
-      "en": "Auto Radius"
+      "ko": "공격 반경",
+      "en": "Attack Radius"
     },
     {
       "key": "ui.cooldown",
-      "ko": "쿨타임",
-      "en": "Cooldown"
+      "ko": "공격 간격",
+      "en": "Attack Interval"
     },
     {
       "key": "ui.critical",
@@ -82,13 +82,13 @@
     },
     {
       "key": "ui.boss",
-      "ko": "보스 피해",
-      "en": "Boss Damage"
+      "ko": "보스 피해 배수",
+      "en": "Boss Damage Multiplier"
     },
     {
       "key": "ui.category.fieldDuration",
-      "ko": "필드 지속 시간",
-      "en": "Field Duration"
+      "ko": "일반 필드 시간",
+      "en": "Normal Field Duration"
     },
     {
       "key": "ui.category.petAura",

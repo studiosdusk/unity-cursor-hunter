@@ -1,0 +1,75 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 41bf0dca02eb4e9e8f0ad99aee5fc241, type: 3}
+  m_Name: RelicCollectionCatalog
+  m_EditorClassIdentifier:
+  entries:
+  - title: 빨간 포션
+    icon: {fileID: 21300000, guid: 202231647a7ed4f18933e1eafd9835fb, type: 3}
+    description: 효과 정보 준비 중입니다.
+  - title: 파란 포션
+    icon: {fileID: 21300000, guid: d3ad47b65a3144ea593c0c93a2641474, type: 3}
+    description: 효과 정보 준비 중입니다.
+  - title: 몬스터 고기
+    icon: {fileID: 21300000, guid: d2d8706278c414fb0b8ddf59d6470318, type: 3}
+    description: 효과 정보 준비 중입니다.
+  - title: 도적 신발
+    icon: {fileID: 21300000, guid: 689aab790dfd640a78c6b3890daa0b71, type: 3}
+    description: 효과 정보 준비 중입니다.
+  - title: 궁수의 활
+    icon: {fileID: 21300000, guid: 84e3504adeb474cd78690f0e7ce48a69, type: 3}
+    description: 효과 정보 준비 중입니다.
+  - title: 전사의 갑옷
+    icon: {fileID: 21300000, guid: db45e68c10e784423a0a4aa24c8ba033, type: 3}
+    description: 효과 정보 준비 중입니다.
+  - title: 마법사의 모자
+    icon: {fileID: 21300000, guid: 38a8311eeb6114df7a9bd458e196e082, type: 3}
+    description: 효과 정보 준비 중입니다.
+  - title: 용맹의 반지
+    icon: {fileID: 21300000, guid: 310b8e87e0f624fa587ef446b1885df4, type: 3}
+    description: 효과 정보 준비 중입니다.
+  - title: 행운의 주사위
+    icon: {fileID: 21300000, guid: f3974630efb91453bb0b049b3bd8bc6f, type: 3}
+    description: 효과 정보 준비 중입니다.
+  - title: 크라켄의 눈
+    icon: {fileID: 21300000, guid: e8a913573801943d2b2ff4b562c83f92, type: 3}
+    description: 효과 정보 준비 중입니다.
+  - title: 네잎클로버
+    icon: {fileID: 21300000, guid: 27109c2994c094997b78d1cebc5b277a, type: 3}
+    description: 효과 정보 준비 중입니다.
+  - title: 고대의 서
+    icon: {fileID: 21300000, guid: 562186b060ba241378d482c1154a84e7, type: 3}
+    description: 효과 정보 준비 중입니다.
+  - title: 모험가의 가방
+    icon: {fileID: 21300000, guid: 88d80ec7bf9ed49e18c3e3612ffcbcd1, type: 3}
+    description: 효과 정보 준비 중입니다.
+  - title: 나침반
+    icon: {fileID: 21300000, guid: af47147931c3147a6b130388045bcc5a, type: 3}
+    description: 효과 정보 준비 중입니다.
+  - title: 확성기
+    icon: {fileID: 21300000, guid: 5fb5c6b85663f44e2abe89863eb73bd6, type: 3}
+    description: 효과 정보 준비 중입니다.
+  - title: 망원경
+    icon: {fileID: 21300000, guid: ae1ab6a3c2fd44399a945a071c1d0e8f, type: 3}
+    description: 효과 정보 준비 중입니다.
+  - title: 짱돌
+    icon: {fileID: 21300000, guid: f65cb867da27e48cda237c149b44b8b6, type: 3}
+    description: 효과 정보 준비 중입니다.
+  - title: 무지개 깃털
+    icon: {fileID: 21300000, guid: 894abf050c0dc41b6bab39641a001dff, type: 3}
+    description: 효과 정보 준비 중입니다.
+  - title: 심판의 저울
+    icon: {fileID: 21300000, guid: 0f7806085e32347f39a2f408199654df, type: 3}
+    description: 효과 정보 준비 중입니다.
+  - title: 보물상자
+    icon: {fileID: 21300000, guid: 63b367dbaca5c43d6bd8977f915e4b8c, type: 3}
+    description: 효과 정보 준비 중입니다.

@@ -7,7 +7,9 @@ using CursorHunter.Data;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
+using UnityEngine.Serialization;
 using TMPro;
 
 namespace CursorHunter.Progression
@@ -48,7 +50,7 @@ namespace CursorHunter.Progression
         [SerializeField] private Sprite backIcon;
         [SerializeField] private Sprite attackIcon;
         [SerializeField] private Sprite radiusIcon;
-        [SerializeField] private Sprite clickIcon;
+        [SerializeField, FormerlySerializedAs("clickIcon")] private Sprite attackIntervalIcon;
         [SerializeField] private Sprite timerIcon;
         [SerializeField] private Sprite criticalIcon;
         [SerializeField] private Sprite gemstoneIcon;
@@ -56,14 +58,23 @@ namespace CursorHunter.Progression
         [SerializeField] private Sprite skillIcon;
         [SerializeField] private Sprite monsterIcon;
         [SerializeField] private Sprite petIcon;
+        [SerializeField] private Sprite dragHandCursorSprite;
         [SerializeField] private Sprite[] gemstoneIcons = new Sprite[0];
         [SerializeField] private Sprite[] skillIcons = new Sprite[0];
         [SerializeField] private Sprite[] monsterIcons = new Sprite[0];
         [SerializeField] private Sprite[] petIcons = new Sprite[0];
         [SerializeField] private Font uiFont;
 
+        [Header("Relic Collection")]
+        [SerializeField] private List<RelicDisplayEntry> relicEntries =
+            new List<RelicDisplayEntry>();
+        [SerializeField] private Sprite relicRevealSparkleSprite;
+        [SerializeField] private Sprite relicRevealGlowSprite;
+        [SerializeField] private Sprite relicRevealShardSprite;
+
         [Header("Layout")]
         [SerializeField, Range(0, 2)] private int initialTab;
+        [SerializeField] private bool initialShowRelicCollection;
         [SerializeField, Min(0f)] private float transitionSeconds = 0.14f;
         [SerializeField] private Vector2 nodeCellSize = new Vector2(106f, 106f);
         [SerializeField] private Vector2 nodeGridSpacing = new Vector2(27f, 27f);
@@ -84,6 +95,7 @@ namespace CursorHunter.Progression
         private TraitCatalog _activeCatalog;
         private bool _ownsRuntimeCatalog;
         private bool _isBuilt;
+        private bool _showRelicCollection;
         private TraitTab _activeTab;
         private string _selectedNodeId;
         private long _garnetBalance;
@@ -107,13 +119,24 @@ namespace CursorHunter.Progression
         private RectTransform _runtimeRoot;
         private RectTransform _nodeContent;
         private RectTransform _nodeViewport;
+        private TextMeshProUGUI _screenTitle;
+        private TextMeshProUGUI _screenSubtitle;
+        private Button _researchCategoryButton;
+        private Button _relicCategoryButton;
+        private Button _relicTestModeButton;
+        private TextMeshProUGUI _relicTestModeLabel;
         private RectTransform _gemstoneList;
         private RectTransform _gemstonePanel;
         private TextMeshProUGUI _gemstoneUnlockMessage;
+        private RectTransform _combatStatsPanel;
+        private readonly List<TextMeshProUGUI> _combatStatValues =
+            new List<TextMeshProUGUI>();
         private CanvasGroup _runtimeGroup;
         private CanvasGroup _nodeGroup;
         private TextMeshProUGUI _nodeHeading;
         private TextMeshProUGUI _garnetValue;
+        private Image _selectedHeaderBackground;
+        private Image _selectedHeaderAccent;
         private TextMeshProUGUI _selectedTitle;
         private TextMeshProUGUI _selectedDescription;
         private TextMeshProUGUI _selectedValue;
@@ -132,7 +155,21 @@ namespace CursorHunter.Progression
         private TextMeshProUGUI _tooltipUpgradeLabel;
         private Button _tooltipResetButton;
         private string _tooltipNodeId;
+        private string _hoveredNodeId;
+        private bool _pointerOverTooltip;
         private Coroutine _tooltipAnimation;
+        private Coroutine _tooltipDismissRoutine;
+        private Coroutine _relicRevealRoutine;
+        private GameObject _relicRevealOverlay;
+        private RectTransform _relicRevealTarget;
+        private Outline _relicRevealTargetOutline;
+        private Vector3 _relicRevealTargetOriginalScale;
+        private Color _relicRevealTargetOriginalOutlineColor;
+        private int _pendingRelicRevealIndex = -1;
+        private bool _relicRevealDismissRequested;
+        private GameObject _relicDetailOverlay;
+        private int _selectedRelicIndex = -1;
+        private bool _relicTestMode;
         private Button _upgradeButton;
         private Image _upgradeButtonImage;
         private TextMeshProUGUI _upgradeButtonLabel;
@@ -143,13 +180,16 @@ namespace CursorHunter.Progression
         private RectTransform _summaryOverlayContent;
         private RectTransform _testToolsPanel;
         private TMP_InputField _testGrantAmountInput;
+        private TMP_InputField _testRelicIndexInput;
         private TextMeshProUGUI _testBossTierHeading;
         private Button[] _testBossTierButtons = Array.Empty<Button>();
         private TextMeshProUGUI[] _testBossTierLabels = Array.Empty<TextMeshProUGUI>();
         private Button _testUnlockAllButton;
         private TextMeshProUGUI _testUnlockAllLabel;
         private bool _testToolsOpen;
-        private Texture2D _dragHandCursor;
+        private Image _dragCursorImage;
+        private bool _graphDragCursorActive;
+        private bool _nativeCursorWasVisible;
         private Texture2D _traitBackdropTexture;
         private Sprite _traitBackdropSprite;
         private Coroutine _fitGraphRoutine;
@@ -158,6 +198,48 @@ namespace CursorHunter.Progression
         private Coroutine _nodeTransition;
         private TraitTab _lastBuiltTab;
         private bool _hasBuiltNodeLayout;
+
+        [Serializable]
+        private sealed class RelicDisplayEntry
+        {
+            [SerializeField] private string title;
+            [SerializeField] private Sprite icon;
+            [SerializeField, TextArea(2, 4)] private string description;
+            [SerializeField] private bool isObtained;
+
+            public string Title => title;
+            public Sprite Icon => icon;
+            public string Description => description;
+            public bool IsObtained => isObtained;
+
+            public void SetObtained(bool value)
+            {
+                isObtained = value;
+            }
+
+            public void ApplyPresentationDefaults(
+                string defaultTitle,
+                Sprite defaultIcon,
+                string defaultDescription)
+            {
+                bool hasGenericTitle = !string.IsNullOrWhiteSpace(title) &&
+                    title.StartsWith("유물 ", StringComparison.Ordinal);
+                if (string.IsNullOrWhiteSpace(title) || hasGenericTitle)
+                {
+                    title = defaultTitle;
+                }
+
+                if (icon == null)
+                {
+                    icon = defaultIcon;
+                }
+
+                if (string.IsNullOrWhiteSpace(description))
+                {
+                    description = defaultDescription;
+                }
+            }
+        }
 
         private sealed class BoardNodeEntry
         {
@@ -195,6 +277,8 @@ namespace CursorHunter.Progression
         private const float BoardNodePitchY = 109f;
         private const float MinimumGraphZoom = 0.28f;
         private const float MaximumGraphZoom = 2.1f;
+        private const float RelicGridCardAspect = 2.35f;
+        private const float RelicDetailCardAspect = 0.68f;
         private const string ResearchCoreNodeId = "stat.attack.01";
 
         private static readonly Color LockedColor =
@@ -216,6 +300,8 @@ namespace CursorHunter.Progression
 
         private void Awake()
         {
+            EnsureRelicEntries();
+            ApplyRelicPresentationDefaults();
             HideAuthoredPlaceholders();
             EnsureCanvasScale();
             if (_activeCatalog == null)
@@ -227,6 +313,50 @@ namespace CursorHunter.Progression
                 LoadSavedProgress();
             }
             BuildUi();
+        }
+
+        private void OnValidate()
+        {
+            EnsureRelicEntries();
+        }
+
+        private void EnsureRelicEntries()
+        {
+            if (relicEntries == null)
+            {
+                relicEntries = new List<RelicDisplayEntry>();
+            }
+
+            while (relicEntries.Count < 20)
+            {
+                relicEntries.Add(new RelicDisplayEntry());
+            }
+        }
+
+        private void ApplyRelicPresentationDefaults()
+        {
+            RelicCollectionCatalog defaults =
+                Resources.Load<RelicCollectionCatalog>("RelicCollectionCatalog");
+            if (defaults == null || defaults.Entries == null)
+            {
+                return;
+            }
+
+            int count = Mathf.Min(relicEntries.Count, defaults.Entries.Count);
+            for (int i = 0; i < count; i++)
+            {
+                RelicDisplayEntry entry = relicEntries[i];
+                RelicCollectionCatalogEntry presentation = defaults.Entries[i];
+                if (entry == null || presentation == null)
+                {
+                    continue;
+                }
+
+                entry.ApplyPresentationDefaults(
+                    presentation.Title,
+                    presentation.Icon,
+                    presentation.Description);
+            }
         }
 
         private void OnEnable()
@@ -244,6 +374,49 @@ namespace CursorHunter.Progression
             PlayEnterAnimation();
         }
 
+        private void LateUpdate()
+        {
+            UpdateGraphDragCursorPosition();
+        }
+
+        private void Update()
+        {
+            if (_relicRevealOverlay == null)
+            {
+                return;
+            }
+
+            if (Keyboard.current != null &&
+                (Keyboard.current.escapeKey.wasPressedThisFrame ||
+                 Keyboard.current.enterKey.wasPressedThisFrame ||
+                 Keyboard.current.numpadEnterKey.wasPressedThisFrame))
+            {
+                RequestRelicRevealDismiss();
+                return;
+            }
+
+            Mouse mouse = Mouse.current;
+            if (mouse == null || !mouse.leftButton.wasPressedThisFrame)
+            {
+                return;
+            }
+
+            Vector2 pointerPosition = mouse.position.ReadValue();
+            Camera uiCamera = GetUiCamera();
+            RectTransform focus = _relicRevealOverlay.transform.Find(
+                "RelicRevealFocus") as RectTransform;
+            RectTransform confirm = _relicRevealOverlay.transform.Find(
+                "RelicRevealFocus/RelicRevealConfirm") as RectTransform;
+
+            if ((confirm != null && RectTransformUtility.RectangleContainsScreenPoint(
+                    confirm, pointerPosition, uiCamera)) ||
+                (focus != null && !RectTransformUtility.RectangleContainsScreenPoint(
+                    focus, pointerPosition, uiCamera)))
+            {
+                RequestRelicRevealDismiss();
+            }
+        }
+
         private void OnDisable()
         {
             if (_fitGraphRoutine != null)
@@ -253,6 +426,8 @@ namespace CursorHunter.Progression
             }
             CloseSummaryPopup();
             HideNodeTooltip();
+            CancelRelicReveal();
+            CloseRelicDetail();
             RestoreDragCursor();
             if (_transition != null)
             {
@@ -280,11 +455,6 @@ namespace CursorHunter.Progression
             {
                 Destroy(_traitBackdropTexture);
                 _traitBackdropTexture = null;
-            }
-            if (_dragHandCursor != null)
-            {
-                Destroy(_dragHandCursor);
-                _dragHandCursor = null;
             }
             if (_ownsRuntimeCatalog && _runtimeCatalog != null)
             {
@@ -714,11 +884,48 @@ namespace CursorHunter.Progression
             background.color = backgroundColor;
             background.preserveAspect = false;
             background.raycastTarget = true;
+            _runtimeRoot.gameObject.AddComponent<TraitTooltipDismissRelay>().Bind(this);
 
-            // A full-screen jewel-toned gradient gives the research board
-            // depth without stretching a small combat tile across the canvas.
+            // Use the project's castle landscape as the board artwork. The
+            // subdued tint and the translucent atmosphere layer below keep
+            // the art visible without competing with nodes or text.
+            if (combatBackgroundSprite != null)
+            {
+                RectTransform artworkRect = CreateRect(
+                    "TraitBackdropArtwork",
+                    _runtimeRoot,
+                    Vector2.zero,
+                    Vector2.one,
+                    Vector2.zero,
+                    Vector2.zero,
+                    new Vector2(0.5f, 0.5f));
+                Image artwork = artworkRect.gameObject.AddComponent<Image>();
+                artwork.sprite = combatBackgroundSprite;
+                artwork.type = Image.Type.Simple;
+                artwork.color = new Color(0.46f, 0.53f, 0.65f, 1f);
+                artwork.preserveAspect = false;
+                artwork.raycastTarget = false;
+            }
+
+            // A charcoal-blue veil blends the artwork toward a neutral tone
+            // before the navy gradient, reducing color noise behind the nodes.
+            RectTransform desaturationRect = CreateRect(
+                "TraitBackdropDesaturation",
+                _runtimeRoot,
+                Vector2.zero,
+                Vector2.one,
+                Vector2.zero,
+                Vector2.zero,
+                new Vector2(0.5f, 0.5f));
+            RawImage desaturation = desaturationRect.gameObject.AddComponent<RawImage>();
+            desaturation.texture = Texture2D.whiteTexture;
+            desaturation.color = new Color(0.13f, 0.14f, 0.16f, 0.34f);
+            desaturation.raycastTarget = false;
+
+            // A translucent navy gradient darkens the artwork, while a soft
+            // edge vignette focuses attention on the research board.
             RectTransform gradientRect = CreateRect(
-                "TraitBackdropGradient",
+                "TraitBackdropAtmosphere",
                 _runtimeRoot,
                 Vector2.zero,
                 Vector2.one,
@@ -732,27 +939,6 @@ namespace CursorHunter.Progression
             gradient.preserveAspect = false;
             gradient.raycastTarget = false;
 
-            // Retain only a trace of the game's field tile as a surface grain.
-            // Tiling keeps the source at its imported pixel density.
-            if (combatBackgroundSprite != null)
-            {
-                RectTransform textureRect = CreateRect(
-                    "TraitBackdropFieldTexture",
-                    _runtimeRoot,
-                    Vector2.zero,
-                    Vector2.one,
-                    Vector2.zero,
-                    Vector2.zero,
-                    new Vector2(0.5f, 0.5f));
-                Image fieldTexture = textureRect.gameObject.AddComponent<Image>();
-                fieldTexture.sprite = combatBackgroundSprite;
-                fieldTexture.type = Image.Type.Tiled;
-                fieldTexture.pixelsPerUnitMultiplier = 1f;
-                fieldTexture.color = new Color(0.76f, 0.82f, 1f, 0.055f);
-                fieldTexture.preserveAspect = false;
-                fieldTexture.raycastTarget = false;
-            }
-
             _runtimeGroup = _runtimeRoot.gameObject.AddComponent<CanvasGroup>();
             _runtimeGroup.interactable = true;
             _runtimeGroup.blocksRaycasts = true;
@@ -760,6 +946,7 @@ namespace CursorHunter.Progression
             BuildNodePanel();
             BuildHeader();
             BuildGemstonePanel();
+            BuildCombatStatsPanel();
             BuildFooter();
             // Keep the full-information overlay available to the App HUD,
             // while omitting the always-visible summary and detail columns.
@@ -767,7 +954,14 @@ namespace CursorHunter.Progression
             BuildNodeTooltip();
 
             _isBuilt = true;
-            ShowTab((TraitTab)Mathf.Clamp(initialTab, 0, 2), false);
+            if (initialShowRelicCollection)
+            {
+                ShowRelicCollection(false);
+            }
+            else
+            {
+                ShowTab((TraitTab)Mathf.Clamp(initialTab, 0, 2), false);
+            }
             Canvas.ForceUpdateCanvases();
         }
 
@@ -781,58 +975,30 @@ namespace CursorHunter.Progression
                 false,
                 false)
             {
-                name = "TraitScreen_JewelGradient",
+                name = "TraitScreen_NavyAtmosphereVignette",
                 filterMode = FilterMode.Bilinear,
                 wrapMode = TextureWrapMode.Clamp,
                 hideFlags = HideFlags.DontSave
             };
 
             Color[] pixels = new Color[textureSize * textureSize];
-            Color lower = new Color32(14, 21, 39, 255);
-            Color middle = new Color32(27, 39, 66, 255);
-            Color upper = new Color32(17, 25, 48, 255);
-            Color sapphireGlow = new Color32(64, 96, 142, 255);
-            Color amethystGlow = new Color32(97, 58, 101, 255);
-            Color amberGlow = new Color32(150, 91, 43, 255);
+            Color upperNavy = new Color32(5, 11, 27, 255);
+            Color lowerNavy = new Color32(10, 17, 38, 255);
 
             for (int y = 0; y < textureSize; y++)
             {
                 float v = y / (float)(textureSize - 1);
-                Color vertical = v < 0.56f
-                    ? Color.Lerp(lower, middle, v / 0.56f)
-                    : Color.Lerp(middle, upper, (v - 0.56f) / 0.44f);
+                Color vertical = Color.Lerp(upperNavy, lowerNavy, v);
 
                 for (int x = 0; x < textureSize; x++)
                 {
                     float u = x / (float)(textureSize - 1);
                     Color color = vertical;
-                    color = Color.Lerp(
-                        color,
-                        sapphireGlow,
-                        SoftBackdropGlow(u, v, 0.50f, 0.72f, 0.60f, 0.48f) * 0.22f);
-                    color = Color.Lerp(
-                        color,
-                        amethystGlow,
-                        SoftBackdropGlow(u, v, 0.10f, 0.43f, 0.52f, 0.60f) * 0.15f);
-                    color = Color.Lerp(
-                        color,
-                        amberGlow,
-                        SoftBackdropGlow(u, v, 0.89f, 0.19f, 0.48f, 0.38f) * 0.13f);
-
                     float edge = Mathf.Max(
                         Mathf.Abs(u - 0.5f) * 2f,
                         Mathf.Abs(v - 0.5f) * 2f);
-                    color *= 1f - edge * edge * 0.19f;
-
-                    // A touch of deterministic grain keeps the broad color
-                    // fields from reading like flat vector panels.
-                    int hash = unchecked((x * 374761393) ^ (y * 668265263));
-                    hash = unchecked((hash ^ (hash >> 13)) * 1274126177);
-                    float grain = ((hash & 0xFF) / 255f - 0.5f) * 0.012f;
-                    color.r = Mathf.Clamp01(color.r + grain);
-                    color.g = Mathf.Clamp01(color.g + grain);
-                    color.b = Mathf.Clamp01(color.b + grain);
-                    color.a = 1f;
+                    float vignette = Mathf.SmoothStep(0.42f, 1f, edge);
+                    color.a = Mathf.Lerp(0.52f, 0.63f, v) + vignette * 0.25f;
                     pixels[y * textureSize + x] = color;
                 }
             }
@@ -844,24 +1010,9 @@ namespace CursorHunter.Progression
                 new Rect(0f, 0f, textureSize, textureSize),
                 new Vector2(0.5f, 0.5f),
                 100f);
-            _traitBackdropSprite.name = "TraitScreen_JewelGradientSprite";
+            _traitBackdropSprite.name = "TraitScreen_NavyAtmosphereVignetteSprite";
             _traitBackdropSprite.hideFlags = HideFlags.DontSave;
             return _traitBackdropSprite;
-        }
-
-        private static float SoftBackdropGlow(
-            float u,
-            float v,
-            float centerX,
-            float centerY,
-            float radiusX,
-            float radiusY)
-        {
-            float dx = (u - centerX) / radiusX;
-            float dy = (v - centerY) / radiusY;
-            float distance = Mathf.Sqrt(dx * dx + dy * dy);
-            float falloff = Mathf.Clamp01(1f - distance);
-            return falloff * falloff * (3f - 2f * falloff);
         }
 
         private void BuildHeader()
@@ -871,20 +1022,26 @@ namespace CursorHunter.Progression
                 _runtimeRoot,
                 new Vector2(0f, 1f),
                 new Vector2(0f, 1f),
-                new Vector2(42f, -36f),
-                new Vector2(180f, 70f),
-                new Vector2(0f, 0.5f));
-            CreateText(title, "특성", 32, TextAnchor.MiddleLeft, inkColor, true);
+                new Vector2(42f, -102f),
+                new Vector2(560f, 38f),
+                new Vector2(0f, 1f));
+            _screenTitle = CreateText(
+                title,
+                "특성",
+                32,
+                TextAnchor.MiddleLeft,
+                inkColor,
+                true);
             RectTransform subtitle = CreateRect(
                 "BoardGuide",
                 _runtimeRoot,
                 new Vector2(0f, 1f),
                 new Vector2(0f, 1f),
-                new Vector2(44f, -62f),
-                new Vector2(560f, 26f),
+                new Vector2(44f, -140f),
+                new Vector2(560f, 22f),
                 new Vector2(0f, 1f));
             int nodeCount = CollectBoardEntries().Count;
-            CreateText(
+            _screenSubtitle = CreateText(
                 subtitle,
                 nodeCount.ToString("N0", CultureInfo.InvariantCulture) +
                     "개 연구 · 휠 확대/축소 · 드래그 이동 · 노드 클릭 후 해금/강화",
@@ -896,6 +1053,7 @@ namespace CursorHunter.Progression
             CreateBoardLegend(_runtimeRoot);
             BuildTopCategoryTabs(_runtimeRoot);
             BuildTestTools(_runtimeRoot);
+            BuildRelicTestModeToggle(_runtimeRoot);
             RectTransform status = CreateRect(
                 "ResearchStatusMessage",
                 _runtimeRoot,
@@ -915,48 +1073,106 @@ namespace CursorHunter.Progression
 
         private void BuildTopCategoryTabs(RectTransform parent)
         {
-            RectTransform tabs = CreateRect(
+            float tabsWidth = Mathf.Clamp(parent.rect.width * 0.36f, 470f, 620f);
+            float buttonWidth = (tabsWidth - 32f) * 0.5f;
+            RectTransform tabs = CreatePanel(
                 "ResearchCategoryTabs",
                 parent,
                 new Vector2(0.5f, 1f),
                 new Vector2(0.5f, 1f),
-                new Vector2(-110f, -28f),
-                new Vector2(348f, 54f),
+                new Vector2(0f, -24f),
+                new Vector2(tabsWidth, 78f),
+                panelSprite,
+                new Color(0.025f, 0.055f, 0.105f, 0.96f),
                 new Vector2(0.5f, 1f));
+            Image strip = tabs.GetComponent<Image>();
+            strip.raycastTarget = false;
+            Outline stripOutline = tabs.GetComponent<Outline>();
+            if (stripOutline != null)
+            {
+                stripOutline.effectColor = new Color(0.70f, 0.79f, 0.92f, 0.48f);
+                stripOutline.effectDistance = new Vector2(1f, -1f);
+            }
 
-            Button research = CreateButton(
+            _researchCategoryButton = CreateButton(
                 "ResearchTreeTab",
                 tabs,
-                new Vector2(0.25f, 0.5f),
-                new Vector2(0.25f, 0.5f),
-                Vector2.zero,
-                new Vector2(172f, 48f),
+                new Vector2(0.5f, 0.5f),
+                new Vector2(0.5f, 0.5f),
+                new Vector2(-(buttonWidth * 0.5f + 4f), 0f),
+                new Vector2(buttonWidth, 60f),
                 tabFocusSprite,
-                new Color(1f, 0.73f, 0.24f, 1f),
+                new Color(1f, 0.69f, 0.18f, 1f),
                 "통합 연구",
-                18,
-                inkColor);
-            research.interactable = false;
-            ColorBlock researchColors = research.colors;
-            researchColors.disabledColor = new Color(1f, 0.73f, 0.24f, 1f);
-            research.colors = researchColors;
+                21,
+                new Color(0.16f, 0.10f, 0.05f, 1f));
+            AddButtonIcon(
+                _researchCategoryButton.transform as RectTransform,
+                skillIcon != null ? skillIcon : monsterIcon,
+                new Vector2(18f, 0f));
+            _researchCategoryButton.onClick.AddListener(() => ShowTab(TraitTab.Stat));
 
-            Button relic = CreateButton(
+            _relicCategoryButton = CreateButton(
                 "RelicTab",
                 tabs,
-                new Vector2(0.75f, 0.5f),
-                new Vector2(0.75f, 0.5f),
-                Vector2.zero,
-                new Vector2(164f, 48f),
+                new Vector2(0.5f, 0.5f),
+                new Vector2(0.5f, 0.5f),
+                new Vector2(buttonWidth * 0.5f + 4f, 0f),
+                new Vector2(buttonWidth, 60f),
                 tabSprite,
-                new Color(0.28f, 0.31f, 0.40f, 0.92f),
-                "유물 · 기획 중",
-                16,
-                mutedInkColor);
-            relic.interactable = false;
-            ColorBlock relicColors = relic.colors;
-            relicColors.disabledColor = new Color(0.28f, 0.31f, 0.40f, 0.92f);
-            relic.colors = relicColors;
+                new Color(0.78f, 0.83f, 0.90f, 1f),
+                "유물",
+                21,
+                new Color(0.14f, 0.18f, 0.25f, 1f));
+            AddButtonIcon(
+                _relicCategoryButton.transform as RectTransform,
+                gemstoneIcon != null ? gemstoneIcon : gemIcon,
+                new Vector2(18f, 0f));
+            _relicCategoryButton.onClick.AddListener(() => ShowRelicCollection());
+            RefreshCollectionTabButtons();
+        }
+
+        private void BuildRelicTestModeToggle(RectTransform parent)
+        {
+            _relicTestModeButton = CreateButton(
+                "RelicTestModeToggle",
+                parent,
+                new Vector2(1f, 1f),
+                new Vector2(1f, 1f),
+                new Vector2(-270f, -72f),
+                new Vector2(174f, 36f),
+                null,
+                new Color(0.28f, 0.20f, 0.10f, 0.98f),
+                "유물 개별 테스트",
+                13,
+                inkColor);
+            _relicTestModeLabel = _relicTestModeButton.GetComponentInChildren<TextMeshProUGUI>();
+            _relicTestModeButton.onClick.AddListener(() => SetRelicTestMode(!_relicTestMode));
+            _relicTestModeButton.gameObject.SetActive(false);
+        }
+
+        private void SetRelicTestMode(bool enabled)
+        {
+            _relicTestMode = enabled;
+            if (_relicTestModeLabel != null)
+            {
+                _relicTestModeLabel.text = enabled ? "유물 테스트 종료" : "유물 개별 테스트";
+            }
+            if (_relicTestModeButton != null)
+            {
+                Image image = _relicTestModeButton.GetComponent<Image>();
+                if (image != null)
+                {
+                    image.color = enabled
+                        ? new Color(0.50f, 0.28f, 0.12f, 1f)
+                        : new Color(0.28f, 0.20f, 0.10f, 0.98f);
+                }
+            }
+
+            if (_showRelicCollection)
+            {
+                BuildNodes(false);
+            }
         }
 
         private void CreateBoardLegend(RectTransform parent)
@@ -967,12 +1183,13 @@ namespace CursorHunter.Progression
                 new Vector2(1f, 1f),
                 new Vector2(1f, 1f),
                 new Vector2(-24f, -28f),
-                new Vector2(388f, 28f),
+                new Vector2(492f, 28f),
                 new Vector2(1f, 1f));
-            CreateLegendChip(legend, 0f, "완료", GetBoardStateColor(NodePurchaseState.Purchased));
-            CreateLegendChip(legend, 96f, "가능", GetBoardStateColor(NodePurchaseState.Available));
-            CreateLegendChip(legend, 192f, "재화 부족", GetBoardStateColor(NodePurchaseState.Unaffordable));
-            CreateLegendChip(legend, 292f, "잠김", GetBoardStateColor(NodePurchaseState.Locked));
+            CreateLegendChip(legend, 0f, "1단계", GetRankFrameColor(1));
+            CreateLegendChip(legend, 98f, "2단계", GetRankFrameColor(2));
+            CreateLegendChip(legend, 196f, "3단계", GetRankFrameColor(3));
+            CreateLegendChip(legend, 294f, "4단계", GetRankFrameColor(4));
+            CreateLegendChip(legend, 392f, "5단계", GetRankFrameColor(5));
         }
 
         private void CreateLegendChip(
@@ -999,13 +1216,25 @@ namespace CursorHunter.Progression
                     new Vector2(0f, 0.5f),
                     new Vector2(0f, 0.5f),
                     new Vector2(x + 12f, 0f),
-                    new Vector2(82f, 24f),
+                    new Vector2(70f, 24f),
                     new Vector2(0f, 0.5f)),
                 label,
                 11,
                 TextAnchor.MiddleLeft,
                 mutedInkColor,
                 true);
+        }
+
+        private static Color GetRankFrameColor(int stage)
+        {
+            switch (Mathf.Clamp(stage, 1, 5))
+            {
+                case 1: return new Color(0.94f, 0.96f, 1f, 1f);
+                case 2: return new Color(1f, 0.79f, 0.19f, 1f);
+                case 3: return new Color(0.25f, 0.63f, 1f, 1f);
+                case 4: return new Color(0.72f, 0.43f, 1f, 1f);
+                default: return new Color(1f, 0.30f, 0.36f, 1f);
+            }
         }
 
         private void BuildTestTools(RectTransform parent)
@@ -1030,7 +1259,7 @@ namespace CursorHunter.Progression
                 new Vector2(1f, 1f),
                 new Vector2(1f, 1f),
                 new Vector2(-24f, -116f),
-                new Vector2(360f, 620f),
+                new Vector2(360f, 756f),
                 panelSprite,
                 new Color(0.018f, 0.043f, 0.105f, 0.98f),
                 new Vector2(1f, 1f));
@@ -1122,6 +1351,7 @@ namespace CursorHunter.Progression
             amountText.raycastTarget = false;
             _testGrantAmountInput.textComponent = amountText;
             _testGrantAmountInput.text = "100";
+            amountRect.gameObject.AddComponent<TraitTooltipDismissRelay>().Bind(this);
 
             Button grantAll = CreateButton(
                 "GrantAllGemstones",
@@ -1272,11 +1502,108 @@ namespace CursorHunter.Progression
 
             CreateText(
                 CreateRect(
+                    "TestRelicHeading",
+                    _testToolsPanel,
+                    new Vector2(0f, 1f),
+                    new Vector2(1f, 1f),
+                    new Vector2(18f, -582f),
+                    new Vector2(-36f, 22f),
+                    new Vector2(0.5f, 1f)),
+                "유물 획득 테스트",
+                13,
+                TextAnchor.MiddleLeft,
+                new Color(1f, 0.79f, 0.38f, 1f),
+                true);
+
+            RectTransform relicIndexRect = CreateImageRect(
+                "TestRelicIndex",
+                _testToolsPanel,
+                new Vector2(0f, 1f),
+                new Vector2(0f, 1f),
+                new Vector2(18f, -620f),
+                new Vector2(70f, 34f),
+                null,
+                new Color(0.035f, 0.075f, 0.13f, 1f),
+                new Vector2(0f, 1f));
+            Image relicIndexBackground = relicIndexRect.GetComponent<Image>();
+            relicIndexBackground.raycastTarget = true;
+            _testRelicIndexInput = relicIndexRect.gameObject.AddComponent<TMP_InputField>();
+            _testRelicIndexInput.targetGraphic = relicIndexBackground;
+            _testRelicIndexInput.textViewport = relicIndexRect;
+            _testRelicIndexInput.contentType = TMP_InputField.ContentType.IntegerNumber;
+            _testRelicIndexInput.lineType = TMP_InputField.LineType.SingleLine;
+            _testRelicIndexInput.keyboardType = TouchScreenKeyboardType.NumberPad;
+            _testRelicIndexInput.characterLimit = 2;
+            _testRelicIndexInput.selectionColor = new Color(0.30f, 0.65f, 1f, 0.45f);
+            TextMeshProUGUI relicIndexText = CreateText(
+                CreateRect(
+                    "InputText",
+                    relicIndexRect,
+                    Vector2.zero,
+                    Vector2.one,
+                    new Vector2(8f, 0f),
+                    new Vector2(-16f, -4f),
+                    new Vector2(0.5f, 0.5f)),
+                "1",
+                15,
+                TextAnchor.MiddleCenter,
+                inkColor,
+                true);
+            relicIndexText.raycastTarget = false;
+            _testRelicIndexInput.textComponent = relicIndexText;
+            _testRelicIndexInput.text = "1";
+            relicIndexRect.gameObject.AddComponent<TraitTooltipDismissRelay>().Bind(this);
+
+            Button grantRelic = CreateButton(
+                "GrantTestRelic",
+                _testToolsPanel,
+                new Vector2(0f, 1f),
+                new Vector2(0f, 1f),
+                new Vector2(98f, -620f),
+                new Vector2(120f, 34f),
+                null,
+                new Color(0.69f, 0.43f, 0.20f, 1f),
+                "획득 설정",
+                12,
+                inkColor);
+            grantRelic.onClick.AddListener(() => SetTestRelicObtained(true));
+
+            Button revokeRelic = CreateButton(
+                "RevokeTestRelic",
+                _testToolsPanel,
+                new Vector2(0f, 1f),
+                new Vector2(0f, 1f),
+                new Vector2(226f, -620f),
+                new Vector2(116f, 34f),
+                null,
+                new Color(0.30f, 0.22f, 0.29f, 1f),
+                "획득 취소",
+                12,
+                inkColor);
+            revokeRelic.onClick.AddListener(() => SetTestRelicObtained(false));
+
+            CreateText(
+                CreateRect(
+                    "TestRelicHint",
+                    _testToolsPanel,
+                    new Vector2(0f, 1f),
+                    new Vector2(1f, 1f),
+                    new Vector2(18f, -659f),
+                    new Vector2(-36f, 30f),
+                    new Vector2(0.5f, 1f)),
+                "유물 탭에서 중앙 강조 연출을 확인할 수 있습니다. 번호 1~20",
+                11,
+                TextAnchor.MiddleLeft,
+                mutedInkColor,
+                false);
+
+            CreateText(
+                CreateRect(
                     "TestResetHint",
                     _testToolsPanel,
                     new Vector2(0f, 1f),
                     new Vector2(1f, 1f),
-                    new Vector2(18f, -580f),
+                    new Vector2(18f, -704f),
                     new Vector2(-36f, 34f),
                     new Vector2(0.5f, 1f)),
                 "젬 회수는 연구 상태를 유지합니다. 우측 아래 전체 초기화는 연구도 되돌립니다.",
@@ -1412,6 +1739,58 @@ namespace CursorHunter.Progression
                 _testToolsPanel.gameObject.SetActive(open);
                 if (open) _testToolsPanel.SetAsLastSibling();
             }
+        }
+
+        private void SetTestRelicObtained(bool obtained)
+        {
+            if (!int.TryParse(
+                    _testRelicIndexInput == null ? string.Empty : _testRelicIndexInput.text,
+                    NumberStyles.Integer,
+                    CultureInfo.InvariantCulture,
+                    out int requestedIndex) ||
+                requestedIndex < 1 || requestedIndex > 20)
+            {
+                SetTestStatus("유물 번호는 1~20 사이로 입력하세요.");
+                return;
+            }
+
+            SetTestRelicObtained(requestedIndex - 1, obtained);
+        }
+
+        private void SetTestRelicObtained(int index, bool obtained)
+        {
+            EnsureRelicEntries();
+            if (index < 0 || index >= relicEntries.Count)
+            {
+                return;
+            }
+
+            RelicDisplayEntry entry = relicEntries[index];
+            if (!obtained && _selectedRelicIndex == index)
+            {
+                CloseRelicDetail();
+            }
+            entry.SetObtained(obtained);
+            if (obtained)
+            {
+                _pendingRelicRevealIndex = index;
+            }
+            else if (_pendingRelicRevealIndex == index)
+            {
+                _pendingRelicRevealIndex = -1;
+            }
+
+            if (_showRelicCollection)
+            {
+                SetTestToolsOpen(false);
+                BuildNodes(false);
+            }
+
+            SetTestStatus(obtained
+                ? "유물 " + (index + 1).ToString("00", CultureInfo.InvariantCulture) +
+                    " 획득 상태를 설정했습니다."
+                : "유물 " + (index + 1).ToString("00", CultureInfo.InvariantCulture) +
+                    " 획득 상태를 해제했습니다.");
         }
 
         private void SetTestBossTier(int tier)
@@ -1696,7 +2075,7 @@ namespace CursorHunter.Progression
                 _runtimeRoot,
                 new Vector2(0f, 1f),
                 new Vector2(0f, 1f),
-                new Vector2(28f, -94f),
+                new Vector2(28f, -170f),
                 new Vector2(300f, 230f),
                 null,
                 new Color(0.015f, 0.045f, 0.12f, 0.88f),
@@ -1751,6 +2130,140 @@ namespace CursorHunter.Progression
             RefreshGemstonePanel();
         }
 
+        private void BuildCombatStatsPanel()
+        {
+            _combatStatsPanel = CreatePanel(
+                "CurrentCombatStats",
+                _runtimeRoot,
+                new Vector2(0f, 1f),
+                new Vector2(0f, 1f),
+                Vector2.zero,
+                new Vector2(300f, 246f),
+                panelSprite,
+                new Color(0.018f, 0.043f, 0.105f, 0.94f),
+                new Vector2(0f, 1f));
+
+            CreateText(
+                CreateRect(
+                    "CombatStatsHeading",
+                    _combatStatsPanel,
+                    new Vector2(0f, 1f),
+                    new Vector2(1f, 1f),
+                    new Vector2(14f, -9f),
+                    new Vector2(-28f, 28f),
+                    new Vector2(0.5f, 1f)),
+                "현재 전투 능력치",
+                16,
+                TextAnchor.MiddleLeft,
+                inkColor,
+                true);
+
+            string[] labels =
+            {
+                "공격력", "공격 반경", "공격 간격", "치명타 확률", "보스 피해 배수", "일반 필드 시간"
+            };
+            Sprite[] icons =
+            {
+                attackIcon, radiusIcon, attackIntervalIcon, criticalIcon, bossIcon, timerIcon
+            };
+            for (int i = 0; i < labels.Length; i++)
+            {
+                RectTransform row = CreateRect(
+                    "CombatStatRow_" + i.ToString(CultureInfo.InvariantCulture),
+                    _combatStatsPanel,
+                    new Vector2(0f, 1f),
+                    new Vector2(1f, 1f),
+                    new Vector2(0f, -42f - i * 32f),
+                    new Vector2(-20f, 29f),
+                    new Vector2(0.5f, 1f));
+                Image rowBackground = row.gameObject.AddComponent<Image>();
+                rowBackground.color = new Color(1f, 1f, 1f, i % 2 == 0 ? 0.045f : 0.025f);
+                rowBackground.raycastTarget = false;
+
+                if (icons[i] != null)
+                {
+                    RectTransform icon = CreateImageRect(
+                        "Icon",
+                        row,
+                        new Vector2(0f, 0.5f),
+                        new Vector2(0f, 0.5f),
+                        new Vector2(8f, 0f),
+                        new Vector2(22f, 22f),
+                        icons[i],
+                        Color.white,
+                        new Vector2(0.5f, 0.5f));
+                    icon.GetComponent<Image>().preserveAspect = true;
+                }
+
+                CreateText(
+                    CreateRect(
+                        "Label",
+                        row,
+                        new Vector2(0f, 0.5f),
+                        new Vector2(1f, 0.5f),
+                        new Vector2(39f, 0f),
+                        new Vector2(-116f, 25f),
+                        new Vector2(0f, 0.5f)),
+                    labels[i],
+                    13,
+                    TextAnchor.MiddleLeft,
+                    mutedInkColor,
+                    false);
+                TextMeshProUGUI value = CreateText(
+                    CreateRect(
+                        "Value",
+                        row,
+                        new Vector2(1f, 0.5f),
+                        new Vector2(1f, 0.5f),
+                        new Vector2(-8f, 0f),
+                        new Vector2(104f, 25f),
+                        new Vector2(1f, 0.5f)),
+                    "-",
+                    14,
+                    TextAnchor.MiddleRight,
+                    inkColor,
+                    true);
+                _combatStatValues.Add(value);
+            }
+
+            PositionCombatStatsPanelBelowWallet();
+            RefreshCombatStatsPanel();
+        }
+
+        private void PositionCombatStatsPanelBelowWallet()
+        {
+            if (_combatStatsPanel == null || _gemstonePanel == null)
+            {
+                return;
+            }
+
+            _combatStatsPanel.anchoredPosition = new Vector2(
+                _gemstonePanel.anchoredPosition.x,
+                _gemstonePanel.anchoredPosition.y - _gemstonePanel.sizeDelta.y - 12f);
+        }
+
+        private void RefreshCombatStatsPanel()
+        {
+            if (_combatStatValues.Count < 6 || _document == null)
+            {
+                return;
+            }
+
+            GameInformation information = CreateGameInformation();
+            _combatStatValues[0].text = information.stats.attackPower.ToString(
+                "N0", CultureInfo.InvariantCulture);
+            _combatStatValues[1].text = FormatCompactNumber(
+                information.stats.attackRadiusWorldUnits) + "u";
+            _combatStatValues[2].text = FormatCompactNumber(
+                information.stats.attackCooldownSeconds) + "초";
+            _combatStatValues[3].text = FormatCompactNumber(
+                information.stats.criticalChancePercent) + "%";
+            _combatStatValues[4].text = FormatCompactNumber(
+                information.stats.bossDamageMultiplier) + "×";
+            _combatStatValues[5].text = FormatCompactNumber(
+                information.stats.normalFieldDurationSeconds) + "초";
+        }
+
         private void RefreshGemstonePanel()
         {
             if (_gemstoneList == null)
@@ -1764,7 +2277,6 @@ namespace CursorHunter.Progression
             IReadOnlyList<TraitGemstoneDefinition> definitions =
                 _activeCatalog == null ? null : _activeCatalog.Gemstones;
             int visibleCount = 0;
-            bool hasLockedDefinition = false;
             if (definitions != null)
             {
                 for (int i = 0; i < definitions.Count; i++)
@@ -1778,7 +2290,6 @@ namespace CursorHunter.Progression
                     bool visible = IsGemstoneAvailable(gemstone) || GetGemstoneBalance(i) > 0;
                     if (!visible)
                     {
-                        hasLockedDefinition = true;
                         continue;
                     }
 
@@ -1800,9 +2311,7 @@ namespace CursorHunter.Progression
 
             if (_gemstoneUnlockMessage != null)
             {
-                _gemstoneUnlockMessage.text = hasLockedDefinition
-                    ? "일반 몬스터 처치로 획득"
-                    : "등장한 일반 몬스터가 해당 젬스톤을 공급합니다";
+                _gemstoneUnlockMessage.text = "연구에 사용할 수 있는 재화";
             }
 
             if (_gemstonePanel != null)
@@ -1812,6 +2321,7 @@ namespace CursorHunter.Progression
                 Vector2 panelSize = _gemstonePanel.sizeDelta;
                 panelSize.y = Mathf.Clamp(108f + visibleCount * 38f, 148f, 300f);
                 _gemstonePanel.sizeDelta = panelSize;
+                PositionCombatStatsPanelBelowWallet();
             }
 
             LayoutRebuilder.ForceRebuildLayoutImmediate(_gemstoneList);
@@ -1858,7 +2368,7 @@ namespace CursorHunter.Progression
             }
 
             TextMeshProUGUI label = CreateText(
-                CreateRect("Label", row, new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(44f, 0f), new Vector2(-172f, 0f), new Vector2(0f, 0.5f)),
+                CreateRect("Label", row, new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(44f, 0f), new Vector2(-136f, 0f), new Vector2(0f, 0.5f)),
                 GetGemstoneLocalizedName(gemstone.Id, gemstone.Title),
                 14,
                 TextAnchor.MiddleLeft,
@@ -1868,7 +2378,7 @@ namespace CursorHunter.Progression
 
             long balance = GetGemstoneBalance(gemstoneIndex);
             TextMeshProUGUI value = CreateText(
-                CreateRect("Value", row, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-112f, 0f), new Vector2(62f, 30f), new Vector2(1f, 0.5f)),
+                CreateRect("Value", row, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-16f, 0f), new Vector2(72f, 30f), new Vector2(1f, 0.5f)),
                 balance.ToString(),
                 15,
                 TextAnchor.MiddleRight,
@@ -1879,13 +2389,6 @@ namespace CursorHunter.Progression
                 _garnetValue = value;
             }
 
-            CreateText(
-                CreateRect("Chance", row, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-12f, 0f), new Vector2(88f, 30f), new Vector2(1f, 0.5f)),
-                "몬스터 드롭",
-                12,
-                TextAnchor.MiddleRight,
-                accent,
-                true);
         }
 
         private Sprite GetGemstoneIcon(int index)
@@ -2016,7 +2519,7 @@ namespace CursorHunter.Progression
                 new Color(0.015f, 0.045f, 0.12f, 0.88f),
                 new Vector2(1f, 1f));
 
-            string[] labels = { "공격력", "자동 반경", "쿨타임", "치명타", "보스 피해" };
+            string[] labels = { "공격력", "공격 반경", "공격 간격", "치명타", "보스 피해 배수" };
             for (int i = 0; i < labels.Length; i++)
             {
                 RectTransform card = CreateRect(
@@ -2073,6 +2576,7 @@ namespace CursorHunter.Progression
                 new Vector2(0.5f, 0.5f));
             _nodeViewport = viewport;
             viewport.gameObject.AddComponent<RectMask2D>();
+            viewport.gameObject.AddComponent<TraitTooltipDismissRelay>().Bind(this);
             Image viewportImage = viewport.gameObject.AddComponent<Image>();
             viewportImage.color = Color.clear;
             viewportImage.raycastTarget = true;
@@ -2154,6 +2658,28 @@ namespace CursorHunter.Progression
                 new Color(0.015f, 0.045f, 0.12f, 0.88f),
                 new Vector2(1f, 0.5f));
 
+            RectTransform headerBackground = CreateImageRect(
+                "DetailHeaderBackground",
+                panel,
+                new Vector2(0f, 1f),
+                new Vector2(1f, 1f),
+                new Vector2(0f, -12f),
+                new Vector2(-16f, 168f),
+                null,
+                new Color(0.055f, 0.12f, 0.19f, 0.96f),
+                new Vector2(0.5f, 1f));
+            _selectedHeaderBackground = headerBackground.GetComponent<Image>();
+            _selectedHeaderAccent = CreateImageRect(
+                "DetailHeaderAccent",
+                panel,
+                new Vector2(0f, 1f),
+                new Vector2(1f, 1f),
+                new Vector2(0f, -12f),
+                new Vector2(-16f, 4f),
+                null,
+                GetCategoryAccent(_activeTab),
+                new Vector2(0.5f, 1f)).GetComponent<Image>();
+
             RectTransform heading = CreateRect(
                 "DetailHeading",
                 panel,
@@ -2172,21 +2698,24 @@ namespace CursorHunter.Progression
                 inkColor,
                 true);
             _selectedValue = CreateText(
-                CreateRect("SelectedValue", panel, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, -132f), new Vector2(-36f, 32f), new Vector2(0.5f, 1f)),
+                CreateRect("SelectedValue", panel, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, -132f), new Vector2(-36f, 44f), new Vector2(0.5f, 1f)),
                 "",
-                18,
+                15,
                 TextAnchor.MiddleLeft,
-                new Color(0.90f, 0.50f, 0.15f, 1f),
-                true);
+                new Color(0.91f, 0.95f, 1f, 1f),
+                false);
+            _selectedValue.richText = true;
+            _selectedValue.textWrappingMode = TextWrappingModes.NoWrap;
             _selectedDescription = CreateText(
                 CreateRect("SelectedDescription", panel, new Vector2(0f, 0.5f), new Vector2(1f, 0.5f), new Vector2(0f, 42f), new Vector2(-36f, 120f), new Vector2(0.5f, 0.5f)),
                 "",
                 16,
                 TextAnchor.UpperLeft,
-                mutedInkColor,
+                new Color(0.79f, 0.86f, 0.94f, 1f),
                 false);
 
-            _selectedDescription.overflowMode = TextOverflowModes.Overflow;
+            _selectedDescription.textWrappingMode = TextWrappingModes.Normal;
+            _selectedDescription.overflowMode = TextOverflowModes.Ellipsis;
 
             _selectedCost = CreateText(
                 CreateRect("SelectedCost", panel, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0f, 120f), new Vector2(-36f, 32f), new Vector2(0.5f, 0f)),
@@ -2304,6 +2833,8 @@ namespace CursorHunter.Progression
             }
 
             _tooltipGroup = _tooltipRoot.gameObject.AddComponent<CanvasGroup>();
+            _tooltipRoot.gameObject.AddComponent<TraitTooltipPointerRelay>().Bind(this);
+            _tooltipRoot.gameObject.AddComponent<TraitTooltipDismissRelay>().Bind(this);
 
             CreateImageRect(
                 "AccentRail",
@@ -2650,11 +3181,11 @@ namespace CursorHunter.Progression
 
             CreateSummarySection(_summaryOverlayContent, "플레이어 스탯", GetTabAccent(TraitTab.Stat));
             AddLocalizedInfo("공격력", "attackPower", information.stats.attackPower);
-            AddLocalizedInfo("자동 공격 반경", "attackRadiusWorldUnits", information.stats.attackRadiusWorldUnits);
+            AddLocalizedInfo("공격 반경", "attackRadiusWorldUnits", information.stats.attackRadiusWorldUnits);
             AddLocalizedInfo("공격 간격", "attackCooldownSeconds", information.stats.attackCooldownSeconds);
             AddLocalizedInfo("치명타 확률", "criticalChancePercent", information.stats.criticalChancePercent);
             AddLocalizedInfo("보스 피해 배율", "bossDamageMultiplier", information.stats.bossDamageMultiplier);
-            AddLocalizedInfo("일반 필드 지속 시간", "normalFieldDurationSeconds", information.stats.normalFieldDurationSeconds);
+            AddLocalizedInfo("일반 필드 시간", "normalFieldDurationSeconds", information.stats.normalFieldDurationSeconds);
 
             CreateSummarySection(_summaryOverlayContent, "전투 규칙", new Color(0.88f, 0.48f, 0.34f, 1f));
             AddLocalizedInfo("치명타 피해 배율", "criticalDamageMultiplier", information.rules.criticalDamageMultiplier);
@@ -3044,11 +3575,128 @@ namespace CursorHunter.Progression
 
         private void ShowTab(TraitTab tab, bool animate = true)
         {
+            HideNodeTooltip();
+            CancelRelicReveal();
+            CloseRelicDetail();
+            _showRelicCollection = false;
+            _relicTestMode = false;
+            SetRelicTestMode(false);
             _activeTab = tab;
             _selectedNodeId = null;
             BuildCategories();
+            UpdateHeaderForActiveView();
+            SetCollectionChromeVisible(true);
+            RefreshCollectionTabButtons();
             BuildNodes(animate);
             RefreshSummary();
+        }
+
+        private void ShowRelicCollection(bool animate = true)
+        {
+            CloseRelicDetail();
+            _showRelicCollection = true;
+            _selectedNodeId = null;
+            _tooltipNodeId = null;
+            HideNodeTooltip();
+            CloseSummaryPopup();
+            SetTestToolsOpen(false);
+            UpdateHeaderForActiveView();
+            SetCollectionChromeVisible(false);
+            RefreshCollectionTabButtons();
+            BuildNodes(animate);
+        }
+
+        private void RefreshCollectionTabButtons()
+        {
+            SetCollectionTabButtonState(_researchCategoryButton, !_showRelicCollection);
+            SetCollectionTabButtonState(_relicCategoryButton, _showRelicCollection);
+        }
+
+        private void SetCollectionTabButtonState(Button button, bool selected)
+        {
+            if (button == null)
+            {
+                return;
+            }
+
+            Image image = button.GetComponent<Image>();
+            Color selectedColor = new Color(1f, 0.69f, 0.18f, 1f);
+            Color idleColor = new Color(0.78f, 0.83f, 0.90f, 1f);
+            if (image != null)
+            {
+                image.sprite = selected && tabFocusSprite != null
+                    ? tabFocusSprite
+                    : tabSprite;
+                image.color = selected ? selectedColor : idleColor;
+            }
+
+            TextMeshProUGUI label = button.GetComponentInChildren<TextMeshProUGUI>();
+            if (label != null)
+            {
+                label.color = selected
+                    ? new Color(0.16f, 0.10f, 0.05f, 1f)
+                    : new Color(0.14f, 0.18f, 0.25f, 1f);
+            }
+
+            button.interactable = !selected;
+            ColorBlock colors = button.colors;
+            colors.normalColor = selected ? selectedColor : idleColor;
+            colors.highlightedColor = Color.Lerp(colors.normalColor, Color.white, 0.12f);
+            colors.selectedColor = colors.highlightedColor;
+            colors.pressedColor = Color.Lerp(colors.normalColor, Color.black, 0.10f);
+            colors.disabledColor = selected ? selectedColor : idleColor;
+            button.colors = colors;
+        }
+
+        private void UpdateHeaderForActiveView()
+        {
+            if (_screenTitle != null)
+            {
+                _screenTitle.text = _showRelicCollection ? "유물 보관소" : "특성";
+            }
+
+            if (_screenSubtitle != null)
+            {
+                _screenSubtitle.text = _showRelicCollection
+                    ? "유물 20칸 · 획득 전에는 정보가 공개되지 않습니다"
+                    : CollectBoardEntries().Count.ToString("N0", CultureInfo.InvariantCulture) +
+                        "개 연구 · 휠 확대/축소 · 드래그 이동 · 노드 클릭 후 해금/강화";
+            }
+        }
+
+        private void SetCollectionChromeVisible(bool visible)
+        {
+            if (_runtimeRoot == null)
+            {
+                return;
+            }
+
+            Transform legend = _runtimeRoot.Find("BoardLegend");
+            if (legend != null)
+            {
+                legend.gameObject.SetActive(visible);
+            }
+
+            Transform testToolsToggle = _runtimeRoot.Find("TestToolsToggle");
+            if (testToolsToggle != null)
+            {
+                testToolsToggle.gameObject.SetActive(true);
+            }
+
+            if (_relicTestModeButton != null)
+            {
+                _relicTestModeButton.gameObject.SetActive(!visible);
+            }
+
+            if (_testToolsPanel != null)
+            {
+                _testToolsPanel.gameObject.SetActive(visible && _testToolsOpen);
+            }
+
+            if (_statusMessage != null)
+            {
+                _statusMessage.gameObject.SetActive(visible);
+            }
         }
 
         private void BuildCategories()
@@ -3095,7 +3743,857 @@ namespace CursorHunter.Progression
 
         private void BuildNodes(bool animate)
         {
+            if (_showRelicCollection)
+            {
+                BuildRelicGrid();
+                return;
+            }
+
             BuildUnifiedBoard(animate);
+        }
+
+        private void BuildRelicGrid()
+        {
+            if (_nodeContent == null || _nodeViewport == null)
+            {
+                return;
+            }
+
+            EnsureRelicEntries();
+            HideNodeTooltip();
+            DestroyChildren(_nodeContent);
+            _boardPositionsByNodeId.Clear();
+            _boardNodeRectsById.Clear();
+            Canvas.ForceUpdateCanvases();
+
+            float viewportWidth = Mathf.Max(640f, _nodeViewport.rect.width);
+            float viewportHeight = Mathf.Max(360f, _nodeViewport.rect.height);
+            _nodeContent.localScale = Vector3.one;
+
+            const int columns = 4;
+            const int rows = 5;
+            const float walletClearance = 352f;
+            float rightMargin = Mathf.Max(36f, viewportWidth * 0.035f);
+            float availableWidth = Mathf.Max(
+                4f * 118f + 3f * 16f,
+                viewportWidth - walletClearance - rightMargin);
+            float gapX = Mathf.Clamp(viewportWidth * 0.014f, 16f, 28f);
+            float gapY = Mathf.Clamp(viewportHeight * 0.015f, 8f, 18f);
+            float topMargin = Mathf.Clamp(viewportHeight * 0.14f, 88f, 156f);
+            float bottomMargin = Mathf.Clamp(viewportHeight * 0.08f, 50f, 84f);
+            float availableHeight = Mathf.Max(5f * 84f + 4f * gapY,
+                viewportHeight - topMargin - bottomMargin);
+            float widthByViewport = Mathf.Clamp(
+                (availableWidth - (columns - 1) * gapX) / columns,
+                118f,
+                380f);
+            float heightByViewport =
+                (availableHeight - (rows - 1) * gapY) / rows;
+            float cardWidth = Mathf.Min(
+                widthByViewport,
+                heightByViewport * RelicGridCardAspect);
+            float cardHeight = cardWidth / RelicGridCardAspect;
+            float gridWidth = columns * cardWidth + (columns - 1) * gapX;
+            float gridHeight = rows * cardHeight + (rows - 1) * gapY;
+            float contentWidth = Mathf.Max(
+                viewportWidth,
+                walletClearance + gridWidth + rightMargin);
+            float contentOffsetX = (contentWidth - viewportWidth) * 0.5f;
+            float gridLeft = -contentWidth * 0.5f + walletClearance;
+            float gridCenterY = (bottomMargin - topMargin) * 0.5f;
+            _nodeContent.sizeDelta = new Vector2(contentWidth, viewportHeight);
+            _nodeContent.anchoredPosition = new Vector2(contentOffsetX, 0f);
+
+            for (int index = 0; index < 20; index++)
+            {
+                int row = index / columns;
+                int column = index % columns;
+                Vector2 position = new Vector2(
+                    gridLeft + cardWidth * 0.5f +
+                        column * (cardWidth + gapX),
+                    gridCenterY + gridHeight * 0.5f - cardHeight * 0.5f -
+                        row * (cardHeight + gapY));
+                RelicDisplayEntry entry = relicEntries[index];
+                CreateRelicCard(index, entry, position, new Vector2(cardWidth, cardHeight));
+            }
+
+            PlayPendingRelicReveal();
+        }
+
+        private void CreateRelicCard(
+            int index,
+            RelicDisplayEntry entry,
+            Vector2 position,
+            Vector2 size)
+        {
+            bool obtained = entry != null && entry.IsObtained;
+            Color cardColor = obtained
+                ? new Color(0.11f, 0.16f, 0.23f, 0.97f)
+                : new Color(0.15f, 0.16f, 0.19f, 0.88f);
+            RectTransform card = CreatePanel(
+                "RelicSlot_" + (index + 1).ToString("00", CultureInfo.InvariantCulture),
+                _nodeContent,
+                new Vector2(0.5f, 0.5f),
+                new Vector2(0.5f, 0.5f),
+                position,
+                size,
+                panelSprite,
+                cardColor,
+                new Vector2(0.5f, 0.5f));
+            Image cardImage = card.GetComponent<Image>();
+            cardImage.raycastTarget = true;
+            Outline cardOutline = card.GetComponent<Outline>();
+            if (cardOutline != null)
+            {
+                cardOutline.effectColor = obtained
+                    ? new Color(0.72f, 0.55f, 0.30f, 0.56f)
+                    : new Color(0.59f, 0.62f, 0.67f, 0.54f);
+                cardOutline.effectDistance = new Vector2(2f, -2f);
+            }
+
+            if (!obtained)
+            {
+                Button disabledCard = card.gameObject.AddComponent<Button>();
+                disabledCard.targetGraphic = cardImage;
+                disabledCard.interactable = false;
+                ColorBlock cardColors = disabledCard.colors;
+                cardColors.normalColor = cardColor;
+                cardColors.highlightedColor = Color.Lerp(cardColor, Color.white, 0.08f);
+                cardColors.pressedColor = Color.Lerp(cardColor, Color.black, 0.10f);
+                cardColors.selectedColor = cardColors.highlightedColor;
+                cardColors.disabledColor = new Color(0.43f, 0.45f, 0.49f, 0.76f);
+                cardColors.fadeDuration = 0.08f;
+                disabledCard.colors = cardColors;
+
+                float chainAngle = Mathf.Atan2(size.y * 0.68f, size.x * 0.68f) *
+                    Mathf.Rad2Deg;
+                CreateRelicChain(card, size, chainAngle, "ChainA");
+                CreateRelicChain(card, size, -chainAngle, "ChainB");
+                RectTransform relicLock = CreateImageRect(
+                    "RelicLock",
+                    card,
+                    new Vector2(0.5f, 0.5f),
+                    new Vector2(0.5f, 0.5f),
+                    Vector2.zero,
+                    new Vector2(42f, 42f),
+                    lockIcon,
+                    new Color(0.74f, 0.77f, 0.81f, 0.92f),
+                    new Vector2(0.5f, 0.5f));
+                relicLock.GetComponent<Image>().preserveAspect = true;
+                if (_relicTestMode)
+                {
+                    CreateRelicTestAction(card, index, false);
+                }
+                return;
+            }
+
+            RectTransform icon = CreateImageRect(
+                "RelicIcon",
+                card,
+                new Vector2(0f, 0.5f),
+                new Vector2(0f, 0.5f),
+                new Vector2(24f, 0f),
+                new Vector2(72f, 72f),
+                entry.Icon,
+                entry.Icon == null ? mutedInkColor : Color.white,
+                new Vector2(0f, 0.5f));
+            Image iconImage = icon.GetComponent<Image>();
+            iconImage.preserveAspect = true;
+            if (entry.Icon == null)
+            {
+                iconImage.color = new Color(0f, 0f, 0f, 0f);
+                RectTransform fallbackLabel = CreateRect(
+                    "EmptyIconLabel",
+                    icon,
+                    Vector2.zero,
+                    Vector2.one,
+                    Vector2.zero,
+                    Vector2.zero,
+                    new Vector2(0.5f, 0.5f));
+                CreateText(
+                    fallbackLabel,
+                    "?",
+                    30,
+                    TextAnchor.MiddleCenter,
+                    mutedInkColor,
+                    true);
+            }
+
+            CreateText(
+                CreateRect(
+                "RelicTitle",
+                    card,
+                    new Vector2(0f, 1f),
+                    new Vector2(1f, 1f),
+                    new Vector2(112f, -22f),
+                    new Vector2(-132f, 34f),
+                    new Vector2(0f, 1f)),
+                string.IsNullOrWhiteSpace(entry.Title)
+                    ? "유물 " + (index + 1).ToString("00", CultureInfo.InvariantCulture)
+                    : entry.Title,
+                20,
+                TextAnchor.MiddleLeft,
+                inkColor,
+                true);
+            CreateText(
+                CreateRect(
+                    "RelicDescription",
+                    card,
+                    new Vector2(0f, 0f),
+                    new Vector2(1f, 0.5f),
+                    new Vector2(112f, 10f),
+                    new Vector2(-132f, -8f),
+                    new Vector2(0f, 0.5f)),
+                string.IsNullOrWhiteSpace(entry.Description)
+                    ? "효과 정보 준비 중입니다."
+                    : entry.Description,
+                14,
+                TextAnchor.UpperLeft,
+                mutedInkColor,
+                false);
+
+            if (_relicTestMode)
+            {
+                CreateRelicTestAction(card, index, true);
+            }
+
+            Button detailButton = card.gameObject.AddComponent<Button>();
+            detailButton.targetGraphic = cardImage;
+            detailButton.transition = Selectable.Transition.ColorTint;
+            ColorBlock detailColors = detailButton.colors;
+            detailColors.normalColor = cardColor;
+            detailColors.highlightedColor = Color.Lerp(cardColor, Color.white, 0.10f);
+            detailColors.pressedColor = Color.Lerp(cardColor, Color.black, 0.12f);
+            detailColors.selectedColor = detailColors.highlightedColor;
+            detailColors.fadeDuration = 0.08f;
+            detailButton.colors = detailColors;
+            detailButton.onClick.AddListener(() => ShowRelicDetail(index));
+        }
+
+        private void ShowRelicDetail(int index)
+        {
+            EnsureRelicEntries();
+            if (index < 0 || index >= relicEntries.Count ||
+                relicEntries[index] == null || !relicEntries[index].IsObtained ||
+                _relicDetailOverlay != null || _runtimeRoot == null)
+            {
+                return;
+            }
+
+            RelicDisplayEntry entry = relicEntries[index];
+            RectTransform overlay = CreateRect(
+                "RelicDetailOverlay",
+                _runtimeRoot,
+                Vector2.zero,
+                Vector2.one,
+                Vector2.zero,
+                Vector2.zero,
+                new Vector2(0.5f, 0.5f));
+            Image dimmer = overlay.gameObject.AddComponent<Image>();
+            dimmer.color = new Color(0.015f, 0.025f, 0.055f, 0.88f);
+            dimmer.raycastTarget = true;
+            Button backdropButton = overlay.gameObject.AddComponent<Button>();
+            backdropButton.targetGraphic = dimmer;
+            backdropButton.transition = Selectable.Transition.None;
+            backdropButton.onClick.AddListener(CloseRelicDetail);
+            _relicDetailOverlay = overlay.gameObject;
+            _selectedRelicIndex = index;
+            overlay.SetAsLastSibling();
+
+            float availableHeight = Mathf.Max(280f, _runtimeRoot.rect.height - 72f);
+            float cardHeight = Mathf.Min(560f, availableHeight * 0.86f);
+            float cardWidth = cardHeight * RelicDetailCardAspect;
+            float availableWidth = Mathf.Max(220f, _runtimeRoot.rect.width - 48f);
+            if (cardWidth > availableWidth)
+            {
+                cardWidth = availableWidth;
+                cardHeight = cardWidth / RelicDetailCardAspect;
+            }
+
+            RectTransform card = CreatePanel(
+                "RelicDetailCard",
+                overlay,
+                new Vector2(0.5f, 0.5f),
+                new Vector2(0.5f, 0.5f),
+                Vector2.zero,
+                new Vector2(cardWidth, cardHeight),
+                panelSprite,
+                new Color(0.39f, 0.22f, 0.68f, 0.99f),
+                new Vector2(0.5f, 0.5f));
+            Image cardImage = card.GetComponent<Image>();
+            cardImage.raycastTarget = true;
+            Outline cardOutline = card.GetComponent<Outline>();
+            if (cardOutline != null)
+            {
+                cardOutline.effectColor = new Color(0.95f, 0.78f, 1f, 0.95f);
+                cardOutline.effectDistance = new Vector2(3f, -3f);
+            }
+
+            // This no-op button makes clicks on the card stop at the card
+            // instead of bubbling to the dimmer's close action.
+            Button cardClickBlocker = card.gameObject.AddComponent<Button>();
+            cardClickBlocker.targetGraphic = cardImage;
+            cardClickBlocker.transition = Selectable.Transition.None;
+            cardClickBlocker.onClick.AddListener(() => { });
+
+            CreateText(
+                CreateRect(
+                    "RelicDetailTitle",
+                    card,
+                    new Vector2(0f, 1f),
+                    new Vector2(1f, 1f),
+                    new Vector2(0f, -cardHeight * 0.12f),
+                    new Vector2(-32f, 58f),
+                    new Vector2(0.5f, 0.5f)),
+                string.IsNullOrWhiteSpace(entry.Title)
+                    ? "유물 " + (index + 1).ToString("00", CultureInfo.InvariantCulture)
+                    : entry.Title,
+                27,
+                TextAnchor.MiddleCenter,
+                inkColor,
+                true);
+
+            if (entry.Icon != null)
+            {
+                RectTransform icon = CreateImageRect(
+                    "RelicDetailIcon",
+                    card,
+                    new Vector2(0.5f, 0.5f),
+                    new Vector2(0.5f, 0.5f),
+                    new Vector2(0f, cardHeight * 0.08f),
+                    new Vector2(cardWidth * 0.62f, cardHeight * 0.36f),
+                    entry.Icon,
+                    Color.white,
+                    new Vector2(0.5f, 0.5f));
+                icon.GetComponent<Image>().preserveAspect = true;
+            }
+            else
+            {
+                CreateText(
+                    CreateRect(
+                        "RelicDetailIconPlaceholder",
+                        card,
+                        new Vector2(0.5f, 0.5f),
+                        new Vector2(0.5f, 0.5f),
+                        new Vector2(0f, cardHeight * 0.08f),
+                        new Vector2(cardWidth * 0.62f, cardHeight * 0.24f),
+                        new Vector2(0.5f, 0.5f)),
+                    "이미지 준비 중",
+                    18,
+                    TextAnchor.MiddleCenter,
+                    new Color(0.92f, 0.86f, 1f, 0.9f),
+                    false);
+            }
+
+            CreateText(
+                CreateRect(
+                    "RelicDetailDescription",
+                    card,
+                    new Vector2(0.08f, 0.12f),
+                    new Vector2(0.92f, 0.34f),
+                    Vector2.zero,
+                    new Vector2(-8f, -8f),
+                    new Vector2(0.5f, 0.5f)),
+                string.IsNullOrWhiteSpace(entry.Description)
+                    ? "효과 정보 준비 중입니다."
+                    : entry.Description,
+                19,
+                TextAnchor.UpperCenter,
+                inkColor,
+                true);
+
+            Button closeButton = CreateButton(
+                "RelicDetailClose",
+                card,
+                new Vector2(0.5f, 0f),
+                new Vector2(0.5f, 0f),
+                new Vector2(0f, 30f),
+                new Vector2(Mathf.Min(180f, cardWidth - 48f), 42f),
+                null,
+                new Color(0.13f, 0.075f, 0.22f, 0.98f),
+                "닫기",
+                17,
+                inkColor);
+            closeButton.onClick.AddListener(CloseRelicDetail);
+        }
+
+        private void CloseRelicDetail()
+        {
+            if (_relicDetailOverlay != null)
+            {
+                Destroy(_relicDetailOverlay);
+                _relicDetailOverlay = null;
+            }
+
+            _selectedRelicIndex = -1;
+        }
+
+        private void CreateRelicTestAction(RectTransform card, int index, bool obtained)
+        {
+            Button action = CreateButton(
+                obtained ? "RevokeRelicTest_" + index : "GrantRelicTest_" + index,
+                card,
+                obtained ? new Vector2(1f, 0f) : new Vector2(0.5f, 0f),
+                obtained ? new Vector2(1f, 0f) : new Vector2(0.5f, 0f),
+                obtained ? new Vector2(-10f, 8f) : new Vector2(0f, 8f),
+                new Vector2(82f, 30f),
+                null,
+                obtained
+                    ? new Color(0.34f, 0.18f, 0.21f, 0.98f)
+                    : new Color(0.63f, 0.39f, 0.14f, 0.98f),
+                obtained ? "회수" : "획득",
+                13,
+                inkColor);
+            int capturedIndex = index;
+            bool capturedObtained = obtained;
+            action.onClick.AddListener(() =>
+                SetTestRelicObtained(capturedIndex, !capturedObtained));
+        }
+
+        private void PlayPendingRelicReveal()
+        {
+            if (_pendingRelicRevealIndex < 0 || _relicRevealRoutine != null ||
+                _pendingRelicRevealIndex >= relicEntries.Count)
+            {
+                return;
+            }
+
+            ApplyRelicPresentationDefaults();
+            RelicDisplayEntry entry = relicEntries[_pendingRelicRevealIndex];
+            RectTransform card = _nodeContent.Find(
+                "RelicSlot_" + (_pendingRelicRevealIndex + 1).ToString("00", CultureInfo.InvariantCulture))
+                as RectTransform;
+            if (entry == null || !entry.IsObtained || card == null)
+            {
+                return;
+            }
+
+            int index = _pendingRelicRevealIndex;
+            _pendingRelicRevealIndex = -1;
+            _relicRevealRoutine = StartCoroutine(AnimateRelicReveal(index, card, entry));
+        }
+
+        private IEnumerator AnimateRelicReveal(
+            int index,
+            RectTransform card,
+            RelicDisplayEntry entry)
+        {
+            float availableHeight = Mathf.Max(300f, _runtimeRoot.rect.height - 64f);
+            float overlayHeight = Mathf.Min(720f, availableHeight * 0.84f);
+            float overlayWidth = overlayHeight * RelicDetailCardAspect;
+            float availableWidth = Mathf.Max(240f, _runtimeRoot.rect.width - 48f);
+            if (overlayWidth > availableWidth)
+            {
+                overlayWidth = availableWidth;
+                overlayHeight = overlayWidth / RelicDetailCardAspect;
+            }
+
+            RectTransform overlayRoot = CreateRect(
+                "RelicRevealOverlay",
+                _runtimeRoot,
+                Vector2.zero,
+                Vector2.one,
+                Vector2.zero,
+                Vector2.zero,
+                new Vector2(0.5f, 0.5f));
+            Image dimmer = overlayRoot.gameObject.AddComponent<Image>();
+            dimmer.color = new Color(0.008f, 0.018f, 0.042f, 0.76f);
+            dimmer.raycastTarget = true;
+            Button backdropButton = overlayRoot.gameObject.AddComponent<Button>();
+            backdropButton.targetGraphic = dimmer;
+            backdropButton.transition = Selectable.Transition.None;
+            backdropButton.onClick.AddListener(RequestRelicRevealDismiss);
+            overlayRoot.gameObject
+                .AddComponent<TraitRelicRevealDismissRelay>()
+                .Bind(RequestRelicRevealDismiss);
+            CanvasGroup group = overlayRoot.gameObject.AddComponent<CanvasGroup>();
+            group.alpha = 0f;
+            group.interactable = true;
+            group.blocksRaycasts = true;
+            _relicRevealDismissRequested = false;
+
+            RectTransform burst = CreateRect(
+                "RelicRevealBurst",
+                overlayRoot,
+                new Vector2(0.5f, 0.5f),
+                new Vector2(0.5f, 0.5f),
+                Vector2.zero,
+                new Vector2(overlayWidth * 1.16f, overlayHeight * 0.92f),
+                new Vector2(0.5f, 0.5f));
+            CanvasGroup burstGroup = burst.gameObject.AddComponent<CanvasGroup>();
+            burstGroup.alpha = 0f;
+            RectTransform glow = CreateImageRect(
+                "RelicRevealGlow",
+                burst,
+                new Vector2(0.5f, 0.5f),
+                new Vector2(0.5f, 0.5f),
+                Vector2.zero,
+                new Vector2(overlayWidth * 0.96f, overlayHeight * 0.78f),
+                relicRevealGlowSprite,
+                new Color(1f, 0.72f, 0.24f, 0.30f),
+                new Vector2(0.5f, 0.5f));
+            glow.GetComponent<Image>().raycastTarget = false;
+
+            RectTransform flash = CreateImageRect(
+                "RelicRevealFlash",
+                burst,
+                new Vector2(0.5f, 0.5f),
+                new Vector2(0.5f, 0.5f),
+                Vector2.zero,
+                new Vector2(overlayWidth * 0.72f, overlayWidth * 0.72f),
+                relicRevealSparkleSprite,
+                new Color(1f, 0.91f, 0.61f, 0.46f),
+                new Vector2(0.5f, 0.5f));
+            flash.GetComponent<Image>().preserveAspect = true;
+
+            const int sparkCount = 16;
+            var revealSparks = new List<RectTransform>(sparkCount);
+            var revealSparkTargets = new List<Vector2>(sparkCount);
+            var revealSparkBaseRotations = new List<float>(sparkCount);
+            for (int sparkIndex = 0; sparkIndex < sparkCount; sparkIndex++)
+            {
+                float angle = (360f / sparkCount) * sparkIndex;
+                float radians = angle * Mathf.Deg2Rad;
+                float radius = overlayHeight * (sparkIndex % 2 == 0 ? 0.43f : 0.35f);
+                Vector2 target = new Vector2(
+                    Mathf.Cos(radians) * radius,
+                    Mathf.Sin(radians) * radius);
+                Sprite sparkSprite = sparkIndex % 3 == 0
+                    ? relicRevealShardSprite
+                    : relicRevealSparkleSprite;
+                RectTransform spark = CreateImageRect(
+                    "RevealSpark_" + sparkIndex.ToString("00", CultureInfo.InvariantCulture),
+                    burst,
+                    new Vector2(0.5f, 0.5f),
+                    new Vector2(0.5f, 0.5f),
+                    Vector2.zero,
+                    sparkIndex % 3 == 0 ? new Vector2(11f, 26f) : new Vector2(23f, 23f),
+                    sparkSprite,
+                    sparkIndex % 4 == 0
+                        ? new Color(1f, 0.96f, 0.76f, 1f)
+                        : new Color(1f, 0.78f, 0.35f, 0.96f),
+                    new Vector2(0.5f, 0.5f));
+                spark.GetComponent<Image>().preserveAspect = true;
+                revealSparks.Add(spark);
+                revealSparkTargets.Add(target);
+                revealSparkBaseRotations.Add(angle);
+            }
+
+            RectTransform overlay = CreatePanel(
+                "RelicRevealFocus",
+                overlayRoot,
+                new Vector2(0.5f, 0.5f),
+                new Vector2(0.5f, 0.5f),
+                Vector2.zero,
+                new Vector2(overlayWidth, overlayHeight),
+                panelSprite,
+                new Color(0.24f, 0.13f, 0.43f, 0.99f),
+                new Vector2(0.5f, 0.5f));
+            overlayRoot.SetAsLastSibling();
+            _relicRevealOverlay = overlayRoot.gameObject;
+            Image cardImage = overlay.GetComponent<Image>();
+            cardImage.raycastTarget = true;
+            Button cardClickBlocker = overlay.gameObject.AddComponent<Button>();
+            cardClickBlocker.targetGraphic = cardImage;
+            cardClickBlocker.transition = Selectable.Transition.None;
+            cardClickBlocker.onClick.AddListener(() => { });
+            CreateSquareNodeFrame(overlay, new Color(1f, 0.75f, 0.30f, 0.98f), 7f);
+            CreateSquareNodeFrame(overlay, new Color(1f, 0.88f, 0.54f, 0.30f), 15f);
+            Outline revealOutline = overlay.GetComponent<Outline>();
+            if (revealOutline != null)
+            {
+                revealOutline.effectColor = new Color(1f, 0.84f, 0.48f, 0.98f);
+                revealOutline.effectDistance = new Vector2(4f, -4f);
+            }
+
+            CreateText(
+                CreateRect(
+                    "RevealCaption",
+                    overlay,
+                    new Vector2(0f, 1f),
+                    new Vector2(1f, 1f),
+                    new Vector2(0f, -overlayHeight * 0.065f),
+                    new Vector2(-40f, 40f),
+                    new Vector2(0.5f, 1f)),
+                "새 유물 획득",
+                19,
+                TextAnchor.MiddleCenter,
+                new Color(1f, 0.84f, 0.53f, 1f),
+                true);
+
+            CreateText(
+                CreateRect(
+                    "RevealTitle",
+                    overlay,
+                    new Vector2(0f, 1f),
+                    new Vector2(1f, 1f),
+                    new Vector2(0f, -overlayHeight * 0.17f),
+                    new Vector2(-48f, 64f),
+                    new Vector2(0.5f, 1f)),
+                string.IsNullOrWhiteSpace(entry.Title)
+                    ? "유물 " + (index + 1).ToString("00", CultureInfo.InvariantCulture)
+                    : entry.Title,
+                31,
+                TextAnchor.MiddleCenter,
+                inkColor,
+                true);
+
+            if (entry.Icon != null)
+            {
+                RectTransform icon = CreateImageRect(
+                    "RevealIcon",
+                    overlay,
+                    new Vector2(0.5f, 0.5f),
+                    new Vector2(0.5f, 0.5f),
+                    new Vector2(0f, overlayHeight * 0.12f),
+                    new Vector2(overlayWidth * 0.48f, overlayHeight * 0.30f),
+                    entry.Icon,
+                    Color.white,
+                    new Vector2(0.5f, 0.5f));
+                icon.GetComponent<Image>().preserveAspect = true;
+            }
+            else
+            {
+                CreateText(
+                    CreateRect(
+                        "RevealPlaceholder",
+                        overlay,
+                        new Vector2(0.5f, 0.5f),
+                        new Vector2(0.5f, 0.5f),
+                        new Vector2(0f, overlayHeight * 0.12f),
+                        new Vector2(overlayWidth * 0.48f, overlayHeight * 0.30f),
+                        new Vector2(0.5f, 0.5f)),
+                    "?",
+                    64,
+                    TextAnchor.MiddleCenter,
+                    new Color(1f, 0.82f, 0.42f, 1f),
+                    true);
+            }
+
+            CreateText(
+                CreateRect(
+                    "RevealDescription",
+                    overlay,
+                    new Vector2(0f, 0f),
+                    new Vector2(1f, 0.42f),
+                    new Vector2(0f, overlayHeight * 0.025f),
+                    new Vector2(-48f, -24f),
+                    new Vector2(0.5f, 0f)),
+                string.IsNullOrWhiteSpace(entry.Description)
+                    ? "효과 정보 준비 중입니다."
+                    : entry.Description,
+                21,
+                TextAnchor.UpperCenter,
+                inkColor,
+                false);
+
+            Button confirmButton = CreateButton(
+                "RelicRevealConfirm",
+                overlay,
+                new Vector2(0.5f, 0f),
+                new Vector2(0.5f, 0f),
+                new Vector2(0f, overlayHeight * 0.075f),
+                new Vector2(Mathf.Min(overlayWidth - 72f, 280f), 58f),
+                null,
+                new Color(0.43f, 0.25f, 0.08f, 1f),
+                "획득",
+                21,
+                inkColor);
+            confirmButton.onClick.AddListener(RequestRelicRevealDismiss);
+            confirmButton.gameObject
+                .AddComponent<TraitRelicRevealDismissRelay>()
+                .Bind(RequestRelicRevealDismiss);
+
+            const float appearDuration = 0.72f;
+            float elapsed = 0f;
+            while (elapsed < appearDuration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float t = Mathf.Clamp01(elapsed / appearDuration);
+                float eased = 1f - Mathf.Pow(1f - t, 3f);
+                group.alpha = eased;
+                float pop = t < 0.72f
+                    ? Mathf.Lerp(0.48f, 1.12f, 1f - Mathf.Pow(1f - t / 0.72f, 3f))
+                    : Mathf.Lerp(1.12f, 1f, (t - 0.72f) / 0.28f);
+                overlay.localScale = Vector3.one * pop;
+                burstGroup.alpha = Mathf.SmoothStep(0f, 0.96f, Mathf.Min(1f, t * 2f));
+                float spread = Mathf.SmoothStep(0f, 1f, Mathf.Min(1f, t * 1.5f));
+                burst.localScale = Vector3.one * Mathf.Lerp(0.72f, 1.08f, spread);
+                burst.localRotation = Quaternion.Euler(0f, 0f, Mathf.Lerp(-22f, 4f, eased));
+                flash.localScale = Vector3.one * Mathf.Lerp(0.22f, 0.92f, spread);
+                flash.localRotation = Quaternion.Euler(0f, 0f, Mathf.Lerp(-24f, 12f, eased));
+                for (int sparkIndex = 0; sparkIndex < revealSparks.Count; sparkIndex++)
+                {
+                    RectTransform spark = revealSparks[sparkIndex];
+                    spark.anchoredPosition = revealSparkTargets[sparkIndex] * spread;
+                    float sparkScale = Mathf.Lerp(0.15f, 1f, spread);
+                    spark.localScale = Vector3.one * sparkScale;
+                    spark.localRotation = Quaternion.Euler(
+                        0f,
+                        0f,
+                        revealSparkBaseRotations[sparkIndex] + t * 32f);
+                }
+                yield return null;
+            }
+
+            confirmButton.interactable = true;
+            while (!_relicRevealDismissRequested && _relicRevealOverlay != null)
+            {
+                overlay.localScale = Vector3.one * (1f + Mathf.Sin(Time.unscaledTime * 2.4f) * 0.012f);
+                burst.localRotation *= Quaternion.Euler(0f, 0f, Time.unscaledDeltaTime * 7f);
+                flash.localRotation *= Quaternion.Euler(0f, 0f, Time.unscaledDeltaTime * 3f);
+                yield return null;
+            }
+
+            backdropButton.interactable = false;
+            confirmButton.interactable = false;
+            Vector3[] corners = new Vector3[4];
+            card.GetWorldCorners(corners);
+            Vector2 targetScreen = RectTransformUtility.WorldToScreenPoint(
+                GetUiCamera(),
+                (corners[0] + corners[2]) * 0.5f);
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                    _runtimeRoot,
+                    targetScreen,
+                    GetUiCamera(),
+                    out Vector2 targetLocal))
+            {
+                targetLocal = card.anchoredPosition;
+            }
+
+            float targetScale = Mathf.Clamp(
+                Mathf.Min(card.rect.width / overlayWidth, card.rect.height / overlayHeight),
+                0.18f,
+                0.72f);
+            Vector2 startPosition = overlay.anchoredPosition;
+            const float travelDuration = 0.42f;
+            elapsed = 0f;
+            while (elapsed < travelDuration && card != null)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float t = Mathf.Clamp01(elapsed / travelDuration);
+                float eased = 1f - Mathf.Pow(1f - t, 3f);
+                overlay.anchoredPosition = Vector2.Lerp(startPosition, targetLocal, eased);
+                overlay.localScale = Vector3.one * Mathf.Lerp(1f, targetScale, eased);
+                burst.localScale = Vector3.one * Mathf.Lerp(1.08f, 0.28f, eased);
+                burstGroup.alpha = 1f - eased;
+                group.alpha = 1f - eased;
+                yield return null;
+            }
+
+            if (card != null)
+            {
+                Outline outline = card.GetComponent<Outline>();
+                Color previousOutline = outline == null ? Color.clear : outline.effectColor;
+                Vector3 previousScale = card.localScale;
+                _relicRevealTarget = card;
+                _relicRevealTargetOutline = outline;
+                _relicRevealTargetOriginalScale = previousScale;
+                _relicRevealTargetOriginalOutlineColor = previousOutline;
+                if (outline != null)
+                {
+                    outline.effectColor = new Color(1f, 0.79f, 0.32f, 1f);
+                }
+
+                const float cardPulseDuration = 0.42f;
+                elapsed = 0f;
+                while (elapsed < cardPulseDuration && card != null)
+                {
+                    elapsed += Time.unscaledDeltaTime;
+                    float t = Mathf.Clamp01(elapsed / cardPulseDuration);
+                    float pulse = 1f + Mathf.Sin(t * Mathf.PI) * 0.15f;
+                    card.localScale = previousScale * pulse;
+                    if (outline != null)
+                    {
+                        Color focus = new Color(1f, 0.78f, 0.31f, 1f - t * 0.4f);
+                        outline.effectColor = Color.Lerp(previousOutline, focus, 1f - t * 0.2f);
+                    }
+                    yield return null;
+                }
+
+                if (card != null) card.localScale = previousScale;
+                if (outline != null) outline.effectColor = previousOutline;
+                _relicRevealTarget = null;
+                _relicRevealTargetOutline = null;
+            }
+
+            if (_relicRevealOverlay != null)
+            {
+                Destroy(_relicRevealOverlay);
+                _relicRevealOverlay = null;
+            }
+
+            _relicRevealRoutine = null;
+            _relicRevealDismissRequested = false;
+            PlayPendingRelicReveal();
+        }
+
+        private void RequestRelicRevealDismiss()
+        {
+            if (_relicRevealOverlay != null)
+            {
+                _relicRevealDismissRequested = true;
+            }
+        }
+
+        private void CancelRelicReveal()
+        {
+            if (_relicRevealRoutine != null)
+            {
+                StopCoroutine(_relicRevealRoutine);
+                _relicRevealRoutine = null;
+            }
+
+            if (_relicRevealTarget != null)
+            {
+                _relicRevealTarget.localScale = _relicRevealTargetOriginalScale;
+            }
+            if (_relicRevealTargetOutline != null)
+            {
+                _relicRevealTargetOutline.effectColor = _relicRevealTargetOriginalOutlineColor;
+            }
+            _relicRevealTarget = null;
+            _relicRevealTargetOutline = null;
+
+            if (_relicRevealOverlay != null)
+            {
+                Destroy(_relicRevealOverlay);
+                _relicRevealOverlay = null;
+            }
+
+            _relicRevealDismissRequested = false;
+        }
+
+        private void CreateRelicChain(
+            RectTransform parent,
+            Vector2 cardSize,
+            float angleDegrees,
+            string objectName)
+        {
+            const int linksPerChain = 9;
+            float span = cardSize.x * 0.76f;
+            float slope = Mathf.Tan(angleDegrees * Mathf.Deg2Rad);
+            for (int linkIndex = 0; linkIndex < linksPerChain; linkIndex++)
+            {
+                float t = (linkIndex / (float)(linksPerChain - 1)) - 0.5f;
+                float x = t * span;
+                float y = x * slope;
+                RectTransform link = CreateImageRect(
+                    objectName + "_Link_" + linkIndex.ToString("00", CultureInfo.InvariantCulture),
+                    parent,
+                    new Vector2(0.5f, 0.5f),
+                    new Vector2(0.5f, 0.5f),
+                    new Vector2(x, y),
+                    new Vector2(18f, 9f),
+                    null,
+                    new Color(0.28f, 0.31f, 0.36f, 0.86f),
+                    new Vector2(0.5f, 0.5f));
+                link.localRotation = Quaternion.Euler(0f, 0f, angleDegrees);
+                Outline outline = link.gameObject.AddComponent<Outline>();
+                outline.effectColor = new Color(0.68f, 0.70f, 0.74f, 0.74f);
+                outline.effectDistance = new Vector2(1f, -1f);
+                outline.useGraphicAlpha = true;
+            }
         }
 
         private void BuildUnifiedBoard(bool animate)
@@ -3144,8 +4642,8 @@ namespace CursorHunter.Progression
             }
 
             _nodeContent.sizeDelta = new Vector2(
-                (maxX - minX) * BoardNodePitchX + BoardNodeSize + 120f,
-                (maxY - minY) * BoardNodePitchY + BoardNodeSize + 120f);
+                Mathf.Max(Mathf.Abs(minX), Mathf.Abs(maxX)) * 2f * BoardNodePitchX + BoardNodeSize + 120f,
+                Mathf.Max(Mathf.Abs(minY), Mathf.Abs(maxY)) * 2f * BoardNodePitchY + BoardNodeSize + 120f);
 
             // Every visible connection follows the square grid. Drawing each
             // east/north edge once creates a single open network around the
@@ -3188,12 +4686,28 @@ namespace CursorHunter.Progression
                 {
                     feedback.SetScaleFeedback(1.14f, 0.94f, 0.14f);
                     feedback.PointerEntered += data => HandleNodePointerEnter(captured, data);
+                    feedback.PointerExited += data => HandleNodePointerExit(
+                        captured,
+                        button.transform as RectTransform);
                 }
             }
 
-            _selectedNodeId = string.IsNullOrEmpty(_tooltipNodeId)
-                ? _selectedNodeId
-                : _tooltipNodeId;
+            if (!string.IsNullOrEmpty(_tooltipNodeId) &&
+                !_boardNodeRectsById.ContainsKey(_tooltipNodeId))
+            {
+                HideNodeTooltip();
+            }
+            if (!string.IsNullOrEmpty(_tooltipNodeId))
+            {
+                _selectedNodeId = _tooltipNodeId;
+            }
+            if (string.IsNullOrEmpty(_selectedNodeId) ||
+                !_boardNodeRectsById.ContainsKey(_selectedNodeId))
+            {
+                _selectedNodeId = _boardNodeRectsById.ContainsKey(ResearchCoreNodeId)
+                    ? ResearchCoreNodeId
+                    : ordered[0].Node.Id;
+            }
             UpdateNodeSelectionFrame();
             Canvas.ForceUpdateCanvases();
             if (preserveView)
@@ -3250,6 +4764,10 @@ namespace CursorHunter.Progression
                         {
                             continue;
                         }
+                        if (!ShouldShowBoardNode(node))
+                        {
+                            continue;
+                        }
 
                         result.Add(new BoardNodeEntry
                         {
@@ -3265,6 +4783,45 @@ namespace CursorHunter.Progression
             }
 
             return result;
+        }
+
+        private bool ShouldShowBoardNode(TraitNodeDefinition node)
+        {
+            if (node == null) return false;
+            if (IsPurchased(node) ||
+                string.Equals(node.Id, ResearchCoreNodeId, StringComparison.Ordinal))
+            {
+                return true;
+            }
+
+            if (node.AcquisitionOnly)
+            {
+                return false;
+            }
+
+            if (testModeUnlockAll)
+            {
+                return true;
+            }
+
+            return _purchased.Contains(ResearchCoreNodeId) &&
+                IsPrerequisiteMet(node) &&
+                HasRequiredBossTierUnlockedThroughChain(node);
+        }
+
+        private bool HasRequiredBossTierUnlockedThroughChain(TraitNodeDefinition node)
+        {
+            var visited = new HashSet<string>(StringComparer.Ordinal);
+            TraitNodeDefinition current = node;
+            while (current != null && visited.Add(current.Id))
+            {
+                if (current.RequiredBossTier > unlockedBossTier) return false;
+                current = string.IsNullOrEmpty(current.PrerequisiteNodeId)
+                    ? null
+                    : FindNode(current.PrerequisiteNodeId);
+            }
+
+            return true;
         }
 
         private List<BoardNodeEntry> OrderBoardEntries(List<BoardNodeEntry> entries)
@@ -3630,8 +5187,8 @@ namespace CursorHunter.Progression
             }
 
             TraitGemstoneDefinition gemstone = GetGemstoneDefinitionById(node.CostGemstoneId);
-            bool currencyUnlocked = testModeUnlockAll || node.Cost <= 0 ||
-                IsGemstoneAvailable(gemstone);
+            bool currencyUnlocked = testModeUnlockAll || testModeFreeUpgrades || node.Cost <= 0 ||
+                IsGemstoneAvailable(gemstone) || GetNodeBalance(node) > 0;
             bool hasCurrency = currencyUnlocked &&
                 (testModeFreeUpgrades || node.Cost <= 0 ||
                     GetNodeBalance(node) >= node.Cost);
@@ -3689,12 +5246,45 @@ namespace CursorHunter.Progression
             }
         }
 
+        private Color GetBoardNodeRankColor(BoardNodeEntry entry)
+        {
+            if (entry == null || entry.Node == null)
+            {
+                return GetRankFrameColor(1);
+            }
+
+            TraitNodeDefinition node = entry.Node;
+            int stage;
+            if (entry.Tab == TraitTab.Stat)
+            {
+                int rank = GetTrailingRank(node.Id);
+                stage = rank > 0 ? rank : node.RequiredBossTier + 1;
+            }
+            else
+            {
+                string prefix = entry.Tab == TraitTab.Skill ? "skill." : "monster.";
+                if (IsRootEntityNode(node.Id, prefix))
+                {
+                    stage = node.RequiredBossTier + 1;
+                }
+                else
+                {
+                    TraitNodeDefinition root = FindNode(GetEntityRootId(node.Id, prefix));
+                    int bossTier = root == null
+                        ? node.RequiredBossTier
+                        : Mathf.Max(node.RequiredBossTier, root.RequiredBossTier);
+                    stage = bossTier + 2;
+                }
+            }
+
+            return GetRankFrameColor(stage);
+        }
+
         private Button CreateBoardNode(BoardNodeEntry entry, NodePurchaseState state)
         {
-            Color stateColor = GetBoardNodeColor(entry, state);
+            Color rankColor = GetBoardNodeRankColor(entry);
             bool purchased = state == NodePurchaseState.Purchased;
             bool available = state == NodePurchaseState.Available;
-            bool concealed = state == NodePurchaseState.Locked;
             bool unaffordable = state == NodePurchaseState.Unaffordable;
             bool isCore = string.Equals(
                 entry.Node.Id,
@@ -3702,11 +5292,7 @@ namespace CursorHunter.Progression
                 StringComparison.Ordinal);
             Color fill = purchased
                 ? new Color(0.14f, 0.16f, 0.20f, 0.98f)
-                : available
-                    ? Color.Lerp(new Color(0.025f, 0.035f, 0.055f, 0.98f), stateColor, 0.22f)
-                    : state == NodePurchaseState.Unaffordable
-                        ? Color.Lerp(new Color(0.035f, 0.025f, 0.045f, 0.98f), stateColor, 0.12f)
-                        : Color.Lerp(new Color(0.025f, 0.03f, 0.05f, 0.98f), stateColor, 0.10f);
+                : new Color(0.018f, 0.024f, 0.038f, 0.99f);
 
             Button button = CreateButton(
                 "Node_" + entry.Node.Id,
@@ -3726,75 +5312,36 @@ namespace CursorHunter.Progression
             RectTransform buttonRect = button.transform as RectTransform;
             CreateSquareNodeFrame(
                 buttonRect,
-                new Color(stateColor.r, stateColor.g, stateColor.b, 0.17f),
+                new Color(rankColor.r, rankColor.g, rankColor.b, 0.20f),
                 isCore ? 11f : 9f);
-            CreateSquareNodeFrame(buttonRect, stateColor, isCore ? 5f : 4.5f);
+            CreateSquareNodeFrame(buttonRect, rankColor, isCore ? 5f : 4.5f);
             RectTransform selectionFrame = CreateSquareNodeSelectionFrame(buttonRect);
             selectionFrame.gameObject.SetActive(
                 string.Equals(entry.Node.Id, _selectedNodeId, StringComparison.Ordinal));
 
-            if (concealed)
+            Sprite icon = GetNodeIcon(
+                entry.Tab,
+                entry.Category,
+                entry.Node,
+                entry.CategoryIndex,
+                entry.FlatIndex);
+            if (icon != null)
             {
-                if (lockIcon != null)
-                {
-                    RectTransform lockRect = CreateImageRect(
-                        "LockSymbol",
-                        buttonRect,
-                        new Vector2(0.5f, 0.5f),
-                        new Vector2(0.5f, 0.5f),
-                        Vector2.zero,
-                        new Vector2(30f, 30f),
-                        lockIcon,
-                        new Color(0.90f, 0.91f, 0.96f, 0.94f),
-                        new Vector2(0.5f, 0.5f));
-                    lockRect.GetComponent<Image>().preserveAspect = true;
-                }
-                else
-                {
-                    CreateText(
-                        CreateRect(
-                            "UnknownMark",
-                            buttonRect,
-                            new Vector2(0.5f, 0.5f),
-                            new Vector2(0.5f, 0.5f),
-                            Vector2.zero,
-                            new Vector2(40f, 42f),
-                            new Vector2(0.5f, 0.5f)),
-                        "?",
-                        30,
-                        TextAnchor.MiddleCenter,
-                        new Color(0.90f, 0.91f, 0.96f, 0.94f),
-                        true);
-                }
-            }
-            else
-            {
-                Sprite icon = GetNodeIcon(
-                    entry.Tab,
-                    entry.Category,
-                    entry.Node,
-                    entry.CategoryIndex,
-                    entry.FlatIndex);
-                if (icon != null)
-                {
-                    float iconSize = isCore ? 34f : 37f;
-                    RectTransform iconRect = CreateImageRect(
-                        "Icon",
-                        buttonRect,
-                        new Vector2(0.5f, 0.5f),
-                        new Vector2(0.5f, 0.5f),
-                        new Vector2(0f, isCore ? 5f : 1f),
-                        new Vector2(iconSize, iconSize),
-                        icon,
-                        Color.white,
-                        new Vector2(0.5f, 0.5f));
-                    iconRect.GetComponent<Image>().preserveAspect = true;
-                }
+                float iconSize = isCore ? 34f : 37f;
+                RectTransform iconRect = CreateImageRect(
+                    "Icon",
+                    buttonRect,
+                    new Vector2(0.5f, 0.5f),
+                    new Vector2(0.5f, 0.5f),
+                    new Vector2(0f, isCore ? 5f : 1f),
+                    new Vector2(iconSize, iconSize),
+                    icon,
+                    purchased ? Color.white : new Color(0.30f, 0.34f, 0.41f, 1f),
+                    new Vector2(0.5f, 0.5f));
+                iconRect.GetComponent<Image>().preserveAspect = true;
             }
 
-            string marker = concealed
-                ? string.Empty
-                : isCore
+            string marker = isCore
                     ? "CORE"
                     : entry.Tab == TraitTab.Monster
                         ? "M"
@@ -3817,7 +5364,7 @@ namespace CursorHunter.Progression
                     marker,
                     isCore ? 8 : 8,
                     TextAnchor.UpperLeft,
-                    new Color(stateColor.r, stateColor.g, stateColor.b, 0.96f),
+                    rankColor,
                     true);
             }
 
@@ -3879,7 +5426,7 @@ namespace CursorHunter.Progression
                     "+",
                     15,
                     TextAnchor.MiddleCenter,
-                    stateColor,
+                    rankColor,
                     true);
             }
             else if (unaffordable)
@@ -3900,7 +5447,7 @@ namespace CursorHunter.Progression
                     true);
             }
 
-            int unlockGemstoneIndex = !concealed && entry.Tab == TraitTab.Monster
+            int unlockGemstoneIndex = entry.Tab == TraitTab.Monster
                 ? GetMonsterUnlockGemstoneIndex(entry.Node.Id)
                 : -1;
             Sprite unlockGemstoneIcon = unlockGemstoneIndex >= 0
@@ -4477,13 +6024,20 @@ namespace CursorHunter.Progression
             // visit cannot leave most of the unified board outside the view.
             yield return null;
             Canvas.ForceUpdateCanvases();
-            CenterUnifiedGraph();
+            if (_showRelicCollection)
+            {
+                _nodeContent.localScale = Vector3.one;
+            }
+            else
+            {
+                CenterUnifiedGraph();
+            }
             _fitGraphRoutine = null;
         }
 
         private void SetGraphZoom(float zoom)
         {
-            if (_nodeContent == null || _nodeViewport == null)
+            if (_showRelicCollection || _nodeContent == null || _nodeViewport == null)
             {
                 return;
             }
@@ -4499,7 +6053,8 @@ namespace CursorHunter.Progression
 
         internal void ZoomGraphAt(Vector2 screenPosition, float wheelDelta)
         {
-            if (_nodeContent == null || _nodeViewport == null || Mathf.Approximately(wheelDelta, 0f))
+            if (_showRelicCollection || _nodeContent == null || _nodeViewport == null ||
+                Mathf.Approximately(wheelDelta, 0f))
             {
                 return;
             }
@@ -4529,11 +6084,39 @@ namespace CursorHunter.Progression
         {
             if (dragging)
             {
-                if (_dragHandCursor == null)
+                if (dragHandCursorSprite == null || _runtimeRoot == null)
                 {
-                    _dragHandCursor = CreateDragHandCursor();
+                    return;
                 }
-                Cursor.SetCursor(_dragHandCursor, new Vector2(7f, 7f), CursorMode.Auto);
+
+                if (_dragCursorImage == null)
+                {
+                    RectTransform cursorRect = CreateImageRect(
+                        "GraphDragHandCursor",
+                        _runtimeRoot,
+                        Vector2.zero,
+                        Vector2.zero,
+                        Vector2.zero,
+                        new Vector2(42f, 42f),
+                        dragHandCursorSprite,
+                        Color.white,
+                        new Vector2(0.5f, 0.5f));
+                    _dragCursorImage = cursorRect.GetComponent<Image>();
+                    _dragCursorImage.preserveAspect = true;
+                    _dragCursorImage.raycastTarget = false;
+                    cursorRect.SetAsLastSibling();
+                }
+
+                if (!_graphDragCursorActive)
+                {
+                    _nativeCursorWasVisible = Cursor.visible;
+                }
+
+                _graphDragCursorActive = true;
+                Cursor.visible = false;
+                _dragCursorImage.gameObject.SetActive(true);
+                _dragCursorImage.transform.SetAsLastSibling();
+                UpdateGraphDragCursorPosition();
             }
             else
             {
@@ -4543,60 +6126,34 @@ namespace CursorHunter.Progression
 
         private void RestoreDragCursor()
         {
-            Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
-        }
-
-        private static Texture2D CreateDragHandCursor()
-        {
-            const int size = 32;
-            Texture2D texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
-            texture.name = "TraitGraphDragHandCursor";
-            texture.filterMode = FilterMode.Point;
-            texture.wrapMode = TextureWrapMode.Clamp;
-            Color clear = new Color(0f, 0f, 0f, 0f);
-            Color outline = new Color(0.025f, 0.055f, 0.10f, 1f);
-            Color fill = new Color(0.96f, 0.98f, 1f, 1f);
-
-            for (int y = 0; y < size; y++)
+            bool shouldRestoreNativeCursor = _graphDragCursorActive;
+            _graphDragCursorActive = false;
+            if (_dragCursorImage != null)
             {
-                for (int x = 0; x < size; x++)
-                {
-                    if (!IsDragHandPixel(x, y))
-                    {
-                        texture.SetPixel(x, y, clear);
-                        continue;
-                    }
-
-                    bool edge = false;
-                    for (int offsetY = -1; offsetY <= 1 && !edge; offsetY++)
-                    {
-                        for (int offsetX = -1; offsetX <= 1; offsetX++)
-                        {
-                            if (!IsDragHandPixel(x + offsetX, y + offsetY))
-                            {
-                                edge = true;
-                                break;
-                            }
-                        }
-                    }
-                    texture.SetPixel(x, y, edge ? outline : fill);
-                }
+                _dragCursorImage.gameObject.SetActive(false);
             }
 
-            texture.Apply();
-            return texture;
+            if (shouldRestoreNativeCursor)
+            {
+                Cursor.visible = _nativeCursorWasVisible;
+            }
         }
 
-        private static bool IsDragHandPixel(int x, int y)
+        private void UpdateGraphDragCursorPosition()
         {
-            bool fingers =
-                (x >= 8 && x <= 12 && y >= 13 && y <= 27) ||
-                (x >= 13 && x <= 17 && y >= 15 && y <= 29) ||
-                (x >= 18 && x <= 21 && y >= 13 && y <= 26) ||
-                (x >= 22 && x <= 25 && y >= 10 && y <= 21);
-            bool palm = x >= 8 && x <= 24 && y >= 5 && y <= 17;
-            bool thumb = x >= 3 && x <= 10 && y >= 10 && y <= 15;
-            return fingers || palm || thumb;
+            if (!_graphDragCursorActive || _dragCursorImage == null || _runtimeRoot == null)
+            {
+                return;
+            }
+
+            if (RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                    _runtimeRoot,
+                    Input.mousePosition,
+                    GetUiCamera(),
+                    out Vector2 localPosition))
+            {
+                _dragCursorImage.rectTransform.anchoredPosition = localPosition;
+            }
         }
 
         private static string GetCategoryTitle(TraitCategoryDefinition category)
@@ -4609,11 +6166,11 @@ namespace CursorHunter.Progression
             switch (category.Id)
             {
                 case "stat.attack": return LocalizationCatalog.Get("ui.attack", "공격력");
-                case "stat.radius": return LocalizationCatalog.Get("ui.radius", "자동 반경");
-                case "stat.cooldown": return LocalizationCatalog.Get("ui.cooldown", "쿨타임");
+                case "stat.radius": return LocalizationCatalog.Get("ui.radius", "공격 반경");
+                case "stat.cooldown": return LocalizationCatalog.Get("ui.cooldown", "공격 간격");
                 case "stat.critical": return LocalizationCatalog.Get("ui.critical", "치명타");
-                case "stat.boss": return LocalizationCatalog.Get("ui.boss", "보스 피해");
-                case "stat.fieldDuration": return LocalizationCatalog.Get("ui.category.fieldDuration", "필드 지속 시간");
+                case "stat.boss": return LocalizationCatalog.Get("ui.boss", "보스 피해 배수");
+                case "stat.fieldDuration": return LocalizationCatalog.Get("ui.category.fieldDuration", "일반 필드 시간");
                 case "skill.cursorAura": return LocalizationCatalog.Get("ui.category.petAura", "펫 동료");
                 default: return GetLocalizedEntityName(category.Id, category.Title);
             }
@@ -4978,6 +6535,8 @@ namespace CursorHunter.Progression
                 return;
             }
 
+            CancelTooltipDismiss();
+            _hoveredNodeId = node.Id;
             _selectedNodeId = node.Id;
             UpdateNodeSelectionFrame();
             ShowNodeTooltip(node);
@@ -5000,9 +6559,98 @@ namespace CursorHunter.Progression
                 return;
             }
 
+            CancelTooltipDismiss();
+            _hoveredNodeId = node.Id;
             _selectedNodeId = node.Id;
             UpdateNodeSelectionFrame();
             ShowNodeTooltip(node);
+        }
+
+        private void HandleNodePointerExit(
+            TraitNodeDefinition node,
+            RectTransform sourceRect)
+        {
+            if (node == null || !string.Equals(
+                    _hoveredNodeId,
+                    node.Id,
+                    StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            if (sourceRect != null && !sourceRect.gameObject.activeInHierarchy &&
+                _boardNodeRectsById.TryGetValue(node.Id, out RectTransform currentRect) &&
+                currentRect != null && currentRect != sourceRect &&
+                currentRect.gameObject.activeInHierarchy)
+            {
+                return;
+            }
+
+            _hoveredNodeId = null;
+            ScheduleTooltipDismiss();
+        }
+
+        internal void HandleTooltipPointerEnter()
+        {
+            _pointerOverTooltip = true;
+            CancelTooltipDismiss();
+        }
+
+        internal void HandleTooltipPointerExit()
+        {
+            _pointerOverTooltip = false;
+            ScheduleTooltipDismiss();
+        }
+
+        internal void HandleTooltipOutsideClick(GameObject target)
+        {
+            if (target == null || _tooltipRoot == null)
+            {
+                return;
+            }
+
+            Transform clicked = target.transform;
+            if (clicked == _tooltipRoot || clicked.IsChildOf(_tooltipRoot))
+            {
+                return;
+            }
+
+            if (target.name.StartsWith("Node_", StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            HideNodeTooltip();
+        }
+
+        private void ScheduleTooltipDismiss()
+        {
+            CancelTooltipDismiss();
+            if (_tooltipRoot == null || !_tooltipRoot.gameObject.activeSelf)
+            {
+                return;
+            }
+
+            _tooltipDismissRoutine = StartCoroutine(DismissTooltipAfterPointerLeaves());
+        }
+
+        private IEnumerator DismissTooltipAfterPointerLeaves()
+        {
+            yield return new WaitForSecondsRealtime(0.30f);
+            _tooltipDismissRoutine = null;
+            if (string.IsNullOrEmpty(_hoveredNodeId) && !_pointerOverTooltip)
+            {
+                HideNodeTooltip();
+            }
+        }
+
+        private void CancelTooltipDismiss()
+        {
+            if (_tooltipDismissRoutine != null)
+            {
+                StopCoroutine(_tooltipDismissRoutine);
+                _tooltipDismissRoutine = null;
+            }
         }
 
         private void ShowNodeTooltip(TraitNodeDefinition node)
@@ -5012,6 +6660,7 @@ namespace CursorHunter.Progression
                 return;
             }
 
+            CancelTooltipDismiss();
             bool animate = !_tooltipRoot.gameObject.activeSelf || _tooltipNodeId != node.Id;
             _tooltipNodeId = node.Id;
             _tooltipRoot.gameObject.SetActive(true);
@@ -5144,7 +6793,7 @@ namespace CursorHunter.Progression
 
             NodePurchaseState state = GetNodePurchaseState(node);
             TraitTab tab = GetNodeTab(node);
-            bool concealed = state == NodePurchaseState.Locked;
+            bool concealed = false;
             _tooltipType.text = concealed ? "잠긴 항목" : GetNodeTypeLabel(node, tab);
             _tooltipType.color = concealed
                 ? new Color(0.88f, 0.89f, 0.94f, 1f)
@@ -5274,7 +6923,7 @@ namespace CursorHunter.Progression
 
             if (node.Id.StartsWith("stat.", StringComparison.Ordinal))
             {
-                return node.Cost <= 0 ? "기본값 적용" : "강화하기";
+                return node.Cost <= 0 ? "배우기" : "강화하기";
             }
 
             return string.IsNullOrEmpty(node.PrerequisiteNodeId) || node.Cost <= 0
@@ -5358,7 +7007,7 @@ namespace CursorHunter.Progression
             if (state == NodePurchaseState.Unaffordable)
             {
                 TraitGemstoneDefinition gemstone = GetGemstoneDefinitionById(node.CostGemstoneId);
-                if (!IsGemstoneAvailable(gemstone))
+                if (GetNodeBalance(node) <= 0 && !IsGemstoneAvailable(gemstone))
                 {
                     return (gemstone == null
                         ? GetGemstoneLocalizedName(node.CostGemstoneId, node.CostGemstoneId)
@@ -5414,12 +7063,15 @@ namespace CursorHunter.Progression
 
         private void HideNodeTooltip()
         {
+            CancelTooltipDismiss();
             if (_tooltipAnimation != null)
             {
                 StopCoroutine(_tooltipAnimation);
                 _tooltipAnimation = null;
             }
             _tooltipNodeId = null;
+            _hoveredNodeId = null;
+            _pointerOverTooltip = false;
             if (_tooltipRoot != null)
             {
                 _tooltipRoot.gameObject.SetActive(false);
@@ -5579,10 +7231,30 @@ namespace CursorHunter.Progression
                 return;
             }
 
-            _selectedTitle.text = GetLocalizedNodeTitle(node);
-            _selectedValue.text = GetLocalizedNodeValueLabel(node);
-            _selectedDescription.text = BuildNodeDescription(node);
-            _selectedCost.text = GetNodeCostText(node);
+            TraitTab selectedTab = GetNodeTab(node);
+            Color categoryAccent = GetCategoryAccent(selectedTab);
+            if (_selectedHeaderAccent != null)
+            {
+                _selectedHeaderAccent.color = categoryAccent;
+            }
+            if (_selectedHeaderBackground != null)
+            {
+                Color categoryTint = selectedTab == TraitTab.Stat
+                    ? new Color(0.045f, 0.13f, 0.20f, 0.97f)
+                    : selectedTab == TraitTab.Skill
+                        ? new Color(0.19f, 0.105f, 0.055f, 0.97f)
+                        : new Color(0.13f, 0.085f, 0.20f, 0.97f);
+                _selectedHeaderBackground.color = categoryTint;
+            }
+            bool concealed = false;
+            _selectedTitle.text = concealed ? "???" : GetLocalizedNodeTitle(node);
+            _selectedValue.text = concealed
+                ? "<size=12><color=#AFC5D8>해금 조건 달성 후 공개</color></size>\n<b>???</b>"
+                : BuildNodeChangePreview(node);
+            _selectedDescription.text = concealed
+                ? "잠긴 연구입니다. 해금 후 효과를 확인할 수 있습니다."
+                : BuildNodeDescription(node);
+            _selectedCost.text = concealed ? "해금 조건을 먼저 충족하세요" : GetNodeCostText(node);
             _selectedRequirement.text = GetNodeRequirementText(node);
 
             bool purchased = IsPurchased(node);
@@ -5590,8 +7262,9 @@ namespace CursorHunter.Progression
                 node.RequiredBossTier > unlockedBossTier;
             bool lockedByPrerequisite = !testModeUnlockAll &&
                 !IsPrerequisiteMet(node);
-            bool currencyUnlocked = testModeUnlockAll || node.Cost <= 0 ||
-                GetGemstoneDefinitionById(node.CostGemstoneId) != null;
+            bool currencyUnlocked = testModeUnlockAll || testModeFreeUpgrades || node.Cost <= 0 ||
+                IsGemstoneAvailable(GetGemstoneDefinitionById(node.CostGemstoneId)) ||
+                GetNodeBalance(node) > 0;
             bool hasCurrency = testModeFreeUpgrades ||
                 (currencyUnlocked && GetNodeBalance(node) >= node.Cost);
             bool canBuy = !purchased && !lockedByBoss && !lockedByPrerequisite &&
@@ -5897,13 +7570,17 @@ namespace CursorHunter.Progression
         private void RefreshSummary()
         {
             if (_garnetValue != null) _garnetValue.text = _garnetBalance.ToString();
-            if (_summaryValues.Count < 5 || _document == null) return;
+            RefreshCombatStatsPanel();
+            if (_document == null) return;
             var info = CreateGameInformation();
-            _summaryValues[0].text = info.stats.attackPower.ToString();
-            _summaryValues[1].text = info.stats.attackRadiusWorldUnits.ToString("0.##") + "u";
-            _summaryValues[2].text = info.stats.attackCooldownSeconds.ToString("0.##") + "s";
-            _summaryValues[3].text = info.stats.criticalChancePercent.ToString("0.#") + "%";
-            _summaryValues[4].text = info.stats.bossDamageMultiplier.ToString("0.##") + "×";
+            if (_summaryValues.Count >= 5)
+            {
+                _summaryValues[0].text = info.stats.attackPower.ToString();
+                _summaryValues[1].text = info.stats.attackRadiusWorldUnits.ToString("0.##") + "u";
+                _summaryValues[2].text = info.stats.attackCooldownSeconds.ToString("0.##") + "s";
+                _summaryValues[3].text = info.stats.criticalChancePercent.ToString("0.#") + "%";
+                _summaryValues[4].text = info.stats.bossDamageMultiplier.ToString("0.##") + "×";
+            }
         }
 
         private int CountPurchased(string categoryId)
@@ -6126,21 +7803,21 @@ namespace CursorHunter.Progression
                 if (id.StartsWith("stat.fieldDuration.", StringComparison.Ordinal) &&
                     id.EndsWith(".01", StringComparison.Ordinal))
                 {
-                    return "일반 필드 지속 시간의 기준값입니다.";
+                    return "일반 필드 시간의 기준값입니다.";
                 }
 
                 if (id.StartsWith("stat.attack.", StringComparison.Ordinal))
                     return "공격력을 높입니다.";
                 if (id.StartsWith("stat.radius.", StringComparison.Ordinal))
-                    return "자동 공격 반경을 넓힙니다.";
+                    return "공격 반경을 넓힙니다.";
                 if (id.StartsWith("stat.cooldown.", StringComparison.Ordinal))
                     return "공격 간격을 줄입니다.";
                 if (id.StartsWith("stat.critical.", StringComparison.Ordinal))
                     return "치명타 확률을 높입니다.";
                 if (id.StartsWith("stat.boss.", StringComparison.Ordinal))
-                    return "보스에게 주는 피해를 높입니다.";
+                    return "보스 피해 배수를 높입니다.";
                 if (id.StartsWith("stat.fieldDuration.", StringComparison.Ordinal))
-                    return "일반 필드 지속 시간을 늘립니다.";
+                    return "일반 필드 시간을 늘립니다.";
             }
 
             if (id.StartsWith("skill.", StringComparison.Ordinal))
@@ -6194,11 +7871,11 @@ namespace CursorHunter.Progression
             if (id.StartsWith("stat.", StringComparison.Ordinal))
             {
                 string group = id.StartsWith("stat.attack.", StringComparison.Ordinal) ? "공격력" :
-                    id.StartsWith("stat.radius.", StringComparison.Ordinal) ? "자동 공격 반경" :
+                    id.StartsWith("stat.radius.", StringComparison.Ordinal) ? "공격 반경" :
                     id.StartsWith("stat.cooldown.", StringComparison.Ordinal) ? "공격 간격" :
                     id.StartsWith("stat.critical.", StringComparison.Ordinal) ? "치명타 확률" :
-                    id.StartsWith("stat.boss.", StringComparison.Ordinal) ? "보스 피해" :
-                    id.StartsWith("stat.fieldDuration.", StringComparison.Ordinal) ? "필드 지속 시간" : "능력치";
+                    id.StartsWith("stat.boss.", StringComparison.Ordinal) ? "보스 피해 배수" :
+                    id.StartsWith("stat.fieldDuration.", StringComparison.Ordinal) ? "일반 필드 시간" : "능력치";
                 int rank = GetTrailingRank(id);
                 return rank <= 1 ? group + " 기본값" : group + " 강화 " + rank;
             }
@@ -6235,7 +7912,219 @@ namespace CursorHunter.Progression
             if (value == "Component baseline" || value == "JSON baseline") return "기본값";
             if (value == "Unlock skill") return "스킬 해금";
             if (value == "Enable monster") return "몬스터 해금";
-            return value;
+            return FormatCompactValueLabel(value);
+        }
+
+        private string BuildNodeChangePreview(TraitNodeDefinition node)
+        {
+            if (node == null || _document == null || _document.progression == null)
+            {
+                return string.Empty;
+            }
+
+            UpgradeNodeData nodeData = FindUpgradeNodeData(node.Id);
+            bool alreadyPurchased = IsPurchased(node);
+            if (GetNodePurchaseState(node) == NodePurchaseState.Locked)
+            {
+                return "<size=12><color=#AFC5D8>해금 조건 달성 후 공개</color></size>\n<b>???</b>";
+            }
+
+            if (string.Equals(node.Id, ResearchCoreNodeId, StringComparison.Ordinal))
+            {
+                return BuildPreviewRows(
+                    alreadyPurchased,
+                    alreadyPurchased ? "네 방향 연구 활성" : "연구 가지 없음",
+                    alreadyPurchased ? "첫 연구 선택 가능" : "네 방향 첫 연구 개방");
+            }
+
+            var beforePurchased = new HashSet<string>(_purchased, StringComparer.Ordinal);
+            var afterPurchased = new HashSet<string>(_purchased, StringComparer.Ordinal);
+            if (alreadyPurchased)
+            {
+                beforePurchased.Remove(node.Id);
+            }
+            else
+            {
+                afterPurchased.Add(node.Id);
+            }
+
+            if (nodeData != null && nodeData.operation == "baseline")
+            {
+                string baseline = GetStatDisplayValue(node.Id, BuildInformationForNodes(_purchased));
+                return "<size=12><color=#AFC5D8>전투 기준값</color></size>\n" +
+                    "<b>" + baseline + "</b>";
+            }
+
+            GameInformation before = BuildInformationForNodes(beforePurchased);
+            GameInformation after = BuildInformationForNodes(afterPurchased);
+
+            string beforeValue;
+            string afterValue;
+            string id = node.Id ?? string.Empty;
+            if (id.StartsWith("stat.", StringComparison.Ordinal))
+            {
+                beforeValue = GetStatDisplayValue(id, before);
+                afterValue = GetStatDisplayValue(id, after);
+            }
+            else if (id.StartsWith("skill.", StringComparison.Ordinal))
+            {
+                string skillId = GetEntityRootId(id, "skill.");
+                SkillInformation beforeSkill = FindSkill(before, skillId);
+                SkillInformation afterSkill = FindSkill(after, skillId);
+                if (beforeSkill == null || afterSkill == null) return string.Empty;
+
+                if (string.Equals(id, skillId, StringComparison.Ordinal))
+                {
+                    beforeValue = beforeSkill.enabled ? "전투 사용 가능" : "전투 사용 불가";
+                    afterValue = afterSkill.enabled ? "전투 사용 가능" : "전투 사용 불가";
+                }
+                else if (id.EndsWith(".damage", StringComparison.Ordinal))
+                {
+                    beforeValue = "피해 " + beforeSkill.damage.ToString("N0", CultureInfo.InvariantCulture);
+                    afterValue = "피해 " + afterSkill.damage.ToString("N0", CultureInfo.InvariantCulture);
+                }
+                else if (id.EndsWith(".radius", StringComparison.Ordinal))
+                {
+                    beforeValue = "범위 " + FormatCompactNumber(beforeSkill.radiusWorldUnits) + "u";
+                    afterValue = "범위 " + FormatCompactNumber(afterSkill.radiusWorldUnits) + "u";
+                }
+                else
+                {
+                    beforeValue = "재사용 " + FormatCompactNumber(beforeSkill.cooldownSeconds) + "초";
+                    afterValue = "재사용 " + FormatCompactNumber(afterSkill.cooldownSeconds) + "초";
+                }
+            }
+            else if (id.StartsWith("monster.", StringComparison.Ordinal))
+            {
+                string monsterId = GetEntityRootId(id, "monster.");
+                MonsterInformation beforeMonster = FindMonster(before, monsterId);
+                MonsterInformation afterMonster = FindMonster(after, monsterId);
+                if (beforeMonster == null || afterMonster == null) return string.Empty;
+
+                if (string.Equals(id, monsterId, StringComparison.Ordinal))
+                {
+                    beforeValue = beforeMonster.enabled ? "전투 등장 가능" : "전투 등장 불가";
+                    afterValue = afterMonster.enabled ? "전투 등장 가능" : "전투 등장 불가";
+                }
+                else
+                {
+                    beforeValue = beforeMonster.productionCount.ToString("N0", CultureInfo.InvariantCulture) + "마리";
+                    afterValue = afterMonster.productionCount.ToString("N0", CultureInfo.InvariantCulture) + "마리";
+                }
+            }
+            else
+            {
+                return string.Empty;
+            }
+
+            return BuildPreviewRows(alreadyPurchased, beforeValue, afterValue);
+        }
+
+        private string BuildPreviewRows(bool alreadyPurchased, string beforeValue, string afterValue)
+        {
+            string beforeLabel = alreadyPurchased ? "구매 전" : "현재";
+            string afterLabel = alreadyPurchased ? "현재" : "강화 후";
+            return "<size=12><color=#AFC5D8>" + beforeLabel +
+                "</color>  →  <color=#F6C46C>" + afterLabel +
+                "</color></size>\n<b>" + beforeValue + "</b>  →  <b><color=#FFD38A>" +
+                afterValue + "</color></b>";
+        }
+
+        private GameInformation BuildInformationForNodes(ISet<string> purchased)
+        {
+            return GameInformationBuilder.Build(
+                _document,
+                purchased,
+                id => GetGemstoneBalance(GetGemstoneIndexById(id)),
+                _cursorCombatStatDefaults);
+        }
+
+        private UpgradeNodeData FindUpgradeNodeData(string nodeId)
+        {
+            if (string.IsNullOrEmpty(nodeId) || _document == null ||
+                _document.progression == null || _document.progression.categories == null)
+            {
+                return null;
+            }
+
+            foreach (UpgradeCategoryData category in _document.progression.categories)
+            {
+                if (category == null || category.nodes == null) continue;
+                foreach (UpgradeNodeData node in category.nodes)
+                {
+                    if (node != null && string.Equals(node.id, nodeId, StringComparison.Ordinal))
+                    {
+                        return node;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        private static SkillInformation FindSkill(GameInformation information, string id)
+        {
+            if (information == null || information.skills == null) return null;
+            foreach (SkillInformation skill in information.skills)
+                if (skill != null && string.Equals(skill.id, id, StringComparison.Ordinal)) return skill;
+            return null;
+        }
+
+        private static MonsterInformation FindMonster(GameInformation information, string id)
+        {
+            if (information == null || information.monsters == null) return null;
+            foreach (MonsterInformation monster in information.monsters)
+                if (monster != null && string.Equals(monster.id, id, StringComparison.Ordinal)) return monster;
+            return null;
+        }
+
+        private static string GetStatDisplayValue(string nodeId, GameInformation information)
+        {
+            if (information == null || information.stats == null) return string.Empty;
+            StatInformation stats = information.stats;
+            if (nodeId.StartsWith("stat.attack.", StringComparison.Ordinal))
+                return stats.attackPower.ToString("N0", CultureInfo.InvariantCulture) + " 공격력";
+            if (nodeId.StartsWith("stat.radius.", StringComparison.Ordinal))
+                return "공격 반경 " + FormatCompactNumber(stats.attackRadiusWorldUnits) + "u";
+            if (nodeId.StartsWith("stat.cooldown.", StringComparison.Ordinal))
+                return "간격 " + FormatCompactNumber(stats.attackCooldownSeconds) + "초";
+            if (nodeId.StartsWith("stat.critical.", StringComparison.Ordinal))
+                return "치명타 " + FormatCompactNumber(stats.criticalChancePercent) + "%";
+            if (nodeId.StartsWith("stat.boss.", StringComparison.Ordinal))
+                return "보스 피해 배수 " + FormatCompactNumber(stats.bossDamageMultiplier) + "배";
+            if (nodeId.StartsWith("stat.fieldDuration.", StringComparison.Ordinal))
+                return "일반 필드 시간 " + FormatCompactNumber(stats.normalFieldDurationSeconds) + "초";
+            return string.Empty;
+        }
+
+        private static string FormatCompactValueLabel(string value)
+        {
+            if (string.IsNullOrEmpty(value)) return string.Empty;
+            int numberStart = value[0] == '+' || value[0] == '-' ? 1 : 0;
+            int numberEnd = numberStart;
+            while (numberEnd < value.Length &&
+                   (char.IsDigit(value[numberEnd]) || value[numberEnd] == '.'))
+            {
+                numberEnd++;
+            }
+
+            if (numberEnd == numberStart ||
+                !double.TryParse(
+                    value.Substring(numberStart, numberEnd - numberStart),
+                    NumberStyles.Float,
+                    CultureInfo.InvariantCulture,
+                    out double number))
+            {
+                return value;
+            }
+
+            string prefix = numberStart == 1 ? value.Substring(0, 1) : string.Empty;
+            return prefix + FormatCompactNumber(number) + value.Substring(numberEnd);
+        }
+
+        private static string FormatCompactNumber(double value)
+        {
+            return value.ToString("0.##", CultureInfo.InvariantCulture);
         }
 
         private static int GetTrailingRank(string id)
@@ -6267,15 +8156,15 @@ namespace CursorHunter.Progression
                 case "skill.dragonBreath": return "드래곤 브레스";
                 case "skill.cursorAura": return "펫 동료";
                 case "monster.01": return "그루터기";
-                case "monster.02": return "박쥐";
-                case "monster.03": return "버섯";
+                case "monster.02": return "여왕벌";
+                case "monster.03": return "독버섯";
                 case "monster.04": return "가면유령";
-                case "monster.05": return "전갈";
+                case "monster.05": return "갑옷병사";
                 case "monster.06": return "눈요정";
-                case "monster.07": return "거미";
+                case "monster.07": return "벌집";
                 case "monster.08": return "골렘";
                 case "monster.09": return "봉오리";
-                case "monster.10": return "해골군주";
+                case "monster.10": return "판도라 상자";
                 default: return string.IsNullOrEmpty(fallback) ? id : fallback;
             }
         }
@@ -6329,7 +8218,7 @@ namespace CursorHunter.Progression
 
             if (categoryId.IndexOf("cooldown", StringComparison.OrdinalIgnoreCase) >= 0)
             {
-                return timerIcon != null ? timerIcon : clickIcon;
+                return attackIntervalIcon != null ? attackIntervalIcon : timerIcon;
             }
 
             if (categoryId.IndexOf("critical", StringComparison.OrdinalIgnoreCase) >= 0)
@@ -6488,7 +8377,7 @@ namespace CursorHunter.Progression
 
                 if (node.Id.EndsWith(".cooldown", StringComparison.Ordinal))
                 {
-                    return timerIcon != null ? timerIcon : clickIcon;
+                    return timerIcon != null ? timerIcon : attackIntervalIcon;
                 }
             }
 
@@ -6831,7 +8720,25 @@ namespace CursorHunter.Progression
             Color color,
             bool bold)
         {
-            TextMeshProUGUI text = rect.gameObject.AddComponent<TextMeshProUGUI>();
+            TextMeshProUGUI text = rect.GetComponent<TextMeshProUGUI>();
+            if (text == null)
+            {
+                RectTransform textRect = rect;
+                if (rect.GetComponent<Graphic>() != null)
+                {
+                    textRect = CreateRect(
+                        "Text",
+                        rect,
+                        Vector2.zero,
+                        Vector2.one,
+                        Vector2.zero,
+                        Vector2.zero,
+                        new Vector2(0.5f, 0.5f));
+                }
+
+                text = textRect.gameObject.AddComponent<TextMeshProUGUI>();
+            }
+
             text.text = content ?? string.Empty;
             // Use the serialized NanumGothic asset for Hangul. The builtin
             // fallback keeps custom catalogs usable when a scene has not yet
@@ -6932,6 +8839,7 @@ namespace CursorHunter.Progression
             colors.fadeDuration = 0.08f;
             button.colors = colors;
             button.gameObject.AddComponent<TraitUiButtonFeedback>();
+            button.gameObject.AddComponent<TraitTooltipDismissRelay>().Bind(this);
 
             if (!string.IsNullOrEmpty(label))
             {
@@ -6985,6 +8893,65 @@ namespace CursorHunter.Progression
         {
             base.OnEndDrag(eventData);
             if (_owner != null) _owner.SetGraphDragCursor(false);
+        }
+    }
+
+    public sealed class TraitTooltipDismissRelay : MonoBehaviour, IPointerClickHandler
+    {
+        private TraitScreenController _owner;
+
+        public void Bind(TraitScreenController owner)
+        {
+            _owner = owner;
+        }
+
+        public void OnPointerClick(PointerEventData eventData)
+        {
+            if (_owner != null)
+            {
+                _owner.HandleTooltipOutsideClick(gameObject);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Keeps the relic reveal dismissal responsive even when a UI Button's
+    /// color transition or a sibling graphic interferes with its onClick.
+    /// </summary>
+    public sealed class TraitRelicRevealDismissRelay : MonoBehaviour, IPointerClickHandler
+    {
+        private Action _dismiss;
+
+        public void Bind(Action dismiss)
+        {
+            _dismiss = dismiss;
+        }
+
+        public void OnPointerClick(PointerEventData eventData)
+        {
+            _dismiss?.Invoke();
+        }
+    }
+
+    public sealed class TraitTooltipPointerRelay : MonoBehaviour,
+        IPointerEnterHandler,
+        IPointerExitHandler
+    {
+        private TraitScreenController _owner;
+
+        public void Bind(TraitScreenController owner)
+        {
+            _owner = owner;
+        }
+
+        public void OnPointerEnter(PointerEventData eventData)
+        {
+            if (_owner != null) _owner.HandleTooltipPointerEnter();
+        }
+
+        public void OnPointerExit(PointerEventData eventData)
+        {
+            if (_owner != null) _owner.HandleTooltipPointerExit();
         }
     }
 
