@@ -208,6 +208,7 @@ namespace CursorHunter.Combat
             initialPosition.x = Mathf.Clamp(initialPosition.x, _boundsMin.x, _boundsMax.x);
             initialPosition.y = Mathf.Clamp(initialPosition.y, _boundsMin.y, _boundsMax.y);
             transform.position = initialPosition;
+            _target.RefreshVisualSorting();
 
             _velocity = Vector2.zero;
             if (_movementMode == MonsterMovementMode.Circular)
@@ -250,6 +251,7 @@ namespace CursorHunter.Combat
                 deltaSeconds);
             _velocity = new Vector2(velocityX, velocityY);
             transform.position = position;
+            _target.RefreshVisualSorting();
         }
 
         private void AdvanceCircular(float deltaSeconds)
@@ -449,6 +451,7 @@ namespace CursorHunter.Combat
             rootPosition.x = position.x;
             rootPosition.y = position.y;
             transform.position = rootPosition;
+            _target?.RefreshVisualSorting();
         }
 
         private void FaceHorizontalDirection(float direction)

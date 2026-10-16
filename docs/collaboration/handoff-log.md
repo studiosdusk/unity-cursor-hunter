@@ -729,3 +729,95 @@
   기존 풀 재사용·수명주기·난수 분리·관리 힙 할당 0B 검사도 통과했다.
   `python3 tools/validate_collaboration.py`, `git diff --check` 통과.
   배치 테스트는 화면 없이 실행했으며 실제 Main의 시각 검증은 수행하지 않았다.
+
+### 2026-10-14 · Combat — 헤드샷 자동 스킬 코어
+
+- `skill.headshot` 컨트롤러와 풀링 효과 프리팹을 Main의 `CombatManager` 및 CombatSandbox에 배치했다. 지정한 `FX_Aim_Explode_Visual`을 프로젝트 소유 효과 프리팹에 중첩했고, 원본의 `HitBox`를 한 번의 폭발 범위 판정에 사용한다.
+- 적이 없으면 쿨타임을 소비하지 않고 대기한다. 지목한 적을 폭발 전까지 추적하고 사라지면 마지막 위치에서 폭발한다. 주 대상은 일반전에서 남은 체력만큼의 원시 피해, 보스전에서 기본 공격력 10배의 원시 피해를 받는다. 주변 적에게는 기본 공격력 2배를 한 번 적용한다. 실제 방어·치명타·보스 배율·보상은 기존 공통 피해 경로를 사용한다.
+- 일시정지와 런 종료 시 발동·피해·파티클을 멈추고, 이전 런의 효과는 반환한다. 에디터 `Skill Acquired`만 연결했으며 실제 구매 노드·강화는 범위 밖이다. 사용자가 Main에 놓은 별도 원본 VFX 인스턴스는 보존하고 재생만 껐다.
+- 격리 Unity 6000.3.13f1 프로젝트에서 Combat PlayMode 8개를 통과했다. `python3 tools/validate_collaboration.py`와 `git diff --check`도 통과했다. 원본 프로젝트는 다른 Unity 인스턴스가 열고 있어 배치 검증하지 못했고 Main의 시각 확인은 미실행이다.
+
+### 2026-10-14 · Combat — 몬스터 Y 위치 기반 표시 순서
+
+- 공용 `MonsterRoot`의 `VisualRoot`에 `SortingGroup`을 구성하고 카메라 화면에서 아래에 있는 몬스터일수록 더 큰 Sorting Order를 적용한다. 생성 직후와 이동·순간이동으로 위치를 바꾼 직후에만 다시 계산한다.
+- 종별 외형의 기존 내부 SortingGroup 및 SpriteRenderer 순서는 유지한다. 몬스터 외형의 순서는 0~199로 제한해 타격 이펙트(200)와 체력바(250)가 앞에 남게 했다.
+- `python3 tools/validate_collaboration.py`와 `git diff --check`를 통과했다. Unity 컴파일과 실제 화면 검증은 미실행이다.
+
+### 2026-10-15 · Combat — 벼락 단일 대상 자동 스킬 코어
+
+- `skill.thunder`는 전투 시작 즉시 준비되고, 적이 없으면 쿨타임을 소비하지 않는다. 무작위 적 1명을 지목해 0.1초 뒤 기본 공격력의 4배를 한 번 공통 피해 경로로 전달한다. 기본 쿨타임은 2초이며 모든 수치는 Main 컨트롤러에서 조절한다.
+- `ThunderEffect` 루트의 자식으로 사용자 지정 `FX_Cartoon Thunder_Visual`을 중첩했다. 파티클은 시각 전용이고 단일 대상 판정은 루트·컨트롤러가 처리한다. 타격 전 대상이 죽으면 마지막 위치에서 연출만 끝내고 재지목·범위 피해는 없다.
+- Main과 CombatSandbox에 컨트롤러를 배치하고 에디터 `Skill Acquired` 시험 토글을 제공했다. 실제 구매 해금·강화는 아직 연결하지 않았다.
+- 사용자가 Main에 배치한 별도 원본 Thunder VFX 인스턴스는 보존하고 자동 반복 재생을 막기 위해 비활성화했다.
+- Unity 6000.3.13f1 격리 프로젝트에서 벼락 PlayMode 3개와 전체 Combat PlayMode 11개를 통과했다. 생성·단일 타격·대상 사망·대기·일시정지·런 종료를 확인했고, Main 씬의 컨트롤러와 중첩 VFX 참조도 로드 검사로 확인했다. `python3 tools/validate_collaboration.py`도 통과했다. 실제 Main 화면의 시각적 타격 타이밍은 아직 확인하지 않았다.
+
+### 2026-10-15 · Combat — 벼락 HitPoint 위치
+
+- 벼락 연출의 `HitPoint`를 몬스터 루트 대신 체력바를 제외한 스프라이트 영역의 중심에 배치한다. 대상이 타격 전에 움직이면 중심을 다시 읽고, 죽으면 마지막 위치를 유지한다. 스프라이트가 없는 시험용 대상은 피격 콜라이더 중심을 사용한다.
+- Unity 6000.3.13f1 격리 프로젝트에서 벼락 PlayMode 3개와 전체 Combat PlayMode 11개를 통과했다. `python3 tools/validate_collaboration.py`와 변경 경로의 `git diff --check`도 통과했다.
+
+### 2026-10-15 · Combat — 화염 배기 자동 스킬 코어
+
+- `skill.flame_exhaust`는 현재 커서 이미지와 범위를 45%로 축소해 한 번에 작은 커서 하나를 무작위 방향으로 발사한다. 적이 없어도 쿨타임마다 발사하며, 이전 커서가 살아 있으면 다음 커서가 추가될 수 있다. 각 작은 커서는 적을 관통하고 같은 몬스터를 한 번씩 공격한다.
+- 피격 연출은 프로젝트 소유 루트 아래 `FX_MagicSlash02_Fire` URP 프리팹을 중첩하며, 몬스터 시각 중심에 표시하고 루트 Z 회전을 무작위로 정한다. 파티클은 피해 판정에 관여하지 않는다.
+- Main과 CombatSandbox에 컨트롤러를 배치했다. 쿨타임 감소를 향후 유일한 강화 방향으로 정했고, 강화 단계·구매 해금은 후속 연결이다. 현재는 Main의 에디터 획득 토글로 시험한다.
+- Unity 6000.3.13f1 격리 프로젝트에서 화염 배기 PlayMode 2개와 전체 Combat PlayMode 13개를 통과했다. Main 씬 커서·프리팹 참조 로드 검사도 통과했다. 실제 플레이 화면의 VFX 크기와 타격 연출은 확인하지 않았다.
+
+### 2026-10-15 · Combat — 화염 배기 피격 범위 조정
+
+- 작은 커서 이미지는 실제 커서의 45% 크기로 유지하고, `FlameExhaustProjectile`의 피격 반경은 실제 커서 공격 반경의 1.2배로 분리했다. 두 배율은 Main의 스킬 컨트롤러 Inspector에서 각각 조절한다.
+- Unity 6000.3.13f1 격리 프로젝트의 화염 배기 PlayMode 2개를 통과했다. 테스트 커서 자체를 2배 확대한 상태에서도 시각 배율 45%와 피격 반경 배율 1.2를 확인했다.
+
+### 2026-10-15 · Combat — 화염 배기 피격 이펙트 크기
+
+- `FlameExhaustHitEffect`의 재생 크기를 몬스터 몸체 스프라이트 영역의 긴 변 × 기본 배율 1.2로 정했다. 체력바는 영역 계산에서 제외하고, 이펙트 풀 반환 시 원래 스케일로 복원한다. 배율은 피격 이펙트 프리팹에서 조정한다.
+- Unity 6000.3.13f1 격리 프로젝트의 화염 배기 PlayMode 2개를 통과했다. 서로 다른 크기의 몸체별 이펙트 스케일과 런 종료 시 원래 스케일 복원을 확인했다.
+
+### 2026-10-15 · Combat/Progression — 자동 스킬 런타임 스탯 개편 기획
+
+- [자동 스킬 4종 런타임 스탯 개편안](../skill-runtime-stats-plan.md)에 BaseStat·UpgradeStat·RuntimeStat의 소유권, 스킬별 현재 수치와 런타임 항목, 런 준비 시 합성, 데이터 이전, 검증 기준을 정리했다. 이번 변경은 기획 문서만 작성했으며 스킬 코드와 강화 데이터는 아직 바꾸지 않았다.
+- 사용자 결정에 따라 강화 항목·단계·비용은 추후 지정한다. 전투 진입 시 현재 상태 스냅샷을 CombatManager에 전달해 런 전체에서 고정된 RuntimeStat을 사용한다. 풀 상한 검토와 전체 정보 화면의 최종값 표시는 이번 개편 범위에서 제외한다.
+
+### 2026-10-15 · Combat/Progression/App — 자동 스킬 4종 RuntimeStat 적용
+
+- 토네이도·헤드샷·벼락·화염 배기 컨트롤러의 전투 기본값을 직렬화된 스킬별 BaseStat으로 묶고, 전투 준비 때 UpgradeStat과 런 공격력을 합쳐 스킬별 RuntimeStat으로 고정했다. Main 씬의 기존 프리팹 override도 새 필드 경로로 이전했다.
+- Contracts의 `SkillCombatSnapshot`에 복사 방어된 증가량 목록을 추가하고, Progression이 구매한 `add` 노드를 stat ID별로 합산한다. GameInformation·영문 원본 데이터·스키마·한국어 참고본은 네 스킬을 지원한다. 현재 구매 노드는 토네이도 해금만 있으며 강화 항목·단계·비용과 나머지 스킬의 해금 노드는 후속 기획이다.
+- HuntManager가 전투 진입 시 스킬 스냅샷을 RunCoordinator에 전달한다. CombatRunController는 `PrepareRun` 뒤 스폰과 `CommitStart` 전에 네 컨트롤러를 준비하며, 준비 실패 시 런을 취소한다. 런 도중에는 RuntimeStat만 사용한다.
+- Unity 6000.3.13f1 격리 프로젝트에서 EditMode 99개와 PlayMode 13개를 통과했다. Main 씬 override 값, 증가량 복사·합산, 네 스킬 계산, 토네이도 개수 증가를 확인했다. Python 데이터 검증과 협업 계약 검증도 통과했다. Main 실제 화면 수동 검증과 전체 정보 화면의 최종값 표시는 후속이다.
+
+### 2026-10-16 · Combat/App/Contracts/Data — 매직볼 코어
+
+- `MagicBallSkillController`와 단일 재사용 `MagicBallObject`를 추가했다. 공급사 `Magic_Sphere_blue_Visual`은 게임 소유 루트 아래 시각 자식이다. 자식 `HItBox`의 원형 트리거가 적 타격 범위를, 루트의 원형 트리거가 벽 반사 범위를 정한다. 런 시드로 지정된 여덟 방향 중 하나를 선택해 화면 중앙에서 출발하고, 루트 콜라이더를 고려한 카메라 안쪽 경계에서 반사한다. 런 종료까지 공 한 개만 유지한다.
+- 이동 경로를 원형 검사하고 접촉 중인 같은 적의 반복 피해를 막는다. 재접촉 최소 간격, 속도, 크기, 피해 배율, 첫 생성 시각, 화면 여백과 방향 목록은 컨트롤러 Inspector에서 조정한다. 이동속도·크기·피해 배율의 런 스냅샷 항목을 예약했다.
+- Main과 CombatSandbox에 컨트롤러를 배치하고 `skill.magic_ball` ID를 데이터·스키마·계약에 추가했다. 구매 노드와 강화 단계는 후속 작업이며 Main은 에디터 획득 토글로 시험한다.
+- Unity 6000.3.13f1 임시 복제 프로젝트에서 매직볼 런타임 수치 EditMode 3개, Combat PlayMode 전체 14개를 통과했다. Python 데이터·협업 검증도 통과했다. Main 실제 화면에서의 비주얼 크기와 플레이 감각은 수동 확인이 필요하다.
+- 사용자 추가 `HItBox` 자식의 `CircleCollider2D`를 적 타격 범위로 연결했다. 루트 콜라이더는 벽 반사 경계에 사용한다. 자식 범위 안이면서 루트 범위 밖인 적의 피격을 PlayMode에서 확인했고, Combat PlayMode 전체 14개를 다시 통과했다.
+- 매직볼 생성점을 화면 안쪽 전투 영역에서 런 시드 기반 무작위 위치로 바꾸고, 루트 콜라이더가 벽에 닿을 때 `Vector2.Reflect`로 해당 벽의 법선을 따라 반사한다. 여덟 기본 출발 방향은 축에서 22.5도 비껴나도록 조정했다. PlayMode에서 화면 내부 생성·비스듬한 입사각 반사를 확인했고 Combat 전체 14개와 Python 정적 검증을 통과했다.
+
+### 2026-10-16 · Combat/App/Contracts/Data — 세로 레이저 코어
+
+- `skill.laser`용 `LaserSkillController`와 풀링 `LaserEffect`를 추가했다. 공급사 `Lazer_normal_Visual`은 게임 소유 프리팹의 시각 자식이며, 별도 사각 `HitBox`가 화면 안쪽 전투 영역의 높이 전체를 덮는다. 발동마다 런 시드로 X 위치를 고르고, 활성 시간에 진입한 모든 적에게 발동당 한 번씩 피해를 준다.
+- Main과 CombatSandbox의 `CombatManager` 아래에 컨트롤러 프리팹을 배치했다. Inspector 기본값은 쿨타임 5초, 지속 1초, 폭 배율 1, 피해 배율 2이며 화면 여백과 풀 상한도 조절할 수 있다. 런 스냅샷은 쿨타임·폭·피해 증가량을 받지만 구매 노드와 단계·비용은 아직 없다. 에디터 획득 토글과 Sandbox 토글로 시험한다.
+- GameInformation의 여섯 번째 스킬 ID와 영문 데이터·스키마·한국어 참고본을 갱신했다. Unity 6000.3.13f1 격리 프로젝트에서 EditMode 전체 101개와 Combat PlayMode 전체 15개를 통과했다. 레이저 크기 증가량이 HitBox 및 비주얼 폭에 적용되는 것도 PlayMode에서 확인했다. Python 데이터·협업 검증도 통과했다. Main 실제 화면에서의 파티클 길이·정렬은 수동 확인 후 조절한다.
+- `LaserEffect`의 비주얼 너비·높이 보정 배율을 각각 기본 2배로 올리고 프리팹 Inspector에 노출했다. HitBox의 화면 전체 높이와 폭 설정은 분리했다. Unity 격리 프로젝트에서 레이저 PlayMode 1개, Python 데이터·협업 검증을 통과했다. 실제 화면에서 보이는 길이와 타격 폭의 정렬은 수동 확인이 필요하다.
+- Main 씬의 `Lazer_normal` 배치값(원본과 동일한 파티클, X·Y 배율 각각 3)을 확인했다. `LaserEffect`도 화면 높이 24인 Main에서 비주얼 배율 3이 되도록 고쳤다. 기본 HitBox 폭은 스프라이트의 실제 광선 폭에 맞춰 7.5로 늘리고, 화면 높이가 바뀌면 비주얼과 HitBox 폭을 함께 비례 조정한다.
+- 사용자 스크린샷의 위·아래 화면 끝까지 닿는 레이저를 기준으로 비주얼 배율 적용 위치를 수정했다. 중간 `VisualAnchor` 대신 X축으로 회전된 `Lazer_normal_Visual` 파티클 Transform 자체를 스케일하여 Main 씬의 `Lazer_normal` 3배 설정과 같은 변환 순서를 사용한다.
+- Unity 격리 프로젝트의 레이저 PlayMode에서 `ParticleSystemRenderer.bounds`가 카메라 화면 위쪽과 아래쪽을 모두 덮는지 확인했고 테스트 1개가 통과했다. 이 검사는 파티클 렌더링 경계이며 애니메이션의 모든 프레임에서 불투명한 광선이 양 끝을 채우는지까지 검사하지는 않는다.
+
+### 2026-10-16 · Combat — 자동 스킬 등록과 풀 준비 리팩터링
+
+- 여섯 자동 스킬 컨트롤러가 작은 `IRunSkillController` 런 수명주기 계약을 구현한다. `CombatRunController`는 자식 컨트롤러를 ID별로 찾고 중복·미등록 ID를 검사한 뒤 해금된 스킬을 준비하며, 완료·중단·취소 시 같은 목록을 정리한다. 이동·타격 규칙은 각 스킬에 남긴다.
+- 화염 배기 피격 VFX는 첫 런 준비 때 80개를 모두 만들던 방식에서 기본 16개 준비로 바꿨다. 풀이 부족하면 피해는 유지하고 VFX만 생략하며 다음 프레임부터 한 번에 최대 2개씩 80개까지 늘린다. 초기 개수·증가 개수·상한은 프리팹 Inspector에서 조절한다.
+- 화염 배기와 레이저는 활성 효과도 발동도 없는 프레임에 `Physics2D.SyncTransforms`를 호출하지 않는다. 이동 직후 콜라이더 영역을 읽거나 타격을 검사해야 하는 위치의 동기화는 유지했다.
+- Unity 6000.3.13f1 격리 복제본에서 Combat PlayMode 17개가 통과했다. 같은 복제본의 단순 생성 측정에서 피격 VFX 16개 생성·풀 반환 중앙값은 약 10.4ms, 80개는 약 40.3ms였다(각 5회, 배치 모드). 80개 콜라이더의 Transform을 움직인 뒤 `Physics2D.SyncTransforms`를 호출한 측정은 호출당 중앙값 약 0.043ms였다(5회×100회, 배치 모드). 이 수치는 Main 화면의 전체 프레임 시간을 뜻하지 않는다. 협업 정적 검사도 통과했다.
+
+### 2026-10-16 · Combat — 사망 애니메이션 반복 방지
+
+- `MonsterCombatTarget`이 사망 상태의 첫 재생이 끝나면 마지막 프레임에서 Animator를 멈춘다. 부활할 때 원래 재생 속도를 복구하며, 기존 6초 부활 가능 시간은 유지한다. 공급사 원본 클립은 이번 변경에서 수정하지 않았다.
+- 열린 Unity 6000.3.13f1 에디터에서 새로고침 후 콘솔 오류 0건과 Main 필드 전투 진입을 확인했다. `python3 tools/validate_collaboration.py`와 `git diff --check`를 통과했다. 고스트 사망 장면 자체의 반복 여부는 화면에서 직접 관찰하지 못했다.
+
+### 2026-10-16 · Combat — 다른 몬스터 사망 클립 반복 수정
+
+- 일반 몬스터 10종의 사망 클립을 조사해 박쥐·전갈·눈요정·거미·골렘·봉오리·해골군주 7종의 원본 `Dead.anim`에 Loop Time이 켜져 있음을 확인했다. 워커 2종과 고스트는 꺼져 있었다.
+- 위 7종의 사망 클립을 `Combat/Art/MonsterDeath`에 복사하고 Loop Time만 껐다. 각 원본 외형의 Combat 프리팹 Variant에 Animator Override Controller를 적용해 Dead 클립만 교체하고, 해당 MonsterDefinition 7개를 Variant로 연결했다. 공급사 원본 에셋은 유지했다.
+- Unity 에디터에서 7개 클립·Override Controller·Variant 참조를 확인했고 Main 필드 사냥에서 몬스터 생성과 처치가 진행되는 동안 콘솔 경고·오류 0건을 확인했다. `validate_game_information.py`가 해당 Variant의 원본 연결·사망 클립 교체·반복 해제를 검사하도록 갱신했다. 데이터·협업 검증과 `git diff --check`가 통과했다. 모든 종의 사망 장면을 각각 직접 관찰한 검증은 아니다.

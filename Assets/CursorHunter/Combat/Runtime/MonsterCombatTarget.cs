@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using CursorHunter.Contracts;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace CursorHunter.Combat
 {
@@ -14,6 +15,8 @@ namespace CursorHunter.Combat
     {
         private const float ReviveWindowSeconds = 6f;
         private const float HealPulseSeconds = 0.4f;
+        // Keep monster visuals behind hit effects (200) and health bars (250).
+        private const int MaxVisualSortingOrder = 199;
         private static readonly List<MonsterCombatTarget> RegisteredInstances =
             new List<MonsterCombatTarget>(128);
 
@@ -58,6 +61,8 @@ namespace CursorHunter.Combat
         private bool _destroyScheduled;
         private int _deathStateLayer = -1;
         private int _deathStateHash;
+        private bool _deathAnimationFinished;
+        private float _animatorSpeedBeforeDeath;
         private string _monsterId;
         private long _maxHealth;
         private long _currentHealth;
@@ -68,6 +73,10 @@ namespace CursorHunter.Combat
         private float _shieldDamageReduction;
         private MonsterBehaviorType _behaviorType;
         private SpriteRenderer[] _visualRenderers = Array.Empty<SpriteRenderer>();
+        private SortingGroup _visualSortingGroup;
+        private Camera _sortingCamera;
+        private float _lastVisualSortingY;
+        private bool _hasVisualSortingY;
         private Color[] _originalVisualColors = Array.Empty<Color>();
         private MonsterHealthBarView _healthBar;
         private MonsterBehaviorController _behaviorController;
@@ -96,6 +105,18 @@ namespace CursorHunter.Combat
         public long BonusDropAmount => _bonusDropAmount;
         public float BonusDropChancePercent => _bonusDropChancePercent;
         public MonsterBehaviorType BehaviorType => _behaviorType;
+
+        internal static void CollectActiveForRun(RunId runId, List<MonsterCombatTarget> results)
+        {
+            results.Clear();
+            for (int i = 0; i < RegisteredInstances.Count; i++)
+            {
+                MonsterCombatTarget target = RegisteredInstances[i];
+                if (target != null && target.gameObject.activeInHierarchy &&
+                    target.RunId == runId && target.IsActive && target.IsVulnerable)
+                    results.Add(target);
+            }
+        }
 
         protected virtual void Awake()
         {
@@ -171,7 +192,13 @@ namespace CursorHunter.Combat
 
             if (TryGetDeathState(out AnimatorStateInfo state))
             {
-                if (state.normalizedTime < deathDespawnNormalizedTime ||
+                if (!_deathAnimationFinished && state.normalizedTime >= 1f)
+                {
+                    HoldDeathAnimationOnLastFrame();
+                }
+
+                if ((!_deathAnimationFinished &&
+                     state.normalizedTime < deathDespawnNormalizedTime) ||
                     HasDeathGraceRemaining())
                 {
                     return;
@@ -208,6 +235,7 @@ namespace CursorHunter.Combat
             _runController = null;
             _deathStateLayer = -1;
             _deathStateHash = 0;
+            RestoreDeathAnimationPlayback();
             _runId = runId;
             _monsterId = snapshot.MonsterId;
             _maxHealth = snapshot.MaxHealth;
@@ -243,6 +271,7 @@ namespace CursorHunter.Combat
             AttachAnimationEventRelays();
             ResolveHitEffectCollider();
             CacheVisualRenderers();
+            ConfigureVisualSorting(Camera.main);
             if (!RegisteredInstances.Contains(this))
             {
                 RegisteredInstances.Add(this);
@@ -516,7 +545,9 @@ namespace CursorHunter.Combat
 
             bool hasDeathState = TryGetDeathState(out AnimatorStateInfo state);
             if (_destroyScheduled &&
-                ((!hasDeathState || state.normalizedTime < deathDespawnNormalizedTime) ||
+                ((!hasDeathState ||
+                  (!_deathAnimationFinished &&
+                   state.normalizedTime < deathDespawnNormalizedTime)) ||
                  HasDeathGraceRemaining()))
             {
                 return;
@@ -696,6 +727,7 @@ namespace CursorHunter.Combat
             _deathRunId = default;
             _deathStateLayer = -1;
             _deathStateHash = 0;
+            RestoreDeathAnimationPlayback();
             _isDead = false;
             _isRegistered = true;
             _isVulnerable = true;
@@ -769,6 +801,39 @@ namespace CursorHunter.Combat
 
             _visualRenderers = renderers.ToArray();
             _originalVisualColors = colors.ToArray();
+        }
+
+        public void ConfigureVisualSorting(Camera worldCamera)
+        {
+            _sortingCamera = worldCamera;
+            _hasVisualSortingY = false;
+            Transform visualRoot = transform.Find("VisualRoot");
+            if (visualRoot == null) return;
+
+            _visualSortingGroup = visualRoot.GetComponent<SortingGroup>();
+            if (_visualSortingGroup == null)
+                _visualSortingGroup = visualRoot.gameObject.AddComponent<SortingGroup>();
+
+            RefreshVisualSorting();
+        }
+
+        internal void RefreshVisualSorting()
+        {
+            if (_visualSortingGroup == null || _sortingCamera == null) return;
+
+            float worldY = transform.position.y;
+            if (_hasVisualSortingY && _lastVisualSortingY == worldY) return;
+
+            float viewportY = _sortingCamera.WorldToViewportPoint(transform.position).y;
+            int order = Mathf.Clamp(
+                Mathf.RoundToInt((1f - viewportY) * MaxVisualSortingOrder),
+                0,
+                MaxVisualSortingOrder);
+            if (_visualSortingGroup.sortingOrder != order)
+                _visualSortingGroup.sortingOrder = order;
+
+            _lastVisualSortingY = worldY;
+            _hasVisualSortingY = true;
         }
 
         private void InitializeMovementAnimation()
@@ -897,6 +962,7 @@ namespace CursorHunter.Combat
 
         private void StartDeathAnimation()
         {
+            _deathAnimationFinished = false;
             if (animator == null)
             {
                 ScheduleDeathDespawn(ReviveWindowSeconds);
@@ -956,6 +1022,28 @@ namespace CursorHunter.Combat
 
             state = animator.GetCurrentAnimatorStateInfo(_deathStateLayer);
             return state.fullPathHash == _deathStateHash;
+        }
+
+        private void HoldDeathAnimationOnLastFrame()
+        {
+            // Many source clips loop, while corpses remain available for revival.
+            // Sample the final pose before the next render and stop the Animator
+            // without changing the source clip or the revival window.
+            _animatorSpeedBeforeDeath = animator.speed;
+            animator.Play(_deathStateHash, _deathStateLayer, 0.999f);
+            animator.Update(0f);
+            animator.speed = 0f;
+            _deathAnimationFinished = true;
+        }
+
+        private void RestoreDeathAnimationPlayback()
+        {
+            if (_deathAnimationFinished && animator != null)
+            {
+                animator.speed = _animatorSpeedBeforeDeath;
+            }
+
+            _deathAnimationFinished = false;
         }
 
         private void PlayHitAnimation()

@@ -23,6 +23,9 @@ LABELS = {
     "gemstones": "젬스톤",
     "monsters": "몬스터",
     "skills": "스킬",
+    "upgrades": "스킬 강화 증가량",
+    "statId": "스킬 스탯 식별자",
+    "delta": "스킬 스탯 증가량",
     "relics": "유물",
     "progression": "성장과 구매 설정",
     "categories": "강화 분류",
@@ -111,6 +114,9 @@ EXPLANATIONS = {
     "relicFragmentId": "드롭하는 유물 조각의 재화 ID입니다. 유물 강화 비용의 currencyId와 연결됩니다.",
     "relicFragmentChancePercent": "해당 유물 조각을 얻을 확률입니다. 3은 3%입니다.",
     "damage": "스킬이 한 번 발동할 때의 기본 피해입니다. 강화와 공격력 성장 연동을 적용한 최종 피해가 전투에 전달됩니다.",
+    "upgrades": "구매한 특성에서 합산한 스킬별 증가량입니다. 기본 전투 수치는 스킬 컨트롤러에 있으며 전투 진입 때 합성합니다.",
+    "statId": "한 스킬 안에서 강화할 수치를 가리키는 고정 식별자입니다.",
+    "delta": "기본 수치에 더할 값입니다. 음수 쿨타임 증가량은 발동 간격을 줄입니다.",
     "radiusWorldUnits": "스킬이 적용되는 원형 범위의 반경입니다. 월드 단위이며 현재 공통 실행기는 커서 중심입니다.",
     "cooldownSeconds": "해당 스킬 발동 사이의 대기 시간입니다. 기본 공격 쿨타임과 독립적입니다.",
     "level": "유물의 시작 레벨입니다. 0은 미획득이며 최대 5입니다. 레벨당 효과는 progression에서 정합니다.",
@@ -578,6 +584,12 @@ TRANSLATIONS = {
     "gem.diamond": "다이아몬드",
     "gem.dragon": "드래곤 젬",
     "skill.fireball": "파이어볼",
+    "skill.tornado": "토네이도",
+    "skill.headshot": "헤드샷",
+    "skill.thunder": "벼락",
+    "skill.flame_exhaust": "화염 배기",
+    "skill.magic_ball": "매직볼",
+    "skill.laser": "레이저",
     "skill.lightning": "라이트닝 볼트",
     "skill.freeze": "프리즈닝",
     "skill.hurricane": "허리케인",
@@ -815,7 +827,7 @@ def build_reference(document):
             "읽는법": "영문키 (한글명) 아래에 원본값과 설명을 표시합니다. 영어 문구·ID의 뜻은 한국어뜻을 참고하세요.",
             "수정주의": "수치 변경은 영어 원본에서만 합니다. 이 파일을 수정해도 게임은 바뀌지 않습니다.",
             "재생성방법": "python3 tools/build_korean_game_data_reference.py --patch 출력을 apply_patch로 적용합니다.",
-            "포함범위": "전투 시작 정보의 모든 필드: 스탯·전투 규칙·젬 6종·몬스터 10종과 행동 특성·스킬 7종. 성장 설정은 별도 파일이며 포함하지 않습니다."
+            "포함범위": "전투 시작 정보의 모든 필드: 스탯·전투 규칙·젬 6종·몬스터 10종과 행동 특성·스킬 6종. 성장 설정은 별도 파일이며 포함하지 않습니다."
         },
         "전체데이터해설": annotate(document)
     }

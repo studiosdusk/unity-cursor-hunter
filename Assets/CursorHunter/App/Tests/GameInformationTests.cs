@@ -12,7 +12,6 @@ namespace CursorHunter.App.Tests
         private static GameInformation ValidInformation()
         {
             string[] gems = { "gem.garnet", "gem.topaz", "gem.amethyst", "gem.sapphire", "gem.diamond", "gem.dragon" };
-            string[] skills = { "skill.fireball", "skill.lightning", "skill.freeze", "skill.hurricane", "skill.meteor", "skill.dragonBreath", "skill.cursorAura" };
             var data = new GameInformation {
                 schemaVersion = 3, balanceVersion = 3,
                 stats = new StatInformation {
@@ -21,7 +20,7 @@ namespace CursorHunter.App.Tests
                 },
                 gemstones = new GemstoneInformation[6],
                 monsters = new MonsterInformation[10],
-                skills = new SkillInformation[7]
+                skills = new SkillInformation[1]
             };
             for (int i = 0; i < gems.Length; i++)
                 data.gemstones[i] = new GemstoneInformation { id = gems[i], enabled = i == 0, amount = i == 0 ? long.MaxValue : 0 };
@@ -31,10 +30,7 @@ namespace CursorHunter.App.Tests
                     hitPoints = 20, spawnIntervalSeconds = 1, garnetReward = 3,
                     gemstoneId = gems[0], behaviorType = MonsterBehaviorType.None
                 };
-            for (int i = 0; i < skills.Length; i++)
-                data.skills[i] = new SkillInformation {
-                    id = skills[i], enabled = i == 0, damage = 40, radiusWorldUnits = 2, cooldownSeconds = 4.5f
-                };
+            data.skills[0] = new SkillInformation { id = "skill.tornado", enabled = true };
             return data;
         }
 
@@ -48,8 +44,8 @@ namespace CursorHunter.App.Tests
             Assert.That(snapshot.Combat.AttackPower, Is.EqualTo(10L));
             Assert.That(snapshot.Combat.CriticalChancePercent, Is.EqualTo(15f));
             Assert.That(snapshot.Monsters[0].ProductionCount, Is.EqualTo(3));
-            Assert.That(snapshot.Skills[0].Damage, Is.EqualTo(40L));
-            Assert.That(snapshot.Skills[0].RadiusWorldUnits, Is.EqualTo(2f));
+            Assert.That(snapshot.Skills[0].SkillId, Is.EqualTo("skill.tornado"));
+            Assert.That(snapshot.Skills[0].Unlocked, Is.True);
             Assert.That(snapshot.SourceJson, Is.EqualTo(json));
         }
 
@@ -62,10 +58,10 @@ namespace CursorHunter.App.Tests
             Assert.That(captured.Monsters, Is.Not.InstanceOf<MonsterCombatSnapshot[]>());
             data.stats.attackPower = 999;
             data.monsters[0].productionCount = 8;
-            data.skills[0].damage = 999;
+            data.skills[0].enabled = false;
             Assert.That(captured.Combat.AttackPower, Is.EqualTo(10));
             Assert.That(captured.Monsters[0].ProductionCount, Is.EqualTo(3));
-            Assert.That(captured.Skills[0].Damage, Is.EqualTo(40));
+            Assert.That(captured.Skills[0].Unlocked, Is.True);
         }
 
         [TestCase(31f)]
@@ -85,7 +81,7 @@ namespace CursorHunter.App.Tests
             data.monsters[1].id = data.monsters[0].id;
             Assert.That(data.TryValidate(out _), Is.False);
             data = ValidInformation();
-            data.skills[0].radiusWorldUnits = float.PositiveInfinity;
+            data.skills[0].id = "skill.unknown";
             Assert.That(data.TryValidate(out _), Is.False);
             data = ValidInformation();
             data.gemstones[0].amount = -1;

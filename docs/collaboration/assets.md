@@ -1,4 +1,15 @@
-> 2026-10-01 변경: 아래 v0.0.4 본문은 개편 전 기록입니다. 현재 JSON·노드 UI·몬스터 10종·유물·자동 반경/쿨타임·30초 규칙은 [새 구현 기준](game-information-refactor-2026-10-01.md)및 [최신 v3 인수인계](current-state-handoff-v0.0.4.md)를 우선합니다. 기존 캡처는 현재 UI 검증 자료가 아닙니다.
+> 현재 전투 스킬은 [자동 스킬 기획서](../skill-design.md)의 토네이도·헤드샷·벼락·화염 배기·매직볼·레이저다. 각 스킬의 컨트롤러와 전투 오브젝트는 프로젝트 소유 프리팹이다.
+
+| 현재 스킬 | 컨트롤러 | 전투 오브젝트 | 시각 원본 |
+|---|---|---|---|
+| `skill.tornado` | [TornadoSkillController.prefab](../../Assets/CursorHunter/Combat/Prefabs/Skills/TornadoSkillController.prefab) | [TornadoObject.prefab](../../Assets/CursorHunter/Combat/Prefabs/Skills/TornadoObject.prefab) | [FX_SnowTornado_Loop.prefab](../../Assets/DownLoadAssets/Eric%20VFX%20Studio/Game%20VFX%20-%20Tornado%20Collection/Prefab/URP/FX_SnowTornado_Loop.prefab) |
+| `skill.headshot` | [HeadshotSkillController.prefab](../../Assets/CursorHunter/Combat/Prefabs/Skills/HeadshotSkillController.prefab) | [HeadshotEffect.prefab](../../Assets/CursorHunter/Combat/Prefabs/Skills/HeadshotEffect.prefab) | [FX_Aim_Explode_Visual.prefab](../../Assets/DownLoadAssets/Eric%20VFX%20Studio/Game%20VFX%20-%20Cartoon%20Skill%20Collection%20Vol2/Prefabs/URP/FX_Aim_Explode_Visual.prefab) |
+| `skill.thunder` | [ThunderSkillController.prefab](../../Assets/CursorHunter/Combat/Prefabs/Skills/ThunderSkillController.prefab) | [ThunderEffect.prefab](../../Assets/CursorHunter/Combat/Prefabs/Skills/ThunderEffect.prefab) | [FX_Cartoon Thunder_Visual.prefab](../../Assets/DownLoadAssets/Eric%20VFX%20Studio/Game%20VFX%20-%20Cartoon%20Skill%20Collection%20Vol2/Prefabs/URP/FX_Cartoon%20Thunder_Visual.prefab) |
+| `skill.flame_exhaust` | [FlameExhaustSkillController.prefab](../../Assets/CursorHunter/Combat/Prefabs/Skills/FlameExhaustSkillController.prefab) | [FlameExhaustProjectile.prefab](../../Assets/CursorHunter/Combat/Prefabs/Skills/FlameExhaustProjectile.prefab), [FlameExhaustHitEffect.prefab](../../Assets/CursorHunter/Combat/Prefabs/Skills/FlameExhaustHitEffect.prefab) | [FX_MagicSlash02_Fire.prefab](../../Assets/DownLoadAssets/Eric%20VFX%20Studio/Game%20VFX%20-%20Magic%20Slash%20Collection/Prefabs/URP/FX_MagicSlash02_Fire.prefab) |
+| `skill.magic_ball` | [MagicBallSkillController.prefab](../../Assets/CursorHunter/Combat/Prefabs/Skills/MagicBallSkillController.prefab) | [MagicBallObject.prefab](../../Assets/CursorHunter/Combat/Prefabs/Skills/MagicBallObject.prefab) | [Magic_Sphere_blue_Visual.prefab](../../Assets/DownLoadAssets/118%20sprite%20effects%20bundle/25%20sprite%20effects/_prefabs/Magic_Sphere_blue_Visual.prefab) |
+| `skill.laser` | [LaserSkillController.prefab](../../Assets/CursorHunter/Combat/Prefabs/Skills/LaserSkillController.prefab) | [LaserEffect.prefab](../../Assets/CursorHunter/Combat/Prefabs/Skills/LaserEffect.prefab) | [Lazer_normal_Visual.prefab](../../Assets/DownLoadAssets/118%20sprite%20effects%20bundle/15%20effects/_prefabs/Lazer_normal_Visual.prefab) |
+
+> 2026-10-01 변경: 아래 v0.0.4 본문은 개편 전 기록입니다. 기존 캡처는 현재 UI 검증 자료가 아닙니다.
 
 # 에셋 후보와 기획 매핑
 
@@ -9,6 +20,10 @@
 
 ## 재사용 방식
 원본 Assets/DownLoadAssets는 기본적으로 보존한다. 각 모듈 소유 폴더에 Variant 또는 시각 래퍼를 만든다. GUID는 원본 추적용이며 런타임 로더 구현이 아니다.
+2026-10-16 전투의 박쥐·전갈·눈요정·거미·골렘·봉오리·해골군주는
+`Combat/Art/MonsterDeath`의 반복하지 않는 Dead 클립을 사용한다. 각 종의
+`Combat/Prefabs/Monsters/Visuals` 프리팹 Variant가 Animator Override Controller로
+해당 클립만 교체하며, MonsterDefinition은 이 Variant를 참조한다.
 2026-10-05 사용자 요청에 따라 예외적으로 `EnemyMonster 2/Animations`의 17종 Animator Controller에 Walker와 같은 전이·파라미터를 직접 적용했다. 각 종의 클립, 컨트롤러 GUID, 50개 프리팹 연결은 유지한다.
 아래 링크의 에셋을 Unity에서 선택한 뒤 스프라이트 모드, pivot, 픽셀 크기, sorting, URP 머티리얼, emission/loop/stop을 점검한다.
 

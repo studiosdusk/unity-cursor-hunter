@@ -5,7 +5,6 @@
   "progression": {
     "savedProgressPolicy": "overlay",
     "initialBossTier": 0,
-    "scaleSkillDamageWithAttack": true,
     "categories": [
       {
         "id": "stat.attack",
@@ -603,408 +602,21 @@
         ]
       },
       {
-        "id": "skill.fireball",
+        "id": "skill.tornado",
         "tab": "skills",
         "nodes": [
           {
-            "id": "skill.fireball",
-            "displayName": "Fireball",
-            "description": "Unlock Fireball from the central research start point.",
+            "id": "skill.tornado",
+            "displayName": "Tornado",
+            "description": "Automatically creates wandering tornadoes at random field positions.",
             "valueLabel": "Unlock skill",
-            "cost": 0,
+            "cost": 40,
             "currencyId": "gem.garnet",
             "requiredBossTier": 0,
             "prerequisiteNodeId": "stat.attack.01",
             "startsUnlocked": false,
             "operation": "enable",
             "value": 1
-          },
-          {
-            "id": "skill.fireball.damage",
-            "displayName": "Damage Upgrade",
-            "description": "Multiply Fireball damage by 1.35.",
-            "valueLabel": "1.35x",
-            "cost": 10,
-            "currencyId": "gem.garnet",
-            "requiredBossTier": 0,
-            "prerequisiteNodeId": "skill.fireball",
-            "startsUnlocked": false,
-            "operation": "multiply",
-            "value": 1.35
-          },
-          {
-            "id": "skill.fireball.radius",
-            "displayName": "Radius Upgrade",
-            "description": "Multiply Fireball radius by 1.3.",
-            "valueLabel": "1.3x",
-            "cost": 14,
-            "currencyId": "gem.garnet",
-            "requiredBossTier": 0,
-            "prerequisiteNodeId": "skill.fireball",
-            "startsUnlocked": false,
-            "operation": "multiply",
-            "value": 1.3
-          },
-          {
-            "id": "skill.fireball.cooldown",
-            "displayName": "Cooldown Upgrade",
-            "description": "Multiply Fireball cooldown by 0.8.",
-            "valueLabel": "0.8x",
-            "cost": 18,
-            "currencyId": "gem.garnet",
-            "requiredBossTier": 0,
-            "prerequisiteNodeId": "skill.fireball",
-            "startsUnlocked": false,
-            "operation": "multiply",
-            "value": 0.8
-          }
-        ]
-      },
-      {
-        "id": "skill.lightning",
-        "tab": "skills",
-        "nodes": [
-          {
-            "id": "skill.lightning",
-            "displayName": "Lightning Bolt",
-            "description": "Enable the skill from the central research start point.",
-            "valueLabel": "Unlock skill",
-            "cost": 60,
-            "currencyId": "gem.topaz",
-            "requiredBossTier": 1,
-            "prerequisiteNodeId": "stat.attack.01",
-            "startsUnlocked": false,
-            "operation": "enable",
-            "value": 1
-          },
-          {
-            "id": "skill.lightning.damage",
-            "displayName": "Damage Upgrade",
-            "description": "Multiply Lightning Bolt damage by 1.35.",
-            "valueLabel": "1.35x",
-            "cost": 61,
-            "currencyId": "gem.topaz",
-            "requiredBossTier": 0,
-            "prerequisiteNodeId": "skill.lightning",
-            "startsUnlocked": false,
-            "operation": "multiply",
-            "value": 1.35
-          },
-          {
-            "id": "skill.lightning.radius",
-            "displayName": "Radius Upgrade",
-            "description": "Multiply Lightning Bolt radius by 1.3.",
-            "valueLabel": "1.3x",
-            "cost": 62,
-            "currencyId": "gem.topaz",
-            "requiredBossTier": 0,
-            "prerequisiteNodeId": "skill.lightning",
-            "startsUnlocked": false,
-            "operation": "multiply",
-            "value": 1.3
-          },
-          {
-            "id": "skill.lightning.cooldown",
-            "displayName": "Cooldown Upgrade",
-            "description": "Multiply Lightning Bolt cooldown by 0.8.",
-            "valueLabel": "0.8x",
-            "cost": 63,
-            "currencyId": "gem.topaz",
-            "requiredBossTier": 0,
-            "prerequisiteNodeId": "skill.lightning",
-            "startsUnlocked": false,
-            "operation": "multiply",
-            "value": 0.8
-          }
-        ]
-      },
-      {
-        "id": "skill.freeze",
-        "tab": "skills",
-        "nodes": [
-          {
-            "id": "skill.freeze",
-            "displayName": "Freeze",
-            "description": "Enable the skill from the central research start point.",
-            "valueLabel": "Unlock skill",
-            "cost": 90,
-            "currencyId": "gem.amethyst",
-            "requiredBossTier": 2,
-            "prerequisiteNodeId": "stat.attack.01",
-            "startsUnlocked": false,
-            "operation": "enable",
-            "value": 1
-          },
-          {
-            "id": "skill.freeze.damage",
-            "displayName": "Damage Upgrade",
-            "description": "Multiply Freezing damage by 1.35.",
-            "valueLabel": "1.35x",
-            "cost": 91,
-            "currencyId": "gem.amethyst",
-            "requiredBossTier": 0,
-            "prerequisiteNodeId": "skill.freeze",
-            "startsUnlocked": false,
-            "operation": "multiply",
-            "value": 1.35
-          },
-          {
-            "id": "skill.freeze.radius",
-            "displayName": "Radius Upgrade",
-            "description": "Multiply Freezing radius by 1.3.",
-            "valueLabel": "1.3x",
-            "cost": 92,
-            "currencyId": "gem.amethyst",
-            "requiredBossTier": 0,
-            "prerequisiteNodeId": "skill.freeze",
-            "startsUnlocked": false,
-            "operation": "multiply",
-            "value": 1.3
-          },
-          {
-            "id": "skill.freeze.cooldown",
-            "displayName": "Cooldown Upgrade",
-            "description": "Multiply Freezing cooldown by 0.8.",
-            "valueLabel": "0.8x",
-            "cost": 93,
-            "currencyId": "gem.amethyst",
-            "requiredBossTier": 0,
-            "prerequisiteNodeId": "skill.freeze",
-            "startsUnlocked": false,
-            "operation": "multiply",
-            "value": 0.8
-          }
-        ]
-      },
-      {
-        "id": "skill.hurricane",
-        "tab": "skills",
-        "nodes": [
-          {
-            "id": "skill.hurricane",
-            "displayName": "Hurricane",
-            "description": "Enable the skill from the central research start point.",
-            "valueLabel": "Unlock skill",
-            "cost": 120,
-            "currencyId": "gem.sapphire",
-            "requiredBossTier": 3,
-            "prerequisiteNodeId": "stat.attack.01",
-            "startsUnlocked": false,
-            "operation": "enable",
-            "value": 1
-          },
-          {
-            "id": "skill.hurricane.damage",
-            "displayName": "Damage Upgrade",
-            "description": "Multiply Hurricane damage by 1.35.",
-            "valueLabel": "1.35x",
-            "cost": 121,
-            "currencyId": "gem.sapphire",
-            "requiredBossTier": 0,
-            "prerequisiteNodeId": "skill.hurricane",
-            "startsUnlocked": false,
-            "operation": "multiply",
-            "value": 1.35
-          },
-          {
-            "id": "skill.hurricane.radius",
-            "displayName": "Radius Upgrade",
-            "description": "Multiply Hurricane radius by 1.3.",
-            "valueLabel": "1.3x",
-            "cost": 122,
-            "currencyId": "gem.sapphire",
-            "requiredBossTier": 0,
-            "prerequisiteNodeId": "skill.hurricane",
-            "startsUnlocked": false,
-            "operation": "multiply",
-            "value": 1.3
-          },
-          {
-            "id": "skill.hurricane.cooldown",
-            "displayName": "Cooldown Upgrade",
-            "description": "Multiply Hurricane cooldown by 0.8.",
-            "valueLabel": "0.8x",
-            "cost": 123,
-            "currencyId": "gem.sapphire",
-            "requiredBossTier": 0,
-            "prerequisiteNodeId": "skill.hurricane",
-            "startsUnlocked": false,
-            "operation": "multiply",
-            "value": 0.8
-          }
-        ]
-      },
-      {
-        "id": "skill.meteor",
-        "tab": "skills",
-        "nodes": [
-          {
-            "id": "skill.meteor",
-            "displayName": "Meteor",
-            "description": "Enable the skill from the central research start point.",
-            "valueLabel": "Unlock skill",
-            "cost": 150,
-            "currencyId": "gem.diamond",
-            "requiredBossTier": 4,
-            "prerequisiteNodeId": "stat.attack.01",
-            "startsUnlocked": false,
-            "operation": "enable",
-            "value": 1
-          },
-          {
-            "id": "skill.meteor.damage",
-            "displayName": "Damage Upgrade",
-            "description": "Multiply Meteor damage by 1.35.",
-            "valueLabel": "1.35x",
-            "cost": 151,
-            "currencyId": "gem.diamond",
-            "requiredBossTier": 0,
-            "prerequisiteNodeId": "skill.meteor",
-            "startsUnlocked": false,
-            "operation": "multiply",
-            "value": 1.35
-          },
-          {
-            "id": "skill.meteor.radius",
-            "displayName": "Radius Upgrade",
-            "description": "Multiply Meteor radius by 1.3.",
-            "valueLabel": "1.3x",
-            "cost": 152,
-            "currencyId": "gem.diamond",
-            "requiredBossTier": 0,
-            "prerequisiteNodeId": "skill.meteor",
-            "startsUnlocked": false,
-            "operation": "multiply",
-            "value": 1.3
-          },
-          {
-            "id": "skill.meteor.cooldown",
-            "displayName": "Cooldown Upgrade",
-            "description": "Multiply Meteor cooldown by 0.8.",
-            "valueLabel": "0.8x",
-            "cost": 153,
-            "currencyId": "gem.diamond",
-            "requiredBossTier": 0,
-            "prerequisiteNodeId": "skill.meteor",
-            "startsUnlocked": false,
-            "operation": "multiply",
-            "value": 0.8
-          }
-        ]
-      },
-      {
-        "id": "skill.dragonBreath",
-        "tab": "skills",
-        "nodes": [
-          {
-            "id": "skill.dragonBreath",
-            "displayName": "Dragon Breath",
-            "description": "Enable the skill from the central research start point.",
-            "valueLabel": "Unlock skill",
-            "cost": 180,
-            "currencyId": "gem.dragon",
-            "requiredBossTier": 5,
-            "prerequisiteNodeId": "stat.attack.01",
-            "startsUnlocked": false,
-            "operation": "enable",
-            "value": 1
-          },
-          {
-            "id": "skill.dragonBreath.damage",
-            "displayName": "Damage Upgrade",
-            "description": "Multiply Dragon Breath damage by 1.35.",
-            "valueLabel": "1.35x",
-            "cost": 181,
-            "currencyId": "gem.dragon",
-            "requiredBossTier": 0,
-            "prerequisiteNodeId": "skill.dragonBreath",
-            "startsUnlocked": false,
-            "operation": "multiply",
-            "value": 1.35
-          },
-          {
-            "id": "skill.dragonBreath.radius",
-            "displayName": "Radius Upgrade",
-            "description": "Multiply Dragon Breath radius by 1.3.",
-            "valueLabel": "1.3x",
-            "cost": 182,
-            "currencyId": "gem.dragon",
-            "requiredBossTier": 0,
-            "prerequisiteNodeId": "skill.dragonBreath",
-            "startsUnlocked": false,
-            "operation": "multiply",
-            "value": 1.3
-          },
-          {
-            "id": "skill.dragonBreath.cooldown",
-            "displayName": "Cooldown Upgrade",
-            "description": "Multiply Dragon Breath cooldown by 0.8.",
-            "valueLabel": "0.8x",
-            "cost": 183,
-            "currencyId": "gem.dragon",
-            "requiredBossTier": 0,
-            "prerequisiteNodeId": "skill.dragonBreath",
-            "startsUnlocked": false,
-            "operation": "multiply",
-            "value": 0.8
-          }
-        ]
-      },
-      {
-        "id": "skill.cursorAura",
-        "tab": "skills",
-        "nodes": [
-          {
-            "id": "skill.cursorAura",
-            "displayName": "Cursor Aura",
-            "description": "Enable the skill from the central research start point.",
-            "valueLabel": "Unlock skill",
-            "cost": 210,
-            "currencyId": "gem.garnet",
-            "requiredBossTier": 2,
-            "prerequisiteNodeId": "stat.attack.01",
-            "startsUnlocked": false,
-            "operation": "enable",
-            "value": 1
-          },
-          {
-            "id": "skill.cursorAura.damage",
-            "displayName": "Damage Upgrade",
-            "description": "Multiply Cursor Aura damage by 1.35.",
-            "valueLabel": "1.35x",
-            "cost": 211,
-            "currencyId": "gem.garnet",
-            "requiredBossTier": 0,
-            "prerequisiteNodeId": "skill.cursorAura",
-            "startsUnlocked": false,
-            "operation": "multiply",
-            "value": 1.35
-          },
-          {
-            "id": "skill.cursorAura.radius",
-            "displayName": "Radius Upgrade",
-            "description": "Multiply Cursor Aura radius by 1.3.",
-            "valueLabel": "1.3x",
-            "cost": 212,
-            "currencyId": "gem.garnet",
-            "requiredBossTier": 0,
-            "prerequisiteNodeId": "skill.cursorAura",
-            "startsUnlocked": false,
-            "operation": "multiply",
-            "value": 1.3
-          },
-          {
-            "id": "skill.cursorAura.cooldown",
-            "displayName": "Cooldown Upgrade",
-            "description": "Multiply Cursor Aura cooldown by 0.8.",
-            "valueLabel": "0.8x",
-            "cost": 213,
-            "currencyId": "gem.garnet",
-            "requiredBossTier": 0,
-            "prerequisiteNodeId": "skill.cursorAura",
-            "startsUnlocked": false,
-            "operation": "multiply",
-            "value": 0.8
           }
         ]
       },
@@ -1701,46 +1313,40 @@
       "prefabKey": ""
     },
     {
-      "id": "skill.fireball",
-      "displayName": "Fireball",
-      "description": "Current implementation: cooldown-based circular damage at the cursor. Unique projectiles, status effects and visuals are not implemented.",
-      "prefabKey": ""
+      "id": "skill.tornado",
+      "displayName": "Tornado",
+      "description": "Wandering tornadoes that repeatedly damage enemies in their area.",
+      "prefabKey": "Combat/Prefabs/Skills/TornadoSkillController"
     },
     {
-      "id": "skill.lightning",
-      "displayName": "Lightning Bolt",
-      "description": "Current implementation: cooldown-based circular damage at the cursor. Unique projectiles, status effects and visuals are not implemented.",
-      "prefabKey": ""
+      "id": "skill.headshot",
+      "displayName": "Headshot",
+      "description": "Marks a target before an explosion.",
+      "prefabKey": "Combat/Prefabs/Skills/HeadshotSkillController"
     },
     {
-      "id": "skill.freeze",
-      "displayName": "Freeze",
-      "description": "Current implementation: cooldown-based circular damage at the cursor. Unique projectiles, status effects and visuals are not implemented.",
-      "prefabKey": ""
+      "id": "skill.thunder",
+      "displayName": "Thunder",
+      "description": "Strikes one randomly selected enemy.",
+      "prefabKey": "Combat/Prefabs/Skills/ThunderSkillController"
     },
     {
-      "id": "skill.hurricane",
-      "displayName": "Hurricane",
-      "description": "Current implementation: cooldown-based circular damage at the cursor. Unique projectiles, status effects and visuals are not implemented.",
-      "prefabKey": ""
+      "id": "skill.flame_exhaust",
+      "displayName": "Flame Exhaust",
+      "description": "Launches a smaller cursor in a random direction.",
+      "prefabKey": "Combat/Prefabs/Skills/FlameExhaustSkillController"
     },
     {
-      "id": "skill.meteor",
-      "displayName": "Meteor",
-      "description": "Current implementation: cooldown-based circular damage at the cursor. Unique projectiles, status effects and visuals are not implemented.",
-      "prefabKey": ""
+      "id": "skill.magic_ball",
+      "displayName": "Magic Ball",
+      "description": "A magic sphere bounces around the field and damages enemies it touches.",
+      "prefabKey": "Combat/Prefabs/Skills/MagicBallSkillController"
     },
     {
-      "id": "skill.dragonBreath",
-      "displayName": "Dragon Breath",
-      "description": "Current implementation: cooldown-based circular damage at the cursor. Unique projectiles, status effects and visuals are not implemented.",
-      "prefabKey": ""
-    },
-    {
-      "id": "skill.cursorAura",
-      "displayName": "Cursor Aura",
-      "description": "Current implementation: cooldown-based circular damage at the cursor. Unique projectiles, status effects and visuals are not implemented.",
-      "prefabKey": ""
+      "id": "skill.laser",
+      "displayName": "Laser",
+      "description": "A vertical laser strikes every enemy that enters its beam once per cast.",
+      "prefabKey": "Combat/Prefabs/Skills/LaserSkillController"
     },
     {
       "id": "monster.01",

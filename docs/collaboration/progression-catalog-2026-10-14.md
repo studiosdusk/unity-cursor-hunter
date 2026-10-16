@@ -1,6 +1,8 @@
 # 성장 데이터 전체 목록 · 2026-10-14
 
-이 문서는 현재 `progression-config.en.json`, `game-data.en.json`, `MonsterDefinition` 및 연결된 `MonsterBehaviorProfile`을 기준으로 정리했다. 전투 기본값은 시작값이며, 특성 강화 노드는 별도로 표시했다.
+> 이 문서는 `ui-stat_2` 브랜치의 2026-10-14 카탈로그 기록이다. `feature-skills` 병합 후 현재 스킬 성장 노드는 토네이도 해금 1개이며 전체 노드는 84개다. 현재 값은 `progression-config.en.json`을 기준으로 확인한다.
+
+아래는 당시 `progression-config.en.json`, `game-data.en.json`, `MonsterDefinition` 및 연결된 `MonsterBehaviorProfile`을 기준으로 정리했다. 전투 기본값은 시작값이며, 특성 강화 노드는 별도로 표시했다.
 
 ## 전체 구성
 

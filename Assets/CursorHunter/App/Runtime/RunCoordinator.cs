@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using CursorHunter.Combat;
 using CursorHunter.Contracts;
 
@@ -52,6 +53,7 @@ namespace CursorHunter.App
                 request,
                 combatSnapshot,
                 null,
+                null,
                 spawnPlan,
                 out failureReason);
         }
@@ -67,14 +69,28 @@ namespace CursorHunter.App
                 request,
                 combatSnapshot,
                 cursorStatBonuses,
+                null,
                 spawnPlan,
                 out failureReason);
+        }
+
+        public bool Start(
+            RunRequest request,
+            CombatSnapshot combatSnapshot,
+            CursorCombatStatBonusesSnapshot cursorStatBonuses,
+            IReadOnlyList<SkillCombatSnapshot> skills,
+            SpawnPlan spawnPlan,
+            out string failureReason)
+        {
+            return StartInternal(request, combatSnapshot, cursorStatBonuses,
+                skills, spawnPlan, out failureReason);
         }
 
         private bool StartInternal(
             RunRequest request,
             CombatSnapshot combatSnapshot,
             CursorCombatStatBonusesSnapshot? cursorStatBonuses,
+            IReadOnlyList<SkillCombatSnapshot> skills,
             SpawnPlan spawnPlan,
             out string failureReason)
         {
@@ -142,6 +158,13 @@ namespace CursorHunter.App
                 }
 
                 combatPrepared = true;
+
+                if (!_combatRunController.ConfigureSkills(skills))
+                {
+                    return FailStart(session,
+                        "CombatRunController rejected skill preparation.",
+                        true, false, false, out failureReason);
+                }
 
                 SpawnStartResult spawnStartResult =
                     _monsterSpawner.StartRun(request, spawnPlan);

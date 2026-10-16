@@ -1,0 +1,13 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!221 &22100000
+AnimatorOverrideController:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Golem_DeathOnce
+  m_Controller: {fileID: 9100000, guid: 827771cfc116db84ca2603e7042f4bcf, type: 2}
+  m_Clips:
+  - m_OriginalClip: {fileID: 7400000, guid: 392c926b96feaba4a8f72d4c3fe8dd3c, type: 2}
+    m_OverrideClip: {fileID: 7400000, guid: ff72015bce8f41f6874c7a277d4708b8, type: 2}

@@ -1,4 +1,4 @@
-# 런과 플레이어 상태 연결 계약 — JSON v3 (2026-10-01)
+# 런과 플레이어 상태 연결 계약 — JSON v3 (2026-10-14)
 
 ## 전투에 필요한 현재 정보만 전달한다
 
@@ -29,7 +29,7 @@ information 래퍼, progression, entities, fieldHelp, implementation, relics는 
 | rules | criticalDamageMultiplier, globalAliveLimit, perMonsterAliveLimit, bossFieldDurationSeconds |
 | gemstones[6] | id, enabled, amount |
 | monsters[10] | id, enabled, productionCount, hitPoints, spawnIntervalSeconds, garnetReward, gemstoneId, gemstoneAmount, gemstoneChancePercent, behaviorType |
-| skills[7] | id, enabled, damage, radiusWorldUnits, cooldownSeconds |
+| skills[6] | `skill.tornado`, `skill.headshot`, `skill.thunder`, `skill.flame_exhaust`, `skill.magic_ball`, `skill.laser`의 id, enabled, upgrades[statId, delta] |
 
 HP/공격력/피해/재화는 Int64. 시간은 초, 반경은 월드 단위, 확률은 0~100이다.
 productionCount는 1회 생성 마릿수다. gems.enabled는 공급 몬스터 활성 여부이며 잔액과 독립적이다.
@@ -82,7 +82,11 @@ MonsterDefinition.BaseStats
 아래 controller는 현재 CombatRunController, snapshot은 App이 캡처한 ProgressionCombatSnapshot이다.
 전역 변수나 새로 추가한 전체 데이터 getter를 뜻하지 않는다.
 HuntManager.BeginPrototypeRun이 전체 정보와 커서 증가량 스냅샷을 만들고,
-RunCoordinator.Start에 CombatSnapshot/커서 증가량/SpawnPlan, ConfigureSkills에 스킬 목록을 전달한다.
+RunCoordinator.Start에 CombatSnapshot/커서 증가량/스킬 목록/SpawnPlan을 전달한다.
+CombatRunController는 PrepareRun 이후 CommitStart 이전에 여섯 스킬의 BaseStat과
+UpgradeStat을 합쳐 이번 런의 RuntimeStat으로 고정한다.
+매직볼은 단일 오브젝트가 런 종료까지 유지되어 쿨타임 증가량을 받지 않는다.
+허용된 증가량 ID는 `moveSpeedWorldUnitsPerSecond`, `sizeMultiplier`, `damageMultiplier`다.
 
 | 정보 | 실제 프로퍼티 |
 |---|---|
@@ -92,18 +96,18 @@ RunCoordinator.Start에 CombatSnapshot/커서 증가량/SpawnPlan, ConfigureSkil
 | 치명타 확률 / 피해 배율 | controller.CombatSnapshot.CriticalChancePercent / CriticalDamageMultiplier |
 | 보스 피해 배율 | controller.CombatSnapshot.BossDamageMultiplier |
 | 자동 공격 여부 / 주기 | controller.CombatSnapshot.AutoAttackEnabled / AutoAttackIntervalSeconds |
-| 스킬 정보 | ConfigureSkills로 받은 SkillCombatSnapshot의 SkillId, Unlocked, Damage, RadiusWorldUnits, CooldownSeconds |
+| 스킬 정보 | SkillCombatSnapshot의 SkillId, Unlocked, Upgrades와 각 스킬 프리팹/Main override의 BaseStat을 합친 RuntimeStat. Editor Play Mode에서는 `Skill Acquired` 토글로 저장 구매 없이 시험 가능 |
 | 몬스터 생성 | SpawnPlan.Entries[i].Snapshot의 MonsterId, MaxHealth, PackSize, SpawnIntervalSeconds, AliveLimit |
 | 몬스터 특성 | SpawnPlan.Entries[i].Snapshot의 MovementMode, MoveSpeed, VisualScale, SpecialAbility 및 능력 수치 |
 | 가넷 / 추가 젬 보상 | SpawnSnapshot.GarnetReward / BonusDropCurrencyId, BonusDropAmount, BonusDropChancePercent |
-| 개체 현재 체력 | WalkerStumpTarget.CurrentHealth (MaxHealth는 시작/최대 체력) |
+| 개체 현재 체력 | MonsterCombatTarget.CurrentHealth (MaxHealth는 시작/최대 체력) |
 | 런 진행 | controller.ElapsedSeconds, RemainingSeconds, DefeatedCount, GarnetEarned, EffectiveDamage |
 | 일반/보스 제한 시간 | snapshot.NormalFieldDurationSeconds / BossFieldDurationSeconds |
 | 생성 상한 | snapshot.GlobalAliveLimit / PerMonsterAliveLimit |
 | 전체 시작 정보 | snapshot.SourceJson → GameInformationJson.TryDeserialize (App에서만) |
 
-CombatRunController 내부에서는 _combatSnapshot과 _skills를 읽는다.
-외부에 Skills getter나 전체 ProgressionCombatSnapshot getter가 현재 존재하지 않는다.
+CombatRunController는 현재 런의 CombatSnapshot과 RunId를 사용한다.
+외부에 Skills getter나 전체 ProgressionCombatSnapshot getter는 없다.
 신규 Combat 하위 시스템에는 초기화 경로에서 필요한 스냅샷을 명시적으로 전달한다.
 
 App에서 전체 시작 정보를 검사하는 메서드 예시(기존 App 클래스 안에 넣는 예시이지 이미 존재하는 메서드는 아님):
@@ -149,7 +153,7 @@ Data 참조가 없는 Combat 어셈블리에서 위 파싱 메서드를 호출�
 
 ## 검증·아직 없는 기능
 
-Python 정적 검사와 12개 데이터 테스트, C# 구문 검사. Unity 컴파일·게임·Editor 테스트는 실행하지 않았다.
+2026-10-15 자동 스킬 4종 스탯 개편 후 Python 데이터·협업 계약 검사와 Unity 6000.3.13f1 격리 프로젝트의 EditMode 99개, PlayMode 13개를 통과했다. Main 화면에서 실제 이펙트와 발동 타이밍을 수동으로 확인하는 작업은 남아 있다.
 스킬 고유 투사체/빙결/틱/브레스, 보스 패턴/패링, 전체 Localization, 영속 RunId journal은 미완료다.
 프로세스 내 중복 정산 방지와 PlayerPrefs 저장의 기존 한계는 남아 있다.
 메인 스레드 흐름을 유지하며 읽기 전용 배열만으로 전체 시스템의 멀티스레드 안전성을 주장하지 않는다.

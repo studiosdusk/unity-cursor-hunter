@@ -1,0 +1,13 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!221 &22100000
+AnimatorOverrideController:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Scorpion_DeathOnce
+  m_Controller: {fileID: 9100000, guid: 75bf99a7d0f90a547bdb712f6cf13f54, type: 2}
+  m_Clips:
+  - m_OriginalClip: {fileID: 7400000, guid: ba363966befc84b47a75eaf335afb53b, type: 2}
+    m_OverrideClip: {fileID: 7400000, guid: d13565ad3e5e480581f8f3ab8b5d8d76, type: 2}
