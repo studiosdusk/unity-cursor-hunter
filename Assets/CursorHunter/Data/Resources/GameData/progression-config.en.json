@@ -1343,6 +1343,12 @@
       "prefabKey": "Combat/Prefabs/Skills/MagicBallSkillController"
     },
     {
+      "id": "skill.laser",
+      "displayName": "Laser",
+      "description": "A vertical laser strikes every enemy that enters its beam once per cast.",
+      "prefabKey": "Combat/Prefabs/Skills/LaserSkillController"
+    },
+    {
       "id": "monster.01",
       "displayName": "Stump",
       "description": "Basic monster.",

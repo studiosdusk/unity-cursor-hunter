@@ -90,7 +90,7 @@ def validate_documents():
         assert len(info["gemstones"]) == 6 and len(info["monsters"]) == 10
         assert [skill["id"] for skill in info["skills"]] == [
             "skill.tornado", "skill.headshot", "skill.thunder", "skill.flame_exhaust",
-            "skill.magic_ball"]
+            "skill.magic_ball", "skill.laser"]
         stats, rules = info["stats"], info["rules"]
         assert 1 <= stats["attackPower"] <= 9223372036854775807
         assert stats["attackRadiusWorldUnits"] > 0 and stats["attackCooldownSeconds"] >= .05

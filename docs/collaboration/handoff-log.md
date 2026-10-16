@@ -793,3 +793,13 @@
 - Unity 6000.3.13f1 임시 복제 프로젝트에서 매직볼 런타임 수치 EditMode 3개, Combat PlayMode 전체 14개를 통과했다. Python 데이터·협업 검증도 통과했다. Main 실제 화면에서의 비주얼 크기와 플레이 감각은 수동 확인이 필요하다.
 - 사용자 추가 `HItBox` 자식의 `CircleCollider2D`를 적 타격 범위로 연결했다. 루트 콜라이더는 벽 반사 경계에 사용한다. 자식 범위 안이면서 루트 범위 밖인 적의 피격을 PlayMode에서 확인했고, Combat PlayMode 전체 14개를 다시 통과했다.
 - 매직볼 생성점을 화면 안쪽 전투 영역에서 런 시드 기반 무작위 위치로 바꾸고, 루트 콜라이더가 벽에 닿을 때 `Vector2.Reflect`로 해당 벽의 법선을 따라 반사한다. 여덟 기본 출발 방향은 축에서 22.5도 비껴나도록 조정했다. PlayMode에서 화면 내부 생성·비스듬한 입사각 반사를 확인했고 Combat 전체 14개와 Python 정적 검증을 통과했다.
+
+### 2026-10-16 · Combat/App/Contracts/Data — 세로 레이저 코어
+
+- `skill.laser`용 `LaserSkillController`와 풀링 `LaserEffect`를 추가했다. 공급사 `Lazer_normal_Visual`은 게임 소유 프리팹의 시각 자식이며, 별도 사각 `HitBox`가 화면 안쪽 전투 영역의 높이 전체를 덮는다. 발동마다 런 시드로 X 위치를 고르고, 활성 시간에 진입한 모든 적에게 발동당 한 번씩 피해를 준다.
+- Main과 CombatSandbox의 `CombatManager` 아래에 컨트롤러 프리팹을 배치했다. Inspector 기본값은 쿨타임 5초, 지속 1초, 폭 배율 1, 피해 배율 2이며 화면 여백과 풀 상한도 조절할 수 있다. 런 스냅샷은 쿨타임·폭·피해 증가량을 받지만 구매 노드와 단계·비용은 아직 없다. 에디터 획득 토글과 Sandbox 토글로 시험한다.
+- GameInformation의 여섯 번째 스킬 ID와 영문 데이터·스키마·한국어 참고본을 갱신했다. Unity 6000.3.13f1 격리 프로젝트에서 EditMode 전체 101개와 Combat PlayMode 전체 15개를 통과했다. 레이저 크기 증가량이 HitBox 및 비주얼 폭에 적용되는 것도 PlayMode에서 확인했다. Python 데이터·협업 검증도 통과했다. Main 실제 화면에서의 파티클 길이·정렬은 수동 확인 후 조절한다.
+- `LaserEffect`의 비주얼 너비·높이 보정 배율을 각각 기본 2배로 올리고 프리팹 Inspector에 노출했다. HitBox의 화면 전체 높이와 폭 설정은 분리했다. Unity 격리 프로젝트에서 레이저 PlayMode 1개, Python 데이터·협업 검증을 통과했다. 실제 화면에서 보이는 길이와 타격 폭의 정렬은 수동 확인이 필요하다.
+- Main 씬의 `Lazer_normal` 배치값(원본과 동일한 파티클, X·Y 배율 각각 3)을 확인했다. `LaserEffect`도 화면 높이 24인 Main에서 비주얼 배율 3이 되도록 고쳤다. 기본 HitBox 폭은 스프라이트의 실제 광선 폭에 맞춰 7.5로 늘리고, 화면 높이가 바뀌면 비주얼과 HitBox 폭을 함께 비례 조정한다.
+- 사용자 스크린샷의 위·아래 화면 끝까지 닿는 레이저를 기준으로 비주얼 배율 적용 위치를 수정했다. 중간 `VisualAnchor` 대신 X축으로 회전된 `Lazer_normal_Visual` 파티클 Transform 자체를 스케일하여 Main 씬의 `Lazer_normal` 3배 설정과 같은 변환 순서를 사용한다.
+- Unity 격리 프로젝트의 레이저 PlayMode에서 `ParticleSystemRenderer.bounds`가 카메라 화면 위쪽과 아래쪽을 모두 덮는지 확인했고 테스트 1개가 통과했다. 이 검사는 파티클 렌더링 경계이며 애니메이션의 모든 프레임에서 불투명한 광선이 양 끝을 채우는지까지 검사하지는 않는다.

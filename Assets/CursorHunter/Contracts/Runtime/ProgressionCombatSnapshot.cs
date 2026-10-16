@@ -75,7 +75,7 @@ namespace CursorHunter.Contracts
         {
             return skillId == "skill.tornado" || skillId == "skill.headshot" ||
                 skillId == "skill.thunder" || skillId == "skill.flame_exhaust" ||
-                skillId == "skill.magic_ball";
+                skillId == "skill.magic_ball" || skillId == "skill.laser";
         }
 
         public static bool IsAllowed(string skillId, string statId)
@@ -104,6 +104,8 @@ namespace CursorHunter.Contracts
                 case "skill.magic_ball":
                     return statId == "moveSpeedWorldUnitsPerSecond" ||
                         statId == "sizeMultiplier" || statId == "damageMultiplier";
+                case "skill.laser":
+                    return statId == "sizeMultiplier" || statId == "damageMultiplier";
                 default:
                     return false;
             }

@@ -52,8 +52,8 @@ def main():
     check(len(data["monsters"]) == len(example["monsters"]) == 10, "Expected 10 monsters")
     check([s["id"] for s in example["skills"]] ==
           ["skill.tornado", "skill.headshot", "skill.thunder", "skill.flame_exhaust",
-           "skill.magic_ball"],
-          "Expected five skill IDs")
+           "skill.magic_ball", "skill.laser"],
+          "Expected six skill IDs")
     check(data["normalFieldDurationSeconds"] == [15, 20, 25, 30], "Normal duration must stop at 30")
     check(all(finite_positive(v) and v >= .05 for v in data["attackCooldownSeconds"]), "Invalid cooldown")
     check(all(data["attackCooldownSeconds"][i] > data["attackCooldownSeconds"][i+1] for i in range(4)), "Cooldown upgrades must decrease")
@@ -127,6 +127,29 @@ def main():
                             magic_controller_guid + r", type: 3\}", scene_text),
                   f"Magic Ball controller is not under the combat manager in {relative}")
 
+    laser_controller = BASE / "Combat/Prefabs/Skills/LaserSkillController.prefab"
+    laser_effect = BASE / "Combat/Prefabs/Skills/LaserEffect.prefab"
+    laser_visual = ROOT / "Assets/DownLoadAssets/118 sprite effects bundle/15 effects/_prefabs/Lazer_normal_Visual.prefab"
+    for path in (laser_controller, laser_effect, laser_visual):
+        check(path.exists(), f"Missing Laser prefab: {path}")
+    if all(path.exists() for path in (laser_controller, laser_effect, laser_visual)):
+        laser_controller_guid = laser_controller.with_suffix(".prefab.meta").read_text().split("guid: ")[1].splitlines()[0]
+        laser_effect_guid = laser_effect.with_suffix(".prefab.meta").read_text().split("guid: ")[1].splitlines()[0]
+        laser_visual_guid = laser_visual.with_suffix(".prefab.meta").read_text().split("guid: ")[1].splitlines()[0]
+        check(laser_effect_guid in laser_controller.read_text(), "Laser controller does not reference its effect")
+        laser_effect_text = laser_effect.read_text()
+        check(laser_visual_guid in laser_effect_text, "Laser effect does not contain the selected visual")
+        check("hitbox: {fileID: 300102}" in laser_effect_text and
+              "BoxCollider2D:" in laser_effect_text and "m_IsTrigger: 1" in laser_effect_text,
+              "Laser effect needs a child rectangular trigger HitBox")
+        for relative, parent in (("App/Scenes/Main.unity", "2188000105"),
+                                 ("Combat/Scenes/CombatSandbox.unity", "201")):
+            scene_text = (BASE / relative).read_text()
+            check(re.search(r"m_TransformParent: \{fileID: " + parent +
+                            r"\}[\s\S]*?m_SourcePrefab: \{fileID: 100100000, guid: " +
+                            laser_controller_guid + r", type: 3\}", scene_text),
+                  f"Laser controller is not under the combat manager in {relative}")
+
     controller = (BASE / "Progression/Runtime/TraitScreenController.cs").read_text()
     check("CreateGameInformationJson" in controller and "SourceJson" in controller, "Summary must use captured JSON")
     check("GetGemstoneDropWeight" not in controller, "Old weighted gemstone unlock path remains")
@@ -160,7 +183,7 @@ def main():
                         errors.append(f"C# syntax: {path.relative_to(ROOT)}:{node.start_point.row+1} {node.type}")
                     stack.extend(node.children)
     if errors: raise SystemExit("\n".join(errors))
-    print("PASS: JSON sections, 10 monsters, five skill IDs, currency reachability, prefab IDs, TMP, scene and render settings" + (", C# syntax" if args.syntax else ""))
+    print("PASS: JSON sections, 10 monsters, six skill IDs, currency reachability, prefab IDs, TMP, scene and render settings" + (", C# syntax" if args.syntax else ""))
     print("Unity import, semantic compilation and gameplay were NOT run.")
 
 if __name__ == "__main__":

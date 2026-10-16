@@ -19,6 +19,7 @@ namespace CursorHunter.Combat
         private bool _autoHit = true;
         private bool _tornadoEnabled;
         private bool _magicBallEnabled;
+        private bool _laserEnabled;
 
         private void Start()
         {
@@ -72,7 +73,8 @@ namespace CursorHunter.Combat
             _combat.ConfigureSkills(new[]
             {
                 new SkillCombatSnapshot(TornadoSkillController.SkillId, _tornadoEnabled),
-                new SkillCombatSnapshot(MagicBallSkillController.SkillId, _magicBallEnabled)
+                new SkillCombatSnapshot(MagicBallSkillController.SkillId, _magicBallEnabled),
+                new SkillCombatSnapshot(LaserSkillController.SkillId, _laserEnabled)
             });
         }
 
@@ -103,6 +105,12 @@ namespace CursorHunter.Combat
             if (magicBallEnabled != _magicBallEnabled)
             {
                 _magicBallEnabled = magicBallEnabled;
+                ConfigureSkills();
+            }
+            bool laserEnabled = GUILayout.Toggle(_laserEnabled, "Laser skill");
+            if (laserEnabled != _laserEnabled)
+            {
+                _laserEnabled = laserEnabled;
                 ConfigureSkills();
             }
             if (GUILayout.Button("Hit once")) _combat.TryAttack(_attack, false);

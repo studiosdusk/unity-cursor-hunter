@@ -268,4 +268,38 @@ namespace CursorHunter.Combat
         internal long Damage { get; }
         internal float SameTargetHitCooldownSeconds { get; }
     }
+
+    [Serializable]
+    internal struct LaserBaseStat
+    {
+        [Min(0.1f)] public float CooldownSeconds;
+        [Min(0f)] public float FirstCastDelaySeconds;
+        [Min(0.1f)] public float EffectDurationSeconds;
+        [Min(0.01f)] public float SizeMultiplier;
+        [Min(0.01f)] public float DamageMultiplier;
+    }
+
+    internal readonly struct LaserRuntimeStat
+    {
+        internal LaserRuntimeStat(LaserBaseStat basis,
+            SkillCombatSnapshot upgrades, long attackPower)
+        {
+            CooldownSeconds = SkillStatMath.Add(basis.CooldownSeconds,
+                upgrades, "cooldownSeconds", 0.1f);
+            FirstCastDelaySeconds = Mathf.Max(0f, basis.FirstCastDelaySeconds);
+            EffectDurationSeconds = Mathf.Max(0.1f, basis.EffectDurationSeconds);
+            SizeMultiplier = SkillStatMath.Add(basis.SizeMultiplier,
+                upgrades, "sizeMultiplier", 0.01f);
+            DamageMultiplier = SkillStatMath.Add(basis.DamageMultiplier,
+                upgrades, "damageMultiplier", 0.01f);
+            Damage = SkillStatMath.ScaleDamage(attackPower, DamageMultiplier);
+        }
+
+        internal float CooldownSeconds { get; }
+        internal float FirstCastDelaySeconds { get; }
+        internal float EffectDurationSeconds { get; }
+        internal float SizeMultiplier { get; }
+        internal float DamageMultiplier { get; }
+        internal long Damage { get; }
+    }
 }

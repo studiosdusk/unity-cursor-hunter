@@ -1,4 +1,4 @@
-> 2026-10-15 스킬 변경: 아래의 이전 스킬 후보 표는 기록용이다. 현재 전투 스킬은 [자동 스킬 기획서](../skill-design.md)의 토네이도·헤드샷·벼락·화염 배기다. 각 스킬의 컨트롤러와 전투 오브젝트는 프로젝트 소유 프리팹이다.
+> 현재 전투 스킬은 [자동 스킬 기획서](../skill-design.md)의 토네이도·헤드샷·벼락·화염 배기·매직볼·레이저다. 각 스킬의 컨트롤러와 전투 오브젝트는 프로젝트 소유 프리팹이다.
 
 | 현재 스킬 | 컨트롤러 | 전투 오브젝트 | 시각 원본 |
 |---|---|---|---|
@@ -7,6 +7,7 @@
 | `skill.thunder` | [ThunderSkillController.prefab](../../Assets/CursorHunter/Combat/Prefabs/Skills/ThunderSkillController.prefab) | [ThunderEffect.prefab](../../Assets/CursorHunter/Combat/Prefabs/Skills/ThunderEffect.prefab) | [FX_Cartoon Thunder_Visual.prefab](../../Assets/DownLoadAssets/Eric%20VFX%20Studio/Game%20VFX%20-%20Cartoon%20Skill%20Collection%20Vol2/Prefabs/URP/FX_Cartoon%20Thunder_Visual.prefab) |
 | `skill.flame_exhaust` | [FlameExhaustSkillController.prefab](../../Assets/CursorHunter/Combat/Prefabs/Skills/FlameExhaustSkillController.prefab) | [FlameExhaustProjectile.prefab](../../Assets/CursorHunter/Combat/Prefabs/Skills/FlameExhaustProjectile.prefab), [FlameExhaustHitEffect.prefab](../../Assets/CursorHunter/Combat/Prefabs/Skills/FlameExhaustHitEffect.prefab) | [FX_MagicSlash02_Fire.prefab](../../Assets/DownLoadAssets/Eric%20VFX%20Studio/Game%20VFX%20-%20Magic%20Slash%20Collection/Prefabs/URP/FX_MagicSlash02_Fire.prefab) |
 | `skill.magic_ball` | [MagicBallSkillController.prefab](../../Assets/CursorHunter/Combat/Prefabs/Skills/MagicBallSkillController.prefab) | [MagicBallObject.prefab](../../Assets/CursorHunter/Combat/Prefabs/Skills/MagicBallObject.prefab) | [Magic_Sphere_blue_Visual.prefab](../../Assets/DownLoadAssets/118%20sprite%20effects%20bundle/25%20sprite%20effects/_prefabs/Magic_Sphere_blue_Visual.prefab) |
+| `skill.laser` | [LaserSkillController.prefab](../../Assets/CursorHunter/Combat/Prefabs/Skills/LaserSkillController.prefab) | [LaserEffect.prefab](../../Assets/CursorHunter/Combat/Prefabs/Skills/LaserEffect.prefab) | [Lazer_normal_Visual.prefab](../../Assets/DownLoadAssets/118%20sprite%20effects%20bundle/15%20effects/_prefabs/Lazer_normal_Visual.prefab) |
 
 > 2026-10-01 변경: 아래 v0.0.4 본문은 개편 전 기록입니다. 기존 캡처는 현재 UI 검증 자료가 아닙니다.
 

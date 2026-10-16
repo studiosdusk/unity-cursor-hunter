@@ -41,8 +41,8 @@
     },
     "skills": {
       "type": "array",
-      "minItems": 5,
-      "maxItems": 5,
+      "minItems": 6,
+      "maxItems": 6,
       "items": {
         "$ref": "#/$defs/skill"
       }
@@ -195,7 +195,7 @@
       ],
       "properties": {
         "id": {
-          "enum": ["skill.tornado", "skill.headshot", "skill.thunder", "skill.flame_exhaust", "skill.magic_ball"]
+          "enum": ["skill.tornado", "skill.headshot", "skill.thunder", "skill.flame_exhaust", "skill.magic_ball", "skill.laser"]
         },
         "enabled": {
           "type": "boolean"

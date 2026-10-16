@@ -118,5 +118,33 @@ namespace CursorHunter.Combat.Tests
                 new[] { new SkillStatUpgrade("cooldownSeconds", -1f) }).IsValid,
                 Is.False);
         }
+
+        [Test]
+        public void LaserResolvesCooldownWidthAndDamageUpgrades()
+        {
+            var basis = new LaserBaseStat
+            {
+                CooldownSeconds = 5f,
+                FirstCastDelaySeconds = 0f,
+                EffectDurationSeconds = 1f,
+                SizeMultiplier = 1f,
+                DamageMultiplier = 2f
+            };
+            var snapshot = new SkillCombatSnapshot("skill.laser", true,
+                new[]
+                {
+                    new SkillStatUpgrade("cooldownSeconds", -1f),
+                    new SkillStatUpgrade("sizeMultiplier", 0.5f),
+                    new SkillStatUpgrade("damageMultiplier", 0.5f)
+                });
+            Assert.That(snapshot.IsValid, Is.True);
+            var runtime = new LaserRuntimeStat(basis, snapshot, 10L);
+            Assert.That(runtime.CooldownSeconds, Is.EqualTo(4f));
+            Assert.That(runtime.SizeMultiplier, Is.EqualTo(1.5f));
+            Assert.That(runtime.Damage, Is.EqualTo(25L));
+            Assert.That(new SkillCombatSnapshot("skill.laser", true,
+                new[] { new SkillStatUpgrade("effectDurationSeconds", 1f) }).IsValid,
+                Is.False);
+        }
     }
 }

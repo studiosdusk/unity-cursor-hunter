@@ -38,6 +38,7 @@ namespace CursorHunter.Combat
         private ThunderSkillController _thunderController;
         private FlameExhaustSkillController _flameExhaustController;
         private MagicBallSkillController _magicBallController;
+        private LaserSkillController _laserController;
         private SeededRandom _random;
         private float _elapsedSeconds;
         private Vector2 _previousAttackCenter;
@@ -100,6 +101,7 @@ namespace CursorHunter.Combat
             _thunderController = GetComponentInChildren<ThunderSkillController>(true);
             _flameExhaustController = GetComponentInChildren<FlameExhaustSkillController>(true);
             _magicBallController = GetComponentInChildren<MagicBallSkillController>(true);
+            _laserController = GetComponentInChildren<LaserSkillController>(true);
         }
 
         private void ResolvePlayerCombatStatsRuntime()
@@ -435,6 +437,8 @@ namespace CursorHunter.Combat
                 FlameExhaustSkillController.SkillId, false);
             SkillCombatSnapshot magicBall = new SkillCombatSnapshot(
                 MagicBallSkillController.SkillId, false);
+            SkillCombatSnapshot laser = new SkillCombatSnapshot(
+                LaserSkillController.SkillId, false);
             if (skills != null)
             {
                 var seen = new HashSet<string>(StringComparer.Ordinal);
@@ -453,6 +457,8 @@ namespace CursorHunter.Combat
                         flameExhaust = skill;
                     else if (skill.SkillId == MagicBallSkillController.SkillId)
                         magicBall = skill;
+                    else if (skill.SkillId == LaserSkillController.SkillId)
+                        laser = skill;
                 }
             }
 
@@ -522,6 +528,19 @@ namespace CursorHunter.Combat
                     return false;
             }
             else if (magicBall.Unlocked) return false;
+
+            if (_laserController == null)
+                _laserController = GetComponentInChildren<LaserSkillController>(true);
+            if (_laserController != null &&
+                _laserController.IsAcquiredForRun(laser.Unlocked))
+            {
+                if (!_laserController.isActiveAndEnabled)
+                    return false;
+                else if (!_laserController.ConfigureForRun(
+                             this, _runRequest.RunId, _runRequest.Seed, laser))
+                    return false;
+            }
+            else if (laser.Unlocked) return false;
             return true;
         }
 
@@ -532,6 +551,7 @@ namespace CursorHunter.Combat
             _thunderController?.StopSkill();
             _flameExhaustController?.StopSkill();
             _magicBallController?.StopSkill();
+            _laserController?.StopSkill();
         }
 
         public bool TryApplySkillDamage(RunId runId, ICombatTarget target, long rawDamage)
@@ -566,6 +586,7 @@ namespace CursorHunter.Combat
             _thunderController?.StopSkill();
             _flameExhaustController?.StopSkill();
             _magicBallController?.StopSkill();
+            _laserController?.StopSkill();
 
             PresentationReset?.Invoke();
             result = CreateResult(
@@ -597,6 +618,7 @@ namespace CursorHunter.Combat
             _thunderController?.StopSkill();
             _flameExhaustController?.StopSkill();
             _magicBallController?.StopSkill();
+            _laserController?.StopSkill();
 
             PresentationReset?.Invoke();
             result = CreateResult(
