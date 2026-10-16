@@ -7,9 +7,17 @@ namespace CursorHunter.Combat
 {
     [DefaultExecutionOrder(1000)]
     [DisallowMultipleComponent]
-    public sealed class FlameExhaustSkillController : MonoBehaviour
+    public sealed class FlameExhaustSkillController : MonoBehaviour, IRunSkillController
     {
         public const string SkillId = "skill.flame_exhaust";
+
+        string IRunSkillController.Id => SkillId;
+        bool IRunSkillController.IsAcquiredForRun(bool savedAcquired) =>
+            IsAcquiredForRun(savedAcquired);
+        bool IRunSkillController.ConfigureForRun(CombatRunController combat,
+            RunId runId, ulong seed, SkillCombatSnapshot skill) =>
+            ConfigureForRun(combat, runId, seed, skill);
+        void IRunSkillController.StopSkill() => StopSkill();
 
         [Header("Editor Play Mode test")]
         [SerializeField, InspectorName("Skill Acquired"),
@@ -39,6 +47,8 @@ namespace CursorHunter.Combat
         [Header("Pools")]
         [SerializeField, Min(1)] private int maximumPooledProjectiles = 8;
         [SerializeField, Min(1)] private int maximumPooledHitEffects = 80;
+        [SerializeField, Min(1)] private int initialPooledHitEffects = 16;
+        [SerializeField, Min(1)] private int hitEffectGrowthPerFrame = 2;
 
         private readonly List<FlameExhaustProjectile> _activeProjectiles =
             new List<FlameExhaustProjectile>(8);
@@ -58,9 +68,13 @@ namespace CursorHunter.Combat
         private bool _configured;
         private bool _visualsPaused;
         private bool _poolWarningLogged;
+        private bool _hitEffectPoolWarningLogged;
+        private bool _hitEffectPoolStarved;
 
         public int ActiveProjectileCount => _activeProjectiles.Count;
         public int ActiveHitEffectCount => _activeHitEffects.Count;
+        public int PooledHitEffectCount =>
+            _activeHitEffects.Count + _freeHitEffects.Count;
 
         internal bool IsAcquiredForRun(bool savedAcquired) =>
             savedAcquired || Application.isEditor && editorSkillAcquired;
@@ -91,6 +105,8 @@ namespace CursorHunter.Combat
             _configured = true;
             _visualsPaused = false;
             _poolWarningLogged = false;
+            _hitEffectPoolWarningLogged = false;
+            _hitEffectPoolStarved = false;
 
             int needed = Mathf.Clamp(
                 Mathf.CeilToInt(_runtime.ProjectileDurationSeconds /
@@ -102,14 +118,19 @@ namespace CursorHunter.Combat
                 instance.ReturnToPool();
                 _freeProjectiles.Push(instance);
             }
-            while (_activeHitEffects.Count + _freeHitEffects.Count <
-                   Mathf.Max(1, maximumPooledHitEffects))
+            WarmHitEffects(Mathf.Min(Mathf.Max(1, maximumPooledHitEffects),
+                Mathf.Max(1, initialPooledHitEffects)));
+            return true;
+        }
+
+        private void WarmHitEffects(int targetCount)
+        {
+            while (PooledHitEffectCount < targetCount)
             {
                 FlameExhaustHitEffect instance = Instantiate(hitEffectPrefab, transform);
                 instance.ReturnToPool();
                 _freeHitEffects.Push(instance);
             }
-            return true;
         }
 
         private void LateUpdate()
@@ -150,8 +171,17 @@ namespace CursorHunter.Combat
                 effect.ReturnToPool();
                 _freeHitEffects.Push(effect);
             }
+            if (_hitEffectPoolStarved)
+            {
+                // Spread new instances across frames, outside the hit callback.
+                _hitEffectPoolStarved = false;
+                WarmHitEffects(Mathf.Min(Mathf.Max(1, maximumPooledHitEffects),
+                    PooledHitEffectCount + Mathf.Max(1, hitEffectGrowthPerFrame)));
+            }
 
-            Physics2D.SyncTransforms();
+            bool physicsSynced = _activeProjectiles.Count > 0;
+            if (physicsSynced)
+                Physics2D.SyncTransforms();
             for (int i = _activeProjectiles.Count - 1; i >= 0; i--)
             {
                 FlameExhaustProjectile projectile = _activeProjectiles[i];
@@ -178,6 +208,8 @@ namespace CursorHunter.Combat
 
             float angle = _random.NextFloat(0f, Mathf.PI * 2f);
             Vector2 direction = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
+            if (!physicsSynced)
+                Physics2D.SyncTransforms();
             FlameExhaustProjectile next = _freeProjectiles.Pop();
             next.Activate(this, _runId, sourceCursorHitArea,
                 sourceCursorVisual, direction, now,
@@ -215,10 +247,14 @@ namespace CursorHunter.Combat
                     targetSize > 0f ? targetSize : 1f);
                 _activeHitEffects.Add(effect);
             }
-            else if (!_poolWarningLogged)
+            else
             {
-                _poolWarningLogged = true;
-                Debug.LogWarning("Flame Exhaust hit VFX pool exhausted; damage was still applied.", this);
+                _hitEffectPoolStarved = true;
+                if (!_hitEffectPoolWarningLogged)
+                {
+                    _hitEffectPoolWarningLogged = true;
+                    Debug.LogWarning("Flame Exhaust hit VFX pool exhausted; damage was still applied.", this);
+                }
             }
             return true;
         }
@@ -243,6 +279,7 @@ namespace CursorHunter.Combat
             _runtime = default;
             _configured = false;
             _visualsPaused = false;
+            _hitEffectPoolStarved = false;
         }
 
         private void OnDisable() => StopSkill();

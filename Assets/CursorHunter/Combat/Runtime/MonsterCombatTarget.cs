@@ -61,6 +61,8 @@ namespace CursorHunter.Combat
         private bool _destroyScheduled;
         private int _deathStateLayer = -1;
         private int _deathStateHash;
+        private bool _deathAnimationFinished;
+        private float _animatorSpeedBeforeDeath;
         private string _monsterId;
         private long _maxHealth;
         private long _currentHealth;
@@ -190,7 +192,13 @@ namespace CursorHunter.Combat
 
             if (TryGetDeathState(out AnimatorStateInfo state))
             {
-                if (state.normalizedTime < deathDespawnNormalizedTime ||
+                if (!_deathAnimationFinished && state.normalizedTime >= 1f)
+                {
+                    HoldDeathAnimationOnLastFrame();
+                }
+
+                if ((!_deathAnimationFinished &&
+                     state.normalizedTime < deathDespawnNormalizedTime) ||
                     HasDeathGraceRemaining())
                 {
                     return;
@@ -227,6 +235,7 @@ namespace CursorHunter.Combat
             _runController = null;
             _deathStateLayer = -1;
             _deathStateHash = 0;
+            RestoreDeathAnimationPlayback();
             _runId = runId;
             _monsterId = snapshot.MonsterId;
             _maxHealth = snapshot.MaxHealth;
@@ -536,7 +545,9 @@ namespace CursorHunter.Combat
 
             bool hasDeathState = TryGetDeathState(out AnimatorStateInfo state);
             if (_destroyScheduled &&
-                ((!hasDeathState || state.normalizedTime < deathDespawnNormalizedTime) ||
+                ((!hasDeathState ||
+                  (!_deathAnimationFinished &&
+                   state.normalizedTime < deathDespawnNormalizedTime)) ||
                  HasDeathGraceRemaining()))
             {
                 return;
@@ -716,6 +727,7 @@ namespace CursorHunter.Combat
             _deathRunId = default;
             _deathStateLayer = -1;
             _deathStateHash = 0;
+            RestoreDeathAnimationPlayback();
             _isDead = false;
             _isRegistered = true;
             _isVulnerable = true;
@@ -950,6 +962,7 @@ namespace CursorHunter.Combat
 
         private void StartDeathAnimation()
         {
+            _deathAnimationFinished = false;
             if (animator == null)
             {
                 ScheduleDeathDespawn(ReviveWindowSeconds);
@@ -1009,6 +1022,28 @@ namespace CursorHunter.Combat
 
             state = animator.GetCurrentAnimatorStateInfo(_deathStateLayer);
             return state.fullPathHash == _deathStateHash;
+        }
+
+        private void HoldDeathAnimationOnLastFrame()
+        {
+            // Many source clips loop, while corpses remain available for revival.
+            // Sample the final pose before the next render and stop the Animator
+            // without changing the source clip or the revival window.
+            _animatorSpeedBeforeDeath = animator.speed;
+            animator.Play(_deathStateHash, _deathStateLayer, 0.999f);
+            animator.Update(0f);
+            animator.speed = 0f;
+            _deathAnimationFinished = true;
+        }
+
+        private void RestoreDeathAnimationPlayback()
+        {
+            if (_deathAnimationFinished && animator != null)
+            {
+                animator.speed = _animatorSpeedBeforeDeath;
+            }
+
+            _deathAnimationFinished = false;
         }
 
         private void PlayHitAnimation()

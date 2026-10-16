@@ -11,9 +11,17 @@ namespace CursorHunter.Combat
     /// </summary>
     [DefaultExecutionOrder(1000)]
     [DisallowMultipleComponent]
-    public sealed class TornadoSkillController : MonoBehaviour
+    public sealed class TornadoSkillController : MonoBehaviour, IRunSkillController
     {
         public const string SkillId = "skill.tornado";
+
+        string IRunSkillController.Id => SkillId;
+        bool IRunSkillController.IsAcquiredForRun(bool savedAcquired) =>
+            IsAcquiredForRun(savedAcquired);
+        bool IRunSkillController.ConfigureForRun(CombatRunController combat,
+            RunId runId, ulong seed, SkillCombatSnapshot skill) =>
+            ConfigureForRun(combat, runId, seed, skill);
+        void IRunSkillController.StopSkill() => StopSkill();
 
         [Header("Editor Play Mode test")]
         [SerializeField, InspectorName("Skill Acquired"), Tooltip("In Editor Play Mode, treat Tornado as acquired even if it has not been purchased. Saved acquisitions still work when this is off.")]

@@ -58,6 +58,10 @@ def main():
     check(all(finite_positive(v) and v >= .05 for v in data["attackCooldownSeconds"]), "Invalid cooldown")
     check(all(data["attackCooldownSeconds"][i] > data["attackCooldownSeconds"][i+1] for i in range(4)), "Cooldown upgrades must decrease")
     known_currencies = {"gem.garnet"}
+    death_variants = {
+        2: "Bat", 5: "Scorpion", 6: "Fairy", 7: "Spider",
+        8: "Golem", 9: "Bud", 10: "Skeleton",
+    }
     ids = set()
     for index, monster in enumerate(data["monsters"], 1):
         expected_id = f"monster.{index:02}"
@@ -75,11 +79,32 @@ def main():
             match = re.search(r"visualPrefab: \{fileID: (\d+), guid: ([0-9a-f]+), type: 3\}", text)
             check(bool(match), f"Missing prefab: {expected_id}")
             if match:
-                prefab = ROOT / "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/Prefabs" / (monster["prefabKey"] + ".prefab")
-                check(prefab.exists(), f"Missing prefab path: {prefab}")
-                if prefab.exists():
-                    check(match[2] in Path(str(prefab) + ".meta").read_text(), "Prefab GUID mismatch")
-                    check(f"--- !u!1 &{match[1]}\n" in prefab.read_text(), "Prefab root fileID missing")
+                source = ROOT / "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/Prefabs" / (monster["prefabKey"] + ".prefab")
+                check(source.exists(), f"Missing prefab path: {source}")
+                if source.exists():
+                    source_guid = re.search(r"^guid: ([0-9a-f]+)$", Path(str(source) + ".meta").read_text(), re.MULTILINE)[1]
+                    if index in death_variants:
+                        species = death_variants[index]
+                        variant = BASE / "Combat/Prefabs/Monsters/Visuals" / (source.stem + "_Combat.prefab")
+                        controller = variant.with_name(species + "_DeathOnce.overrideController")
+                        clip = BASE / "Combat/Art/MonsterDeath" / species / "Dead.anim"
+                        for asset in (variant, controller, clip):
+                            check(asset.exists(), f"Missing death asset: {asset}")
+                        if all(asset.exists() for asset in (variant, controller, clip)):
+                            variant_guid = re.search(r"^guid: ([0-9a-f]+)$", Path(str(variant) + ".meta").read_text(), re.MULTILINE)[1]
+                            controller_guid = re.search(r"^guid: ([0-9a-f]+)$", Path(str(controller) + ".meta").read_text(), re.MULTILINE)[1]
+                            clip_guid = re.search(r"^guid: ([0-9a-f]+)$", Path(str(clip) + ".meta").read_text(), re.MULTILINE)[1]
+                            check(match[2] == variant_guid, f"Death variant GUID mismatch: {expected_id}")
+                            check(f"m_SourcePrefab: {{fileID: 100100000, guid: {source_guid}, type: 3}}" in variant.read_text(),
+                                  f"Death variant source mismatch: {expected_id}")
+                            check(f"objectReference: {{fileID: 22100000, guid: {controller_guid}, type: 2}}" in variant.read_text(),
+                                  f"Death controller missing from variant: {expected_id}")
+                            check(f"m_OverrideClip: {{fileID: 7400000, guid: {clip_guid}, type: 2}}" in controller.read_text(),
+                                  f"Nonlooping death clip missing from controller: {expected_id}")
+                            check("m_LoopTime: 0" in clip.read_text(), f"Death clip still loops: {expected_id}")
+                    else:
+                        check(match[2] == source_guid, f"Prefab GUID mismatch: {expected_id}")
+                        check(f"--- !u!1 &{match[1]}\n" in source.read_text(), f"Prefab root fileID missing: {expected_id}")
     check(known_currencies == set(gems), "Some currencies have no attainable monster source")
     for skill in data["skills"]:
         check(skill["currencyId"] in known_currencies, "Unattainable skill currency")

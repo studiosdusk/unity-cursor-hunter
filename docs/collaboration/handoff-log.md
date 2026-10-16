@@ -803,3 +803,21 @@
 - Main 씬의 `Lazer_normal` 배치값(원본과 동일한 파티클, X·Y 배율 각각 3)을 확인했다. `LaserEffect`도 화면 높이 24인 Main에서 비주얼 배율 3이 되도록 고쳤다. 기본 HitBox 폭은 스프라이트의 실제 광선 폭에 맞춰 7.5로 늘리고, 화면 높이가 바뀌면 비주얼과 HitBox 폭을 함께 비례 조정한다.
 - 사용자 스크린샷의 위·아래 화면 끝까지 닿는 레이저를 기준으로 비주얼 배율 적용 위치를 수정했다. 중간 `VisualAnchor` 대신 X축으로 회전된 `Lazer_normal_Visual` 파티클 Transform 자체를 스케일하여 Main 씬의 `Lazer_normal` 3배 설정과 같은 변환 순서를 사용한다.
 - Unity 격리 프로젝트의 레이저 PlayMode에서 `ParticleSystemRenderer.bounds`가 카메라 화면 위쪽과 아래쪽을 모두 덮는지 확인했고 테스트 1개가 통과했다. 이 검사는 파티클 렌더링 경계이며 애니메이션의 모든 프레임에서 불투명한 광선이 양 끝을 채우는지까지 검사하지는 않는다.
+
+### 2026-10-16 · Combat — 자동 스킬 등록과 풀 준비 리팩터링
+
+- 여섯 자동 스킬 컨트롤러가 작은 `IRunSkillController` 런 수명주기 계약을 구현한다. `CombatRunController`는 자식 컨트롤러를 ID별로 찾고 중복·미등록 ID를 검사한 뒤 해금된 스킬을 준비하며, 완료·중단·취소 시 같은 목록을 정리한다. 이동·타격 규칙은 각 스킬에 남긴다.
+- 화염 배기 피격 VFX는 첫 런 준비 때 80개를 모두 만들던 방식에서 기본 16개 준비로 바꿨다. 풀이 부족하면 피해는 유지하고 VFX만 생략하며 다음 프레임부터 한 번에 최대 2개씩 80개까지 늘린다. 초기 개수·증가 개수·상한은 프리팹 Inspector에서 조절한다.
+- 화염 배기와 레이저는 활성 효과도 발동도 없는 프레임에 `Physics2D.SyncTransforms`를 호출하지 않는다. 이동 직후 콜라이더 영역을 읽거나 타격을 검사해야 하는 위치의 동기화는 유지했다.
+- Unity 6000.3.13f1 격리 복제본에서 Combat PlayMode 17개가 통과했다. 같은 복제본의 단순 생성 측정에서 피격 VFX 16개 생성·풀 반환 중앙값은 약 10.4ms, 80개는 약 40.3ms였다(각 5회, 배치 모드). 80개 콜라이더의 Transform을 움직인 뒤 `Physics2D.SyncTransforms`를 호출한 측정은 호출당 중앙값 약 0.043ms였다(5회×100회, 배치 모드). 이 수치는 Main 화면의 전체 프레임 시간을 뜻하지 않는다. 협업 정적 검사도 통과했다.
+
+### 2026-10-16 · Combat — 사망 애니메이션 반복 방지
+
+- `MonsterCombatTarget`이 사망 상태의 첫 재생이 끝나면 마지막 프레임에서 Animator를 멈춘다. 부활할 때 원래 재생 속도를 복구하며, 기존 6초 부활 가능 시간은 유지한다. 공급사 원본 클립은 이번 변경에서 수정하지 않았다.
+- 열린 Unity 6000.3.13f1 에디터에서 새로고침 후 콘솔 오류 0건과 Main 필드 전투 진입을 확인했다. `python3 tools/validate_collaboration.py`와 `git diff --check`를 통과했다. 고스트 사망 장면 자체의 반복 여부는 화면에서 직접 관찰하지 못했다.
+
+### 2026-10-16 · Combat — 다른 몬스터 사망 클립 반복 수정
+
+- 일반 몬스터 10종의 사망 클립을 조사해 박쥐·전갈·눈요정·거미·골렘·봉오리·해골군주 7종의 원본 `Dead.anim`에 Loop Time이 켜져 있음을 확인했다. 워커 2종과 고스트는 꺼져 있었다.
+- 위 7종의 사망 클립을 `Combat/Art/MonsterDeath`에 복사하고 Loop Time만 껐다. 각 원본 외형의 Combat 프리팹 Variant에 Animator Override Controller를 적용해 Dead 클립만 교체하고, 해당 MonsterDefinition 7개를 Variant로 연결했다. 공급사 원본 에셋은 유지했다.
+- Unity 에디터에서 7개 클립·Override Controller·Variant 참조를 확인했고 Main 필드 사냥에서 몬스터 생성과 처치가 진행되는 동안 콘솔 경고·오류 0건을 확인했다. `validate_game_information.py`가 해당 Variant의 원본 연결·사망 클립 교체·반복 해제를 검사하도록 갱신했다. 데이터·협업 검증과 `git diff --check`가 통과했다. 모든 종의 사망 장면을 각각 직접 관찰한 검증은 아니다.

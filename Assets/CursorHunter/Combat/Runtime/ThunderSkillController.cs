@@ -7,9 +7,17 @@ namespace CursorHunter.Combat
 {
     [DefaultExecutionOrder(1000)]
     [DisallowMultipleComponent]
-    public sealed class ThunderSkillController : MonoBehaviour
+    public sealed class ThunderSkillController : MonoBehaviour, IRunSkillController
     {
         public const string SkillId = "skill.thunder";
+
+        string IRunSkillController.Id => SkillId;
+        bool IRunSkillController.IsAcquiredForRun(bool savedAcquired) =>
+            IsAcquiredForRun(savedAcquired);
+        bool IRunSkillController.ConfigureForRun(CombatRunController combat,
+            RunId runId, ulong seed, SkillCombatSnapshot skill) =>
+            ConfigureForRun(combat, runId, seed, skill);
+        void IRunSkillController.StopSkill() => StopSkill();
 
         [Header("Editor Play Mode test")]
         [SerializeField, InspectorName("Skill Acquired"),

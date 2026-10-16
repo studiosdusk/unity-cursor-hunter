@@ -7,9 +7,17 @@ namespace CursorHunter.Combat
     /// <summary>Owns the laser cast clock and its pooled vertical beams.</summary>
     [DefaultExecutionOrder(1000)]
     [DisallowMultipleComponent]
-    public sealed class LaserSkillController : MonoBehaviour
+    public sealed class LaserSkillController : MonoBehaviour, IRunSkillController
     {
         public const string SkillId = "skill.laser";
+
+        string IRunSkillController.Id => SkillId;
+        bool IRunSkillController.IsAcquiredForRun(bool savedAcquired) =>
+            IsAcquiredForRun(savedAcquired);
+        bool IRunSkillController.ConfigureForRun(CombatRunController combat,
+            RunId runId, ulong seed, SkillCombatSnapshot skill) =>
+            ConfigureForRun(combat, runId, seed, skill);
+        void IRunSkillController.StopSkill() => StopSkill();
 
         [Header("Editor Play Mode test")]
         [SerializeField, InspectorName("Skill Acquired"),
@@ -127,7 +135,8 @@ namespace CursorHunter.Combat
             }
 
             float now = _combat.ElapsedSeconds;
-            Physics2D.SyncTransforms();
+            if (_active.Count > 0)
+                Physics2D.SyncTransforms();
             for (int i = _active.Count - 1; i >= 0; i--)
             {
                 LaserEffect effect = _active[i];

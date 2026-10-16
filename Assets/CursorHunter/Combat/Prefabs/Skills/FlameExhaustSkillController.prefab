@@ -60,3 +60,5 @@ MonoBehaviour:
     HitEffectDurationSeconds: 0.8
   maximumPooledProjectiles: 8
   maximumPooledHitEffects: 80
+  initialPooledHitEffects: 16
+  hitEffectGrowthPerFrame: 2

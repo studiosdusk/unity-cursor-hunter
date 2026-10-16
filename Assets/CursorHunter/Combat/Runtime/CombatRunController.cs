@@ -33,12 +33,10 @@ namespace CursorHunter.Combat
             new Dictionary<string, long>(StringComparer.Ordinal);
 
         private RunRequest _runRequest;
-        private TornadoSkillController _tornadoController;
-        private HeadshotSkillController _headshotController;
-        private ThunderSkillController _thunderController;
-        private FlameExhaustSkillController _flameExhaustController;
-        private MagicBallSkillController _magicBallController;
-        private LaserSkillController _laserController;
+        private readonly List<IRunSkillController> _skillControllers =
+            new List<IRunSkillController>(6);
+        private readonly Dictionary<string, IRunSkillController> _skillControllersById =
+            new Dictionary<string, IRunSkillController>(StringComparer.Ordinal);
         private SeededRandom _random;
         private float _elapsedSeconds;
         private Vector2 _previousAttackCenter;
@@ -96,12 +94,7 @@ namespace CursorHunter.Combat
             overlapBufferCapacity = Mathf.Max(512, overlapBufferCapacity);
             _overlapBuffer = new Collider2D[overlapBufferCapacity];
             ResolvePlayerCombatStatsRuntime();
-            _tornadoController = GetComponentInChildren<TornadoSkillController>(true);
-            _headshotController = GetComponentInChildren<HeadshotSkillController>(true);
-            _thunderController = GetComponentInChildren<ThunderSkillController>(true);
-            _flameExhaustController = GetComponentInChildren<FlameExhaustSkillController>(true);
-            _magicBallController = GetComponentInChildren<MagicBallSkillController>(true);
-            _laserController = GetComponentInChildren<LaserSkillController>(true);
+            RefreshSkillControllers();
         }
 
         private void ResolvePlayerCombatStatsRuntime()
@@ -426,132 +419,72 @@ namespace CursorHunter.Combat
         {
             StopAllSkills();
             if (!_isPrepared && !_isRunning) return false;
+            if (!RefreshSkillControllers()) return false;
 
-            SkillCombatSnapshot tornado = new SkillCombatSnapshot(
-                TornadoSkillController.SkillId, false);
-            SkillCombatSnapshot headshot = new SkillCombatSnapshot(
-                HeadshotSkillController.SkillId, false);
-            SkillCombatSnapshot thunder = new SkillCombatSnapshot(
-                ThunderSkillController.SkillId, false);
-            SkillCombatSnapshot flameExhaust = new SkillCombatSnapshot(
-                FlameExhaustSkillController.SkillId, false);
-            SkillCombatSnapshot magicBall = new SkillCombatSnapshot(
-                MagicBallSkillController.SkillId, false);
-            SkillCombatSnapshot laser = new SkillCombatSnapshot(
-                LaserSkillController.SkillId, false);
+            var snapshots = new Dictionary<string, SkillCombatSnapshot>(
+                StringComparer.Ordinal);
             if (skills != null)
             {
-                var seen = new HashSet<string>(StringComparer.Ordinal);
                 for (int i = 0; i < skills.Count; i++)
                 {
                     SkillCombatSnapshot skill = skills[i];
-                    if (!skill.IsValid || !seen.Add(skill.SkillId))
+                    if (!skill.IsValid || snapshots.ContainsKey(skill.SkillId))
                         return false;
-                    if (skill.SkillId == TornadoSkillController.SkillId)
-                        tornado = skill;
-                    else if (skill.SkillId == HeadshotSkillController.SkillId)
-                        headshot = skill;
-                    else if (skill.SkillId == ThunderSkillController.SkillId)
-                        thunder = skill;
-                    else if (skill.SkillId == FlameExhaustSkillController.SkillId)
-                        flameExhaust = skill;
-                    else if (skill.SkillId == MagicBallSkillController.SkillId)
-                        magicBall = skill;
-                    else if (skill.SkillId == LaserSkillController.SkillId)
-                        laser = skill;
+                    snapshots.Add(skill.SkillId, skill);
                 }
             }
+            foreach (SkillCombatSnapshot skill in snapshots.Values)
+                if (skill.Unlocked && !_skillControllersById.ContainsKey(skill.SkillId))
+                    return false;
 
-            if (_tornadoController == null)
-                _tornadoController = GetComponentInChildren<TornadoSkillController>(true);
-            if (_tornadoController != null &&
-                _tornadoController.IsAcquiredForRun(tornado.Unlocked))
+            for (int i = 0; i < _skillControllers.Count; i++)
             {
-                if (!_tornadoController.isActiveAndEnabled)
-                    return false;
-                else if (!_tornadoController.ConfigureForRun(
-                             this, _runRequest.RunId, _runRequest.Seed, tornado))
-                    return false;
-            }
-            else if (tornado.Unlocked) return false;
+                IRunSkillController controller = _skillControllers[i];
+                if (!snapshots.TryGetValue(controller.Id, out SkillCombatSnapshot skill))
+                    skill = new SkillCombatSnapshot(controller.Id, false);
+                if (!controller.IsAcquiredForRun(skill.Unlocked)) continue;
 
-            if (_headshotController == null)
-                _headshotController = GetComponentInChildren<HeadshotSkillController>(true);
-            if (_headshotController != null &&
-                _headshotController.IsAcquiredForRun(headshot.Unlocked))
-            {
-                if (!_headshotController.isActiveAndEnabled)
-                    return false;
-                else if (!_headshotController.ConfigureForRun(
-                             this, _runRequest.RunId, _runRequest.Seed, headshot))
-                    return false;
+                MonoBehaviour component = (MonoBehaviour)controller;
+                if (component.isActiveAndEnabled &&
+                    controller.ConfigureForRun(this, _runRequest.RunId,
+                        _runRequest.Seed, skill)) continue;
+                StopAllSkills();
+                return false;
             }
-            else if (headshot.Unlocked) return false;
+            return true;
+        }
 
-            if (_thunderController == null)
-                _thunderController = GetComponentInChildren<ThunderSkillController>(true);
-            if (_thunderController != null &&
-                _thunderController.IsAcquiredForRun(thunder.Unlocked))
+        private bool RefreshSkillControllers()
+        {
+            _skillControllers.Clear();
+            _skillControllersById.Clear();
+            MonoBehaviour[] components = GetComponentsInChildren<MonoBehaviour>(true);
+            for (int i = 0; i < components.Length; i++)
             {
-                if (!_thunderController.isActiveAndEnabled)
+                if (!(components[i] is IRunSkillController controller)) continue;
+                if (!SkillStatUpgrade.IsKnownSkill(controller.Id) ||
+                    _skillControllersById.ContainsKey(controller.Id))
+                {
+                    Debug.LogError("Duplicate or unknown skill controller: " +
+                        controller.Id, components[i]);
+                    _skillControllers.Clear();
+                    _skillControllersById.Clear();
                     return false;
-                else if (!_thunderController.ConfigureForRun(
-                             this, _runRequest.RunId, _runRequest.Seed, thunder))
-                    return false;
+                }
+                _skillControllersById.Add(controller.Id, controller);
+                _skillControllers.Add(controller);
             }
-            else if (thunder.Unlocked) return false;
-
-            if (_flameExhaustController == null)
-                _flameExhaustController = GetComponentInChildren<FlameExhaustSkillController>(true);
-            if (_flameExhaustController != null &&
-                _flameExhaustController.IsAcquiredForRun(flameExhaust.Unlocked))
-            {
-                if (!_flameExhaustController.isActiveAndEnabled)
-                    return false;
-                else if (!_flameExhaustController.ConfigureForRun(
-                             this, _runRequest.RunId, _runRequest.Seed,
-                             flameExhaust))
-                    return false;
-            }
-            else if (flameExhaust.Unlocked) return false;
-
-            if (_magicBallController == null)
-                _magicBallController = GetComponentInChildren<MagicBallSkillController>(true);
-            if (_magicBallController != null &&
-                _magicBallController.IsAcquiredForRun(magicBall.Unlocked))
-            {
-                if (!_magicBallController.isActiveAndEnabled)
-                    return false;
-                else if (!_magicBallController.ConfigureForRun(
-                             this, _runRequest.RunId, _runRequest.Seed,
-                             magicBall))
-                    return false;
-            }
-            else if (magicBall.Unlocked) return false;
-
-            if (_laserController == null)
-                _laserController = GetComponentInChildren<LaserSkillController>(true);
-            if (_laserController != null &&
-                _laserController.IsAcquiredForRun(laser.Unlocked))
-            {
-                if (!_laserController.isActiveAndEnabled)
-                    return false;
-                else if (!_laserController.ConfigureForRun(
-                             this, _runRequest.RunId, _runRequest.Seed, laser))
-                    return false;
-            }
-            else if (laser.Unlocked) return false;
             return true;
         }
 
         private void StopAllSkills()
         {
-            _tornadoController?.StopSkill();
-            _headshotController?.StopSkill();
-            _thunderController?.StopSkill();
-            _flameExhaustController?.StopSkill();
-            _magicBallController?.StopSkill();
-            _laserController?.StopSkill();
+            for (int i = 0; i < _skillControllers.Count; i++)
+            {
+                IRunSkillController controller = _skillControllers[i];
+                if (controller is MonoBehaviour component && component != null)
+                    controller.StopSkill();
+            }
         }
 
         public bool TryApplySkillDamage(RunId runId, ICombatTarget target, long rawDamage)
@@ -581,12 +514,7 @@ namespace CursorHunter.Combat
             _lastBasicHitAt.Clear();
             ResetAttackPath();
             playerCombatStatsRuntime.SetRunActive(false);
-            _tornadoController?.StopSkill();
-            _headshotController?.StopSkill();
-            _thunderController?.StopSkill();
-            _flameExhaustController?.StopSkill();
-            _magicBallController?.StopSkill();
-            _laserController?.StopSkill();
+            StopAllSkills();
 
             PresentationReset?.Invoke();
             result = CreateResult(
@@ -613,12 +541,7 @@ namespace CursorHunter.Combat
             _lastBasicHitAt.Clear();
             ResetAttackPath();
             playerCombatStatsRuntime.SetRunActive(false);
-            _tornadoController?.StopSkill();
-            _headshotController?.StopSkill();
-            _thunderController?.StopSkill();
-            _flameExhaustController?.StopSkill();
-            _magicBallController?.StopSkill();
-            _laserController?.StopSkill();
+            StopAllSkills();
 
             PresentationReset?.Invoke();
             result = CreateResult(

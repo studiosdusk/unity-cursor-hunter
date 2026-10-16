@@ -55,6 +55,7 @@ namespace CursorHunter.Combat.Tests
             targets[0].transform.position = new Vector3(100f, 100f, 0f);
             targets[1].transform.position = new Vector3(100f, 100f, 0f);
             combat.ConfigureSkills(null);
+            Assert.That(controller.PooledHitEffectCount, Is.EqualTo(16));
             combat.AdvanceTime(0.01f);
             yield return null;
 
@@ -123,6 +124,50 @@ namespace CursorHunter.Combat.Tests
             Assert.That(controller.ActiveHitEffectCount, Is.Zero);
             Assert.That(firstEffect.transform.localScale, Is.EqualTo(Vector3.one));
             Assert.That(secondEffect.transform.localScale, Is.EqualTo(Vector3.one));
+#else
+            Assert.Ignore("The sandbox scene is loaded through the Editor PlayMode runner.");
+            yield break;
+#endif
+        }
+
+        [UnityTest]
+        public IEnumerator HitVfxPoolGrowsAfterExhaustionWithoutDroppingDamage()
+        {
+#if UNITY_EDITOR
+            yield return LoadSandbox();
+            CursorHitEffectSandbox sandbox = Object.FindFirstObjectByType<CursorHitEffectSandbox>();
+            CombatRunController combat = sandbox.GetComponent<CombatRunController>();
+            FlameExhaustSkillController controller =
+                sandbox.GetComponentInChildren<FlameExhaustSkillController>(true);
+            SetField(sandbox, "_autoHit", false);
+            CreateCursor(controller);
+            SetField(controller, "editorSkillAcquired", true);
+            SetField(controller, "initialPooledHitEffects", 1);
+            SetField(controller, "maximumPooledHitEffects", 3);
+            SetField(controller, "hitEffectGrowthPerFrame", 2);
+            Assert.That(combat.ConfigureSkills(null), Is.True);
+            Assert.That(controller.PooledHitEffectCount, Is.EqualTo(1));
+
+            MonsterCombatTarget[] targets =
+                sandbox.GetComponentsInChildren<MonsterCombatTarget>();
+            int damageEvents = 0;
+            combat.DamageApplied += hit =>
+            {
+                if (hit.Source == CombatDamageSource.Skill) damageEvents++;
+            };
+            MethodInfo hitMethod = typeof(FlameExhaustSkillController).GetMethod(
+                "Hit", BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.That(hitMethod, Is.Not.Null);
+            Assert.That(hitMethod.Invoke(controller, new object[]
+                { combat.CurrentRunId, targets[0] }), Is.True);
+            Assert.That(hitMethod.Invoke(controller, new object[]
+                { combat.CurrentRunId, targets[1] }), Is.True);
+            Assert.That(damageEvents, Is.EqualTo(2));
+            Assert.That(controller.ActiveHitEffectCount, Is.EqualTo(1));
+
+            yield return null;
+            Assert.That(controller.PooledHitEffectCount, Is.EqualTo(3));
+            combat.TryAbortRun(RunEndReason.UserExit, default, out _);
 #else
             Assert.Ignore("The sandbox scene is loaded through the Editor PlayMode runner.");
             yield break;
