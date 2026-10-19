@@ -34,7 +34,7 @@ namespace CursorHunter.Combat
 
         private RunRequest _runRequest;
         private readonly List<IRunSkillController> _skillControllers =
-            new List<IRunSkillController>(6);
+            new List<IRunSkillController>(7);
         private readonly Dictionary<string, IRunSkillController> _skillControllersById =
             new Dictionary<string, IRunSkillController>(StringComparer.Ordinal);
         private SeededRandom _random;

@@ -565,8 +565,8 @@ namespace CursorHunter.Progression
 
         public void ShowPetTab()
         {
-            ShowTab(TraitTab.Stat);
-            TraitNodeDefinition petRoot = FindNode("skill.cursorAura");
+            ShowTab(TraitTab.Skill);
+            TraitNodeDefinition petRoot = FindNode("skill.pet_baby_dragon");
             if (petRoot != null)
             {
                 SelectNode(petRoot);
@@ -5353,7 +5353,9 @@ namespace CursorHunter.Progression
                     ? "CORE"
                     : entry.Tab == TraitTab.Monster
                         ? "M"
-                        : entry.Category != null && entry.Category.Id == "skill.cursorAura"
+                        : entry.Category != null &&
+                            (entry.Category.Id == "skill.cursorAura" ||
+                             entry.Category.Id == "skill.pet_baby_dragon")
                             ? "PET"
                             : entry.Tab == TraitTab.Skill
                                 ? "SK"
@@ -6180,6 +6182,7 @@ namespace CursorHunter.Progression
                 case "stat.boss": return LocalizationCatalog.Get("ui.boss", "보스 피해 배수");
                 case "stat.fieldDuration": return LocalizationCatalog.Get("ui.category.fieldDuration", "일반 필드 시간");
                 case "skill.cursorAura": return LocalizationCatalog.Get("ui.category.petAura", "펫 동료");
+                case "skill.pet_baby_dragon": return "베이비 드래곤";
                 default: return GetLocalizedEntityName(category.Id, category.Title);
             }
         }
@@ -7042,7 +7045,8 @@ namespace CursorHunter.Progression
         private static string GetNodeTypeLabel(TraitNodeDefinition node, TraitTab tab)
         {
             if (node != null && node.Id != null &&
-                node.Id.StartsWith("skill.cursorAura", StringComparison.Ordinal))
+                (node.Id.StartsWith("skill.cursorAura", StringComparison.Ordinal) ||
+                 node.Id.StartsWith("skill.pet_baby_dragon", StringComparison.Ordinal)))
             {
                 return "펫 동료";
             }
@@ -8172,6 +8176,7 @@ namespace CursorHunter.Progression
                 case "skill.meteor": return "메테오";
                 case "skill.dragonBreath": return "드래곤 브레스";
                 case "skill.cursorAura": return "펫 동료";
+                case "skill.pet_baby_dragon": return "베이비 드래곤";
                 case "monster.01": return "그루터기";
                 case "monster.02": return "여왕벌";
                 case "monster.03": return "독버섯";
@@ -8211,7 +8216,8 @@ namespace CursorHunter.Progression
                 return null;
             }
 
-            if (string.Equals(categoryId, "skill.cursorAura", StringComparison.Ordinal))
+            if (string.Equals(categoryId, "skill.cursorAura", StringComparison.Ordinal) ||
+                string.Equals(categoryId, "skill.pet_baby_dragon", StringComparison.Ordinal))
             {
                 if (petIcon != null)
                 {
@@ -8335,7 +8341,9 @@ namespace CursorHunter.Progression
                 return category.Icon;
             }
 
-            if (category != null && category.Id == "skill.cursorAura")
+            if (category != null &&
+                (category.Id == "skill.cursorAura" ||
+                 category.Id == "skill.pet_baby_dragon"))
             {
                 return GetCategoryIcon(category.Id);
             }

@@ -193,6 +193,11 @@
       "id(고정 식별자)": "skill.laser",
       "enabled(사용 가능 여부)": false,
       "upgrades(스킬 강화 증가량)": []
+    },
+    {
+      "id(고정 식별자)": "skill.pet_baby_dragon",
+      "enabled(사용 가능 여부)": false,
+      "upgrades(스킬 강화 증가량)": []
     }
   ],
   "rules(전투 공통 규칙)": {

@@ -7,7 +7,6 @@ using UnityEngine;
 
 namespace CursorHunter.App.Tests
 {
-    // Provided for later Editor execution; Unity is not launched by this task.
     public sealed class GameDataDocumentTests
     {
         private static GameInformation Build(GameDataDocument document, HashSet<string> purchased = null)
@@ -22,10 +21,10 @@ namespace CursorHunter.App.Tests
             var document = GameDataDocument.Load();
             Assert.That(GameDataDocument.RuntimeResourcePath, Is.EqualTo("GameData/game-data.en"));
             Assert.That(document.locale, Is.EqualTo("en"));
-            Assert.That(document.progression.categories.Length, Is.EqualTo(17));
+            Assert.That(document.progression.categories.Length, Is.EqualTo(18));
             int count = 0;
             foreach (var category in document.progression.categories) count += category.nodes.Length;
-            Assert.That(count, Is.EqualTo(84));
+            Assert.That(count, Is.EqualTo(85));
             document.locale = "ko";
             Assert.That(document.TryValidate(out _), Is.False);
             Assert.That(GameDataDocument.TryParse("{\"문서안내\":{}}", "{}", out _, out _), Is.False);
@@ -83,6 +82,7 @@ namespace CursorHunter.App.Tests
             Assert.That(result.stats.bossDamageMultiplier, Is.EqualTo(4));
             Assert.That(result.stats.normalFieldDurationSeconds, Is.EqualTo(30));
             Assert.That(result.skills[0].enabled, Is.True);
+            Assert.That(result.skills[6].enabled, Is.True);
             foreach (var monster in result.monsters)
             {
                 Assert.That(monster.enabled, Is.True);
@@ -101,6 +101,29 @@ namespace CursorHunter.App.Tests
             Assert.That(category.nodes[0].operation, Is.EqualTo("enable"));
             Assert.That(Build(document, new HashSet<string> { "skill.tornado" })
                 .skills[0].enabled, Is.True);
+        }
+
+        [Test]
+        public void BabyDragonUnlockFlowsIntoTheSeventhSkillSnapshot()
+        {
+            var document = GameDataDocument.Load();
+            UpgradeCategoryData category = System.Array.Find(
+                document.progression.categories,
+                value => value.id == "skill.pet_baby_dragon");
+            Assert.That(category.nodes, Has.Length.EqualTo(1));
+            Assert.That(category.nodes[0].cost, Is.EqualTo(40));
+            Assert.That(category.nodes[0].prerequisiteNodeId,
+                Is.EqualTo("stat.attack.01"));
+            Assert.That(Build(document).skills[6].enabled, Is.False);
+
+            GameInformation purchased = Build(document,
+                new HashSet<string> { "skill.pet_baby_dragon" });
+            Assert.That(purchased.skills[6].enabled, Is.True);
+            var snapshot = purchased.ToCombatSnapshot(
+                GameInformationJson.Serialize(purchased));
+            Assert.That(snapshot.Skills[6].SkillId,
+                Is.EqualTo("skill.pet_baby_dragon"));
+            Assert.That(snapshot.Skills[6].Unlocked, Is.True);
         }
 
         [Test]
@@ -149,6 +172,18 @@ namespace CursorHunter.App.Tests
                 document.progression.categories, value => value.id == "skill.tornado");
             category.nodes = System.Array.FindAll(
                 category.nodes, value => value.id != "skill.tornado");
+            Assert.That(document.TryValidate(out _), Is.False);
+        }
+
+        [Test]
+        public void MissingBabyDragonUnlockIsRejected()
+        {
+            var document = GameDataDocument.Load();
+            UpgradeCategoryData category = System.Array.Find(
+                document.progression.categories,
+                value => value.id == "skill.pet_baby_dragon");
+            category.nodes = System.Array.FindAll(category.nodes,
+                value => value.id != "skill.pet_baby_dragon");
             Assert.That(document.TryValidate(out _), Is.False);
         }
 

@@ -75,13 +75,15 @@ namespace CursorHunter.Contracts
         {
             return skillId == "skill.tornado" || skillId == "skill.headshot" ||
                 skillId == "skill.thunder" || skillId == "skill.flame_exhaust" ||
-                skillId == "skill.magic_ball" || skillId == "skill.laser";
+                skillId == "skill.magic_ball" || skillId == "skill.laser" ||
+                skillId == "skill.pet_baby_dragon";
         }
 
         public static bool IsAllowed(string skillId, string statId)
         {
             if (statId == "cooldownSeconds")
-                return IsKnownSkill(skillId) && skillId != "skill.magic_ball";
+                return IsKnownSkill(skillId) && skillId != "skill.magic_ball" &&
+                    skillId != "skill.pet_baby_dragon";
             switch (skillId)
             {
                 case "skill.tornado":
@@ -106,6 +108,12 @@ namespace CursorHunter.Contracts
                         statId == "sizeMultiplier" || statId == "damageMultiplier";
                 case "skill.laser":
                     return statId == "sizeMultiplier" || statId == "damageMultiplier";
+                case "skill.pet_baby_dragon":
+                    return statId == "damageMultiplier" ||
+                        statId == "attackIntervalSeconds" ||
+                        statId == "moveSpeedWorldUnitsPerSecond" ||
+                        statId == "detectionRadiusWorldUnits" ||
+                        statId == "attackRangeWorldUnits";
                 default:
                     return false;
             }

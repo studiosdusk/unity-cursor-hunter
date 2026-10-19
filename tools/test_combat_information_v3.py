@@ -12,8 +12,8 @@ class CombatInformationV3Tests(unittest.TestCase):
 
     def test_complete_pipeline_static_contract(self):
         document = validate_documents()
-        self.assertEqual(len(document["progression"]["categories"]), 17)
-        self.assertEqual(sum(len(c["nodes"]) for c in document["progression"]["categories"]), 84)
+        self.assertEqual(len(document["progression"]["categories"]), 18)
+        self.assertEqual(sum(len(c["nodes"]) for c in document["progression"]["categories"]), 85)
 
     def test_only_resolved_combat_sections_remain(self):
         self.assertEqual(set(self.info), {
@@ -22,7 +22,8 @@ class CombatInformationV3Tests(unittest.TestCase):
         self.assertEqual(len(self.info["monsters"]), 10)
         self.assertEqual([s["id"] for s in self.info["skills"]], [
             "skill.tornado", "skill.headshot", "skill.thunder",
-            "skill.flame_exhaust", "skill.magic_ball", "skill.laser"])
+            "skill.flame_exhaust", "skill.magic_ball", "skill.laser",
+            "skill.pet_baby_dragon"])
         for old in ("relic", "fragment", "progression", "entities", "fieldHelp", "implementation"):
             self.assertNotIn(old, json.dumps(self.info))
 

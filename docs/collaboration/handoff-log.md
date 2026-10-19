@@ -821,3 +821,22 @@
 - 일반 몬스터 10종의 사망 클립을 조사해 박쥐·전갈·눈요정·거미·골렘·봉오리·해골군주 7종의 원본 `Dead.anim`에 Loop Time이 켜져 있음을 확인했다. 워커 2종과 고스트는 꺼져 있었다.
 - 위 7종의 사망 클립을 `Combat/Art/MonsterDeath`에 복사하고 Loop Time만 껐다. 각 원본 외형의 Combat 프리팹 Variant에 Animator Override Controller를 적용해 Dead 클립만 교체하고, 해당 MonsterDefinition 7개를 Variant로 연결했다. 공급사 원본 에셋은 유지했다.
 - Unity 에디터에서 7개 클립·Override Controller·Variant 참조를 확인했고 Main 필드 사냥에서 몬스터 생성과 처치가 진행되는 동안 콘솔 경고·오류 0건을 확인했다. `validate_game_information.py`가 해당 Variant의 원본 연결·사망 클립 교체·반복 해제를 검사하도록 갱신했다. 데이터·협업 검증과 `git diff --check`가 통과했다. 모든 종의 사망 장면을 각각 직접 관찰한 검증은 아니다.
+
+### 2026-10-19 · Combat/App — BabyDragon 펫 외형·공격 연출 기획
+
+- Main 씬의 BabyDragon 아래에 사용자가 배치한 `MagicCircle1_Green` 자식 프리팹을 펫 식별 고리로 사용한다. 기존 씬 인스턴스와 자식 구성을 보존하고, 해금된 런에서만 활성화하는 방향으로 펫 기획 초안을 갱신했다.
+- 사용자가 지정한 `Explosion_Effect_Blue`를 펫 공격 명중 연출로 기록했다. 원본의 파티클 6개는 모두 반복 재생 설정이므로, 구현 시 게임 소유 래퍼에서 한 번 재생하고 파티클 종료 후 회수한다. 피해는 공통 스킬 피해 경로에서 처리한다.
+- 이 변경은 기획·에셋 매핑 문서만 갱신했다. Main 씬과 공급사 프리팹의 사용자 수정은 보존했다. `python3 tools/validate_collaboration.py`와 변경 문서의 공백 검사는 통과했고 Unity 화면 검증은 수행하지 않았다.
+
+### 2026-10-19 · Combat/App/Progression/Data — BabyDragon 펫 스킬 1차 구현
+
+- `skill.pet_baby_dragon`을 일곱 번째 자동 스킬로 등록했다. `stat.attack.01` 이후 가넷 40개로 구매하는 해금 노드를 추가했으며, 보유 상태와 허용된 스탯 증가량이 기존 런 스냅샷을 거쳐 `IRunSkillController`로 전달된다. 펫 피해는 `TryApplySkillDamage`를 사용한다.
+- Main의 기존 BabyDragon Spine 씬 개체와 사용자가 붙인 고리는 그대로 참조한다. 잠금·런 종료에는 함께 숨고 해금된 전투에서는 커서 옆에 나타나 가까운 적을 탐색·추적·공격한다. `Idle`·`Walk`·`Attack`을 사용하고 일시정지에는 애니메이션과 공격 시계를 멈춘다. 숨겨진 `cursor_image`도 기본 마우스 모드에서 월드 좌표를 갱신하게 해 펫 추종 기준이 멈추지 않도록 했다. 성장 화면은 BabyDragon 아이콘과 스킬 노드를 표시한다.
+- 지정한 `Explosion_Effect_Blue`는 원본을 수정하지 않고 컨트롤러에서 최대 8개까지 미리 복제한다. 명중 시 반복을 끄고 짧게 방출한 다음 풀에 회수한다. 풀이 부족할 때도 논리 피해는 적용된다.
+- Unity 6000.3.13f1 격리 복제본에서 EditMode 전체 104개와 PlayMode 전체 19개를 통과했다. Main 씬 PlayMode에서 컨트롤러·BabyDragon·고리·커서·폭발 프리팹 연결과 해금 등장·종료 숨김도 확인했다. Python 데이터·협업 검사도 통과했다. 실제 Main 전투 화면의 크기·정렬·고리 대비·폭발 크기는 후속 플레이테스트가 필요하다.
+
+### 2026-10-19 · Combat/App — BabyDragon Y 위치 기반 표시 순서
+
+- 몬스터와 펫의 화면 Y → 0~199 Sorting Order 계산을 `ViewportVisualSorting`으로 공유한다. 펫 루트에 `SortingGroup`을 한 번 구성해 Spine과 자식 고리를 함께 정렬한다. Main에서는 몬스터 스포너와 동일한 카메라를 연결했다.
+- 몬스터의 최적화 방식을 유지했다. 펫 등장·이동 직후에만 정렬을 요청하고, Y가 이전과 같으면 카메라 변환을 생략하며, 계산된 순서가 같으면 SortingGroup에 다시 쓰지 않는다. 공급사 펫·고리 프리팹은 수정하지 않았다.
+- 격리 Unity 6000.3.13f1 프로젝트의 PlayMode 전체 19개가 통과했다. Sandbox에서 Y 이동에 따른 순서 변경과 X 이동만 있을 때의 계산 생략을, Main에서 실제 BabyDragon 그룹·카메라 참조를 확인했다. 화면에서 겹침 모양은 추가 확인이 필요하다.
