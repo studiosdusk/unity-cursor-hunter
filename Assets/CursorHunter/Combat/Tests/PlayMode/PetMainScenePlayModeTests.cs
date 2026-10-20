@@ -40,6 +40,11 @@ namespace CursorHunter.Combat.Tests
             Assert.That(pet, Is.Not.Null);
             Transform ring = pet.Find("MagicCircle1_Green");
             Assert.That(ring, Is.Not.Null);
+            Transform configuredRing = (Transform)typeof(PetSkillController)
+                .GetField("groundRing",
+                    BindingFlags.NonPublic | BindingFlags.Instance)
+                .GetValue(controller);
+            Assert.That(configuredRing, Is.EqualTo(ring));
             Assert.That(pet.gameObject.activeSelf, Is.False);
             Camera worldCamera = (Camera)typeof(PetSkillController)
                 .GetField("worldCamera",
@@ -67,6 +72,12 @@ namespace CursorHunter.Combat.Tests
                 Is.EqualTo(Mathf.Clamp(Mathf.RoundToInt(
                     (1f - worldCamera.WorldToViewportPoint(pet.position).y) *
                     199f), 0, 199)));
+            SortingGroup ringSortingGroup = ring.GetComponent<SortingGroup>();
+            Assert.That(ring.gameObject.layer, Is.Zero);
+            Assert.That(ringSortingGroup, Is.Not.Null);
+            Assert.That(ringSortingGroup.sortAtRoot, Is.True);
+            Assert.That(ringSortingGroup.sortingLayerID, Is.Zero);
+            Assert.That(ringSortingGroup.sortingOrder, Is.EqualTo(-1));
             Assert.That(pet.GetComponents<MonoBehaviour>(),
                 Has.Some.Matches<MonoBehaviour>(x =>
                     x != null && x.GetType().Name == "SkeletonAnimation"));

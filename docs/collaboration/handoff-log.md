@@ -840,3 +840,8 @@
 - 몬스터와 펫의 화면 Y → 0~199 Sorting Order 계산을 `ViewportVisualSorting`으로 공유한다. 펫 루트에 `SortingGroup`을 한 번 구성해 Spine과 자식 고리를 함께 정렬한다. Main에서는 몬스터 스포너와 동일한 카메라를 연결했다.
 - 몬스터의 최적화 방식을 유지했다. 펫 등장·이동 직후에만 정렬을 요청하고, Y가 이전과 같으면 카메라 변환을 생략하며, 계산된 순서가 같으면 SortingGroup에 다시 쓰지 않는다. 공급사 펫·고리 프리팹은 수정하지 않았다.
 - 격리 Unity 6000.3.13f1 프로젝트의 PlayMode 전체 19개가 통과했다. Sandbox에서 Y 이동에 따른 순서 변경과 X 이동만 있을 때의 계산 생략을, Main에서 실제 BabyDragon 그룹·카메라 참조를 확인했다. 화면에서 겹침 모양은 추가 확인이 필요하다.
+
+### 2026-10-20 · Combat/App — BabyDragon 발밑 고리 정렬 분리
+
+- Main의 `MagicCircle1_Green`은 BabyDragon 자식으로 유지한다. 런 준비 때 고리에 별도 `SortingGroup`을 한 번 구성하고 `Sort At Root`를 켜서 Default Sorting Layer, Order -1로 고정한다. 따라서 0~199로 정렬되는 모든 몬스터 뒤에 표시된다. 펫 본체의 Y 기반 정렬과 위치 계산 최적화는 유지한다.
+- Main 인스턴스의 고리 참조를 명시적으로 연결했다. 격리 Unity 6000.3.13f1 프로젝트의 PlayMode 전체 19개, Python 데이터·협업 검사, `git diff --check`가 통과했다. 실제 Main 화면의 겹침 모양은 수동 확인이 필요하다.

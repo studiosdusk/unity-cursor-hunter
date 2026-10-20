@@ -46,6 +46,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: CursorHunter.Combat::CursorHunter.Combat.PetSkillController
   editorSkillAcquired: 0
   petRoot: {fileID: 0}
+  groundRing: {fileID: 0}
   cursorAnchor: {fileID: 0}
   worldCamera: {fileID: 0}
   attackEffectPrefab: {fileID: 5107304801680389854, guid: 797527cd75a36424db3d5aaea2a449fd, type: 3}

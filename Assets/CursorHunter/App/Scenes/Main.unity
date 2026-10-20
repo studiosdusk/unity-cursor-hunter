@@ -32170,6 +32170,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 2127624400}
     - target: {fileID: 100002, guid: 3be6ee6328fa4db0afd3f8b88c6eca64, type: 3}
+      propertyPath: groundRing
+      value:
+      objectReference: {fileID: 1999272709}
+    - target: {fileID: 100002, guid: 3be6ee6328fa4db0afd3f8b88c6eca64, type: 3}
       propertyPath: worldCamera
       value: 
       objectReference: {fileID: 1273511514}

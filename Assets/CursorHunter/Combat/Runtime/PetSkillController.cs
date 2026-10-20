@@ -15,6 +15,7 @@ namespace CursorHunter.Combat
     public sealed class PetSkillController : MonoBehaviour, IRunSkillController
     {
         public const string SkillId = "skill.pet_baby_dragon";
+        private const int GroundRingSortingOrder = -1;
 
         string IRunSkillController.Id => SkillId;
         bool IRunSkillController.IsAcquiredForRun(bool savedAcquired) =>
@@ -31,6 +32,7 @@ namespace CursorHunter.Combat
 
         [Header("Scene references")]
         [SerializeField] private Transform petRoot;
+        [SerializeField] private Transform groundRing;
         [SerializeField] private Transform cursorAnchor;
         [SerializeField] private Camera worldCamera;
         [SerializeField] private GameObject attackEffectPrefab;
@@ -64,6 +66,7 @@ namespace CursorHunter.Combat
         private CombatRunController _combat;
         private SkeletonAnimation _animation;
         private SortingGroup _visualSortingGroup;
+        private SortingGroup _groundRingSortingGroup;
         private Camera _sortingCamera;
         private MonsterCombatTarget _target;
         private RunId _runId;
@@ -288,6 +291,34 @@ namespace CursorHunter.Combat
             // Monster VisualRoot uses the Default Sorting Layer.
             if (_visualSortingGroup.sortingLayerID != 0)
                 _visualSortingGroup.sortingLayerID = 0;
+
+            ConfigureGroundRingSorting();
+        }
+
+        private void ConfigureGroundRingSorting()
+        {
+            Transform ring = groundRing != null
+                ? groundRing : petRoot.Find("MagicCircle1_Green");
+            if (ring == null || ring == petRoot || !ring.IsChildOf(petRoot))
+                return;
+
+            if (_groundRingSortingGroup == null ||
+                _groundRingSortingGroup.transform != ring)
+            {
+                _groundRingSortingGroup = ring.GetComponent<SortingGroup>();
+                if (_groundRingSortingGroup == null)
+                    _groundRingSortingGroup =
+                        ring.gameObject.AddComponent<SortingGroup>();
+            }
+
+            // A nested group normally inherits the pet's 0..199 order.
+            // Sort at root keeps the child ring behind every monster group.
+            if (!_groundRingSortingGroup.sortAtRoot)
+                _groundRingSortingGroup.sortAtRoot = true;
+            if (_groundRingSortingGroup.sortingLayerID != 0)
+                _groundRingSortingGroup.sortingLayerID = 0;
+            if (_groundRingSortingGroup.sortingOrder != GroundRingSortingOrder)
+                _groundRingSortingGroup.sortingOrder = GroundRingSortingOrder;
         }
 
         internal void RefreshVisualSorting()

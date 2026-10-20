@@ -68,6 +68,7 @@ namespace CursorHunter.Combat.Tests
             skillObject.transform.SetParent(combat.transform, false);
             PetSkillController skill = skillObject.AddComponent<PetSkillController>();
             SetField(skill, "petRoot", _pet.transform);
+            SetField(skill, "groundRing", ring.transform);
             SetField(skill, "cursorAnchor", _cursor.transform);
             SetField(skill, "worldCamera", Camera.main);
             SetField(skill, "attackEffectPrefab", _effectPrefab);
@@ -103,6 +104,13 @@ namespace CursorHunter.Combat.Tests
             Assert.That(sortingGroup.sortingOrder,
                 Is.EqualTo(ExpectedSortingOrder(
                     Camera.main, _pet.transform.position)));
+            SortingGroup ringSortingGroup = ring.GetComponent<SortingGroup>();
+            Assert.That(ring.transform.parent, Is.EqualTo(_pet.transform));
+            Assert.That(ring.layer, Is.Zero);
+            Assert.That(ringSortingGroup, Is.Not.Null);
+            Assert.That(ringSortingGroup.sortAtRoot, Is.True);
+            Assert.That(ringSortingGroup.sortingLayerID, Is.Zero);
+            Assert.That(ringSortingGroup.sortingOrder, Is.EqualTo(-1));
 
             for (int i = 0; i < 15 && hits == 0; i++)
             {
@@ -120,6 +128,7 @@ namespace CursorHunter.Combat.Tests
             _pet.transform.position += Vector3.down;
             RefreshSorting(skill);
             Assert.That(sortingGroup.sortingOrder, Is.GreaterThan(originalOrder));
+            Assert.That(ringSortingGroup.sortingOrder, Is.EqualTo(-1));
             int lowerOrder = sortingGroup.sortingOrder;
             sortingGroup.sortingOrder = -7;
             _pet.transform.position += Vector3.right;
