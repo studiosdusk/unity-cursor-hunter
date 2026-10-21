@@ -146,5 +146,39 @@ namespace CursorHunter.Combat.Tests
                 new[] { new SkillStatUpgrade("effectDurationSeconds", 1f) }).IsValid,
                 Is.False);
         }
+
+        [Test]
+        public void PetCapturesDamageAttackIntervalMovementAndRanges()
+        {
+            var basis = new PetBaseStat
+            {
+                DamageMultiplier = 0.5f,
+                AttackIntervalSeconds = 1.2f,
+                MoveSpeedWorldUnitsPerSecond = 4f,
+                DetectionRadiusWorldUnits = 8f,
+                AttackRangeWorldUnits = 1.5f,
+                CursorLeashWorldUnits = 10f,
+                IdleDistanceWorldUnits = 1.5f
+            };
+            var snapshot = new SkillCombatSnapshot(PetSkillController.SkillId,
+                true, new[]
+                {
+                    new SkillStatUpgrade("damageMultiplier", 0.25f),
+                    new SkillStatUpgrade("attackIntervalSeconds", -0.3f),
+                    new SkillStatUpgrade("moveSpeedWorldUnitsPerSecond", 2f),
+                    new SkillStatUpgrade("detectionRadiusWorldUnits", 1f),
+                    new SkillStatUpgrade("attackRangeWorldUnits", 0.5f)
+                });
+            Assert.That(snapshot.IsValid, Is.True);
+            var runtime = new PetRuntimeStat(basis, snapshot, 10L);
+            Assert.That(runtime.Damage, Is.EqualTo(8L));
+            Assert.That(runtime.AttackIntervalSeconds, Is.EqualTo(0.9f).Within(0.001f));
+            Assert.That(runtime.MoveSpeedWorldUnitsPerSecond, Is.EqualTo(6f));
+            Assert.That(runtime.DetectionRadiusWorldUnits, Is.EqualTo(9f));
+            Assert.That(runtime.AttackRangeWorldUnits, Is.EqualTo(2f));
+            Assert.That(new SkillCombatSnapshot(PetSkillController.SkillId,
+                true, new[] { new SkillStatUpgrade("cooldownSeconds", -0.1f) })
+                .IsValid, Is.False);
+        }
     }
 }

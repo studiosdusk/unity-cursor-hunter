@@ -52,8 +52,8 @@ def main():
     check(len(data["monsters"]) == len(example["monsters"]) == 10, "Expected 10 monsters")
     check([s["id"] for s in example["skills"]] ==
           ["skill.tornado", "skill.headshot", "skill.thunder", "skill.flame_exhaust",
-           "skill.magic_ball", "skill.laser"],
-          "Expected six skill IDs")
+           "skill.magic_ball", "skill.laser", "skill.pet_baby_dragon"],
+          "Expected seven skill IDs")
     check(data["normalFieldDurationSeconds"] == [15, 20, 25, 30], "Normal duration must stop at 30")
     check(all(finite_positive(v) and v >= .05 for v in data["attackCooldownSeconds"]), "Invalid cooldown")
     check(all(data["attackCooldownSeconds"][i] > data["attackCooldownSeconds"][i+1] for i in range(4)), "Cooldown upgrades must decrease")
@@ -108,7 +108,8 @@ def main():
     check(known_currencies == set(gems), "Some currencies have no attainable monster source")
     for skill in data["skills"]:
         check(skill["currencyId"] in known_currencies, "Unattainable skill currency")
-        check(skill["id"] == "skill.tornado", "Unexpected purchased skill category")
+        check(skill["id"] in ("skill.tornado", "skill.pet_baby_dragon"),
+              "Unexpected purchased skill category")
     tornado_controller = BASE / "Combat/Prefabs/Skills/TornadoSkillController.prefab"
     tornado_object = BASE / "Combat/Prefabs/Skills/TornadoObject.prefab"
     check(tornado_controller.exists(), "Missing tornado controller prefab")
@@ -175,6 +176,27 @@ def main():
                             laser_controller_guid + r", type: 3\}", scene_text),
                   f"Laser controller is not under the combat manager in {relative}")
 
+    pet_controller = BASE / "Combat/Prefabs/Skills/PetSkillController.prefab"
+    pet_effect = ROOT / "Assets/DownLoadAssets/Casual_VFX/Cartoon Casual VFX Pack/Prefabs/Explosion/Explosion_Effect_Blue.prefab"
+    pet_scene = (BASE / "App/Scenes/Main.unity").read_text()
+    for path in (pet_controller, pet_effect):
+        check(path.exists(), f"Missing BabyDragon skill asset: {path}")
+    if pet_controller.exists() and pet_effect.exists():
+        pet_guid = pet_controller.with_suffix(".prefab.meta").read_text().split("guid: ")[1].splitlines()[0]
+        effect_guid = pet_effect.with_suffix(".prefab.meta").read_text().split("guid: ")[1].splitlines()[0]
+        check(effect_guid in pet_controller.read_text(), "BabyDragon skill does not reference the blue impact effect")
+        check(re.search(r"m_TransformParent: \{fileID: 2188000105\}[\s\S]*?"
+                        r"m_SourcePrefab: \{fileID: 100100000, guid: " + pet_guid +
+                        r", type: 3\}", pet_scene),
+              "BabyDragon skill controller is not under Main CombatManager")
+        check("propertyPath: petRoot" in pet_scene and
+              "objectReference: {fileID: 2127624400}" in pet_scene and
+              "propertyPath: cursorAnchor" in pet_scene and
+              "objectReference: {fileID: 1460028808}" in pet_scene,
+              "BabyDragon skill scene references are missing")
+        check("m_SourcePrefab: {fileID: 100100000, guid: 5110becfdecf74563833b775b9ce1677, type: 3}" in pet_scene,
+              "BabyDragon's child ally ring is missing from Main")
+
     controller = (BASE / "Progression/Runtime/TraitScreenController.cs").read_text()
     check("CreateGameInformationJson" in controller and "SourceJson" in controller, "Summary must use captured JSON")
     check("GetGemstoneDropWeight" not in controller, "Old weighted gemstone unlock path remains")
@@ -208,7 +230,7 @@ def main():
                         errors.append(f"C# syntax: {path.relative_to(ROOT)}:{node.start_point.row+1} {node.type}")
                     stack.extend(node.children)
     if errors: raise SystemExit("\n".join(errors))
-    print("PASS: JSON sections, 10 monsters, six skill IDs, currency reachability, prefab IDs, TMP, scene and render settings" + (", C# syntax" if args.syntax else ""))
+    print("PASS: JSON sections, 10 monsters, seven skill IDs, currency reachability, prefab IDs, TMP, scene and render settings" + (", C# syntax" if args.syntax else ""))
     print("Unity import, semantic compilation and gameplay were NOT run.")
 
 if __name__ == "__main__":

@@ -621,6 +621,25 @@
         ]
       },
       {
+        "id": "skill.pet_baby_dragon",
+        "tab": "skills",
+        "nodes": [
+          {
+            "id": "skill.pet_baby_dragon",
+            "displayName": "Baby Dragon Companion",
+            "description": "Summons BabyDragon at the start of a hunt to pursue and attack nearby enemies.",
+            "valueLabel": "Unlock skill",
+            "cost": 40,
+            "currencyId": "gem.garnet",
+            "requiredBossTier": 0,
+            "prerequisiteNodeId": "stat.attack.01",
+            "startsUnlocked": false,
+            "operation": "enable",
+            "value": 1
+          }
+        ]
+      },
+      {
         "id": "monster.01",
         "tab": "monsters",
         "nodes": [
@@ -1347,6 +1366,12 @@
       "displayName": "Laser",
       "description": "A vertical laser strikes every enemy that enters its beam once per cast.",
       "prefabKey": "Combat/Prefabs/Skills/LaserSkillController"
+    },
+    {
+      "id": "skill.pet_baby_dragon",
+      "displayName": "Baby Dragon Companion",
+      "description": "A BabyDragon companion follows the cursor and attacks nearby enemies.",
+      "prefabKey": "Combat/Prefabs/Skills/PetSkillController"
     },
     {
       "id": "monster.01",

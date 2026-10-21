@@ -9182,6 +9182,82 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 1
+--- !u!1001 &671216247
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 2941869236182824103, guid: 75289f53db41f43cfb17b0f7df64a5b0, type: 3}
+      propertyPath: m_Name
+      value: Spine GameObject (BabyDragon) (1)
+      objectReference: {fileID: 0}
+    - target: {fileID: 2941869236182824103, guid: 75289f53db41f43cfb17b0f7df64a5b0, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6241804606187907264, guid: 75289f53db41f43cfb17b0f7df64a5b0, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 7954768304202789460, guid: 75289f53db41f43cfb17b0f7df64a5b0, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 7954768304202789460, guid: 75289f53db41f43cfb17b0f7df64a5b0, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 7954768304202789460, guid: 75289f53db41f43cfb17b0f7df64a5b0, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -8.80691
+      objectReference: {fileID: 0}
+    - target: {fileID: 7954768304202789460, guid: 75289f53db41f43cfb17b0f7df64a5b0, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 3.6166177
+      objectReference: {fileID: 0}
+    - target: {fileID: 7954768304202789460, guid: 75289f53db41f43cfb17b0f7df64a5b0, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7954768304202789460, guid: 75289f53db41f43cfb17b0f7df64a5b0, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7954768304202789460, guid: 75289f53db41f43cfb17b0f7df64a5b0, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7954768304202789460, guid: 75289f53db41f43cfb17b0f7df64a5b0, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7954768304202789460, guid: 75289f53db41f43cfb17b0f7df64a5b0, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7954768304202789460, guid: 75289f53db41f43cfb17b0f7df64a5b0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7954768304202789460, guid: 75289f53db41f43cfb17b0f7df64a5b0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7954768304202789460, guid: 75289f53db41f43cfb17b0f7df64a5b0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 7954768304202789460, guid: 75289f53db41f43cfb17b0f7df64a5b0, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1999272709}
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 75289f53db41f43cfb17b0f7df64a5b0, type: 3}
 --- !u!1 &688235856
 GameObject:
   m_ObjectHideFlags: 0
@@ -10092,6 +10168,190 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 1
+--- !u!114 &760100001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1090725704}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f2106d3cc7123d5ab9d330d7e1ac7767, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CursorHunter.Progression::CursorHunter.Progression.TraitScreenController
+  catalog: {fileID: 0}
+  startingGarnet: 125
+  startingGemstoneBalances: 7d0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+  unlockedBossTier: 0
+  loadSavedProgress: 1
+  testModeUnlockAll: 0
+  testModeFreeUpgrades: 0
+  backRequested:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 2188000111}
+        m_TargetAssemblyTypeName: CursorHunter.App.AppUiRootController, CursorHunter.App
+        m_MethodName: CloseTrait
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 1
+        m_CallState: 2
+  panelSprite: {fileID: 21300000, guid: ad88fadd7bc384969bd45f53f0448093, type: 3}
+  combatBackgroundSprite: {fileID: 21300000, guid: 2847dc0f67feb49b4959b999a9ea4129, type: 3}
+  tabSprite: {fileID: 21300000, guid: ecf3e525de7a347879c0787e5d7f091d, type: 3}
+  tabFocusSprite: {fileID: 21300000, guid: db9921feae62c49c397bde0fdd539174, type: 3}
+  categorySprite: {fileID: 21300000, guid: aae6551a421cb4bd5b9273d7dc157ce3, type: 3}
+  categoryFocusSprite: {fileID: 21300000, guid: 0d6bcce8a80284b63afb025a509a6d34, type: 3}
+  nodeSprite: {fileID: 21300000, guid: 6e89665deabf841238f44ebf2fd1665d, type: 3}
+  nodeAccentSprite: {fileID: 21300000, guid: 83463df8e9bac4db0b26718b7f40b3db, type: 3}
+  nodePurchasedSprite: {fileID: 21300000, guid: ad88fadd7bc384969bd45f53f0448093, type: 3}
+  nodeLockedSprite: {fileID: 21300000, guid: fdb8d6a0cb191473a90fa04c8407fcd7, type: 3}
+  gemIcon: {fileID: 21300000, guid: 6f40e5d50d0934e45aac02171a570c88, type: 3}
+  lockIcon: {fileID: 21300000, guid: 177c91d27d5534109a5f6b3bb3ccbb3b, type: 3}
+  checkIcon: {fileID: 21300000, guid: 67d74fe0bc2ff4f04bb9d4f9e1d63c02, type: 3}
+  backIcon: {fileID: 21300000, guid: fda9564e96d404ec384b9e32872d049a, type: 3}
+  attackIcon: {fileID: 21300000, guid: 12c58e25a645d4bf9808e3e5b47cd280, type: 3}
+  radiusIcon: {fileID: 21300000, guid: 8725c96846cc04e13b9bd0282edb30dd, type: 3}
+  attackIntervalIcon: {fileID: 21300000, guid: 2ec93f10f96b7458d9718d95c2487da8, type: 3}
+  timerIcon: {fileID: 21300000, guid: cb04b83a8c3a045558cd1f05866cf45e, type: 3}
+  criticalIcon: {fileID: 21300000, guid: 97b49874aed4b43788d90720bf2b2023, type: 3}
+  gemstoneIcon: {fileID: 21300000, guid: 58f1b94daaf3b4b06b098c42546e19d4, type: 3}
+  bossIcon: {fileID: 21300000, guid: d77571e140f0144daaad2a7e4ba19c7c, type: 3}
+  skillIcon: {fileID: 21300000, guid: 13756a141b0b84db08f0c80f06bb5d45, type: 3}
+  monsterIcon: {fileID: 21300000, guid: 6b3d80100f82a44bb8968db0ec8c98e3, type: 3}
+  petIcon: {fileID: 21300000, guid: e3db040c4cdb5234bbbea8c36b533fe2, type: 3}
+  dragHandCursorSprite: {fileID: 21300000, guid: 87129087663ba4d509b75eb67c6a60c0, type: 3}
+  gemstoneIcons:
+  - {fileID: 21300000, guid: 6f40e5d50d0934e45aac02171a570c88, type: 3}
+  - {fileID: 21300000, guid: e7456ed055303479fa545fea773f4bf1, type: 3}
+  - {fileID: 21300000, guid: e74fb0eb39fbd4d94ab0f7601df612ca, type: 3}
+  - {fileID: 21300000, guid: db445bdb34cc34ec78fc713c3278d6db, type: 3}
+  - {fileID: 21300000, guid: f0ec595ceb4954cb58e8a1acec6720c5, type: 3}
+  - {fileID: 21300000, guid: 80437da613ef64ecab96530c087df0f0, type: 3}
+  skillIcons:
+  - {fileID: 21300000, guid: c96f62a4ab65749128908e5360e39126, type: 3}
+  - {fileID: 21300000, guid: 38d138f4bd4964678b146f843d742bd8, type: 3}
+  - {fileID: 21300000, guid: 1e4f2d388537b4ac6a27a560d6dce4d0, type: 3}
+  - {fileID: 21300000, guid: c96f62a4ab65749128908e5360e39126, type: 3}
+  - {fileID: 21300000, guid: 671e13c2a7e8a4415adcc42790d2be55, type: 3}
+  - {fileID: 21300000, guid: 3c616b140805d4445b62ce619eb60e08, type: 3}
+  monsterIcons:
+  - {fileID: 21300000, guid: 81366e1f0ef95fb4ca021ff158c9bbd7, type: 3}
+  - {fileID: 21300000, guid: 2d4b5fe9210026e4f9646afa8d381ba8, type: 3}
+  - {fileID: 21300000, guid: 9731bdc77bdd099499cd873c1fb95277, type: 3}
+  - {fileID: 21300000, guid: fb2ef077ca7cff145b786fe98437bf42, type: 3}
+  - {fileID: 21300000, guid: 58ecdefa4b1d13344a5d2d437e661188, type: 3}
+  - {fileID: 21300000, guid: 0760c09a431bc7243a8a3895187b7ea1, type: 3}
+  - {fileID: 21300000, guid: fce62f34b0be7a94295f5b4a12f24dca, type: 3}
+  - {fileID: 21300000, guid: 2fd0633512126e646a8fe810019b0737, type: 3}
+  - {fileID: 21300000, guid: 6c63eea5ac3d47f41a4ada2581ce61f3, type: 3}
+  - {fileID: 21300000, guid: 9ed7185891b014c4a8a16be35bb06d34, type: 3}
+  petIcons:
+  - {fileID: 21300000, guid: e3db040c4cdb5234bbbea8c36b533fe2, type: 3}
+  uiFont: {fileID: 12800000, guid: 76d037539f56c45a1ba293f2dff49672, type: 3}
+  relicEntries:
+  - title: "\uBE68\uAC04 \uD3EC\uC158"
+    icon: {fileID: 21300000, guid: 202231647a7ed4f18933e1eafd9835fb, type: 3}
+    description: 
+    isObtained: 0
+  - title: "\uD30C\uB780 \uD3EC\uC158"
+    icon: {fileID: 21300000, guid: d3ad47b65a3144ea593c0c93a2641474, type: 3}
+    description: 
+    isObtained: 0
+  - title: "\uBAAC\uC2A4\uD130 \uACE0\uAE30"
+    icon: {fileID: 21300000, guid: d2d8706278c414fb0b8ddf59d6470318, type: 3}
+    description: 
+    isObtained: 0
+  - title: "\uB3C4\uC801 \uC2E0\uBC1C"
+    icon: {fileID: 21300000, guid: 689aab790dfd640a78c6b3890daa0b71, type: 3}
+    description: 
+    isObtained: 0
+  - title: "\uAD81\uC218\uC758 \uD65C"
+    icon: {fileID: 21300000, guid: 84e3504adeb474cd78690f0e7ce48a69, type: 3}
+    description: 
+    isObtained: 0
+  - title: "\uC804\uC0AC\uC758 \uAC11\uC637"
+    icon: {fileID: 21300000, guid: db45e68c10e784423a0a4aa24c8ba033, type: 3}
+    description: 
+    isObtained: 0
+  - title: "\uB9C8\uBC95\uC0AC\uC758 \uBAA8\uC790"
+    icon: {fileID: 21300000, guid: 38a8311eeb6114df7a9bd458e196e082, type: 3}
+    description: 
+    isObtained: 0
+  - title: "\uC6A9\uB9F9\uC758 \uBC18\uC9C0"
+    icon: {fileID: 21300000, guid: 310b8e87e0f624fa587ef446b1885df4, type: 3}
+    description: 
+    isObtained: 0
+  - title: "\uD589\uC6B4\uC758 \uC8FC\uC0AC\uC704"
+    icon: {fileID: 21300000, guid: f3974630efb91453bb0b049b3bd8bc6f, type: 3}
+    description: 
+    isObtained: 0
+  - title: "\uD06C\uB77C\uCF04\uC758 \uB208"
+    icon: {fileID: 21300000, guid: e8a913573801943d2b2ff4b562c83f92, type: 3}
+    description: 
+    isObtained: 0
+  - title: "\uB124\uC78E\uD074\uB85C\uBC84"
+    icon: {fileID: 21300000, guid: 27109c2994c094997b78d1cebc5b277a, type: 3}
+    description: 
+    isObtained: 0
+  - title: "\uACE0\uB300\uC758 \uC11C"
+    icon: {fileID: 21300000, guid: 562186b060ba241378d482c1154a84e7, type: 3}
+    description: 
+    isObtained: 0
+  - title: "\uBAA8\uD5D8\uAC00\uC758 \uAC00\uBC29"
+    icon: {fileID: 21300000, guid: 88d80ec7bf9ed49e18c3e3612ffcbcd1, type: 3}
+    description: 
+    isObtained: 0
+  - title: "\uB098\uCE68\uBC18"
+    icon: {fileID: 21300000, guid: af47147931c3147a6b130388045bcc5a, type: 3}
+    description: 
+    isObtained: 0
+  - title: "\uD655\uC131\uAE30"
+    icon: {fileID: 21300000, guid: 5fb5c6b85663f44e2abe89863eb73bd6, type: 3}
+    description: 
+    isObtained: 0
+  - title: "\uB9DD\uC6D0\uACBD"
+    icon: {fileID: 21300000, guid: ae1ab6a3c2fd44399a945a071c1d0e8f, type: 3}
+    description: 
+    isObtained: 0
+  - title: "\uC9F1\uB3CC"
+    icon: {fileID: 21300000, guid: f65cb867da27e48cda237c149b44b8b6, type: 3}
+    description: 
+    isObtained: 0
+  - title: "\uBB34\uC9C0\uAC1C \uAE43\uD138"
+    icon: {fileID: 21300000, guid: 894abf050c0dc41b6bab39641a001dff, type: 3}
+    description: 
+    isObtained: 0
+  - title: "\uC2EC\uD310\uC758 \uC800\uC6B8"
+    icon: {fileID: 21300000, guid: 0f7806085e32347f39a2f408199654df, type: 3}
+    description: 
+    isObtained: 0
+  - title: "\uBCF4\uBB3C\uC0C1\uC790"
+    icon: {fileID: 21300000, guid: 63b367dbaca5c43d6bd8977f915e4b8c, type: 3}
+    description: 
+    isObtained: 0
+  relicRevealSparkleSprite: {fileID: 21300000, guid: d354fe5e3f54646c7be8835486ae1e05, type: 3}
+  relicRevealGlowSprite: {fileID: 21300000, guid: df8b91c138e4947ca91fa0a79d5033ba, type: 3}
+  relicRevealShardSprite: {fileID: 21300000, guid: c89becb4edad24d529f83924662d0966, type: 3}
+  initialTab: 0
+  initialShowRelicCollection: 1
+  transitionSeconds: 0.14
+  nodeCellSize: {x: 106, y: 106}
+  nodeGridSpacing: {x: 27, y: 27}
+  connectorWidth: 18
+  connectorThickness: 3
+  categoryHeaderHeight: 28
+  textScale: 1.05
+  backgroundColor: {r: 0.015, g: 0.045, b: 0.11, a: 0.98}
+  panelColor: {r: 0.02, g: 0.06, b: 0.14, a: 0.84}
+  inkColor: {r: 0.96, g: 0.98, b: 1, a: 1}
+  mutedInkColor: {r: 0.64, g: 0.75, b: 0.88, a: 1}
 --- !u!1 &767424381
 GameObject:
   m_ObjectHideFlags: 0
@@ -15545,196 +15805,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1090725704}
   m_CullTransparentMesh: 1
---- !u!114 &760100001
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1090725704}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f2106d3cc7123d5ab9d330d7e1ac7767, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: CursorHunter.Progression::CursorHunter.Progression.TraitScreenController
-  catalog: {fileID: 0}
-  startingGarnet: 125
-  startingGemstoneBalances:
-  - 125
-  - 0
-  - 0
-  - 0
-  - 0
-  - 0
-  unlockedBossTier: 0
-  loadSavedProgress: 1
-  testModeUnlockAll: 0
-  testModeFreeUpgrades: 0
-  backRequested:
-    m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 2188000111}
-        m_TargetAssemblyTypeName: CursorHunter.App.AppUiRootController, CursorHunter.App
-        m_MethodName: CloseTrait
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument:
-          m_BoolArgument: 1
-        m_CallState: 2
-  panelSprite: {fileID: 21300000, guid: ad88fadd7bc384969bd45f53f0448093, type: 3}
-  combatBackgroundSprite: {fileID: 21300000, guid: 2847dc0f67feb49b4959b999a9ea4129, type: 3}
-  tabSprite: {fileID: 21300000, guid: ecf3e525de7a347879c0787e5d7f091d, type: 3}
-  tabFocusSprite: {fileID: 21300000, guid: db9921feae62c49c397bde0fdd539174, type: 3}
-  categorySprite: {fileID: 21300000, guid: aae6551a421cb4bd5b9273d7dc157ce3, type: 3}
-  categoryFocusSprite: {fileID: 21300000, guid: 0d6bcce8a80284b63afb025a509a6d34, type: 3}
-  nodeSprite: {fileID: 21300000, guid: 6e89665deabf841238f44ebf2fd1665d, type: 3}
-  nodeAccentSprite: {fileID: 21300000, guid: 83463df8e9bac4db0b26718b7f40b3db, type: 3}
-  nodePurchasedSprite: {fileID: 21300000, guid: ad88fadd7bc384969bd45f53f0448093, type: 3}
-  nodeLockedSprite: {fileID: 21300000, guid: fdb8d6a0cb191473a90fa04c8407fcd7, type: 3}
-  gemIcon: {fileID: 21300000, guid: 6f40e5d50d0934e45aac02171a570c88, type: 3}
-  lockIcon: {fileID: 21300000, guid: 177c91d27d5534109a5f6b3bb3ccbb3b, type: 3}
-  checkIcon: {fileID: 21300000, guid: 67d74fe0bc2ff4f04bb9d4f9e1d63c02, type: 3}
-  backIcon: {fileID: 21300000, guid: fda9564e96d404ec384b9e32872d049a, type: 3}
-  attackIcon: {fileID: 21300000, guid: 12c58e25a645d4bf9808e3e5b47cd280, type: 3}
-  radiusIcon: {fileID: 21300000, guid: 8725c96846cc04e13b9bd0282edb30dd, type: 3}
-  attackIntervalIcon: {fileID: 21300000, guid: 2ec93f10f96b7458d9718d95c2487da8, type: 3}
-  timerIcon: {fileID: 21300000, guid: cb04b83a8c3a045558cd1f05866cf45e, type: 3}
-  criticalIcon: {fileID: 21300000, guid: 97b49874aed4b43788d90720bf2b2023, type: 3}
-  gemstoneIcon: {fileID: 21300000, guid: 58f1b94daaf3b4b06b098c42546e19d4, type: 3}
-  bossIcon: {fileID: 21300000, guid: d77571e140f0144daaad2a7e4ba19c7c, type: 3}
-  skillIcon: {fileID: 21300000, guid: 13756a141b0b84db08f0c80f06bb5d45, type: 3}
-  monsterIcon: {fileID: 21300000, guid: 6b3d80100f82a44bb8968db0ec8c98e3, type: 3}
-  petIcon: {fileID: 21300000, guid: 8cded0ec98bef594eaa5de79773364e3, type: 3}
-  dragHandCursorSprite: {fileID: 21300000, guid: 87129087663ba4d509b75eb67c6a60c0, type: 3}
-  gemstoneIcons:
-  - {fileID: 21300000, guid: 6f40e5d50d0934e45aac02171a570c88, type: 3}
-  - {fileID: 21300000, guid: e7456ed055303479fa545fea773f4bf1, type: 3}
-  - {fileID: 21300000, guid: e74fb0eb39fbd4d94ab0f7601df612ca, type: 3}
-  - {fileID: 21300000, guid: db445bdb34cc34ec78fc713c3278d6db, type: 3}
-  - {fileID: 21300000, guid: f0ec595ceb4954cb58e8a1acec6720c5, type: 3}
-  - {fileID: 21300000, guid: 80437da613ef64ecab96530c087df0f0, type: 3}
-  skillIcons:
-  - {fileID: 21300000, guid: c96f62a4ab65749128908e5360e39126, type: 3}
-  - {fileID: 21300000, guid: 38d138f4bd4964678b146f843d742bd8, type: 3}
-  - {fileID: 21300000, guid: 1e4f2d388537b4ac6a27a560d6dce4d0, type: 3}
-  - {fileID: 21300000, guid: c96f62a4ab65749128908e5360e39126, type: 3}
-  - {fileID: 21300000, guid: 671e13c2a7e8a4415adcc42790d2be55, type: 3}
-  - {fileID: 21300000, guid: 3c616b140805d4445b62ce619eb60e08, type: 3}
-  monsterIcons:
-  - {fileID: 21300000, guid: 81366e1f0ef95fb4ca021ff158c9bbd7, type: 3}
-  - {fileID: 21300000, guid: 2d4b5fe9210026e4f9646afa8d381ba8, type: 3}
-  - {fileID: 21300000, guid: 9731bdc77bdd099499cd873c1fb95277, type: 3}
-  - {fileID: 21300000, guid: fb2ef077ca7cff145b786fe98437bf42, type: 3}
-  - {fileID: 21300000, guid: 58ecdefa4b1d13344a5d2d437e661188, type: 3}
-  - {fileID: 21300000, guid: 0760c09a431bc7243a8a3895187b7ea1, type: 3}
-  - {fileID: 21300000, guid: fce62f34b0be7a94295f5b4a12f24dca, type: 3}
-  - {fileID: 21300000, guid: 2fd0633512126e646a8fe810019b0737, type: 3}
-  - {fileID: 21300000, guid: 6c63eea5ac3d47f41a4ada2581ce61f3, type: 3}
-  - {fileID: 21300000, guid: 9ed7185891b014c4a8a16be35bb06d34, type: 3}
-  petIcons:
-  - {fileID: 21300000, guid: 8cded0ec98bef594eaa5de79773364e3, type: 3}
-  relicEntries:
-  - title: 빨간 포션
-    icon: {fileID: 21300000, guid: 202231647a7ed4f18933e1eafd9835fb, type: 3}
-    description:
-    isObtained: 0
-  - title: 파란 포션
-    icon: {fileID: 21300000, guid: d3ad47b65a3144ea593c0c93a2641474, type: 3}
-    description:
-    isObtained: 0
-  - title: 몬스터 고기
-    icon: {fileID: 21300000, guid: d2d8706278c414fb0b8ddf59d6470318, type: 3}
-    description:
-    isObtained: 0
-  - title: 도적 신발
-    icon: {fileID: 21300000, guid: 689aab790dfd640a78c6b3890daa0b71, type: 3}
-    description:
-    isObtained: 0
-  - title: 궁수의 활
-    icon: {fileID: 21300000, guid: 84e3504adeb474cd78690f0e7ce48a69, type: 3}
-    description:
-    isObtained: 0
-  - title: 전사의 갑옷
-    icon: {fileID: 21300000, guid: db45e68c10e784423a0a4aa24c8ba033, type: 3}
-    description:
-    isObtained: 0
-  - title: 마법사의 모자
-    icon: {fileID: 21300000, guid: 38a8311eeb6114df7a9bd458e196e082, type: 3}
-    description:
-    isObtained: 0
-  - title: 용맹의 반지
-    icon: {fileID: 21300000, guid: 310b8e87e0f624fa587ef446b1885df4, type: 3}
-    description:
-    isObtained: 0
-  - title: 행운의 주사위
-    icon: {fileID: 21300000, guid: f3974630efb91453bb0b049b3bd8bc6f, type: 3}
-    description:
-    isObtained: 0
-  - title: 크라켄의 눈
-    icon: {fileID: 21300000, guid: e8a913573801943d2b2ff4b562c83f92, type: 3}
-    description:
-    isObtained: 0
-  - title: 네잎클로버
-    icon: {fileID: 21300000, guid: 27109c2994c094997b78d1cebc5b277a, type: 3}
-    description:
-    isObtained: 0
-  - title: 고대의 서
-    icon: {fileID: 21300000, guid: 562186b060ba241378d482c1154a84e7, type: 3}
-    description:
-    isObtained: 0
-  - title: 모험가의 가방
-    icon: {fileID: 21300000, guid: 88d80ec7bf9ed49e18c3e3612ffcbcd1, type: 3}
-    description:
-    isObtained: 0
-  - title: 나침반
-    icon: {fileID: 21300000, guid: af47147931c3147a6b130388045bcc5a, type: 3}
-    description:
-    isObtained: 0
-  - title: 확성기
-    icon: {fileID: 21300000, guid: 5fb5c6b85663f44e2abe89863eb73bd6, type: 3}
-    description:
-    isObtained: 0
-  - title: 망원경
-    icon: {fileID: 21300000, guid: ae1ab6a3c2fd44399a945a071c1d0e8f, type: 3}
-    description:
-    isObtained: 0
-  - title: 짱돌
-    icon: {fileID: 21300000, guid: f65cb867da27e48cda237c149b44b8b6, type: 3}
-    description:
-    isObtained: 0
-  - title: 무지개 깃털
-    icon: {fileID: 21300000, guid: 894abf050c0dc41b6bab39641a001dff, type: 3}
-    description:
-    isObtained: 0
-  - title: 심판의 저울
-    icon: {fileID: 21300000, guid: 0f7806085e32347f39a2f408199654df, type: 3}
-    description:
-    isObtained: 0
-  - title: 보물상자
-    icon: {fileID: 21300000, guid: 63b367dbaca5c43d6bd8977f915e4b8c, type: 3}
-    description:
-    isObtained: 0
-  relicRevealSparkleSprite: {fileID: 21300000, guid: d354fe5e3f54646c7be8835486ae1e05, type: 3}
-  relicRevealGlowSprite: {fileID: 21300000, guid: df8b91c138e4947ca91fa0a79d5033ba, type: 3}
-  relicRevealShardSprite: {fileID: 21300000, guid: c89becb4edad24d529f83924662d0966, type: 3}
-  uiFont: {fileID: 12800000, guid: 76d037539f56c45a1ba293f2dff49672, type: 3}
-  initialTab: 0
-  initialShowRelicCollection: 1
-  transitionSeconds: 0.14
-  nodeCellSize: {x: 106, y: 106}
-  nodeGridSpacing: {x: 27, y: 27}
-  connectorWidth: 18
-  connectorThickness: 3
-  categoryHeaderHeight: 28
-  textScale: 1.05
-  backgroundColor: {r: 0.015, g: 0.045, b: 0.11, a: 0.98}
-  panelColor: {r: 0.02, g: 0.06, b: 0.14, a: 0.84}
-  inkColor: {r: 0.96, g: 0.98, b: 1, a: 1}
-  mutedInkColor: {r: 0.64, g: 0.75, b: 0.88, a: 1}
 --- !u!1 &1092935314
 GameObject:
   m_ObjectHideFlags: 0
@@ -19635,6 +19705,71 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 1
+--- !u!1001 &1310258082
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 2127624400}
+    m_Modifications:
+    - target: {fileID: 2851253688436897091, guid: 5110becfdecf74563833b775b9ce1677, type: 3}
+      propertyPath: m_Name
+      value: MagicCircle1_Green
+      objectReference: {fileID: 0}
+    - target: {fileID: 2890466675848543589, guid: 5110becfdecf74563833b775b9ce1677, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2890466675848543589, guid: 5110becfdecf74563833b775b9ce1677, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2890466675848543589, guid: 5110becfdecf74563833b775b9ce1677, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2890466675848543589, guid: 5110becfdecf74563833b775b9ce1677, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2890466675848543589, guid: 5110becfdecf74563833b775b9ce1677, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2890466675848543589, guid: 5110becfdecf74563833b775b9ce1677, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2890466675848543589, guid: 5110becfdecf74563833b775b9ce1677, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2890466675848543589, guid: 5110becfdecf74563833b775b9ce1677, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2890466675848543589, guid: 5110becfdecf74563833b775b9ce1677, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2890466675848543589, guid: 5110becfdecf74563833b775b9ce1677, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2890466675848543589, guid: 5110becfdecf74563833b775b9ce1677, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2890466675848543589, guid: 5110becfdecf74563833b775b9ce1677, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 5110becfdecf74563833b775b9ce1677, type: 3}
 --- !u!1 &1312292310
 GameObject:
   m_ObjectHideFlags: 0
@@ -29873,6 +30008,11 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 1
+--- !u!4 &1999272709 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2890466675848543589, guid: 5110becfdecf74563833b775b9ce1677, type: 3}
+  m_PrefabInstance: {fileID: 1310258082}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1999450960
 GameObject:
   m_ObjectHideFlags: 0
@@ -31141,6 +31281,11 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 1
+--- !u!4 &2127624400 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 7954768304202789460, guid: 75289f53db41f43cfb17b0f7df64a5b0, type: 3}
+  m_PrefabInstance: {fileID: 671216247}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &2134117050
 GameObject:
   m_ObjectHideFlags: 0
@@ -31578,6 +31723,7 @@ Transform:
   - {fileID: 1301811044}
   - {fileID: 1301811051}
   - {fileID: 1301811061}
+  - {fileID: 2188000701}
   m_Father: {fileID: 2188000101}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2188000106
@@ -32010,6 +32156,44 @@ PrefabInstance:
 Transform:
   m_CorrespondingSourceObject: {fileID: 100001, guid: e02fac92204840f3b67d812feb1ae407, type: 3}
   m_PrefabInstance: {fileID: 2188000600}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1001 &2188000700
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 2188000105}
+    m_Modifications:
+    - target: {fileID: 100002, guid: 3be6ee6328fa4db0afd3f8b88c6eca64, type: 3}
+      propertyPath: petRoot
+      value: 
+      objectReference: {fileID: 2127624400}
+    - target: {fileID: 100002, guid: 3be6ee6328fa4db0afd3f8b88c6eca64, type: 3}
+      propertyPath: groundRing
+      value:
+      objectReference: {fileID: 1999272709}
+    - target: {fileID: 100002, guid: 3be6ee6328fa4db0afd3f8b88c6eca64, type: 3}
+      propertyPath: worldCamera
+      value: 
+      objectReference: {fileID: 1273511514}
+    - target: {fileID: 100002, guid: 3be6ee6328fa4db0afd3f8b88c6eca64, type: 3}
+      propertyPath: cursorAnchor
+      value: 
+      objectReference: {fileID: 1460028808}
+    - target: {fileID: 100002, guid: 3be6ee6328fa4db0afd3f8b88c6eca64, type: 3}
+      propertyPath: editorSkillAcquired
+      value: 1
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 3be6ee6328fa4db0afd3f8b88c6eca64, type: 3}
+--- !u!4 &2188000701 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 100001, guid: 3be6ee6328fa4db0afd3f8b88c6eca64, type: 3}
+  m_PrefabInstance: {fileID: 2188000700}
   m_PrefabAsset: {fileID: 0}
 --- !u!1 &13811761052743795
 GameObject:
@@ -38873,3 +39057,4 @@ SceneRoots:
   - {fileID: 1598432578}
   - {fileID: 419128540}
   - {fileID: 1281932086}
+  - {fileID: 671216247}

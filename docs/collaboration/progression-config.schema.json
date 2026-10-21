@@ -30,7 +30,7 @@
         "$ref": "#/$defs/entity"
       },
       "minItems": 28,
-      "maxItems": 33
+      "maxItems": 34
     }
   },
   "$defs": {
@@ -210,8 +210,8 @@
           "items": {
             "$ref": "#/$defs/category"
           },
-          "minItems": 17,
-          "maxItems": 17
+          "minItems": 18,
+          "maxItems": 18
         },
         "bossRewards": {
           "type": "array",

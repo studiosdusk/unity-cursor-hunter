@@ -302,4 +302,52 @@ namespace CursorHunter.Combat
         internal float DamageMultiplier { get; }
         internal long Damage { get; }
     }
+
+    [Serializable]
+    internal struct PetBaseStat
+    {
+        [Min(0.01f)] public float DamageMultiplier;
+        [Min(0.5f)] public float AttackIntervalSeconds;
+        [Min(0.01f)] public float MoveSpeedWorldUnitsPerSecond;
+        [Min(0.01f)] public float DetectionRadiusWorldUnits;
+        [Min(0.01f)] public float AttackRangeWorldUnits;
+        [Min(0.01f)] public float CursorLeashWorldUnits;
+        [Min(0f)] public float IdleDistanceWorldUnits;
+    }
+
+    internal readonly struct PetRuntimeStat
+    {
+        internal PetRuntimeStat(PetBaseStat basis,
+            SkillCombatSnapshot upgrades, long attackPower)
+        {
+            DamageMultiplier = SkillStatMath.Add(basis.DamageMultiplier,
+                upgrades, "damageMultiplier", 0.01f);
+            Damage = SkillStatMath.ScaleDamage(attackPower, DamageMultiplier);
+            AttackIntervalSeconds = SkillStatMath.Add(
+                basis.AttackIntervalSeconds, upgrades,
+                "attackIntervalSeconds", 0.5f);
+            MoveSpeedWorldUnitsPerSecond = SkillStatMath.Add(
+                basis.MoveSpeedWorldUnitsPerSecond, upgrades,
+                "moveSpeedWorldUnitsPerSecond", 0.01f);
+            DetectionRadiusWorldUnits = SkillStatMath.Add(
+                basis.DetectionRadiusWorldUnits, upgrades,
+                "detectionRadiusWorldUnits", 0.01f);
+            AttackRangeWorldUnits = SkillStatMath.Add(
+                basis.AttackRangeWorldUnits, upgrades,
+                "attackRangeWorldUnits", 0.01f);
+            CursorLeashWorldUnits = Mathf.Max(AttackRangeWorldUnits,
+                basis.CursorLeashWorldUnits);
+            IdleDistanceWorldUnits = Mathf.Max(0f,
+                basis.IdleDistanceWorldUnits);
+        }
+
+        internal float DamageMultiplier { get; }
+        internal long Damage { get; }
+        internal float AttackIntervalSeconds { get; }
+        internal float MoveSpeedWorldUnitsPerSecond { get; }
+        internal float DetectionRadiusWorldUnits { get; }
+        internal float AttackRangeWorldUnits { get; }
+        internal float CursorLeashWorldUnits { get; }
+        internal float IdleDistanceWorldUnits { get; }
+    }
 }

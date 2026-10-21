@@ -83,7 +83,7 @@ MonsterDefinition.BaseStats
 전역 변수나 새로 추가한 전체 데이터 getter를 뜻하지 않는다.
 HuntManager.BeginPrototypeRun이 전체 정보와 커서 증가량 스냅샷을 만들고,
 RunCoordinator.Start에 CombatSnapshot/커서 증가량/스킬 목록/SpawnPlan을 전달한다.
-CombatRunController는 PrepareRun 이후 CommitStart 이전에 여섯 스킬의 BaseStat과
+CombatRunController는 PrepareRun 이후 CommitStart 이전에 일곱 스킬의 BaseStat과
 UpgradeStat을 합쳐 이번 런의 RuntimeStat으로 고정한다.
 매직볼은 단일 오브젝트가 런 종료까지 유지되어 쿨타임 증가량을 받지 않는다.
 허용된 증가량 ID는 `moveSpeedWorldUnitsPerSecond`, `sizeMultiplier`, `damageMultiplier`다.

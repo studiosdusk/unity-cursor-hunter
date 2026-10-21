@@ -68,11 +68,8 @@ namespace CursorHunter.App
 
         private void Update()
         {
-            if (!_customCursorActive)
-            {
-                return;
-            }
-
+            // The pet uses this world anchor even while the visible cursor is
+            // hidden and the native OS cursor is active.
             RefreshCursorPosition();
         }
 
@@ -128,7 +125,7 @@ namespace CursorHunter.App
         /// </summary>
         public bool RefreshCursorPosition()
         {
-            if (!_customCursorActive || _cursorTransform == null || worldCamera == null)
+            if (_cursorTransform == null || worldCamera == null)
             {
                 return false;
             }

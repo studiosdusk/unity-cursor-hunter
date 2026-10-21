@@ -90,7 +90,7 @@ def validate_documents():
         assert len(info["gemstones"]) == 6 and len(info["monsters"]) == 10
         assert [skill["id"] for skill in info["skills"]] == [
             "skill.tornado", "skill.headshot", "skill.thunder", "skill.flame_exhaust",
-            "skill.magic_ball", "skill.laser"]
+            "skill.magic_ball", "skill.laser", "skill.pet_baby_dragon"]
         stats, rules = info["stats"], info["rules"]
         assert 1 <= stats["attackPower"] <= 9223372036854775807
         assert stats["attackRadiusWorldUnits"] > 0 and stats["attackCooldownSeconds"] >= .05
@@ -103,10 +103,11 @@ def validate_documents():
         for entry in document["entities"]:
             assert entry["displayName"] and entry["description"]
         categories = {entry["id"]: entry for entry in progression["categories"]}
-        assert len(categories) == len(progression["categories"]) == 17
+        assert len(categories) == len(progression["categories"]) == 18
         nodes = {n["id"]: n for c in progression["categories"] for n in c["nodes"]}
-        assert len(nodes) == sum(len(c["nodes"]) for c in categories.values()) == 84
+        assert len(nodes) == sum(len(c["nodes"]) for c in categories.values()) == 85
         assert [node["id"] for node in categories["skill.tornado"]["nodes"]] == ["skill.tornado"]
+        assert [node["id"] for node in categories["skill.pet_baby_dragon"]["nodes"]] == ["skill.pet_baby_dragon"]
         currency = {g["id"] for g in info["gemstones"]}
         ordered_nodes = set()
         for c in categories.values():
@@ -149,7 +150,7 @@ def validate_documents():
 
 def main():
     validate_documents()
-    print("PASS: English-only runtime input, Korean detailed/key-only references, separate growth configuration, 17 categories / 84 nodes, behaviorType=0, no relic data, schema, references and rewards")
+    print("PASS: English-only runtime input, Korean detailed/key-only references, separate growth configuration, 18 categories / 85 nodes, behaviorType=0, no relic data, schema, references and rewards")
     print("No Unity or game execution.")
 
 if __name__ == "__main__":

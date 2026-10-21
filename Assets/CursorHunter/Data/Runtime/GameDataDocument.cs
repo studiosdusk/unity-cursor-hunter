@@ -123,12 +123,17 @@ namespace CursorHunter.Data
                 if (!categories.Contains(monster.id) || FindEntity(monster.id) == null ||
                     string.IsNullOrWhiteSpace(FindEntity(monster.id).prefabKey))
                     return Fail("Missing monster/category/visual key.", out error);
-            // New skills may have a combat controller before their purchase
-            // nodes and costs are designed. Tornado keeps its existing node.
-            if (!categories.Contains("skill.tornado"))
-                return Fail("Missing tornado skill category.", out error);
-            if (!nodes.ContainsKey("skill.tornado"))
-                return Fail("Missing tornado unlock node.", out error);
+            // Other skills may have a combat controller before their purchase
+            // nodes and costs are designed. Tornado and the pet are purchasable.
+            string[] purchasableSkills =
+                { "skill.tornado", "skill.pet_baby_dragon" };
+            foreach (string skillId in purchasableSkills)
+            {
+                if (!categories.Contains(skillId))
+                    return Fail("Missing skill category: " + skillId, out error);
+                if (!nodes.ContainsKey(skillId))
+                    return Fail("Missing skill unlock node: " + skillId, out error);
+            }
             for (int i = 0; i < progression.bossRewards.Length; i++)
             {
                 var boss = progression.bossRewards[i];

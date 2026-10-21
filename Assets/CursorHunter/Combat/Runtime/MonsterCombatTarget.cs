@@ -15,8 +15,6 @@ namespace CursorHunter.Combat
     {
         private const float ReviveWindowSeconds = 6f;
         private const float HealPulseSeconds = 0.4f;
-        // Keep monster visuals behind hit effects (200) and health bars (250).
-        private const int MaxVisualSortingOrder = 199;
         private static readonly List<MonsterCombatTarget> RegisteredInstances =
             new List<MonsterCombatTarget>(128);
 
@@ -175,6 +173,15 @@ namespace CursorHunter.Combat
             bounds = hitEffectCollider != null ? hitEffectCollider.bounds : default;
             return hitEffectCollider != null && hitEffectCollider.enabled &&
                 hitEffectCollider.gameObject.activeInHierarchy;
+        }
+
+        /// <summary>Returns the nearest point of this target's hit area to a pet.</summary>
+        public Vector2 GetClosestHitPoint(Vector2 from)
+        {
+            if (hitEffectCollider != null && hitEffectCollider.enabled &&
+                hitEffectCollider.gameObject.activeInHierarchy)
+                return hitEffectCollider.ClosestPoint(from);
+            return transform.position;
         }
 
         protected virtual void LateUpdate()
@@ -824,11 +831,8 @@ namespace CursorHunter.Combat
             float worldY = transform.position.y;
             if (_hasVisualSortingY && _lastVisualSortingY == worldY) return;
 
-            float viewportY = _sortingCamera.WorldToViewportPoint(transform.position).y;
-            int order = Mathf.Clamp(
-                Mathf.RoundToInt((1f - viewportY) * MaxVisualSortingOrder),
-                0,
-                MaxVisualSortingOrder);
+            int order = ViewportVisualSorting.OrderAt(
+                _sortingCamera, transform.position);
             if (_visualSortingGroup.sortingOrder != order)
                 _visualSortingGroup.sortingOrder = order;
 

@@ -4,7 +4,9 @@
   "references": [
     "CursorHunter.Contracts",
     "Unity.TextMeshPro",
-    "UnityEngine.UI"
+    "UnityEngine.UI",
+    "spine-unity",
+    "spine-csharp"
   ],
   "autoReferenced": false,
   "noEngineReferences": false
