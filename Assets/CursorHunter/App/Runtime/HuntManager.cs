@@ -262,6 +262,10 @@ namespace CursorHunter.App
                     cursorStatBonuses,
                     progressionSnapshot == null
                         ? null : progressionSnapshot.Skills,
+                    progressionSnapshot == null
+                        ? null : progressionSnapshot.Relics,
+                    progressionSnapshot == null
+                        ? default : progressionSnapshot.RelicDropRules,
                     spawnPlan,
                     out string failureReason))
             {

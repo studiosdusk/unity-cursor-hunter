@@ -1,0 +1,397 @@
+{
+  "schemaVersion": 4,
+  "balanceVersion": 4,
+  "stats": {
+    "attackPower": 1,
+    "attackRadiusWorldUnits": 1.7253809,
+    "attackCooldownSeconds": 0.8,
+    "criticalChancePercent": 0,
+    "bossDamageMultiplier": 1,
+    "normalFieldDurationSeconds": 15
+  },
+  "gemstones": [
+    {
+      "id": "gem.garnet",
+      "enabled": true,
+      "amount": 125
+    },
+    {
+      "id": "gem.topaz",
+      "enabled": false,
+      "amount": 0
+    },
+    {
+      "id": "gem.amethyst",
+      "enabled": false,
+      "amount": 0
+    },
+    {
+      "id": "gem.sapphire",
+      "enabled": false,
+      "amount": 0
+    },
+    {
+      "id": "gem.diamond",
+      "enabled": false,
+      "amount": 0
+    },
+    {
+      "id": "gem.dragon",
+      "enabled": false,
+      "amount": 0
+    }
+  ],
+  "monsters": [
+    {
+      "id": "monster.01",
+      "enabled": true,
+      "productionCount": 1,
+      "hitPoints": 12,
+      "spawnIntervalSeconds": 0.9,
+      "garnetReward": 3,
+      "gemstoneId": "gem.garnet",
+      "gemstoneAmount": 0,
+      "gemstoneChancePercent": 0,
+      "behaviorType": 0
+    },
+    {
+      "id": "monster.02",
+      "enabled": false,
+      "productionCount": 1,
+      "hitPoints": 30,
+      "spawnIntervalSeconds": 1.05,
+      "garnetReward": 4,
+      "gemstoneId": "gem.topaz",
+      "gemstoneAmount": 1,
+      "gemstoneChancePercent": 100,
+      "behaviorType": 0
+    },
+    {
+      "id": "monster.03",
+      "enabled": false,
+      "productionCount": 1,
+      "hitPoints": 55,
+      "spawnIntervalSeconds": 1.2,
+      "garnetReward": 5,
+      "gemstoneId": "gem.topaz",
+      "gemstoneAmount": 1,
+      "gemstoneChancePercent": 100,
+      "behaviorType": 0
+    },
+    {
+      "id": "monster.04",
+      "enabled": false,
+      "productionCount": 1,
+      "hitPoints": 85,
+      "spawnIntervalSeconds": 1.35,
+      "garnetReward": 6,
+      "gemstoneId": "gem.amethyst",
+      "gemstoneAmount": 1,
+      "gemstoneChancePercent": 100,
+      "behaviorType": 0
+    },
+    {
+      "id": "monster.05",
+      "enabled": false,
+      "productionCount": 1,
+      "hitPoints": 120,
+      "spawnIntervalSeconds": 1.5,
+      "garnetReward": 7,
+      "gemstoneId": "gem.amethyst",
+      "gemstoneAmount": 1,
+      "gemstoneChancePercent": 100,
+      "behaviorType": 0
+    },
+    {
+      "id": "monster.06",
+      "enabled": false,
+      "productionCount": 1,
+      "hitPoints": 180,
+      "spawnIntervalSeconds": 1.65,
+      "garnetReward": 8,
+      "gemstoneId": "gem.sapphire",
+      "gemstoneAmount": 1,
+      "gemstoneChancePercent": 100,
+      "behaviorType": 0
+    },
+    {
+      "id": "monster.07",
+      "enabled": false,
+      "productionCount": 1,
+      "hitPoints": 255,
+      "spawnIntervalSeconds": 1.8,
+      "garnetReward": 9,
+      "gemstoneId": "gem.sapphire",
+      "gemstoneAmount": 1,
+      "gemstoneChancePercent": 100,
+      "behaviorType": 0
+    },
+    {
+      "id": "monster.08",
+      "enabled": false,
+      "productionCount": 1,
+      "hitPoints": 345,
+      "spawnIntervalSeconds": 1.95,
+      "garnetReward": 10,
+      "gemstoneId": "gem.diamond",
+      "gemstoneAmount": 1,
+      "gemstoneChancePercent": 100,
+      "behaviorType": 0
+    },
+    {
+      "id": "monster.09",
+      "enabled": false,
+      "productionCount": 1,
+      "hitPoints": 480,
+      "spawnIntervalSeconds": 2.1,
+      "garnetReward": 11,
+      "gemstoneId": "gem.dragon",
+      "gemstoneAmount": 1,
+      "gemstoneChancePercent": 100,
+      "behaviorType": 0
+    },
+    {
+      "id": "monster.10",
+      "enabled": false,
+      "productionCount": 1,
+      "hitPoints": 675,
+      "spawnIntervalSeconds": 2.25,
+      "garnetReward": 12,
+      "gemstoneId": "gem.dragon",
+      "gemstoneAmount": 1,
+      "gemstoneChancePercent": 100,
+      "behaviorType": 0
+    }
+  ],
+  "skills": [
+    {
+      "id": "skill.tornado",
+      "enabled": false,
+      "upgrades": []
+    },
+    {
+      "id": "skill.headshot",
+      "enabled": false,
+      "upgrades": []
+    },
+    {
+      "id": "skill.thunder",
+      "enabled": false,
+      "upgrades": []
+    },
+    {
+      "id": "skill.flame_exhaust",
+      "enabled": false,
+      "upgrades": []
+    },
+    {
+      "id": "skill.magic_ball",
+      "enabled": false,
+      "upgrades": []
+    },
+    {
+      "id": "skill.laser",
+      "enabled": false,
+      "upgrades": []
+    },
+    {
+      "id": "skill.pet_baby_dragon",
+      "enabled": false,
+      "upgrades": []
+    }
+  ],
+  "relics": [
+    {
+      "id": "relic.red_potion",
+      "owned": false,
+      "sourceMonsterId": "monster.01",
+      "dropChancePercent": 10,
+      "effectId": "cursorAttackDamagePercent",
+      "effectValue": 5,
+      "effectValue2": 0
+    },
+    {
+      "id": "relic.blue_potion",
+      "owned": false,
+      "sourceMonsterId": "monster.01",
+      "dropChancePercent": 4,
+      "effectId": "autoSkillDamagePercent",
+      "effectValue": 5,
+      "effectValue2": 0
+    },
+    {
+      "id": "relic.monster_meat",
+      "owned": false,
+      "sourceMonsterId": "monster.02",
+      "dropChancePercent": 10,
+      "effectId": "petDamagePercent",
+      "effectValue": 10,
+      "effectValue2": 0
+    },
+    {
+      "id": "relic.thief_shoes",
+      "owned": false,
+      "sourceMonsterId": "monster.02",
+      "dropChancePercent": 4,
+      "effectId": "petMoveSpeedPercent",
+      "effectValue": 15,
+      "effectValue2": 0
+    },
+    {
+      "id": "relic.archers_bow",
+      "owned": false,
+      "sourceMonsterId": "monster.03",
+      "dropChancePercent": 10,
+      "effectId": "petAttackIntervalReductionPercent",
+      "effectValue": 10,
+      "effectValue2": 0
+    },
+    {
+      "id": "relic.warrior_armor",
+      "owned": false,
+      "sourceMonsterId": "monster.03",
+      "dropChancePercent": 4,
+      "effectId": "normalFieldDurationBonusSeconds",
+      "effectValue": 2,
+      "effectValue2": 0
+    },
+    {
+      "id": "relic.wizards_hat",
+      "owned": false,
+      "sourceMonsterId": "monster.04",
+      "dropChancePercent": 10,
+      "effectId": "areaSkillRadiusPercent",
+      "effectValue": 8,
+      "effectValue2": 0
+    },
+    {
+      "id": "relic.valor_ring",
+      "owned": false,
+      "sourceMonsterId": "monster.04",
+      "dropChancePercent": 4,
+      "effectId": "criticalDamageMultiplierBonus",
+      "effectValue": 0.25,
+      "effectValue2": 0
+    },
+    {
+      "id": "relic.lucky_dice",
+      "owned": false,
+      "sourceMonsterId": "monster.05",
+      "dropChancePercent": 10,
+      "effectId": "petDoubleDamageChancePercent",
+      "effectValue": 10,
+      "effectValue2": 0
+    },
+    {
+      "id": "relic.kraken_eye",
+      "owned": false,
+      "sourceMonsterId": "monster.05",
+      "dropChancePercent": 4,
+      "effectId": "lowHealthExecuteChancePercent",
+      "effectValue": 50,
+      "effectValue2": 30
+    },
+    {
+      "id": "relic.four_leaf_clover",
+      "owned": false,
+      "sourceMonsterId": "monster.06",
+      "dropChancePercent": 10,
+      "effectId": "bonusGemDropChancePercent",
+      "effectValue": 10,
+      "effectValue2": 0
+    },
+    {
+      "id": "relic.ancient_book",
+      "owned": false,
+      "sourceMonsterId": "monster.06",
+      "dropChancePercent": 4,
+      "effectId": "petAttackRadiusPercent",
+      "effectValue": 20,
+      "effectValue2": 0
+    },
+    {
+      "id": "relic.adventurers_bag",
+      "owned": false,
+      "sourceMonsterId": "monster.07",
+      "dropChancePercent": 10,
+      "effectId": "garnetKillRewardPercent",
+      "effectValue": 10,
+      "effectValue2": 0
+    },
+    {
+      "id": "relic.compass",
+      "owned": false,
+      "sourceMonsterId": "monster.07",
+      "dropChancePercent": 4,
+      "effectId": "petDetectionRadiusPercent",
+      "effectValue": 15,
+      "effectValue2": 0
+    },
+    {
+      "id": "relic.megaphone",
+      "owned": false,
+      "sourceMonsterId": "monster.08",
+      "dropChancePercent": 10,
+      "effectId": "monsterSpawnIntervalReductionPercent",
+      "effectValue": 5,
+      "effectValue2": 0
+    },
+    {
+      "id": "relic.telescope",
+      "owned": false,
+      "sourceMonsterId": "monster.08",
+      "dropChancePercent": 4,
+      "effectId": "cursorAttackRadiusPercent",
+      "effectValue": 10,
+      "effectValue2": 0
+    },
+    {
+      "id": "relic.stone",
+      "owned": false,
+      "sourceMonsterId": "monster.09",
+      "dropChancePercent": 10,
+      "effectId": "fullHealthFirstHitDamagePercent",
+      "effectValue": 15,
+      "effectValue2": 0
+    },
+    {
+      "id": "relic.rainbow_feather",
+      "owned": false,
+      "sourceMonsterId": "monster.09",
+      "dropChancePercent": 4,
+      "effectId": "autoSkillCooldownReductionPercent",
+      "effectValue": 5,
+      "effectValue2": 0
+    },
+    {
+      "id": "relic.scales_of_judgment",
+      "owned": false,
+      "sourceMonsterId": "monster.10",
+      "dropChancePercent": 10,
+      "effectId": "bossDamagePercent",
+      "effectValue": 10,
+      "effectValue2": 0
+    },
+    {
+      "id": "relic.treasure_chest",
+      "owned": false,
+      "sourceMonsterId": "monster.10",
+      "dropChancePercent": 4,
+      "effectId": "monsterKillRewardPercent",
+      "effectValue": 15,
+      "effectValue2": 0
+    }
+  ],
+  "relicDropRules": {
+    "maxPerKill": 1,
+    "candidatePolicy": "unownedOnly",
+    "resolution": "sumFixedChanceThenWeightedPick",
+    "preserveBaseChanceAfterAcquisition": true
+  },
+  "rules": {
+    "criticalDamageMultiplier": 2,
+    "globalAliveLimit": 80,
+    "perMonsterAliveLimit": 80,
+    "bossFieldDurationSeconds": 60
+  }
+}

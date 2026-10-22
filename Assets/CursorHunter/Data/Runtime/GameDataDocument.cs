@@ -64,12 +64,14 @@ namespace CursorHunter.Data
                 progression == null || entities == null)
                 return Fail("Missing game document sections/version/locale.", out error);
             if (!information.TryValidate(out error)) return false;
-            if (progression.categories == null ||
-                progression.categories.Length < 17 || progression.categories.Length > 20 ||
-                progression.bossRewards == null || progression.bossRewards.Length != 5 ||
+            if (progression.categories == null)
+                return Fail("Missing progression categories.", out error);
+            if (progression.categories.Length != 23)
+                return Fail("Expected 23 progression categories, found " + progression.categories.Length + ".", out error);
+            if (progression.bossRewards == null || progression.bossRewards.Length != 5 ||
                 (progression.savedProgressPolicy != "overlay" && progression.savedProgressPolicy != "fileOnly") ||
                 progression.initialBossTier < 0 || progression.initialBossTier > 5)
-                return Fail("Invalid progression configuration.", out error);
+                return Fail("Invalid progression rewards or save settings.", out error);
             var entityIds = new HashSet<string>(StringComparer.Ordinal);
             foreach (var entity in entities)
                 if (entity == null || string.IsNullOrWhiteSpace(entity.id) || string.IsNullOrWhiteSpace(entity.displayName) ||
@@ -123,10 +125,12 @@ namespace CursorHunter.Data
                 if (!categories.Contains(monster.id) || FindEntity(monster.id) == null ||
                     string.IsNullOrWhiteSpace(FindEntity(monster.id).prefabKey))
                     return Fail("Missing monster/category/visual key.", out error);
-            // Other skills may have a combat controller before their purchase
-            // nodes and costs are designed. Tornado and the pet are purchasable.
             string[] purchasableSkills =
-                { "skill.tornado", "skill.pet_baby_dragon" };
+            {
+                "skill.tornado", "skill.headshot", "skill.thunder",
+                "skill.flame_exhaust", "skill.magic_ball", "skill.laser",
+                "skill.pet_baby_dragon"
+            };
             foreach (string skillId in purchasableSkills)
             {
                 if (!categories.Contains(skillId))

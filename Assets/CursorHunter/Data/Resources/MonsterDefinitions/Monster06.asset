@@ -17,8 +17,8 @@ MonoBehaviour:
   prefabKey: Fairy/Fairy_Snow
   visualPrefab: {fileID: 7769163388410658323, guid: 6b3d913f0654749b0a6e53692ec8044a, type: 3}
   baseStats:
-    maxHealth: 120
-    spawnIntervalSeconds: 1.95
+    maxHealth: 180
+    spawnIntervalSeconds: 1.65
     packSize: 1
     moveSpeed: 0.45
     visualScale: 1

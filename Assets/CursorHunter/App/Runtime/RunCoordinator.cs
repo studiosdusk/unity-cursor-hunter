@@ -54,6 +54,8 @@ namespace CursorHunter.App
                 combatSnapshot,
                 null,
                 null,
+                null,
+                default,
                 spawnPlan,
                 out failureReason);
         }
@@ -70,6 +72,8 @@ namespace CursorHunter.App
                 combatSnapshot,
                 cursorStatBonuses,
                 null,
+                null,
+                default,
                 spawnPlan,
                 out failureReason);
         }
@@ -83,7 +87,21 @@ namespace CursorHunter.App
             out string failureReason)
         {
             return StartInternal(request, combatSnapshot, cursorStatBonuses,
-                skills, spawnPlan, out failureReason);
+                skills, null, default, spawnPlan, out failureReason);
+        }
+
+        public bool Start(
+            RunRequest request,
+            CombatSnapshot combatSnapshot,
+            CursorCombatStatBonusesSnapshot cursorStatBonuses,
+            IReadOnlyList<SkillCombatSnapshot> skills,
+            IReadOnlyList<RelicCombatSnapshot> relics,
+            RelicDropRulesCombatSnapshot relicDropRules,
+            SpawnPlan spawnPlan,
+            out string failureReason)
+        {
+            return StartInternal(request, combatSnapshot, cursorStatBonuses,
+                skills, relics, relicDropRules, spawnPlan, out failureReason);
         }
 
         private bool StartInternal(
@@ -91,6 +109,8 @@ namespace CursorHunter.App
             CombatSnapshot combatSnapshot,
             CursorCombatStatBonusesSnapshot? cursorStatBonuses,
             IReadOnlyList<SkillCombatSnapshot> skills,
+            IReadOnlyList<RelicCombatSnapshot> relics,
+            RelicDropRulesCombatSnapshot relicDropRules,
             SpawnPlan spawnPlan,
             out string failureReason)
         {
@@ -163,6 +183,13 @@ namespace CursorHunter.App
                 {
                     return FailStart(session,
                         "CombatRunController rejected skill preparation.",
+                        true, false, false, out failureReason);
+                }
+
+                if (!_combatRunController.ConfigureRelics(relics, relicDropRules))
+                {
+                    return FailStart(session,
+                        "CombatRunController rejected relic preparation.",
                         true, false, false, out failureReason);
                 }
 

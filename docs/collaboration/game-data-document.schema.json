@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Cursor Hunter resolved combat information v3",
+  "title": "Cursor Hunter resolved combat information v4",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -10,11 +10,13 @@
     "gemstones",
     "monsters",
     "skills",
+    "relics",
+    "relicDropRules",
     "rules"
   ],
   "properties": {
     "schemaVersion": {
-      "const": 3
+      "const": 4
     },
     "balanceVersion": {
       "type": "integer",
@@ -49,6 +51,17 @@
     },
     "rules": {
       "$ref": "#/$defs/rules"
+    },
+    "relics": {
+      "type": "array",
+      "minItems": 20,
+      "maxItems": 20,
+      "items": {
+        "$ref": "#/$defs/relic"
+      }
+    },
+    "relicDropRules": {
+      "$ref": "#/$defs/relicDropRules"
     }
   },
   "$defs": {
@@ -195,24 +208,42 @@
       ],
       "properties": {
         "id": {
-          "enum": ["skill.tornado", "skill.headshot", "skill.thunder", "skill.flame_exhaust", "skill.magic_ball", "skill.laser", "skill.pet_baby_dragon"]
+          "enum": [
+            "skill.tornado",
+            "skill.headshot",
+            "skill.thunder",
+            "skill.flame_exhaust",
+            "skill.magic_ball",
+            "skill.laser",
+            "skill.pet_baby_dragon"
+          ]
         },
         "enabled": {
           "type": "boolean"
         },
         "upgrades": {
           "type": "array",
-          "items": {"$ref": "#/$defs/skillUpgrade"}
+          "items": {
+            "$ref": "#/$defs/skillUpgrade"
+          }
         }
       }
     },
     "skillUpgrade": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["statId", "delta"],
+      "required": [
+        "statId",
+        "delta"
+      ],
       "properties": {
-        "statId": {"type": "string", "minLength": 1},
-        "delta": {"type": "number"}
+        "statId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "delta": {
+          "type": "number"
+        }
       }
     },
     "rules": {
@@ -242,6 +273,85 @@
         "bossFieldDurationSeconds": {
           "type": "number",
           "exclusiveMinimum": 0
+        }
+      }
+    },
+    "relic": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "owned",
+        "sourceMonsterId",
+        "dropChancePercent",
+        "effectId",
+        "effectValue",
+        "effectValue2"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^relic\\.[a-z0-9_]+$"
+        },
+        "owned": {
+          "type": "boolean"
+        },
+        "sourceMonsterId": {
+          "type": "string",
+          "pattern": "^monster\\.(0[1-9]|10)$"
+        },
+        "dropChancePercent": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 100
+        },
+        "effectId": {
+          "enum": [
+            "cursorAttackDamagePercent", "autoSkillDamagePercent", "petDamagePercent",
+            "petMoveSpeedPercent", "petAttackIntervalReductionPercent",
+            "normalFieldDurationBonusSeconds", "areaSkillRadiusPercent",
+            "criticalDamageMultiplierBonus", "petDoubleDamageChancePercent",
+            "lowHealthExecuteChancePercent", "bonusGemDropChancePercent",
+            "petAttackRadiusPercent", "garnetKillRewardPercent",
+            "petDetectionRadiusPercent", "monsterSpawnIntervalReductionPercent",
+            "cursorAttackRadiusPercent", "fullHealthFirstHitDamagePercent",
+            "autoSkillCooldownReductionPercent", "bossDamagePercent",
+            "monsterKillRewardPercent"
+          ]
+        },
+        "effectValue": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "effectValue2": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        }
+      }
+    },
+    "relicDropRules": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "maxPerKill",
+        "candidatePolicy",
+        "resolution",
+        "preserveBaseChanceAfterAcquisition"
+      ],
+      "properties": {
+        "maxPerKill": {
+          "const": 1
+        },
+        "candidatePolicy": {
+          "const": "unownedOnly"
+        },
+        "resolution": {
+          "const": "sumFixedChanceThenWeightedPick"
+        },
+        "preserveBaseChanceAfterAcquisition": {
+          "const": true
         }
       }
     }

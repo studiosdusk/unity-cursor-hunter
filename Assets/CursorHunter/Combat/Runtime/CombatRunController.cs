@@ -37,6 +37,10 @@ namespace CursorHunter.Combat
             new List<IRunSkillController>(7);
         private readonly Dictionary<string, IRunSkillController> _skillControllersById =
             new Dictionary<string, IRunSkillController>(StringComparer.Ordinal);
+        private RelicCombatSnapshot[] _relicSnapshots = Array.Empty<RelicCombatSnapshot>();
+        private IReadOnlyList<RelicCombatSnapshot> _relicSnapshotView =
+            Array.AsReadOnly(Array.Empty<RelicCombatSnapshot>());
+        private RelicDropRulesCombatSnapshot _relicDropRules;
         private SeededRandom _random;
         private float _elapsedSeconds;
         private Vector2 _previousAttackCenter;
@@ -80,6 +84,8 @@ namespace CursorHunter.Combat
         public CombatSnapshot CombatSnapshot => playerCombatStatsRuntime != null
             ? playerCombatStatsRuntime.Snapshot
             : default;
+        public IReadOnlyList<RelicCombatSnapshot> RelicSnapshots => _relicSnapshotView;
+        public RelicDropRulesCombatSnapshot RelicDropRules => _relicDropRules;
         public PlayerCombatStatsRuntime PlayerCombatStatsRuntime
         {
             get
@@ -207,6 +213,9 @@ namespace CursorHunter.Combat
             _garnetEarned = 0;
             _effectiveDamage = 0;
             _resourceRewards.Clear();
+            _relicSnapshots = Array.Empty<RelicCombatSnapshot>();
+            _relicSnapshotView = Array.AsReadOnly(_relicSnapshots);
+            _relicDropRules = default;
             _isPrepared = true;
             _isRunning = false;
             _isPaused = false;
@@ -248,6 +257,9 @@ namespace CursorHunter.Combat
             _abortRequested = false;
             _lastBasicHitAt.Clear();
             ResetAttackPath();
+            _relicSnapshots = Array.Empty<RelicCombatSnapshot>();
+            _relicSnapshotView = Array.AsReadOnly(_relicSnapshots);
+            _relicDropRules = default;
             playerCombatStatsRuntime.SetRunActive(false);
             StopAllSkills();
             PresentationReset?.Invoke();
@@ -419,7 +431,7 @@ namespace CursorHunter.Combat
         {
             StopAllSkills();
             if (!_isPrepared && !_isRunning) return false;
-            if (!RefreshSkillControllers()) return false;
+            RefreshSkillControllers();
 
             var snapshots = new Dictionary<string, SkillCombatSnapshot>(
                 StringComparer.Ordinal);
@@ -428,14 +440,32 @@ namespace CursorHunter.Combat
                 for (int i = 0; i < skills.Count; i++)
                 {
                     SkillCombatSnapshot skill = skills[i];
-                    if (!skill.IsValid || snapshots.ContainsKey(skill.SkillId))
-                        return false;
+                    if (!skill.IsValid)
+                    {
+                        Debug.LogWarning(
+                            "Ignoring invalid skill snapshot '" + skill.SkillId +
+                            "'; other skills and the run will continue.", this);
+                        continue;
+                    }
+                    if (snapshots.ContainsKey(skill.SkillId))
+                    {
+                        Debug.LogWarning(
+                            "Ignoring duplicate skill snapshot '" + skill.SkillId +
+                            "'; the first valid snapshot will be used.", this);
+                        continue;
+                    }
                     snapshots.Add(skill.SkillId, skill);
                 }
             }
             foreach (SkillCombatSnapshot skill in snapshots.Values)
+            {
                 if (skill.Unlocked && !_skillControllersById.ContainsKey(skill.SkillId))
-                    return false;
+                {
+                    Debug.LogWarning(
+                        "Unlocked skill '" + skill.SkillId +
+                        "' has no scene controller; continuing without it.", this);
+                }
+            }
 
             for (int i = 0; i < _skillControllers.Count; i++)
             {
@@ -445,16 +475,61 @@ namespace CursorHunter.Combat
                 if (!controller.IsAcquiredForRun(skill.Unlocked)) continue;
 
                 MonoBehaviour component = (MonoBehaviour)controller;
-                if (component.isActiveAndEnabled &&
-                    controller.ConfigureForRun(this, _runRequest.RunId,
-                        _runRequest.Seed, skill)) continue;
-                StopAllSkills();
-                return false;
+                try
+                {
+                    if (component.isActiveAndEnabled &&
+                        controller.ConfigureForRun(this, _runRequest.RunId,
+                            _runRequest.Seed, skill)) continue;
+                }
+                catch (Exception exception)
+                {
+                    Debug.LogError(
+                        "Skill '" + controller.Id +
+                        "' threw during preparation; continuing without it. " +
+                        exception, component);
+                }
+                Debug.LogWarning(
+                    "Skill '" + controller.Id +
+                    "' could not be prepared; continuing the run without it.",
+                    component);
+                StopSkillSafely(controller);
             }
             return true;
         }
 
-        private bool RefreshSkillControllers()
+        /// <summary>
+        /// Captures relic definitions and ownership from the run's validated
+        /// progression snapshot. Effects and drops are consumed by combat
+        /// systems through this read-only view.
+        /// </summary>
+        public bool ConfigureRelics(
+            IReadOnlyList<RelicCombatSnapshot> relics,
+            RelicDropRulesCombatSnapshot dropRules)
+        {
+            if ((!_isPrepared && !_isRunning) || !dropRules.IsValid)
+                return false;
+
+            int count = relics == null ? 0 : relics.Count;
+            if (count != 0 && count != 20)
+                return false;
+
+            var copied = new RelicCombatSnapshot[count];
+            var seenIds = new HashSet<string>(StringComparer.Ordinal);
+            for (int i = 0; i < count; i++)
+            {
+                RelicCombatSnapshot relic = relics[i];
+                if (!relic.IsValid || !seenIds.Add(relic.RelicId))
+                    return false;
+                copied[i] = relic;
+            }
+
+            _relicSnapshots = copied;
+            _relicSnapshotView = Array.AsReadOnly(_relicSnapshots);
+            _relicDropRules = dropRules;
+            return true;
+        }
+
+        private void RefreshSkillControllers()
         {
             _skillControllers.Clear();
             _skillControllersById.Clear();
@@ -462,28 +537,44 @@ namespace CursorHunter.Combat
             for (int i = 0; i < components.Length; i++)
             {
                 if (!(components[i] is IRunSkillController controller)) continue;
-                if (!SkillStatUpgrade.IsKnownSkill(controller.Id) ||
-                    _skillControllersById.ContainsKey(controller.Id))
+                if (!SkillStatUpgrade.IsKnownSkill(controller.Id))
                 {
-                    Debug.LogError("Duplicate or unknown skill controller: " +
+                    Debug.LogWarning("Ignoring unknown skill controller: " +
                         controller.Id, components[i]);
-                    _skillControllers.Clear();
-                    _skillControllersById.Clear();
-                    return false;
+                    continue;
+                }
+                if (_skillControllersById.ContainsKey(controller.Id))
+                {
+                    Debug.LogWarning("Ignoring duplicate skill controller: " +
+                        controller.Id + "; the first controller will be used.",
+                        components[i]);
+                    continue;
                 }
                 _skillControllersById.Add(controller.Id, controller);
                 _skillControllers.Add(controller);
             }
-            return true;
         }
 
         private void StopAllSkills()
         {
             for (int i = 0; i < _skillControllers.Count; i++)
+                StopSkillSafely(_skillControllers[i]);
+        }
+
+        private void StopSkillSafely(IRunSkillController controller)
+        {
+            if (!(controller is MonoBehaviour component) || component == null)
+                return;
+            try
             {
-                IRunSkillController controller = _skillControllers[i];
-                if (controller is MonoBehaviour component && component != null)
-                    controller.StopSkill();
+                controller.StopSkill();
+            }
+            catch (Exception exception)
+            {
+                Debug.LogError(
+                    "Skill '" + controller.Id +
+                    "' threw while stopping; continuing run cleanup. " +
+                    exception, component);
             }
         }
 

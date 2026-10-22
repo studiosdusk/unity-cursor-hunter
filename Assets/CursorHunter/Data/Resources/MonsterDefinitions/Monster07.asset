@@ -17,8 +17,8 @@ MonoBehaviour:
   prefabKey: Spider/Spider_Frozen
   visualPrefab: {fileID: 1303142630433847808, guid: 7c1868fcc58df457288e0d27a225c57b, type: 3}
   baseStats:
-    maxHealth: 170
-    spawnIntervalSeconds: 2.0999999999999996
+    maxHealth: 255
+    spawnIntervalSeconds: 1.8
     packSize: 1
     moveSpeed: 0.45
     visualScale: 1

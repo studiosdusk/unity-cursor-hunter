@@ -1,4 +1,4 @@
-# 런과 플레이어 상태 연결 계약 — JSON v3 (2026-10-14)
+# 런과 플레이어 상태 연결 계약 — JSON v4 (2026-10-22)
 
 ## 전투에 필요한 현재 정보만 전달한다
 
@@ -17,8 +17,8 @@ PlayerCombatStatsDefaults + progression-config.en.json + 구매/지갑
  → Combat
 ```
 
-영문 GameInformation의 루트는 schemaVersion=3, balanceVersion, stats, rules, gemstones, monsters, skills다.
-information 래퍼, progression, entities, fieldHelp, implementation, relics는 포함하지 않는다.
+영문 GameInformation의 현재 루트는 schemaVersion=4, balanceVersion, stats, rules, gemstones, monsters, skills, relics, relicDropRules다.
+information 래퍼, progression, entities, fieldHelp, implementation은 포함하지 않는다.
 한국어 두 참고본은 docs 아래에만 있으며 게임에서 읽지 않는다.
 
 ## 필드와 단위
@@ -29,15 +29,19 @@ information 래퍼, progression, entities, fieldHelp, implementation, relics는 
 | rules | criticalDamageMultiplier, globalAliveLimit, perMonsterAliveLimit, bossFieldDurationSeconds |
 | gemstones[6] | id, enabled, amount |
 | monsters[10] | id, enabled, productionCount, hitPoints, spawnIntervalSeconds, garnetReward, gemstoneId, gemstoneAmount, gemstoneChancePercent, behaviorType |
-| skills[6] | `skill.tornado`, `skill.headshot`, `skill.thunder`, `skill.flame_exhaust`, `skill.magic_ball`, `skill.laser`의 id, enabled, upgrades[statId, delta] |
+| skills[7] | `skill.tornado`, `skill.headshot`, `skill.thunder`, `skill.flame_exhaust`, `skill.magic_ball`, `skill.laser`, `skill.pet_baby_dragon`의 id, enabled, upgrades[statId, delta] |
+| relics[20] | id, owned, sourceMonsterId, dropChancePercent, effectId, effectValue, effectValue2 |
+| relicDropRules | maxPerKill=1, candidatePolicy=unownedOnly, resolution=sumFixedChanceThenWeightedPick, preserveBaseChanceAfterAcquisition=true |
 
 HP/공격력/피해/재화는 Int64. 시간은 초, 반경은 월드 단위, 확률은 0~100이다.
 productionCount는 1회 생성 마릿수다. gems.enabled는 공급 몬스터 활성 여부이며 잔액과 독립적이다.
 false인 항목도 삭제하지 않고 ID로 구분한다. 배열 인덱스를 ID처럼 하드코딩하지 않는다.
 일반 필드는 15~30초, 최대 동시 몬스터 80이다. 보스 기본 시간 60초는 일반 필드 상한과 별개다.
 
-정식 [v3 스키마](game-information-v3.schema.json)와 [전체 예제](game-information-v3.example.json)를 따른다.
-이전 v2 예제·스키마는 과거 기록이며 v3 런 입력으로 사용할 수 없다.
+유물 효과 수치는 effectId가 단위를 정의한다. 퍼센트 효과의 5는 5%이며, 초·배수 값은 해당 단위를 그대로 쓴다. 크라켄의 눈만 effectValue2에 체력 기준 30%를 둔다. 몬스터별 두 유물의 기본 확률 합은 14%이며, 소유 유물을 후보에서 제외해도 나머지 확률은 변하지 않는다.
+
+정식 [v4 스키마](game-information-v4.schema.json)와 [전체 예제](game-information-v4.example.json)를 따른다.
+이전 v2/v3 예제·스키마는 과거 기록이며 v4 런 입력으로 사용할 수 없다.
 
 ## 몬스터 특성과 행동 프로필
 
@@ -100,6 +104,8 @@ UpgradeStat을 합쳐 이번 런의 RuntimeStat으로 고정한다.
 | 몬스터 생성 | SpawnPlan.Entries[i].Snapshot의 MonsterId, MaxHealth, PackSize, SpawnIntervalSeconds, AliveLimit |
 | 몬스터 특성 | SpawnPlan.Entries[i].Snapshot의 MovementMode, MoveSpeed, VisualScale, SpecialAbility 및 능력 수치 |
 | 가넷 / 추가 젬 보상 | SpawnSnapshot.GarnetReward / BonusDropCurrencyId, BonusDropAmount, BonusDropChancePercent |
+| 유물 정의·획득 상태 | `ProgressionCombatSnapshot.Relics[i]` → `CombatRunController.RelicSnapshots[i]`: RelicId, Owned, SourceMonsterId, DropChancePercent, EffectId, EffectValue, EffectValue2 |
+| 유물 드롭 정책 | `ProgressionCombatSnapshot.RelicDropRules` → `CombatRunController.RelicDropRules`: MaxPerKill, CandidatePolicy, Resolution, PreserveBaseChanceAfterAcquisition |
 | 개체 현재 체력 | MonsterCombatTarget.CurrentHealth (MaxHealth는 시작/최대 체력) |
 | 런 진행 | controller.ElapsedSeconds, RemainingSeconds, DefeatedCount, GarnetEarned, EffectiveDamage |
 | 일반/보스 제한 시간 | snapshot.NormalFieldDurationSeconds / BossFieldDurationSeconds |
@@ -143,17 +149,16 @@ Data 참조가 없는 Combat 어셈블리에서 위 파싱 메서드를 호출�
 - GameInformation DTO 자체는 생성/역직렬화용 가변 객체다. Combat에는 복사된 계약 값을 전달한다.
 - Combat이 지갑을 수정하지 않는다. 보상은 RunResult.Rewards → App 정산 → Progression 저장 경로를 유지한다.
 
-## 유물 제거와 저장 호환
+## 유물과 저장 호환
 
-유물 배열·조각 필드·노드·효과·탭·몬스터/보스 조각 보상은 현재 구현에서 제거했다.
-다음 일반 유물 시스템은 미정이므로 대체 효과를 추가하지 않았다.
+20개 유물의 효과·출처·개별 확률은 GameInformation v4에 있으며, `GameInformationBuilder`는 도감/테스트 도구의 획득 ID를 `owned` 값에 반영한다. `ToCombatSnapshot`은 정의·보유 상태를 불변 `RelicCombatSnapshot` 목록과 드롭 규칙으로 복사한다. Combat은 이 목록을 읽을 수 있지만 현재 실제 드롭 롤, 결과 정산/저장, 스탯·스킬 효과를 적용하는 소비자는 아직 구현되지 않았다. 전체 드롭 알고리즘은 [유물 드롭 설계](../relic-drop-design.md)를 따른다.
 저장 version은 4이며 첫 v4 저장 직전에 이전 원문을 cursor_hunter.progression.v1.before-v4에 한 번 백업한다. v1~v3의 암묵적 시작 노드 표시는 구매 상태에서 제거하고, 젬 잔액과 유료 진행 상태는 보존한다.
 옛 유물 구매/조각은 복원·지급·환불하지 않고 백업에만 남긴다. 일반 강화·젬은 유지한다.
 유물 보정이 사라져 기존 최종 공격력·보스 배율·연동 스킬 피해가 낮아질 수 있다.
 
 ## 검증·아직 없는 기능
 
-2026-10-15 자동 스킬 4종 스탯 개편 후 Python 데이터·협업 계약 검사와 Unity 6000.3.13f1 격리 프로젝트의 EditMode 99개, PlayMode 13개를 통과했다. Main 화면에서 실제 이펙트와 발동 타이밍을 수동으로 확인하는 작업은 남아 있다.
+자동 스킬은 7종 모두 구매 해금 노드를 가지며, Main 씬의 Editor 테스트 토글로 실제 전투 이펙트를 볼 수 있다. 스킬별 강화 구매 단계는 아직 구성하지 않았다. Main 화면에서 실제 이펙트와 발동 타이밍을 수동으로 확인하는 작업은 남아 있다.
 스킬 고유 투사체/빙결/틱/브레스, 보스 패턴/패링, 전체 Localization, 영속 RunId journal은 미완료다.
 프로세스 내 중복 정산 방지와 PlayerPrefs 저장의 기존 한계는 남아 있다.
 메인 스레드 흐름을 유지하며 읽기 전용 배열만으로 전체 시스템의 멀티스레드 안전성을 주장하지 않는다.

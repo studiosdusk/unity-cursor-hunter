@@ -1,6 +1,6 @@
 # 두 사람 개발 인수인계
 
-현재 게임 버전: **0.0.5**. 전투 JSON의 schemaVersion=3과 진행도 저장 version=4는 게임 버전과 별개다.
+현재 게임 버전: **0.0.5**. 전투 JSON의 schemaVersion=4와 진행도 저장 version=4는 게임 버전과 별개다.
 
 커서 핵심 스탯의 공통 기본값은 Main 씬에서 `PlayerCombatStatsRuntime`과 함께 둔
 `PlayerCombatStatsDefaults` 컴포넌트가 소유한다. 나머지 게임 초기 데이터와 전체 정보
@@ -15,16 +15,16 @@
 
 전투 개발자: [실제 조회 API와 값 대응표](contracts.md#전투에서-값을-읽는-실제-api).
 앞으로 구현할 자동 스킬의 공통 설계 기준은 [자동 스킬 기획서](../skill-design.md)를 따른다.
-유물 제거·몬스터 특성 자리·전투 데이터 분리 및 미완료 범위: [최신 인수인계](current-state-handoff-v0.0.4.md).
+전투 데이터의 기본 계약: [전투 정보 v4 인수인계](current-state-handoff-v0.0.4.md), 현재 스킬·유물 상태: 아래 `현재 합류 기준`과 [유물 드롭 설계](../relic-drop-design.md).
 
-현재 구현 기준: [전투 정보 v3 인수인계](current-state-handoff-v0.0.4.md). 이전 [v2 개편 기록](game-information-refactor-2026-10-01.md)은 과거 자료다. Unity **6000.3.13f1**.
+현재 구현 기준: [전투 정보 v4 인수인계](current-state-handoff-v0.0.4.md). 이전 [v2 개편 기록](game-information-refactor-2026-10-01.md)은 과거 자료다. Unity **6000.3.13f1**.
 macOS 설치 확인: `python3 tools/open_unity.py --check`. 확인 후 같은 명령에서 `--check`를 빼면 지정 버전으로 프로젝트를 연다. 커스텀 경로는 `--editor /설치경로/Unity.app`으로 지정한다. Windows에서는 Hub에서 같은 버전을 선택한다.
 런타임 씬 전략: **One Scene + 개발용 Sandbox 씬**. `App/Scenes/Main.unity`가 실제 런타임 단일 진입점이며, `CombatSandbox.unity`와 `ProgressionSandbox.unity`는 통합 런타임에 로드하지 않는 모듈별 개발·검증 씬이다.
 이 폴더는 개발 협업 문서다. 요약 PDF는 이 폴더의 핵심본을 기준으로 재생성하고,
 상세 기획 원문은 `docs/cursor-hunter-game-design-v0.0.4.md`에서 관리한다.
 
-현재 상태를 처음 읽는 사람은 [현재 상태·인수인계 핵심본](current-state-handoff-v0.0.4.md)을 먼저 읽는다.
-최신 안내를 문서 앞에 두고 옛 v0.0.4 원장은 뒤에 보존한다. 기존 PDF·캡처는 과거 자료이며
+현재 상태를 처음 읽는 사람은 이 README의 `현재 합류 기준`과 [전투 계약](contracts.md)을 먼저 읽는다.
+`current-state-handoff-v0.0.4.md`와 기존 PDF·캡처는 해당 시점의 과거 자료이며
 이번에 재생성하지 않았다. 세부 화면·수치·에셋은 아래 상세 문서에서 확인한다.
 
 ## 누적 기록 읽기
@@ -36,7 +36,7 @@ macOS 설치 확인: `python3 tools/open_unity.py --check`. 확인 후 같은 �
 
 ## 승기에게 전달할 순서
 1. 이 문서와 [소유권·디렉토리](architecture.md)를 읽는다.
-2. [연결 계약](contracts.md)을 두 사람이 확인한다. 핵심 런타임 계약은 현재 구현되어 있고, 보스·스킬 고유 동작은 후속 작업이다. BabyDragon 펫은 [펫 스킬 기획·구현](../pet-skill-design.md)의 일곱 번째 스킬로 실행 데이터와 Main 씬에 연결됐다.
+2. [연결 계약](contracts.md)을 두 사람이 확인한다. 핵심 런타임 계약은 현재 구현되어 있고, 보스 세부 동작·스킬별 강화는 후속 작업이다. BabyDragon 펫은 [펫 스킬 기획·구현](../pet-skill-design.md)의 일곱 번째 스킬로 실행 데이터와 Main 씬에 연결됐다.
 3. [병합 절차](workflow.md)에 따라 각자 작업 브랜치와 별도 체크아웃을 사용한다.
 4. [에셋 매핑](assets.md)에서 자신의 원본 에셋을 찾아 전용 프리팹을 만든다.
 5. 특성 화면의 노드 수·아이콘·폰트 연결은 [특성 UI 에셋 매핑](trait-ui-assets.md)을 기준으로 확인한다.
@@ -51,9 +51,10 @@ macOS 설치 확인: `python3 tools/open_unity.py --check`. 확인 후 같은 �
 
 ## 현재 합류 기준
 
-- 커서 기본 스탯 컴포넌트와 보유 커서 특성의 증가량을 런 시작 때 합산한다. 자동 스킬 7종도 Main의 BaseStat과 스킬별 UpgradeStat 스냅샷을 전투 진입 때 합산해 런 동안 고정한다. 스킬·몬스터·재화 정보는 GameInformation v3 스냅샷을 사용한다.
+- 커서 기본 스탯 컴포넌트와 보유 커서 특성의 증가량을 런 시작 때 합산한다. 자동 스킬 7종도 Main의 BaseStat과 스킬별 UpgradeStat 스냅샷을 전투 진입 때 합산해 런 동안 고정한다. 스킬·몬스터·재화·유물 정의는 GameInformation v4 스냅샷을 사용한다.
 - 일반 필드 15~30초, 자동 반경 공격·쿨타임, 일반 몬스터 10종 누적 생성.
-- BabyDragon 펫은 별도 자동 스킬이며 `stat.attack.01` 이후 가넷 40개로 해금한다. 실제 전투 화면의 크기·정렬·이펙트는 플레이테스트가 남았다. 유물 관련 데이터·UI·드롭은 제거했으며 새 일반 유물 시스템은 추후 설계한다.
+- 전투 스킬은 토네이도·헤드샷·벼락·화염 배기·마력 구체·레이저·베이비 드래곤 7종이다. 통합 연구에서 각 스킬은 `stat.attack.01` 뒤 가넷 40개로 해금하며, 스킬 강화 단계는 아직 없다. Main 씬의 `Editor Play Mode test / Skill Acquired` 토글은 Editor 전투 시 구매 저장 없이 개별 효과를 시험한다.
+- 유물 20종의 고정 ID·출처 몬스터·개별 확률·효과 ID/수치와 단일 드롭 규칙이 JSON에 있다. 획득 상태와 정의는 `ProgressionCombatSnapshot.Relics` 및 `RelicDropRules`를 거쳐 `CombatRunController.RelicSnapshots` / `RelicDropRules`에 런 시작 때 복사된다. 테스트 도구로 설정한 획득 상태도 포함된다. 실제 처치 드롭 판정, 보유 저장, 효과 실행은 아직 구현되지 않았다. 기획은 [유물 드롭 설계](../relic-drop-design.md)를 기준으로 한다.
 - JSON의 기존 몬스터 behaviorType은 None=0으로 유지한다. 신규 종별 행동·스탯 프로필은
   MonsterDefinition과 MonsterBehaviorProfile 에셋에서 구성한다.
 - 젬 별도 해금 트리는 제거. 일반 몬스터가 해당 젬을 공급한다.
@@ -71,12 +72,12 @@ macOS 설치 확인: `python3 tools/open_unity.py --check`. 확인 후 같은 �
 - 한국어 상세 해설: [game-data.ko.reference.json](game-data.ko.reference.json) (비실행 문서)
 - 원본 수정 후 python3 tools/build_korean_game_data_reference.py --patch 출력을 apply_patch로 적용해 두 참고본을 갱신한다.
 - python3 tools/test_korean_game_data_reference.py
-- python3 tools/test_combat_information_v3.py
+- python3 tools/test_combat_information_v4.py
 - 문서 스키마: [game-data-document.schema.json](game-data-document.schema.json)
 - 이전 balance-v2.json과 GameBalanceDefinition은 과거 호환 참고이며 런타임에서 사용하지 않는다.
 - python3 tools/validate_bilingual_game_data.py
-- 구조 예제: [game-information-v3.example.json](game-information-v3.example.json)
-- 스키마: [game-information-v3.schema.json](game-information-v3.schema.json)
+- 구조 예제: [game-information-v4.example.json](game-information-v4.example.json)
+- 스키마: [game-information-v4.schema.json](game-information-v4.schema.json)
 - 코드 경계: [contracts.md](contracts.md)
 - python3 tools/validate_collaboration.py
 - python3 tools/validate_game_information.py

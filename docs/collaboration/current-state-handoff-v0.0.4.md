@@ -1,116 +1,53 @@
-# Cursor Hunter 0.0.5 인수인계 — 전투 정보 v3 (2026-10-01)
+# Cursor Hunter 0.0.5 현재 인수인계 — 전투 정보 v4 (2026-10-22)
 
-게임 버전은 0.0.5이며, 전투 JSON/저장 형식 버전은 3이다. 기존 링크를 유지하기 위해 문서 파일명은 그대로 둔다.
+기존 문서 링크를 유지하기 위해 파일명은 보존했다. 현재 전투 JSON은 `schemaVersion=4`, 진행도 저장은 version 4다.
 
-## 1. 이번 요청 반영
+## 1. 이번 변경
 
-- 몬스터/보스 유물, 유물 조각, 유물 강화 노드·탭·효과·드롭을 현재 데이터와 실행 경로에서 제거했다.
-- 일반적인 유물 시스템은 이후 별도 설계한다. 이번에는 대체 유물/효과/빈 유물 영역도 만들지 않았다.
-- 몬스터마다 behaviorType을 추가했다. MonsterBehaviorType enum의 None=0만 정의하고 전부 0으로 시작한다.
-- 지그재그·나타났다 사라짐·일정 시간 무적 등은 예시일 뿐이며, 이번에는 실제 동작을 구현하지 않았다.
-- game-data.en.json을 현재 전투 정보와 같은 평평한 구조로 줄였다. information 래퍼와 progression/entities/fieldHelp/implementation은 전투 JSON에 없다.
-- 성장 화면의 기존 강화 기능을 유지하기 위해 비용·선행 조건·명칭/프리팹 설정을 progression-config.en.json으로 분리했다.
+- 20개 유물의 고정 ID, 획득 상태, 출처 몬스터, 개별 드롭 확률, 전투 효과 ID와 수치를 `game-data.en.json`에 추가했다.
+- `relicDropRules`에는 미획득 유물만 후보로 사용, 처치당 최대 1개, 성공 시 고정 개별 확률로 가중 선택, 다른 유물을 얻어도 남은 유물 확률을 올리지 않는 규칙을 기록했다.
+- `GameInformationBuilder`가 도감/테스트 도구의 획득 상태를 `owned`에 반영한다. `GameInformation.ToCombatSnapshot`은 20개 정의와 드롭 정책을 불변 `ProgressionCombatSnapshot.Relics` / `RelicDropRules`로 복사한다.
+- 실제 처치 드롭 굴림, 유물 획득 저장, 효과를 피해·보상에 적용하는 Combat 소비자는 아직 구현하지 않았다. 현재는 Combat이 런 시작 데이터를 받을 수 있는 계약까지 연결했다.
+- 일반 몬스터의 `behaviorType`은 이전 호환을 위해 `None=0`이다. 종별 실제 행동은 `MonsterDefinition` / `MonsterBehaviorProfile` 데이터로 구성한다.
 
-## 2. 파일과 실제 저장의 차이
+## 2. 파일과 현재 상태
 
 | 구분 | 파일/타입 | 역할 |
 |---|---|---|
-| 전투 정보 형식과 기타 초기값 | [game-data.en.json](../../Assets/CursorHunter/Data/Resources/GameData/game-data.en.json) | schemaVersion/balanceVersion, stats/rules/gemstones/monsters/skills 구조. 커서 기본값은 Main 씬 컴포넌트가 우선 |
-| 커서 기본 스탯 | `PlayerCombatStatsDefaults` on Main.unity | 모든 새 런에서 공통으로 쓰는 커서 핵심 기본값 |
-| 키 바로 뒤 한국어 | [game-data.ko.keys.json](game-data.ko.keys.json) | 같은 값·계층·자료형, 영문키(한국어) 형태. 사람이 읽는 참고본 |
-| 상세 한국어 설명 | [game-data.ko.reference.json](game-data.ko.reference.json) | 단위·enum 의미 설명. 게임 입력 아님 |
-| 성장 화면 내부 설정 | [progression-config.en.json](../../Assets/CursorHunter/Data/Resources/GameData/progression-config.en.json) | 23분류/111노드 비용·효과·선행 조건, 명칭·외형 키, 젬 보스 보상. 전투로 전달하지 않음 |
-| 플레이어 저장 | TraitProgressionStore.SaveData → PlayerPrefs | 구매 노드·젬 잔액·구매 비용/재화. 최종 능력치는 이를 합산해 계산 |
-| 해당 전투의 고정 정보 | GameInformation → ProgressionCombatSnapshot | 전투 시작 시 현재 성장 상태로 생성. 런 중에는 변경하지 않음 |
+| 전투 런 입력 | [game-data.en.json](../../Assets/CursorHunter/Data/Resources/GameData/game-data.en.json) | GameInformation v4: 스탯, 젬, 몬스터, 스킬, 유물, 유물 드롭 정책 |
+| 성장 설정 | [progression-config.en.json](../../Assets/CursorHunter/Data/Resources/GameData/progression-config.en.json) | 23분류/90노드의 비용·효과·선행 조건·표시 설정 |
+| 커서 기본값 | `PlayerCombatStatsDefaults` on Main.unity | 새 런의 커서 핵심 기본값 |
+| 플레이어 구매/지갑 | `TraitProgressionStore.SaveData` → PlayerPrefs | 구매 노드와 젬 잔액. 유물 소유 저장은 아직 없음 |
+| 전투 시작 복사본 | `GameInformation` → `ProgressionCombatSnapshot` | 런 시작 때 현재 스탯·해금·유물 상태를 복사하고 런 중 고정 |
+| 한국어 키 참고본 | [game-data.ko.keys.json](game-data.ko.keys.json) | 원본 값/계층을 보존한 한글 키 참고. 런타임 입력 아님 |
+| 한국어 상세 참고본 | [game-data.ko.reference.json](game-data.ko.reference.json) | 단위·효과 의미를 설명하는 문서. 런타임 입력 아님 |
 
-progression은 “내가 가진 값”이 아니라 “업그레이드가 얼마이며 무엇을 바꾸는가”를 정의한다.
-전투에는 불필요하지만 성장 화면에는 필요하므로 분리했다. fieldHelp/implementation은 실행 문서에서 제거하고 설명은 이 문서와 한국어 참고본으로 제공한다.
+## 3. JSON 구조와 조회 경로
 
-game-data.en.json은 기타 초기값/구조 참고이지 진행 중인 플레이어 세이브 파일이 아니다.
-Main 런타임의 커서 기본값은 `PlayerCombatStatsDefaults`에서 읽는다. 강화하면 구매 기록·지갑을 저장하고,
-전투 시작 때 공통 커서 기본값에 보유 특성의 additive 델타를 합산한다. 다른 성장 정보는 기존 GameInformation 경로를 사용한다.
-현재 값은 전체 정보 → JSON 복사로 확인한다. Resources 파일 자체를 전투 보상으로 덮어쓰지 않는다.
+현재 루트는 `schemaVersion`, `balanceVersion`, `stats`, `rules`, `gemstones`, `monsters`, `skills`, `relics`, `relicDropRules`다. 전체 규격은 [v4 schema](game-information-v4.schema.json)와 [v4 example](game-information-v4.example.json)에서 확인한다.
 
-## 3. 현재 JSON 구조
-
-전체 파일은 위 링크를 참고한다. 아래는 구조를 보여 주는 발췌다.
-
-```json
-{
-  "schemaVersion": 3,
-  "balanceVersion": 3,
-  "stats": { "attackPower": 1, "attackRadiusWorldUnits": 1.7253809 },
-  "rules": { "globalAliveLimit": 80 },
-  "gemstones": [{ "id": "gem.garnet", "enabled": true, "amount": 125 }],
-  "monsters": [{
-    "id": "monster.01",
-    "enabled": true,
-    "behaviorType": 0,
-    "productionCount": 1
-  }],
-  "skills": [{ "id": "skill.fireball", "enabled": false }]
-}
-```
-
-실제 파일은 스탯/규칙의 나머지 필드와 6종 젬·10종 몬스터·7종 스킬 전체를 포함한다.
-한국어는 "behaviorType(몬스터 행동 특성)": 0처럼 보인다.
-enum 값 0만 유효하다. 추후 새 특성을 정의하면 enum·JSON 스키마·실행 동작·테스트를 함께 확장한다.
-현재 1/2/3을 임의로 넣으면 검증에서 거절하며, 그런 동작을 이미 지원한다고 가정하지 않는다.
-
-## 4. 친구(Combat 담당)가 값을 읽는 위치
+유물 배열은 ID를 키로 읽는다. 배열 순서를 저장 ID로 취급하지 않는다. `effectId`가 `effectValue`의 단위를 정의하며, 퍼센트 효과는 5가 5%다. 크라켄의 눈은 `effectValue=50`(발동 확률), `effectValue2=30`(최대 체력 대비 발동 기준)이다. 몬스터별 유물 기본 확률 합은 14%다.
 
 ```text
-성장 상호작용 → 구매/지갑 갱신·저장
-전투 시작 → GameInformationBuilder(초기값 + 구매/지갑)
-          → GameInformation → ProgressionCombatSnapshot
-          → App에서 CombatSnapshot / 스킬 목록 / SpawnPlan으로 나누어 전달
-종료 → RunResult.Rewards → App 정산 → 지갑 갱신·저장
+progression 구매/지갑 + 테스트 도구의 유물 획득 ID
+ → GameInformationBuilder → 검증된 GameInformation JSON
+ → ToCombatSnapshot → ProgressionCombatSnapshot.Relics / RelicDropRules
+ → App의 전투 시작 경계 → Combat
 ```
 
-| 확인할 값 | 실제 접근 |
-|---|---|
-| 공격력 | controller.CombatSnapshot.AttackPower |
-| 쿨타임 | controller.CombatSnapshot.AttackCooldownSeconds |
-| 치명타 확률/피해 배율 | controller.CombatSnapshot.CriticalChancePercent / CriticalDamageMultiplier |
-| 월드 반경 | GameInformation.BaseAttackRadiusWorldUnits * controller.CombatSnapshot.RangeMultiplier |
-| 스킬 피해/범위/쿨타임 | ConfigureSkills로 전달된 SkillCombatSnapshot.Damage / RadiusWorldUnits / CooldownSeconds |
-| 몬스터 특성 | MonsterCombatSnapshot.BehaviorType → SpawnPlan.Entries[i].Snapshot.BehaviorType → WalkerStumpTarget.BehaviorType |
-| 몬스터 생성 마릿수/주기 | SpawnSnapshot.PackSize / SpawnIntervalSeconds |
-| 해당 개체 현재 HP | WalkerStumpTarget.CurrentHealth (시작 HP와 구분) |
-| 남은 시간/이번 런 처치·가넷 | controller.RemainingSeconds / DefeatedCount / GarnetEarned |
-| 시작 시 전체 젬 잔액 | App이 보관한 snapshot.SourceJson을 GameInformationJson.TryDeserialize → information.gemstones |
+Combat은 `snapshot.Relics`에서 `RelicCombatSnapshot.RelicId`, `Owned`, `SourceMonsterId`, `DropChancePercent`, `EffectId`, `EffectValue`, `EffectValue2`를 읽을 수 있다. `snapshot.RelicDropRules`는 한 처치 최대 수, 후보 정책, 판정 방식과 고정 확률 규칙을 전달한다. 피해/보상 효과 처리와 실제 드롭 정산은 후속 구현이다.
 
-controller는 현재 CombatRunController 인스턴스, snapshot은 App이 캡처한 ProgressionCombatSnapshot을 뜻한다.
-현재 CombatRunController는 전체 GameInformation이나 전체 스냅샷을 공개 getter로 제공하지 않는다.
-Combat은 UI/PlayerPrefs/설정 파일을 직접 읽지 않고 이미 전달된 값을 사용한다.
-전투 중 팝업의 젬 잔액은 시작 시 잔액이며, 이번 판 수익과 별개다.
-매 프레임 JSON을 재생성하거나 역직렬화하지 않는다. 세부 조회 예시는 [연결 계약](contracts.md#전투에서-값을-읽는-실제-api)을 따른다.
+기존 전투 정보 API도 유지한다. 공격력·쿨타임·치명타는 `controller.CombatSnapshot`; 스킬은 `SkillCombatSnapshot`; 몬스터는 `MonsterCombatSnapshot` → `SpawnSnapshot`; 시작 시 JSON은 `snapshot.SourceJson`에서 읽는다. 매 프레임 JSON을 재생성하거나 역직렬화하지 않는다.
 
-## 5. 기존 저장과 영향
+## 4. 저장과 검증 범위
 
-- 저장 키 cursor_hunter.progression.v1은 유지하고 내부 version을 3으로 올렸다.
-- 다음 정상 저장 전에 v1/v2 원문을 cursor_hunter.progression.v1.before-v3에 한 번 백업한다. 이미 있는 백업은 덮어쓰지 않는다.
-- 구 유물 구매·조각은 현재 상태로 복원하거나 전투에 적용하지 않는다. 다른 젬으로 임의 환전하지 않는다.
-- 기존 일반 강화·젬 잔액은 유지한다. 구 유물의 공격력/보스 보정이 없어지므로 해당 보정을 받던 수치와 연동 스킬 피해는 낮아진다.
-- 잘못된 저장이나 미래 버전 저장은 정상 v3 저장으로 조용히 덮어쓰지 않는다.
-- fileOnly 정책은 계속 저장 읽기/쓰기를 하지 않는다.
-- 이번 도구 작업은 PlayerPrefs를 읽거나 변경하지 않았다. 백업·이관은 사용자가 나중에 게임을 실행하고 정상 저장할 때 수행된다.
-
-## 6. 검증과 남은 범위
-
-- 유물 관련 현재 데이터/UI/드롭/스탯 효과 제거와 행동 enum 전달 경로를 정적으로 검사했다.
-- 한국어 참고본이 축소된 영문 원본과 값·타입·순서까지 일치하는지 검사한다.
-- Python 테스트 12개(한국어 참고본 4개 + 전투 v3 계약 8개), JSON 스키마·노드 참조·재화 접근 경로·C# 구문·diff 공백 검사를 수행한다.
-- Unity용 분리 로더/공통 스냅샷/구 저장 백업 테스트는 추가·수정만 했으며 실행하지 않았다.
-- Unity Import/실제 컴파일/게임 실행/시각·성능 검증은 하지 않았다.
-- 스킬 고유 투사체/빙결·보스 패턴, 전체 문구 Localization은 여전히 미완료다.
-- 구매/정산 저장 실패의 메모리 롤백과 영속 RunId 정산은 후속이다. 이번 백업은 원자 저장·클라우드 저장 구현이 아니다.
-- 기존 젬 공급원 활성 여부를 구매 조건으로 사용하는 경로는 이번 변경 범위 밖이며 남아 있다.
-- 플레이어 상태가 UI 컨트롤러에 있는 구조도 유지했다. 전투는 읽기 전용 복사본을 쓰므로 UI와 공유 변경하지 않는다.
+- 기존 진행도 저장 version 4와 젬/특성 진행 경로는 유지한다. 유물 `owned`는 현재 도감의 테스트 상태에서 전투 스냅샷으로만 전달되며 PlayerPrefs 영구 저장과 실제 획득 정산은 아직 연결되지 않았다.
+- `python3 tools/validate_bilingual_game_data.py`, `python3 tools/validate_game_information.py`, `python3 tools/validate_collaboration.py`는 데이터/메타데이터/모듈 경계를 정적으로 검사한다.
+- 이번 변경은 Unity Import, C# 컴파일, Play Mode를 실행하지 않았다.
 
 ---
 
-> 이하 v0.0.4는 과거 기획/구현 기록이다. 유물·펫·20종·60초·젬 해금 등 아래 옛 규칙보다 위 v3 안내를 우선한다. 기존 PDF·캡처는 이번에 재생성하지 않았다.
+> 이하 v0.0.4는 과거 기획/구현 기록입니다. 과거 유물 제거·전투 정보 v3 규칙 등은 위 v4 안내와 충돌하면 과거 기록으로 취급한다. 기존 PDF·캡처는 재생성하지 않았다.
 
 
 # Cursor Hunter v0.0.4 현재 상태·인수인계 핵심본

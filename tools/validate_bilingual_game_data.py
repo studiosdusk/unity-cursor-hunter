@@ -59,16 +59,16 @@ def validate_documents():
     check_schema(configuration, config_schema, config_schema)
     documents = [dict(configuration, information=info)]
     assert configuration["locale"] == "en"
-    assert set(info) == {"schemaVersion", "balanceVersion", "stats", "rules", "gemstones", "monsters", "skills"}
+    assert set(info) == {"schemaVersion", "balanceVersion", "stats", "rules", "gemstones", "monsters", "skills", "relics", "relicDropRules"}
     def no_retired_data(value):
         if isinstance(value, dict):
             for key, child in value.items():
-                assert not any(word in key.lower() for word in ("relic", "fragment", "loot")), key
+                assert not any(word in key.lower() for word in ("fragment", "loot")), key
                 no_retired_data(child)
         elif isinstance(value, list):
             for child in value: no_retired_data(child)
         elif isinstance(value, str):
-            assert not value.startswith(("relic.", "fragment.", "loot.")), value
+            assert not value.startswith(("fragment.", "loot.")), value
     no_retired_data(info)
     no_retired_data(configuration)
     assert not (DATA / "game-data.ko.json").exists(), "Korean reference must not be a runtime resource"
@@ -86,11 +86,38 @@ def validate_documents():
         info, progression = document["information"], document["progression"]
         assert document["documentVersion"] == 2
         assert progression["savedProgressPolicy"] in ("overlay", "fileOnly")
-        assert info["schemaVersion"] == 3 and info["balanceVersion"] >= 1
+        assert info["schemaVersion"] == 4 and info["balanceVersion"] >= 1
         assert len(info["gemstones"]) == 6 and len(info["monsters"]) == 10
         assert [skill["id"] for skill in info["skills"]] == [
             "skill.tornado", "skill.headshot", "skill.thunder", "skill.flame_exhaust",
             "skill.magic_ball", "skill.laser", "skill.pet_baby_dragon"]
+        relic_ids = [
+            "relic.red_potion", "relic.blue_potion", "relic.monster_meat",
+            "relic.thief_shoes", "relic.archers_bow", "relic.warrior_armor",
+            "relic.wizards_hat", "relic.valor_ring", "relic.lucky_dice",
+            "relic.kraken_eye", "relic.four_leaf_clover", "relic.ancient_book",
+            "relic.adventurers_bag", "relic.compass", "relic.megaphone",
+            "relic.telescope", "relic.stone", "relic.rainbow_feather",
+            "relic.scales_of_judgment", "relic.treasure_chest"]
+        assert [relic["id"] for relic in info["relics"]] == relic_ids
+        assert len(info["relics"]) == 20
+        assert info["relicDropRules"] == {
+            "maxPerKill": 1,
+            "candidatePolicy": "unownedOnly",
+            "resolution": "sumFixedChanceThenWeightedPick",
+            "preserveBaseChanceAfterAcquisition": True,
+        }
+        drop_totals = {}
+        for relic_index, relic in enumerate(info["relics"]):
+            assert type(relic["owned"]) is bool
+            assert relic["sourceMonsterId"] == f"monster.{relic_index // 2 + 1:02}"
+            assert 0 < relic["dropChancePercent"] <= 100
+            assert relic["effectId"] and math.isfinite(relic["effectValue"])
+            assert 0 <= relic["effectValue"] <= 1000
+            assert 0 <= relic["effectValue2"] <= 100
+            drop_totals[relic["sourceMonsterId"]] = (
+                drop_totals.get(relic["sourceMonsterId"], 0) + relic["dropChancePercent"])
+        assert all(total <= 100 for total in drop_totals.values())
         stats, rules = info["stats"], info["rules"]
         assert 1 <= stats["attackPower"] <= 9223372036854775807
         assert stats["attackRadiusWorldUnits"] > 0 and stats["attackCooldownSeconds"] >= .05
@@ -103,11 +130,15 @@ def validate_documents():
         for entry in document["entities"]:
             assert entry["displayName"] and entry["description"]
         categories = {entry["id"]: entry for entry in progression["categories"]}
-        assert len(categories) == len(progression["categories"]) == 18
+        assert len(categories) == len(progression["categories"]) == 23
         nodes = {n["id"]: n for c in progression["categories"] for n in c["nodes"]}
-        assert len(nodes) == sum(len(c["nodes"]) for c in categories.values()) == 85
-        assert [node["id"] for node in categories["skill.tornado"]["nodes"]] == ["skill.tornado"]
-        assert [node["id"] for node in categories["skill.pet_baby_dragon"]["nodes"]] == ["skill.pet_baby_dragon"]
+        assert len(nodes) == sum(len(c["nodes"]) for c in categories.values()) == 90
+        skill_ids = [
+            "skill.tornado", "skill.headshot", "skill.thunder",
+            "skill.flame_exhaust", "skill.magic_ball", "skill.laser",
+            "skill.pet_baby_dragon"]
+        for skill_id in skill_ids:
+            assert [node["id"] for node in categories[skill_id]["nodes"]] == [skill_id]
         currency = {g["id"] for g in info["gemstones"]}
         ordered_nodes = set()
         for c in categories.values():
@@ -127,6 +158,8 @@ def validate_documents():
         for section in ("gemstones", "monsters", "skills"):
             for item in info[section]:
                 assert item["id"] in entities and isinstance(item["enabled"], bool)
+        for relic in info["relics"]:
+            assert isinstance(relic["owned"], bool)
         for monster in info["monsters"]:
             assert monster["id"] in categories
             assert monster["hitPoints"] > 0 and monster["spawnIntervalSeconds"] >= .1
@@ -150,7 +183,7 @@ def validate_documents():
 
 def main():
     validate_documents()
-    print("PASS: English-only runtime input, Korean detailed/key-only references, separate growth configuration, 18 categories / 85 nodes, behaviorType=0, no relic data, schema, references and rewards")
+    print("PASS: English-only runtime input, Korean detailed/key-only references, separate growth configuration, 23 categories / 90 nodes, seven purchasable skills, 20 relic definitions and fixed-drop rules, behaviorType=0, schema, references and rewards")
     print("No Unity or game execution.")
 
 if __name__ == "__main__":

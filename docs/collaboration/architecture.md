@@ -44,7 +44,7 @@ App이 Data/Progression에서 런 입력을 만들어 Combat에 전달한다. Pr
 
 이 구조는 텍스트 코드 충돌과 씬 동시 편집을 줄인다. 계약/통합 작업이 사용자에게 몰리는 비용이 있으며, 공통 파일 충돌을 완전히 없애지는 못한다.
 
-## 현재 통합 경로 — 전투 정보 v3 (2026-10-01)
+## 현재 통합 경로 — 전투 정보 v4 (2026-10-22)
 
 GameDataDocument.Load는 두 영어 리소스를 읽는다. Main 씬의
 `PlayerCombatStatsDefaults` 컴포넌트는 커서 핵심 스탯의 공통 기본값을 별도로 소유한다.
@@ -59,14 +59,14 @@ App이 기본 스탯 스냅샷을 Progression에 제공한다. GameInformationBu
 전체 정보 팝업은 같은 최종 SourceJson을 표시한다. Combat은 UI/PlayerPrefs/성장 설정을 직접 읽지 않는다.
 진행도 원본 상태는 아직 TraitScreenController가 소유하며 독립 상태 서비스를 새로 만든 것은 아니다.
 
-게임 정보 파일과 한국어 참고본에는 유물, progression, entities, fieldHelp, implementation이 없다.
-성장 설정에는 유물을 제외한 17분류/84노드 및 명칭/외형이 남는다. 토네이도는 해금 노드만 두며 강화 구성은 추후 결정한다. fieldHelp/implementation은 실행 문서에서 제거했다.
+GameInformation v4 JSON에는 유물 20종의 ID·획득 상태·드롭 몬스터·개별 확률·효과 키/수치와 드롭 규칙이 있다. Progression은 현재 도감 테스트 상태를 포함해 불변 `RelicCombatSnapshot` 목록으로 복사하고, App의 런 시작 계약이 이를 `CombatRunController.ConfigureRelics`로 전달한다. 실제 처치 드롭·저장·효과 소비 로직은 별도 구현이 필요하다. progression/entities/fieldHelp/implementation은 전투 JSON에 포함하지 않는다.
+성장 설정에는 통합 연구 23분류/90노드와 7개 전투 스킬 해금 노드가 있다. 스킬별 강화 단계는 아직 없다. fieldHelp/implementation은 실행 문서에서 제거했다.
 JSON의 `behaviorType`은 이전 호환을 위해 `None=0`으로 보존한다. 신규 종별 특성은
 Data의 조합형 프로필로 구성하고, 이동 모드·이동 속도·시각 크기·명중 영역 크기와
 특수 능력 설정을 `SpawnSnapshot`에 복사해 공용 MonsterRoot가 적용한다. 일반 몬스터
 10종, 스킬 7종, 젬 6종, 일반 필드 최대 30초를 유지한다.
 
-유물 제거로 조각 드롭·지갑·구매·능력치 보정이 제거됐다. 진행도 저장 version은 4이며, 최초 v4 저장 전 기존 원문을 별도 PlayerPrefs 키에 백업한다.
+유물 런타임 제거로 조각 드롭·지갑·구매·능력치 보정이 빠져 있다. 진행도 저장 version은 4이며, 최초 v4 저장 전 기존 원문을 별도 PlayerPrefs 키에 백업한다.
 일반 강화·젬은 유지한다. Combat은 지급 후보만 반환하며 저장소를 수정하지 않는다.
 
 [최신 인수인계](current-state-handoff-v0.0.4.md)와 [계약·조회 API](contracts.md)를 함께 읽는다.

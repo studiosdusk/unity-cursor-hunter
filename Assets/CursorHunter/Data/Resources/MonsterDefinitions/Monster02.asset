@@ -17,8 +17,8 @@ MonoBehaviour:
   prefabKey: Bat/Bat_Cave
   visualPrefab: {fileID: 6229969659333629366, guid: 2d4fc260c7be94876974cedf7530353e, type: 3}
   baseStats:
-    maxHealth: 20
-    spawnIntervalSeconds: 1.3499999999999999
+    maxHealth: 30
+    spawnIntervalSeconds: 1.05
     packSize: 1
     moveSpeed: 0.45
     visualScale: 1

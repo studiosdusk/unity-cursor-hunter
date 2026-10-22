@@ -13,14 +13,16 @@ namespace CursorHunter.App.Tests
         {
             string[] gems = { "gem.garnet", "gem.topaz", "gem.amethyst", "gem.sapphire", "gem.diamond", "gem.dragon" };
             var data = new GameInformation {
-                schemaVersion = 3, balanceVersion = 3,
+                schemaVersion = 4, balanceVersion = 4,
                 stats = new StatInformation {
                     attackPower = 10, attackRadiusWorldUnits = 5, attackCooldownSeconds = .5f,
                     criticalChancePercent = 15, bossDamageMultiplier = 1, normalFieldDurationSeconds = 30
                 },
                 gemstones = new GemstoneInformation[6],
                 monsters = new MonsterInformation[10],
-                skills = new SkillInformation[1]
+                skills = new SkillInformation[1],
+                relics = new RelicInformation[20],
+                relicDropRules = new RelicDropRulesInformation()
             };
             for (int i = 0; i < gems.Length; i++)
                 data.gemstones[i] = new GemstoneInformation { id = gems[i], enabled = i == 0, amount = i == 0 ? long.MaxValue : 0 };
@@ -31,6 +33,35 @@ namespace CursorHunter.App.Tests
                     gemstoneId = gems[0], behaviorType = MonsterBehaviorType.None
                 };
             data.skills[0] = new SkillInformation { id = "skill.tornado", enabled = true };
+            string[] relicIds = {
+                "relic.red_potion", "relic.blue_potion", "relic.monster_meat",
+                "relic.thief_shoes", "relic.archers_bow", "relic.warrior_armor",
+                "relic.wizards_hat", "relic.valor_ring", "relic.lucky_dice",
+                "relic.kraken_eye", "relic.four_leaf_clover", "relic.ancient_book",
+                "relic.adventurers_bag", "relic.compass", "relic.megaphone",
+                "relic.telescope", "relic.stone", "relic.rainbow_feather",
+                "relic.scales_of_judgment", "relic.treasure_chest"
+            };
+            string[] effectIds = {
+                "cursorAttackDamagePercent", "autoSkillDamagePercent", "petDamagePercent",
+                "petMoveSpeedPercent", "petAttackIntervalReductionPercent",
+                "normalFieldDurationBonusSeconds", "areaSkillRadiusPercent",
+                "criticalDamageMultiplierBonus", "petDoubleDamageChancePercent",
+                "lowHealthExecuteChancePercent", "bonusGemDropChancePercent",
+                "petAttackRadiusPercent", "garnetKillRewardPercent",
+                "petDetectionRadiusPercent", "monsterSpawnIntervalReductionPercent",
+                "cursorAttackRadiusPercent", "fullHealthFirstHitDamagePercent",
+                "autoSkillCooldownReductionPercent", "bossDamagePercent",
+                "monsterKillRewardPercent"
+            };
+            for (int i = 0; i < data.relics.Length; i++)
+                data.relics[i] = new RelicInformation {
+                    id = relicIds[i], owned = false,
+                    sourceMonsterId = "monster." + (i / 2 + 1).ToString("00"),
+                    dropChancePercent = i % 2 == 0 ? 10f : 4f,
+                    effectId = effectIds[i], effectValue = 5f,
+                    effectValue2 = i == 9 ? 30f : 0f
+                };
             return data;
         }
 
@@ -46,6 +77,10 @@ namespace CursorHunter.App.Tests
             Assert.That(snapshot.Monsters[0].ProductionCount, Is.EqualTo(3));
             Assert.That(snapshot.Skills[0].SkillId, Is.EqualTo("skill.tornado"));
             Assert.That(snapshot.Skills[0].Unlocked, Is.True);
+            Assert.That(snapshot.Relics, Has.Count.EqualTo(20));
+            Assert.That(snapshot.Relics[0].Owned, Is.False);
+            Assert.That(snapshot.Relics[0].DropChancePercent, Is.EqualTo(10f));
+            Assert.That(snapshot.RelicDropRules.MaxPerKill, Is.EqualTo(1));
             Assert.That(snapshot.SourceJson, Is.EqualTo(json));
         }
 
@@ -56,12 +91,15 @@ namespace CursorHunter.App.Tests
             var captured = data.ToCombatSnapshot(GameInformationJson.Serialize(data));
             Assert.That(captured.Skills, Is.Not.InstanceOf<SkillCombatSnapshot[]>());
             Assert.That(captured.Monsters, Is.Not.InstanceOf<MonsterCombatSnapshot[]>());
+            Assert.That(captured.Relics, Is.Not.InstanceOf<RelicCombatSnapshot[]>());
             data.stats.attackPower = 999;
             data.monsters[0].productionCount = 8;
             data.skills[0].enabled = false;
+            data.relics[0].owned = true;
             Assert.That(captured.Combat.AttackPower, Is.EqualTo(10));
             Assert.That(captured.Monsters[0].ProductionCount, Is.EqualTo(3));
             Assert.That(captured.Skills[0].Unlocked, Is.True);
+            Assert.That(captured.Relics[0].Owned, Is.False);
         }
 
         [TestCase(31f)]
@@ -118,7 +156,8 @@ namespace CursorHunter.App.Tests
             var data = ValidInformation();
             string json = GameInformationJson.Serialize(data);
             Assert.That(json, Does.Contain("\"behaviorType\""));
-            Assert.That(json, Does.Not.Contain("relic"));
+            Assert.That(json, Does.Contain("\"relics\""));
+            Assert.That(json, Does.Contain("\"relicDropRules\""));
             var snapshot = data.ToCombatSnapshot(json);
             Assert.That(snapshot.Monsters[0].BehaviorType, Is.EqualTo(MonsterBehaviorType.None));
             var spawn = new SpawnSnapshot("monster.01", "Walker/Walker_Stump",
