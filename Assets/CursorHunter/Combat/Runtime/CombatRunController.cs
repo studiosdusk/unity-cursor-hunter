@@ -12,7 +12,7 @@ namespace CursorHunter.Combat
     /// </summary>
     [DefaultExecutionOrder(-100)]
     [DisallowMultipleComponent]
-    public sealed class CombatRunController : MonoBehaviour
+    public sealed partial class CombatRunController : MonoBehaviour
     {
         [SerializeField] private LayerMask enemyLayers = -1;
         [SerializeField, Min(32)] private int overlapBufferCapacity = 256;
@@ -39,6 +39,7 @@ namespace CursorHunter.Combat
             new Dictionary<string, IRunSkillController>(StringComparer.Ordinal);
         private SeededRandom _random;
         private float _elapsedSeconds;
+        private float _durationSeconds;
         private Vector2 _previousAttackCenter;
         private float _previousAttackRadius;
         private bool _hasPreviousAttackCenter;
@@ -70,7 +71,7 @@ namespace CursorHunter.Combat
         public float ElapsedSeconds => _elapsedSeconds;
         public float RemainingSeconds =>
             _isRunning
-                ? Mathf.Max(0f, _runRequest.DurationSeconds - _elapsedSeconds)
+                ? Mathf.Max(0f, _durationSeconds - _elapsedSeconds)
                 : 0f;
         public int DefeatedCount => _defeatedCount;
         public long GarnetEarned => _garnetEarned;
@@ -131,9 +132,9 @@ namespace CursorHunter.Combat
 
             _elapsedSeconds += deltaSeconds;
 
-            if (_elapsedSeconds >= _runRequest.DurationSeconds)
+            if (_elapsedSeconds >= _durationSeconds)
             {
-                _elapsedSeconds = _runRequest.DurationSeconds;
+                _elapsedSeconds = Mathf.Max(_elapsedSeconds - deltaSeconds, _durationSeconds);
                 _completionRequested = true;
                 CompletionRequested?.Invoke(RunEndReason.TimeExpired);
             }
@@ -198,6 +199,7 @@ namespace CursorHunter.Combat
             }
 
             _runRequest = request;
+            _durationSeconds = request.DurationSeconds;
             StopAllSkills();
             _random = new SeededRandom(request.Seed ^ 0xC17C17UL);
             _elapsedSeconds = 0f;
@@ -298,7 +300,7 @@ namespace CursorHunter.Combat
                 return false;
             }
 
-            if (_elapsedSeconds >= _runRequest.DurationSeconds)
+            if (_elapsedSeconds >= _durationSeconds)
             {
                 ResetAttackPath();
                 return false;
@@ -440,6 +442,14 @@ namespace CursorHunter.Combat
             for (int i = 0; i < _skillControllers.Count; i++)
             {
                 IRunSkillController controller = _skillControllers[i];
+                SkillBalanceSettings balance = FindSkillBalance(controller.Id);
+                if (balance != null && controller is ISkillBalanceController liveController)
+                {
+                    if (liveController.ApplyBalanceSettings(this, _runRequest.RunId,
+                        _runRequest.Seed, balance)) continue;
+                    StopAllSkills();
+                    return false;
+                }
                 if (!snapshots.TryGetValue(controller.Id, out SkillCombatSnapshot skill))
                     skill = new SkillCombatSnapshot(controller.Id, false);
                 if (!controller.IsAcquiredForRun(skill.Unlocked)) continue;
@@ -489,7 +499,7 @@ namespace CursorHunter.Combat
 
         public bool TryApplySkillDamage(RunId runId, ICombatTarget target, long rawDamage)
         {
-            return IsRunning && _elapsedSeconds < _runRequest.DurationSeconds &&
+            return IsRunning && _elapsedSeconds < _durationSeconds &&
                    runId == _runRequest.RunId && target != null &&
                    target.RunId == runId && target.IsActive && target.IsRegistered &&
                    rawDamage > 0L &&

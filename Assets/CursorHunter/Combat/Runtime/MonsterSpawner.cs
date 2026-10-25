@@ -30,9 +30,21 @@ namespace CursorHunter.Combat
         private SeededRandom _random;
         private IReadOnlyList<SpawnPlanEntry> _entries;
         private float[] _nextSpawnTimes;
+        private bool[] _enabledSpecies;
+        private SpawnPlan _currentSpawnPlan;
         [SerializeField, Min(1)] private int globalAliveLimit = 80;
         private bool _isSpawning;
         private bool _spawnFailureLogged;
+
+        public SpawnPlan CurrentSpawnPlan => _currentSpawnPlan;
+
+        public bool IsSpeciesEnabled(string monsterId)
+        {
+            if (_entries == null || _enabledSpecies == null) return false;
+            for (int index = 0; index < _entries.Count; index++)
+                if (_entries[index].Snapshot.MonsterId == monsterId) return _enabledSpecies[index];
+            return false;
+        }
 
         public int ActiveSpawnedCount
         {
@@ -106,6 +118,7 @@ namespace CursorHunter.Combat
             // Bounded work: at most one spawn opportunity per species per frame.
             for (int i = 0; i < _entries.Count; i++)
             {
+                if (!_enabledSpecies[i]) continue;
                 if (elapsedSeconds < _nextSpawnTimes[i]) continue;
                 _spawnSnapshot = _entries[i].Snapshot;
                 _spawnVisualPrefab = _entries[i].VisualPrefab;
@@ -121,6 +134,14 @@ namespace CursorHunter.Combat
         public SpawnStartResult StartRun(
             RunRequest request,
             SpawnPlan spawnPlan)
+        {
+            return StartRun(request, spawnPlan, null);
+        }
+
+        public SpawnStartResult StartRun(
+            RunRequest request,
+            SpawnPlan spawnPlan,
+            IReadOnlyList<string> enabledMonsterIds)
         {
             if (_isSpawning || _spawnedTargets.Count > 0)
             {
@@ -151,16 +172,21 @@ namespace CursorHunter.Combat
                     rootError);
             }
 
-            foreach (var entry in spawnPlan.Entries)
+            if (!TryValidatePlan(spawnPlan, enabledMonsterIds,
+                    out bool[] enabledSpecies, out string planError))
             {
-                if (!entry.HasValidSnapshot || !entry.HasVisualPrefab)
-                {
-                    return new SpawnStartResult(
-                        entry.HasVisualPrefab
-                            ? SpawnStartStatus.InvalidRequest
-                            : SpawnStartStatus.MissingPrefab,
-                        "Every spawn entry requires valid data and a species visual prefab.");
-                }
+                SpawnStartStatus status = SpawnStartStatus.InvalidRequest;
+                foreach (SpawnPlanEntry entry in spawnPlan.Entries)
+                    if (!entry.HasVisualPrefab) status = SpawnStartStatus.MissingPrefab;
+                return new SpawnStartResult(status, planError);
+            }
+            bool anyEnabled = false;
+            for (int index = 0; index < enabledSpecies.Length; index++)
+                anyEnabled |= enabledSpecies[index];
+            if (!anyEnabled)
+            {
+                return new SpawnStartResult(SpawnStartStatus.InvalidRequest,
+                    "At least one monster species must be enabled to start a run.");
             }
 
             if (combatRunController == null)
@@ -174,12 +200,16 @@ namespace CursorHunter.Combat
             _runId = request.RunId;
             globalAliveLimit = spawnPlan.GlobalAliveLimit;
             _entries = spawnPlan.Entries;
+            _currentSpawnPlan = spawnPlan;
+            _enabledSpecies = enabledSpecies;
             _nextSpawnTimes = new float[_entries.Count];
             _random = new SeededRandom(request.Seed);
             _spawnFailureLogged = false;
             _isSpawning = true;
             for (int i = 0; i < _entries.Count; i++)
             {
+                _nextSpawnTimes[i] = _entries[i].Snapshot.SpawnIntervalSeconds;
+                if (!_enabledSpecies[i]) continue;
                 _spawnSnapshot = _entries[i].Snapshot;
                 _spawnVisualPrefab = _entries[i].VisualPrefab;
                 if (!SpawnPack(out SpawnStartStatus failureStatus))
@@ -190,6 +220,153 @@ namespace CursorHunter.Combat
                 _nextSpawnTimes[i] = _spawnSnapshot.SpawnIntervalSeconds;
             }
             return new SpawnStartResult(SpawnStartStatus.Started, "All monster packs prepared.");
+        }
+
+        /// <summary>Applies the complete candidate plan without restarting or reseeding this run.</summary>
+        public bool TryApplyBalance(
+            SpawnPlan plan,
+            IReadOnlyList<string> enabledMonsterIds,
+            out string error)
+        {
+            if (!TryPrepareBalance(plan, enabledMonsterIds, out bool[] enabledSpecies,
+                    out Dictionary<string, int> candidateIndices, out Bounds[] bounds, out error))
+                return false;
+
+            float elapsed = combatRunController.ElapsedSeconds;
+            var nextSpawnTimes = new float[plan.Entries.Count];
+            for (int index = 0; index < plan.Entries.Count; index++)
+                nextSpawnTimes[index] = elapsed + plan.Entries[index].Snapshot.SpawnIntervalSeconds;
+            for (int previousIndex = 0; previousIndex < _entries.Count; previousIndex++)
+            {
+                int candidateIndex = candidateIndices[_entries[previousIndex].Snapshot.MonsterId];
+                if (!_enabledSpecies[previousIndex] || !enabledSpecies[candidateIndex]) continue;
+                float remainingRatio = Mathf.Clamp01(
+                    (_nextSpawnTimes[previousIndex] - elapsed) /
+                    _entries[previousIndex].Snapshot.SpawnIntervalSeconds);
+                nextSpawnTimes[candidateIndex] = elapsed + remainingRatio *
+                    plan.Entries[candidateIndex].Snapshot.SpawnIntervalSeconds;
+            }
+
+            // Validation has finished for every entry and body before any combat state changes.
+            foreach (MonsterCombatTarget target in _spawnedTargets)
+            {
+                if (target == null || target.IsDead) continue;
+                int index = candidateIndices[target.MonsterId];
+                target.TryApplyBalance(plan.Entries[index].Snapshot, bounds[index], out _);
+            }
+            globalAliveLimit = plan.GlobalAliveLimit;
+            _currentSpawnPlan = plan;
+            _entries = plan.Entries;
+            _enabledSpecies = enabledSpecies;
+            _nextSpawnTimes = nextSpawnTimes;
+            error = string.Empty;
+            return true;
+        }
+
+        public bool CanApplyBalance(
+            SpawnPlan plan,
+            IReadOnlyList<string> enabledMonsterIds,
+            out string error)
+        {
+            return TryPrepareBalance(plan, enabledMonsterIds, out _, out _, out _, out error);
+        }
+
+        private bool TryPrepareBalance(
+            SpawnPlan plan,
+            IReadOnlyList<string> enabledMonsterIds,
+            out bool[] enabledSpecies,
+            out Dictionary<string, int> candidateIndices,
+            out Bounds[] bounds,
+            out string error)
+        {
+            enabledSpecies = null;
+            candidateIndices = null;
+            bounds = null;
+            if (!_isSpawning || _entries == null || combatRunController == null ||
+                !combatRunController.IsRunActive)
+            {
+                error = "실행 중인 몬스터 전투가 없습니다.";
+                return false;
+            }
+            if (!TryValidatePlan(plan, enabledMonsterIds, out enabledSpecies, out error))
+                return false;
+
+            candidateIndices = new Dictionary<string, int>(System.StringComparer.Ordinal);
+            bounds = new Bounds[plan.Entries.Count];
+            for (int index = 0; index < plan.Entries.Count; index++)
+            {
+                SpawnSnapshot snapshot = plan.Entries[index].Snapshot;
+                candidateIndices.Add(snapshot.MonsterId, index);
+                if (!TryGetMovementBounds(snapshot, out bounds[index]))
+                {
+                    error = snapshot.MonsterId + ": 피격 영역이 전투 필드보다 크거나 카메라가 없습니다.";
+                    return false;
+                }
+            }
+            foreach (SpawnPlanEntry previousEntry in _entries)
+            {
+                if (!candidateIndices.ContainsKey(previousEntry.Snapshot.MonsterId))
+                {
+                    error = "기존 종을 삭제하지 말고 생성 사용 여부를 꺼 주세요.";
+                    return false;
+                }
+            }
+            foreach (MonsterCombatTarget target in _spawnedTargets)
+            {
+                if (target == null || target.IsDead) continue;
+                if (!candidateIndices.TryGetValue(target.MonsterId, out int candidateIndex))
+                {
+                    error = target.MonsterId + ": 현재 개체의 종이 생성 계획에 없습니다.";
+                    return false;
+                }
+                if (!target.CanApplyBalance(plan.Entries[candidateIndex].Snapshot, out error)) return false;
+            }
+
+            error = string.Empty;
+            return true;
+        }
+
+        private static bool TryValidatePlan(
+            SpawnPlan plan,
+            IReadOnlyList<string> enabledMonsterIds,
+            out bool[] enabledSpecies,
+            out string error)
+        {
+            enabledSpecies = null;
+            error = string.Empty;
+            if (plan == null || !plan.HasEntries)
+            {
+                error = "몬스터 생성 계획이 없습니다.";
+                return false;
+            }
+            var knownIds = new HashSet<string>(System.StringComparer.Ordinal);
+            foreach (SpawnPlanEntry entry in plan.Entries)
+            {
+                if (!entry.HasValidSnapshot || !entry.HasVisualPrefab ||
+                    !knownIds.Add(entry.Snapshot.MonsterId))
+                {
+                    error = "각 몬스터에는 고유 ID, 유효한 전투값과 외형 프리팹이 필요합니다.";
+                    return false;
+                }
+            }
+            HashSet<string> enabledIds = null;
+            if (enabledMonsterIds != null)
+            {
+                enabledIds = new HashSet<string>(System.StringComparer.Ordinal);
+                foreach (string id in enabledMonsterIds)
+                {
+                    if (string.IsNullOrWhiteSpace(id) || !knownIds.Contains(id) || !enabledIds.Add(id))
+                    {
+                        error = "생성 사용 목록에 알 수 없거나 중복된 몬스터 ID가 있습니다.";
+                        return false;
+                    }
+                }
+            }
+            enabledSpecies = new bool[plan.Entries.Count];
+            for (int index = 0; index < plan.Entries.Count; index++)
+                enabledSpecies[index] = enabledIds == null ||
+                    enabledIds.Contains(plan.Entries[index].Snapshot.MonsterId);
+            return true;
         }
 
         private bool HasValidMonsterRootPrefab(out string error)
@@ -242,6 +419,8 @@ namespace CursorHunter.Combat
             _spawnVisualPrefab = null;
             _entries = null;
             _nextSpawnTimes = null;
+            _enabledSpecies = null;
+            _currentSpawnPlan = null;
         }
 
         private bool SpawnPack(out SpawnStartStatus failureStatus)
@@ -502,6 +681,11 @@ namespace CursorHunter.Combat
 
         private bool TryGetMovementBounds(out Bounds movementBounds)
         {
+            return TryGetMovementBounds(_spawnSnapshot, out movementBounds);
+        }
+
+        private bool TryGetMovementBounds(SpawnSnapshot snapshot, out Bounds movementBounds)
+        {
             movementBounds = default;
             if (worldCamera == null)
             {
@@ -527,10 +711,10 @@ namespace CursorHunter.Combat
             float worldMaxX = Mathf.Max(bottomLeft.x, topRight.x);
             float worldMinY = Mathf.Min(bottomLeft.y, topRight.y);
             float worldMaxY = Mathf.Max(bottomLeft.y, topRight.y);
-            worldMinX += _spawnSnapshot.HitAreaWidth * 0.5f;
-            worldMaxX -= _spawnSnapshot.HitAreaWidth * 0.5f;
-            worldMinY += _spawnSnapshot.HitAreaHeight * 0.5f;
-            worldMaxY -= _spawnSnapshot.HitAreaHeight * 0.5f;
+            worldMinX += snapshot.HitAreaWidth * 0.5f;
+            worldMaxX -= snapshot.HitAreaWidth * 0.5f;
+            worldMinY += snapshot.HitAreaHeight * 0.5f;
+            worldMaxY -= snapshot.HitAreaHeight * 0.5f;
             if (worldMaxX <= worldMinX || worldMaxY <= worldMinY)
             {
                 return false;

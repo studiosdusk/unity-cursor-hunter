@@ -5,6 +5,8 @@
 
 ## Runtime trait screen
 
+현재 Main의 `HuntManager.Connect Trait Screen To Combat`는 꺼져 있다. 특성 화면과 구매·저장 기능은 유지하지만 실제 전투에는 특성 효과를 전달하지 않고 전투 보상을 받지 않는다. 아래의 전투 연동 설명은 이 옵션을 다시 켰을 때의 계약이다.
+
 `TraitScreenController`는 `Main.unity`의 특성 화면 표시와 입력을 담당한다. 게임 데이터와
 진행 설정 JSON의 모든 Stat·Skill·Monster 노드를 하나의 전체 화면 연구 보드에 섞어 표시한다.
 현재 스킬 보드에는 토네이도 해금 노드만 있다.

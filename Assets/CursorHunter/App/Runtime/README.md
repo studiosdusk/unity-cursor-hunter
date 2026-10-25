@@ -5,6 +5,8 @@
 
 ## 전투 스테이지 설정
 
+현재 `HuntManager > Connect Trait Screen To Combat`는 꺼져 있다. 전투는 특성 구매·저장 상태를 읽지 않고 Main 기본 스탯·기본 JSON·스킬 BaseStat·MonsterDefinition·Stage로 실행한다. Inspector의 스킬 시험 사용 토글과 밸런스 에디터는 계속 사용할 수 있다. 특성 화면은 유지하되 전투 보상 지급·전체 정보 팝업도 분리한다. 다시 연동할 때만 이 옵션을 켠다.
+
 `App/Stages/Stage01.asset`이 Main 씬 `HuntManager`의 `Default Stage`에 연결돼 있다.
 기존 전투 진입 버튼은 `BeginPrototypeRun()`을 호출하며 이 에셋의 설정으로 진입한다.
 스테이지를 추가하려면 `Cursor Hunter/Stages/Combat Stage` 에셋을 만들고
@@ -15,7 +17,7 @@
 이번 스테이지에 해당 종을 허용하며, 구매/저장 상태는 변경하지 않는다.
 `Production`의 `Base`, `Production2`, `Production3`, `Production4`는 몬스터 특성의
 생산 노드와 같은 1·2·3·4마리 단계다. `UsePlayerUpgrade`는 구매한 생산 단계를
-사용한다. 현재 모든 MonsterDefinition의 기본 PackSize는 1이다.
+사용한다. 특성 연동이 꺼져 있으면 `UsePlayerUpgrade`도 구매 보너스 없는 기본 생성 수를 사용한다. 현재 모든 MonsterDefinition의 기본 PackSize는 1이다.
 스테이지 설정은 런 시작 때 복사돼서 진행 중 인스펙터 변경에는 영향받지 않는다.
 
 ## 커서 스킨

@@ -97,6 +97,8 @@ namespace CursorHunter.Data
 
         [Header("Base stats")]
         [SerializeField] private MonsterBaseStats baseStats = new MonsterBaseStats();
+        [SerializeField, Tooltip("Base HP, movement speed, visual scale and hit area already contain their final combat values. Behavior profiles still select movement and abilities, but their stat multipliers are not applied again.")]
+        private bool baseStatsAreFinalValues;
 
         [Header("Composable behavior profiles")]
         [SerializeField] private MonsterBehaviorProfile[] behaviorProfiles =
@@ -108,6 +110,7 @@ namespace CursorHunter.Data
         public GameObject VisualPrefab => visualPrefab;
         public GameObject Prefab => VisualPrefab;
         public MonsterBaseStats BaseStats => baseStats;
+        public bool BaseStatsAreFinalValues => baseStatsAreFinalValues;
         public MonsterBehaviorProfile[] BehaviorProfiles => behaviorProfiles == null
             ? Array.Empty<MonsterBehaviorProfile>()
             : (MonsterBehaviorProfile[])behaviorProfiles.Clone();
@@ -212,7 +215,9 @@ namespace CursorHunter.Data
             return new SpawnSnapshot(
                 MonsterId,
                 PrefabKey,
-                ScaleHealth(stats.MaxHealth, healthMultiplier),
+                baseStatsAreFinalValues
+                    ? stats.MaxHealth
+                    : ScaleHealth(stats.MaxHealth, healthMultiplier),
                 stats.SpawnIntervalSeconds,
                 Math.Max(1, finalPackSize),
                 aliveLimit,
@@ -222,10 +227,10 @@ namespace CursorHunter.Data
                 stats.BonusDropChancePercent,
                 MonsterBehaviorType.None,
                 movementMode,
-                stats.MoveSpeed * moveSpeedMultiplier,
-                stats.VisualScale * visualScaleMultiplier,
-                stats.HitAreaWidth * hitAreaScaleMultiplier,
-                stats.HitAreaHeight * hitAreaScaleMultiplier,
+                baseStatsAreFinalValues ? stats.MoveSpeed : stats.MoveSpeed * moveSpeedMultiplier,
+                baseStatsAreFinalValues ? stats.VisualScale : stats.VisualScale * visualScaleMultiplier,
+                baseStatsAreFinalValues ? stats.HitAreaWidth : stats.HitAreaWidth * hitAreaScaleMultiplier,
+                baseStatsAreFinalValues ? stats.HitAreaHeight : stats.HitAreaHeight * hitAreaScaleMultiplier,
                 orbitRadius,
                 orbitAngularSpeedDegrees,
                 specialAbility,

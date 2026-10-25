@@ -1,7 +1,12 @@
 {
   "name": "CursorHunter.App.Editor",
   "rootNamespace": "CursorHunter.App.Editor",
-  "references": ["CursorHunter.App"],
+  "references": [
+    "CursorHunter.App",
+    "CursorHunter.Data",
+    "CursorHunter.Combat",
+    "CursorHunter.Contracts"
+  ],
   "includePlatforms": ["Editor"],
   "autoReferenced": false,
   "noEngineReferences": false

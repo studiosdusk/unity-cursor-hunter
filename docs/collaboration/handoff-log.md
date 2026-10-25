@@ -845,3 +845,52 @@
 
 - Main의 `MagicCircle1_Green`은 BabyDragon 자식으로 유지한다. 런 준비 때 고리에 별도 `SortingGroup`을 한 번 구성하고 `Sort At Root`를 켜서 Default Sorting Layer, Order -1로 고정한다. 따라서 0~199로 정렬되는 모든 몬스터 뒤에 표시된다. 펫 본체의 Y 기반 정렬과 위치 계산 최적화는 유지한다.
 - Main 인스턴스의 고리 참조를 명시적으로 연결했다. 격리 Unity 6000.3.13f1 프로젝트의 PlayMode 전체 19개, Python 데이터·협업 검사, `git diff --check`가 통과했다. 실제 Main 화면의 겹침 모양은 수동 확인이 필요하다.
+
+### 2026-10-25 · App/Combat — 기획자용 전투 밸런스 창
+
+- Main 씬에서 `Tools > Cursor Hunter > Combat Balance`로 여는 한글 에디터 창을 추가했다. 베이스·커서 공격·7종 스킬·10종 몬스터와 스폰을 직접 설정하며 입력값과 현재 적용값을 나란히 표시한다. 숫자는 Enter/포커스 해제로 확정하고 토글은 즉시 반영한다. 특성 노드·맵·구매·프리셋·원본 파일 반영 기능은 포함하지 않는다. 사용 규칙은 [전투 밸런스 창 설계](../combat-balance-editor-design.md)를 따른다.
+- App의 `CombatBalanceSettings`와 `HuntManager.Balance`가 테스트 최종값을 전달한다. 전투 시작 시 기존 진행도 증가량·Stage 편성·Inspector 획득 토글을 중복 적용하지 않는다. 전투 중에는 같은 runId·경과 시간·난수를 유지하고 스킬의 활성 효과, 기존 몬스터, 생성 일정을 갱신한다. HP는 남은 비율을 유지하며 이미 맞힌 대상·위치·행동 상태를 보존한다. 오류 입력은 사전 검증하여 직전 유효값을 유지한다.
+- `CombatRunController.Balance`, 스킬별 런타임 컨트롤러/효과, `MonsterBalanceSettings`, `MonsterSpawner`, `MonsterCombatTarget`, `MonsterBehaviorController`를 확장했다. Combat은 기존대로 Contracts만 참조한다. 씬·프리팹·공급사 에셋·기본 JSON은 변경하지 않았다.
+- `RunCoordinator`는 테스트 정산 정책을 Discard로 유지하고 HuntManager도 정산을 차단한다. 설정은 메모리와 Edit→Play 전환용 SessionState에만 보관한다. 전투/Play 종료 시 해제하며, 창 닫기·수동 설정 해제는 테스트를 종료하고 메인 메뉴로 복귀한다. 다른 전투 대상으로 이전 설정이 넘어가지 않게 정리한다.
+- Unity 6000.3.13f1 격리 복제본에서 전체 EditMode 127개, PlayMode 23개를 통과했다. Main에서 직접 공격력 적용·같은 전투 갱신·잘못된 변경 거부·보상 폐기·PlayerPrefs 불변·메인 메뉴 복귀를 검증했다. `validate_collaboration.py`, `validate_game_information.py`, `test_combat_information_v3.py` 8개 및 `git diff --check`도 통과했다. 실제 Game 뷰의 조작감과 창 배치는 수동 시각 검증이 남았다.
+
+### 2026-10-25 · App — 전투 밸런스 설정을 다음 전투에도 유지
+
+- 전투가 끝나면 테스트 설정을 자동 해제하던 정책을 수정했다. `HuntManager.Balance`는 완료·중도 종료·메인 메뉴 복귀 시 이번 런의 ID와 스킬 실행 연결만 정리하고, 마지막 유효 최종값을 다음 전투에 다시 전달한다. 전투 밖의 설정 캡처도 유지 중인 값의 복사본을 반환한다.
+- `CombatBalanceWindow`는 전투가 끝나도 소유권과 SessionState를 유지하며 ‘다음 전투에도 적용’ 상태를 표시한다. 수동 해제·창 닫기·Play 종료·대상 교체·Play 중 스크립트 재컴파일 시에는 설정을 해제한다. 원본 데이터·유저 저장 미변경과 테스트 보상 지급 차단은 유지한다.
+- Main PlayMode 회귀 테스트를 확장해 추가 편집 없이 완료 후 두 번째 전투, 메뉴 복귀 후 세 번째 전투를 시작하고 공격력·커서·스킬·몬스터 값과 저장 데이터 유지를 확인했다. Unity 6000.3.13f1 격리 복제본 PlayMode 전체 23개, 협업 정적 검사와 공백 검사를 통과했다.
+
+### 2026-10-25 · App/Data/Progression — 최종 설정 스탯 탭과 기본값 Save
+
+- 전투 밸런스 창에 다섯 번째 `최종 설정 스탯` 탭을 추가했다. 현재 테스트 수치 복사, 독립 최종안 편집, 저장된 기본값 비교·불러오기, `Save · 게임 기본값 저장`을 제공한다. 앞의 네 탭은 기존 실시간 테스트로 유지하며, 최종안 편집은 현재 전투를 변경하지 않는다. Play 종료·리로드에도 최종안을 보존한다.
+- `CombatBalanceBaseStore`가 전체 검증·파일 준비·외부 변경 확인 후 저장하며 실패 시 복구한다. `CombatBalanceSceneStore`는 선택한 씬의 PlayerCombatStatsDefaults·Hunt.durationSeconds·7종 스킬 BaseStat override만 패치한다. 런타임 오브젝트나 씬 전체를 저장하지 않고 다른 편집값·프리팹 참조·GUID를 유지한다. Play 종료 후 편집 씬의 저장한 필드만 다시 동기화한다.
+- 몬스터는 종별 Definition의 BaseStats에 최종 수치를 저장하고 `baseStatsAreFinalValues`를 켠다. HP는 Int64를 직접 사용하며 프로필의 수치 배율을 다시 곱하지 않는다. 기존 이동 모드·특수 능력·생산 보너스는 보존한다. `CombatBalanceInformationStore`는 영어 JSON의 공통 수치·상한·몬스터 표시값과 한국어 참고 문서·해시를 동기화한다. 스킬 사용/몬스터 생성 토글, 구매·해금·Stage 편성·지갑·노드는 수정하지 않는다.
+- Save 후 같은 Play 세션에서도 저장된 기본값을 읽도록 Hunt의 템플릿과 진행도 화면의 원본 전투 정보 캐시를 갱신한다. 구매 내역·지갑은 다시 로드하지 않는다. 테스트 override는 별도로 유지되므로 저장한 베이스로 일반 전투를 확인할 때는 테스트 설정을 해제한다.
+- Unity 6000.3.13f1 격리 복제본에서 EditMode 전체 151개·PlayMode 전체 23개가 통과했다. 임시 복제 원본의 저장·재import·Int64·HP 101·프로필 유지·비수치/가용 여부/업그레이드/생산 정책·GUID 보존, 잘못된 입력 및 외부 편집 전체 거부를 검증했다. 협업·게임 정보·한국어 참고 문서 정적 검사와 Python 테스트 12개 및 공백 검사를 통과했다. 구현 과정에서 실제 기본 데이터 파일의 수치는 바꾸지 않았다. 창의 수동 시각 확인은 별도 진행한다.
+
+### 2026-10-25 · App — 최종 스탯 조회의 Global Light 중복 오류 수정
+
+- Main이 열린 상태에서 기본값 조회용 OpenPreviewScene이 Main의 Global Light도 추가 등록하여 Default/Skill blend style 0 오류가 발생했다. 기존 경로에 회귀 테스트를 실행해 두 레이어의 동일 오류를 재현했다.
+- CombatBalanceSceneStore의 원본 씬 추가 로드를 제거했다. 새 CombatBalanceSceneSource가 YAML과 관련 프리팹 에셋의 숫자 및 Main 오버라이드만 읽는다. 검증에는 조명·카메라·시각 오브젝트·참조가 없는 비활성 임시 컴포넌트만 사용한다. 실행 씬 조명이나 로그 설정은 바꾸지 않는다. 원본값의 권위, Int64, 저장 패치와 Play 종료 후 동기화는 유지했다.
+- Default/Skill Global Light 활성 상태에서 조회·저장 준비·오류 입력 거부 후 조명 값·개체·씬 수·활성 씬·dirty 상태·파일 불변을 확인했다. Main 실제 전투 중에도 원본값만 읽고 같은 런 ID·경과 시간·실시간 공격력을 유지하며 중복 조명 로그가 없는지 검증했다.
+- Unity 6000.3.13f1 격리 프로젝트에서 EditMode 전체 153개·PlayMode 전체 24개 및 협업 정적 검사·공백 검사를 통과했다. 원본 씬과 조명 데이터는 수정하지 않았다.
+
+### 2026-10-25 · App — 전투 밸런스 창의 메뉴 계층 분리
+
+- 창 최상단에 `실시간 테스트`와 `최종 설정 스탯` 모드를 배치하고, 그 아래에 베이스·커서 공격·스킬·몬스터·스폰의 네 분류를 공통 하위 탭으로 배치했다. 최종 설정 내부의 중복 분류 드롭다운은 제거했다.
+- 모드별 선택 분류와 기존 편집값을 유지하며, 이전 다섯 번째 탭 선택 상태는 최종 모드로 이관한다. 실시간 적용과 Save의 데이터 처리 경로는 유지했다. 설계 문서와 사용 안내도 같은 계층으로 갱신했다.
+- Unity 6000.3.13f1 격리 프로젝트에서 App EditMode 테스트 96개와 협업 정적 검사·공백 검사를 통과했다. 실제 에디터 창의 수동 시각 검증은 수행하지 않았다.
+
+### 2026-10-25 · App — 커서 범위를 기본 크기 기준 배율로 편집
+
+- `CombatBalanceWindow`의 커서 공격 항목을 월드 반경 대신 `커서 범위 (배)`로 표시한다. 기존 기본 반경을 1로 보고 직접 입력하거나 −/+ 버튼으로 0.1배씩 조절한다. 버튼 조절은 소수점 네 자리로 정리하며 최소 0.01배를 유지한다.
+- 실시간 테스트와 최종 설정의 입력값·비교값에 같은 고정 기준 `GameInformation.BaseAttackRadiusWorldUnits`를 사용한다. Save로 기본 반경이 바뀌어도 표시 기준은 바뀌지 않는다. 실제 변경 때만 월드 반경으로 변환하므로 화면 갱신만으로 값이 변하지 않는다. 전투·씬·JSON 저장 형식은 유지했다.
+- Unity 6000.3.13f1 격리 프로젝트에서 App EditMode 테스트 96개와 협업 정적 검사·공백 검사를 통과했다. 실제 에디터 버튼 조작의 수동 시각 검증은 수행하지 않았다.
+
+### 2026-10-25 · App — TraitScreen_Runtime과 실제 전투의 임시 연동 해제
+
+- `TraitScreen_Runtime`을 만드는 `TraitScreenController`가 구매한 커서 보너스·전투 시간·스킬 해금/강화·몬스터 해금/생산 보너스를 Hunt에 전달하고, 전투 보상을 지갑에 저장하며 HUD 정보창도 제공하고 있음을 확인했다. 단순 씬 참조 제거는 자동 탐색으로 복구되므로 사용하지 않았다.
+- `HuntManager.Connect Trait Screen To Combat`를 추가하고 Main에서 명시적으로 껐다. 이 상태의 정상 전투는 특성 컨트롤러 없이 원본 전투 JSON·Main PlayerCombatStatsDefaults·스킬 BaseStat·MonsterDefinition·Stage로 구성한다. `RunCoordinator`에는 커서 보너스 없이 스킬 스냅샷을 전달하는 경로를 추가했다. Stage의 명시적 편성·생산 옵션, Inspector 스킬 시험 토글, 밸런스 에디터의 실시간 적용과 Save는 유지한다.
+- 보상 지급·저장, 기본값/런 정보의 특성 화면 전달, 특성 정보 팝업과 팝업 일시정지 연결을 차단했다. HUD는 특성 버튼을 만들지 않거나 숨기고 직접 호출도 무시한다. 특성 화면·구매·저장 데이터는 삭제하지 않는다. 연동 옵션을 다시 켜면 기존 경로를 사용할 수 있으며, 같은 Play 세션에서 다시 꺼도 강화된 전투 시간이 기본값에 남지 않게 런 시간을 별도 변수로 유지한다.
+- Main PlayMode 회귀 4개를 추가했다. 실제 전체 노드 구매와 빈 구매, 연결 후 재해제, Stage의 종별 PackSize, Main 기본 공격력, 스킬 시험 토글의 BaseStat, 특성 컴포넌트 부재, 실제 처치 Eligible 보상에 대한 지갑/PlayerPrefs 불변, HUD 직접 호출 차단을 검증한다.
+- Unity 6000.3.13f1 격리 프로젝트에서 EditMode 전체 153개와 최종 PlayMode 전체 28개를 통과했다. 게임 정보·협업 정적 검사, Python 전투 정보 테스트 8개, 공백 검사도 통과했다. 실제 사용자 저장을 변경하지 않았으며 수동 Game 뷰 조작 검증은 수행하지 않았다.

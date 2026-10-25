@@ -123,6 +123,21 @@ namespace CursorHunter.Combat
             }
         }
 
+        internal void RefreshBalance(float now, LaserRuntimeStat previous,
+            LaserRuntimeStat next, Rect fieldBounds)
+        {
+            if (!_active) return;
+            _returnAt = SkillBalanceMath.Retime(_returnAt, now,
+                previous.EffectDurationSeconds, next.EffectDurationSeconds);
+            float fieldScale = fieldBounds.height / referenceFieldHeightWorldUnits;
+            hitbox.size = new Vector2(
+                _baseHitboxSize.x * next.SizeMultiplier * fieldScale, fieldBounds.height);
+            visualAnchor.localScale = new Vector3(
+                _baseVisualScale.x * next.SizeMultiplier * fieldScale * visualWidthMultiplier,
+                _baseVisualScale.y * fieldScale * visualHeightMultiplier,
+                _baseVisualScale.z);
+        }
+
         internal void ReturnToPool()
         {
             _active = false;

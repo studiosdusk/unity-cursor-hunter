@@ -7,7 +7,7 @@ namespace CursorHunter.Combat
 {
     [DefaultExecutionOrder(1000)]
     [DisallowMultipleComponent]
-    public sealed class ThunderSkillController : MonoBehaviour, IRunSkillController
+    public sealed class ThunderSkillController : MonoBehaviour, IRunSkillController, ISkillBalanceController
     {
         public const string SkillId = "skill.thunder";
 
@@ -51,6 +51,10 @@ namespace CursorHunter.Combat
         private float _nextCastAt;
         private ThunderRuntimeStat _runtime;
         private bool _configured;
+        private SkillBalanceSettings _balance;
+        private SeededRandom _balanceRandom;
+        private RunId _balanceRandomRun;
+        private bool _hasCast;
         private bool _visualsPaused;
         private bool _poolWarningLogged;
 
@@ -58,6 +62,7 @@ namespace CursorHunter.Combat
         public int PooledEffectCount => _active.Count + _free.Count;
 
         internal bool IsAcquiredForRun(bool savedAcquired) =>
+            _balance != null ? _balance.Enabled :
             savedAcquired || Application.isEditor && editorSkillAcquired;
 
         internal bool ConfigureForRun(CombatRunController combat, RunId runId,
@@ -72,16 +77,17 @@ namespace CursorHunter.Combat
             _combat = combat;
             _runId = runId;
             _random = new SeededRandom(seed ^ 0x5448554E444552UL);
-            _runtime = new ThunderRuntimeStat(baseStat, skill,
+            if (_balance != null) skill = default;
+            _runtime = new ThunderRuntimeStat(BalanceBasis, skill,
                 combat.CombatSnapshot.AttackPower);
+            _hasCast = false;
             _nextCastAt = combat.ElapsedSeconds + _runtime.FirstCastDelaySeconds;
             _configured = true;
             _visualsPaused = false;
             _poolWarningLogged = false;
 
-            int needed = Mathf.Clamp(Mathf.CeilToInt(
-                _runtime.EffectDurationSeconds / _runtime.CooldownSeconds) + 1,
-                1, Mathf.Max(1, maximumPooledEffects));
+            int needed = SkillBalanceMath.PoolNeed(_runtime.EffectDurationSeconds,
+                _runtime.CooldownSeconds, maximumPooledEffects);
             while (PooledEffectCount < needed)
             {
                 ThunderEffect instance = Instantiate(effectPrefab, transform);
@@ -154,6 +160,7 @@ namespace CursorHunter.Combat
                 _runtime.EffectDurationSeconds);
             _active.Add(next);
             _nextCastAt = now + _runtime.CooldownSeconds;
+            _hasCast = true;
         }
 
         internal bool IsCurrentRun(RunId runId) =>
@@ -168,6 +175,91 @@ namespace CursorHunter.Combat
                 return;
 
             _combat.TryApplySkillDamage(runId, target, _runtime.Damage);
+        }
+
+        private ThunderBaseStat BalanceBasis => _balance == null ? baseStat :
+            SkillBalanceMath.Read<ThunderBaseStat>(_balance);
+
+        public SkillBalanceSettings CaptureBalanceSettings() =>
+            SkillBalanceMath.Capture(SkillId, _balance != null ? _balance.Enabled :
+                _configured || Application.isEditor && editorSkillAcquired,
+                BalanceBasis, _runtime, _configured);
+
+        public bool ValidateBalanceSettings(SkillBalanceSettings settings, out string error)
+        {
+            if (!SkillBalanceMath.Validate(settings, CaptureBalanceSettings(), out error))
+                return false;
+            ThunderBaseStat value = SkillBalanceMath.Read<ThunderBaseStat>(settings);
+            if (value.EffectDurationSeconds < value.ImpactDelaySeconds + 0.01f)
+            {
+                error = "효과 지속 시간은 낙뢰 대기 시간보다 0.01초 이상 길어야 합니다.";
+                return false;
+            }
+            if (settings.Enabled && (effectPrefab == null))
+            {
+                error = "스킬 프리팹·카메라·전투 참조를 확인하세요.";
+                return false;
+            }
+            return true;
+        }
+
+        public bool ApplyBalanceSettings(CombatRunController combat, RunId runId,
+            ulong seed, SkillBalanceSettings settings)
+        {
+            if (combat == null || !runId.IsValid ||
+                !ValidateBalanceSettings(settings, out _)) return false;
+            SkillBalanceSettings next = settings.Clone();
+            if (!next.Enabled)
+            {
+                if (_configured && _runId == runId)
+                {
+                    _balanceRandom = _random;
+                    _balanceRandomRun = runId;
+                }
+                StopSkill();
+                _balance = next;
+                return true;
+            }
+            if (!_configured || _combat != combat || _runId != runId)
+            {
+                SkillBalanceSettings previousSettings = _balance;
+                _balance = next;
+                if (ConfigureForRun(combat, runId, seed))
+                {
+                    if (_balanceRandomRun == runId && _balanceRandom != null)
+                        _random = _balanceRandom;
+                    return true;
+                }
+                _balance = previousSettings;
+                return false;
+            }
+
+            ThunderRuntimeStat previous = _runtime;
+            _balance = next;
+            _runtime = new ThunderRuntimeStat(BalanceBasis, default,
+                combat.CombatSnapshot.AttackPower);
+            float now = combat.ElapsedSeconds;
+            _nextCastAt = SkillBalanceMath.Retime(_nextCastAt, now,
+                _hasCast ? previous.CooldownSeconds : previous.FirstCastDelaySeconds,
+                _hasCast ? _runtime.CooldownSeconds : _runtime.FirstCastDelaySeconds);
+            for (int i = 0; i < _active.Count; i++)
+                if (_active[i] != null) _active[i].RefreshBalance(now, previous, _runtime);
+            int needed = SkillBalanceMath.PoolNeed(_runtime.EffectDurationSeconds,
+                _runtime.CooldownSeconds, maximumPooledEffects);
+            while (PooledEffectCount < needed)
+            {
+                ThunderEffect instance = Instantiate(effectPrefab, transform);
+                instance.ReturnToPool();
+                _free.Push(instance);
+            }
+            return true;
+        }
+
+        public void ClearBalanceSettings()
+        {
+            _balance = null;
+            _balanceRandom = null;
+            _balanceRandomRun = default;
         }
 
         internal void StopSkill()

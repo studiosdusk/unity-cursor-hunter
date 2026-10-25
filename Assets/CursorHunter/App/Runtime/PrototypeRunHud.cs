@@ -24,9 +24,23 @@ namespace CursorHunter.App
         private GameObject _resultPanel;
         private TextMeshProUGUI _resultText;
         private TMP_FontAsset _runtimeFont;
+        private bool _traitConnectionEnabled;
+
+        public void SetTraitConnectionEnabled(bool enabled)
+        {
+            _traitConnectionEnabled = enabled;
+            if (_progressionInfoButton != null)
+            {
+                bool showingRun = _timerText != null && _timerText.gameObject.activeSelf;
+                bool showingResult = _resultPanel != null && _resultPanel.activeSelf;
+                _progressionInfoButton.gameObject.SetActive(enabled && (showingRun || showingResult));
+            }
+        }
 
         public void Initialize()
         {
+            if (!_traitConnectionEnabled && _progressionInfoButton != null)
+                _progressionInfoButton.gameObject.SetActive(false);
             if (canvas == null)
             {
                 GameObject canvasObject = GameObject.Find("UICanvas");
@@ -47,7 +61,7 @@ namespace CursorHunter.App
                 return;
             }
 
-            if (progressionController == null)
+            if (_traitConnectionEnabled && progressionController == null)
             {
                 progressionController = FindFirstObjectByType<TraitScreenController>(
                     FindObjectsInactive.Include);
@@ -77,7 +91,7 @@ namespace CursorHunter.App
                 _resultPanel = CreateResultPanel();
             }
 
-            if (_progressionInfoButton == null)
+            if (_traitConnectionEnabled && _progressionInfoButton == null)
             {
                 _progressionInfoButton = CreateProgressionInfoButton();
             }
@@ -87,7 +101,7 @@ namespace CursorHunter.App
 
         public void ShowRunning(float remainingSeconds, int defeatedCount, long garnetEarned)
         {
-            if (_timerText == null)
+            if (_timerText == null || _traitConnectionEnabled && _progressionInfoButton == null)
             {
                 Initialize();
             }
@@ -104,7 +118,7 @@ namespace CursorHunter.App
 
             if (_progressionInfoButton != null)
             {
-                _progressionInfoButton.gameObject.SetActive(true);
+                _progressionInfoButton.gameObject.SetActive(_traitConnectionEnabled);
             }
 
             if (_resultPanel != null)
@@ -116,7 +130,7 @@ namespace CursorHunter.App
 
         public void ShowResult(RunResult result)
         {
-            if (_resultPanel == null)
+            if (_resultPanel == null || _traitConnectionEnabled && _progressionInfoButton == null)
             {
                 Initialize();
             }
@@ -178,7 +192,7 @@ namespace CursorHunter.App
 
             if (_progressionInfoButton != null)
             {
-                _progressionInfoButton.gameObject.SetActive(true);
+                _progressionInfoButton.gameObject.SetActive(_traitConnectionEnabled);
             }
         }
 
@@ -189,6 +203,7 @@ namespace CursorHunter.App
         /// </summary>
         public void ShowProgressionInfo()
         {
+            if (!_traitConnectionEnabled) return;
             if (progressionController == null)
             {
                 progressionController = FindFirstObjectByType<TraitScreenController>(

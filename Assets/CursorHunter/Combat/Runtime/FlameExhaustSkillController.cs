@@ -7,7 +7,7 @@ namespace CursorHunter.Combat
 {
     [DefaultExecutionOrder(1000)]
     [DisallowMultipleComponent]
-    public sealed class FlameExhaustSkillController : MonoBehaviour, IRunSkillController
+    public sealed class FlameExhaustSkillController : MonoBehaviour, IRunSkillController, ISkillBalanceController
     {
         public const string SkillId = "skill.flame_exhaust";
 
@@ -66,10 +66,15 @@ namespace CursorHunter.Combat
         private float _nextCastAt;
         private FlameExhaustRuntimeStat _runtime;
         private bool _configured;
+        private SkillBalanceSettings _balance;
+        private SeededRandom _balanceRandom;
+        private RunId _balanceRandomRun;
+        private bool _hasCast;
         private bool _visualsPaused;
         private bool _poolWarningLogged;
         private bool _hitEffectPoolWarningLogged;
         private bool _hitEffectPoolStarved;
+        private bool _refreshProjectileGeometry;
 
         public int ActiveProjectileCount => _activeProjectiles.Count;
         public int ActiveHitEffectCount => _activeHitEffects.Count;
@@ -77,6 +82,7 @@ namespace CursorHunter.Combat
             _activeHitEffects.Count + _freeHitEffects.Count;
 
         internal bool IsAcquiredForRun(bool savedAcquired) =>
+            _balance != null ? _balance.Enabled :
             savedAcquired || Application.isEditor && editorSkillAcquired;
 
         internal bool ConfigureForRun(CombatRunController combat, RunId runId,
@@ -93,8 +99,10 @@ namespace CursorHunter.Combat
             _combat = combat;
             _runId = runId;
             _random = new SeededRandom(seed ^ 0x464C414D45584UL);
-            _runtime = new FlameExhaustRuntimeStat(baseStat, skill,
+            if (_balance != null) skill = default;
+            _runtime = new FlameExhaustRuntimeStat(BalanceBasis, skill,
                 combat.CombatSnapshot.AttackPower);
+            _hasCast = false;
             _nextCastAt = combat.ElapsedSeconds + _runtime.FirstCastDelaySeconds;
             _enemyFilter = new ContactFilter2D
             {
@@ -108,10 +116,8 @@ namespace CursorHunter.Combat
             _hitEffectPoolWarningLogged = false;
             _hitEffectPoolStarved = false;
 
-            int needed = Mathf.Clamp(
-                Mathf.CeilToInt(_runtime.ProjectileDurationSeconds /
-                    _runtime.CooldownSeconds) + 1,
-                1, Mathf.Max(1, maximumPooledProjectiles));
+            int needed = SkillBalanceMath.PoolNeed(_runtime.ProjectileDurationSeconds,
+                _runtime.CooldownSeconds, maximumPooledProjectiles);
             while (_activeProjectiles.Count + _freeProjectiles.Count < needed)
             {
                 FlameExhaustProjectile instance = Instantiate(projectilePrefab, transform);
@@ -141,6 +147,18 @@ namespace CursorHunter.Combat
             {
                 StopSkill();
                 return;
+            }
+
+            if (_refreshProjectileGeometry)
+            {
+                // App synchronizes the cursor collider earlier in LateUpdate.
+                // A simultaneous cursor-radius edit must also resize existing copies.
+                _refreshProjectileGeometry = false;
+                Physics2D.SyncTransforms();
+                for (int i = 0; i < _activeProjectiles.Count; i++)
+                    _activeProjectiles[i].RefreshGeometry(sourceCursorHitArea,
+                        sourceCursorVisual, _runtime.CursorSizeRatio,
+                        _runtime.HitRadiusMultiplier);
             }
 
             if (_combat.IsPaused)
@@ -219,6 +237,7 @@ namespace CursorHunter.Combat
             _activeProjectiles.Add(next);
             next.Tick(now, _enemyFilter);
             _nextCastAt = now + _runtime.CooldownSeconds;
+            _hasCast = true;
         }
 
         internal bool IsCurrentRun(RunId runId) =>
@@ -259,6 +278,90 @@ namespace CursorHunter.Combat
             return true;
         }
 
+        private FlameExhaustBaseStat BalanceBasis => _balance == null ? baseStat :
+            SkillBalanceMath.Read<FlameExhaustBaseStat>(_balance);
+
+        public SkillBalanceSettings CaptureBalanceSettings() =>
+            SkillBalanceMath.Capture(SkillId, _balance != null ? _balance.Enabled :
+                _configured || Application.isEditor && editorSkillAcquired,
+                BalanceBasis, _runtime, _configured);
+
+        public bool ValidateBalanceSettings(SkillBalanceSettings settings, out string error)
+        {
+            if (!SkillBalanceMath.Validate(settings, CaptureBalanceSettings(), out error))
+                return false;
+            if (settings.Enabled && (projectilePrefab == null || hitEffectPrefab == null || !projectilePrefab.HasVisualAndHitArea || sourceCursorHitArea == null || sourceCursorVisual == null))
+            {
+                error = "스킬 프리팹·카메라·전투 참조를 확인하세요.";
+                return false;
+            }
+            return true;
+        }
+
+        public bool ApplyBalanceSettings(CombatRunController combat, RunId runId,
+            ulong seed, SkillBalanceSettings settings)
+        {
+            if (combat == null || !runId.IsValid ||
+                !ValidateBalanceSettings(settings, out _)) return false;
+            SkillBalanceSettings next = settings.Clone();
+            if (!next.Enabled)
+            {
+                if (_configured && _runId == runId)
+                {
+                    _balanceRandom = _random;
+                    _balanceRandomRun = runId;
+                }
+                StopSkill();
+                _balance = next;
+                return true;
+            }
+            if (!_configured || _combat != combat || _runId != runId)
+            {
+                SkillBalanceSettings previousSettings = _balance;
+                _balance = next;
+                if (ConfigureForRun(combat, runId, seed))
+                {
+                    if (_balanceRandomRun == runId && _balanceRandom != null)
+                        _random = _balanceRandom;
+                    return true;
+                }
+                _balance = previousSettings;
+                return false;
+            }
+
+            FlameExhaustRuntimeStat previous = _runtime;
+            _balance = next;
+            _runtime = new FlameExhaustRuntimeStat(BalanceBasis, default,
+                combat.CombatSnapshot.AttackPower);
+            float now = combat.ElapsedSeconds;
+            _nextCastAt = SkillBalanceMath.Retime(_nextCastAt, now,
+                _hasCast ? previous.CooldownSeconds : previous.FirstCastDelaySeconds,
+                _hasCast ? _runtime.CooldownSeconds : _runtime.FirstCastDelaySeconds);
+            for (int i = 0; i < _activeProjectiles.Count; i++)
+                _activeProjectiles[i].RefreshBalance(now, previous, _runtime,
+                    sourceCursorHitArea, sourceCursorVisual);
+            _refreshProjectileGeometry = true;
+            for (int i = 0; i < _activeHitEffects.Count; i++)
+                _activeHitEffects[i].RefreshBalance(now,
+                    previous.HitEffectDurationSeconds, _runtime.HitEffectDurationSeconds);
+            int needed = SkillBalanceMath.PoolNeed(_runtime.ProjectileDurationSeconds,
+                _runtime.CooldownSeconds, maximumPooledProjectiles);
+            while (_activeProjectiles.Count + _freeProjectiles.Count < needed)
+            {
+                FlameExhaustProjectile instance = Instantiate(projectilePrefab, transform);
+                instance.ReturnToPool();
+                _freeProjectiles.Push(instance);
+            }
+            return true;
+        }
+
+        public void ClearBalanceSettings()
+        {
+            _balance = null;
+            _balanceRandom = null;
+            _balanceRandomRun = default;
+        }
+
         internal void StopSkill()
         {
             for (int i = 0; i < _activeProjectiles.Count; i++)
@@ -280,6 +383,7 @@ namespace CursorHunter.Combat
             _configured = false;
             _visualsPaused = false;
             _hitEffectPoolStarved = false;
+            _refreshProjectileGeometry = false;
         }
 
         private void OnDisable() => StopSkill();

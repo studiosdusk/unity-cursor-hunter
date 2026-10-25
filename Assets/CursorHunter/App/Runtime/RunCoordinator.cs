@@ -17,6 +17,7 @@ namespace CursorHunter.App
         private readonly RunIdRegistry _runIdRegistry = new RunIdRegistry();
         private RunSession _session;
         private bool _disposed;
+        private bool _discardRewards;
 
         public RunCoordinator(
             CombatRunController combatRunController,
@@ -43,6 +44,21 @@ namespace CursorHunter.App
 
         public RunSession Session => _session;
 
+        public bool MarkAsBalanceTest()
+        {
+            if (!IsActive) return false;
+            _discardRewards = true;
+            return true;
+        }
+
+        public bool StartBalanceTest(RunRequest request, CombatSnapshot combatSnapshot,
+            SpawnPlan spawnPlan, IReadOnlyList<string> enabledMonsterIds,
+            out string failureReason)
+        {
+            return StartInternal(request, combatSnapshot, null, null, spawnPlan,
+                out failureReason, enabledMonsterIds, true);
+        }
+
         public bool Start(
             RunRequest request,
             CombatSnapshot combatSnapshot,
@@ -56,6 +72,17 @@ namespace CursorHunter.App
                 null,
                 spawnPlan,
                 out failureReason);
+        }
+
+        public bool Start(
+            RunRequest request,
+            CombatSnapshot combatSnapshot,
+            IReadOnlyList<SkillCombatSnapshot> skills,
+            SpawnPlan spawnPlan,
+            out string failureReason)
+        {
+            return StartInternal(request, combatSnapshot, null, skills,
+                spawnPlan, out failureReason);
         }
 
         public bool Start(
@@ -92,7 +119,9 @@ namespace CursorHunter.App
             CursorCombatStatBonusesSnapshot? cursorStatBonuses,
             IReadOnlyList<SkillCombatSnapshot> skills,
             SpawnPlan spawnPlan,
-            out string failureReason)
+            out string failureReason,
+            IReadOnlyList<string> enabledMonsterIds = null,
+            bool discardRewards = false)
         {
             failureReason = string.Empty;
 
@@ -124,6 +153,7 @@ namespace CursorHunter.App
 
             RunSession session = new RunSession();
             _session = session;
+            _discardRewards = discardRewards;
 
             if (!session.Start(request))
             {
@@ -167,7 +197,7 @@ namespace CursorHunter.App
                 }
 
                 SpawnStartResult spawnStartResult =
-                    _monsterSpawner.StartRun(request, spawnPlan);
+                    _monsterSpawner.StartRun(request, spawnPlan, enabledMonsterIds);
                 if (!spawnStartResult.Succeeded)
                 {
                     return FailStart(
@@ -223,6 +253,7 @@ namespace CursorHunter.App
             RunEndReason endReason,
             RunSettlementPolicy settlementPolicy)
         {
+            if (_discardRewards) settlementPolicy = RunSettlementPolicy.Discard;
             if (_disposed || _session == null || !_session.IsActive)
             {
                 return false;
@@ -292,6 +323,7 @@ namespace CursorHunter.App
             RunEndReason endReason,
             RunSettlementPolicy settlementPolicy)
         {
+            if (_discardRewards) settlementPolicy = RunSettlementPolicy.Discard;
             if (_disposed || _session == null || !_session.IsActive)
             {
                 return false;

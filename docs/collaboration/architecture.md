@@ -38,6 +38,8 @@ App이 Data/Progression에서 런 입력을 만들어 Combat에 전달한다. Pr
 - 일반 몬스터는 공용 `Combat/Prefabs/Monsters/MonsterRoot.prefab`을 사용한다. 종별
   `MonsterDefinition`이 Base 스탯·드랍·외형 참조를 가지고, 재사용 가능한
   `MonsterBehaviorProfile` 목록을 Base 위에 합성해 런 스냅샷으로 복사한다.
+  전투 밸런스 창에서 최종 기본값을 저장한 Definition은 `baseStatsAreFinalValues`를 켜서
+  수치 배율을 중복 적용하지 않는다. 프로필의 이동 모드와 특수 능력은 계속 합성한다.
 - HP/보상은 전투 프리팹에 저장하지 않는다. 전투는 App이 만든 `SpawnSnapshot`만 사용한다.
 - 데이터는 하나의 거대한 GameData.asset에 몰지 않는다. ID는 파일명/표시명/enum 순서와 독립적으로 고정한다.
 - Addressables, DI 프레임워크, 공용 전역 이벤트 버스는 현 단계에 추가하지 않는다.
@@ -45,6 +47,8 @@ App이 Data/Progression에서 런 입력을 만들어 Combat에 전달한다. Pr
 이 구조는 텍스트 코드 충돌과 씬 동시 편집을 줄인다. 계약/통합 작업이 사용자에게 몰리는 비용이 있으며, 공통 파일 충돌을 완전히 없애지는 못한다.
 
 ## 현재 통합 경로 — 전투 정보 v3 (2026-10-01)
+
+2026-10-25 현재 Main은 `HuntManager.connectTraitScreenToCombat = false`로 특성 화면과 전투를 분리했다. 전투 입력은 특성 컨트롤러를 호출하지 않고 원본 전투 JSON과 Main 기본값에서 만든다. Stage 편성·명시적 생성 수와 Inspector의 스킬 시험 토글·밸런스 에디터는 유지한다. 특성 보너스·해금·강화·생산량, 보상 지급·저장, 특성 정보 팝업·팝업 일시정지 연결은 차단한다. 아래는 연동을 다시 켰을 때의 기존 계약이다.
 
 GameDataDocument.Load는 두 영어 리소스를 읽는다. Main 씬의
 `PlayerCombatStatsDefaults` 컴포넌트는 커서 핵심 스탯의 공통 기본값을 별도로 소유한다.
