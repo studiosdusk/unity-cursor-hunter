@@ -204,6 +204,23 @@ namespace CursorHunter.Combat
             }
         }
 
+        internal void RefreshBalance(float now, float previousHitCooldown,
+            float nextHitCooldown, float sizeMultiplier)
+        {
+            if (!_active) return;
+            transform.localScale = _baseScale * sizeMultiplier;
+            // Keep contact history and the same ball; only move its future hit deadlines.
+            var targets = new List<MonsterCombatTarget>(_lastHitAt.Keys);
+            for (int i = 0; i < targets.Count; i++)
+            {
+                MonsterCombatTarget target = targets[i];
+                float nextAllowed = SkillBalanceMath.Retime(
+                    _lastHitAt[target] + previousHitCooldown, now,
+                    previousHitCooldown, nextHitCooldown);
+                _lastHitAt[target] = nextAllowed - nextHitCooldown;
+            }
+        }
+
         internal void ReturnToPool()
         {
             _active = false;

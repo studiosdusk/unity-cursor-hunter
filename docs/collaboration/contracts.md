@@ -2,6 +2,8 @@
 
 ## 전투에 필요한 현재 정보만 전달한다
 
+현재 Main은 `HuntManager.Connect Trait Screen To Combat`를 끈 상태다. 특성 컨트롤러를 읽지 않고 전투 원본 JSON·Main 기본 스탯·스킬 BaseStat·MonsterDefinition·Stage만 사용한다. 별도 커서 보너스와 스킬 강화는 전달하지 않으며, 특성 해금·생산 보너스·지갑 지급·HUD 특성 정보창도 전투와 분리한다. 구매·저장 데이터는 유지한다. 아래 특성 합산 계약은 연동을 다시 켰을 때 적용한다.
+
 [game-data.en.json](../../Assets/CursorHunter/Data/Resources/GameData/game-data.en.json)은 GameInformation 구조와 비전투 초기값이다.
 Main 씬의 `PlayerCombatStatsDefaults` 컴포넌트가 커서 핵심 스탯의 공통 기본값이다.
 성장 화면은 [progression-config.en.json](../../Assets/CursorHunter/Data/Resources/GameData/progression-config.en.json)의 비용/선행 조건/증가량과 플레이어 구매/지갑을 사용한다.
@@ -81,7 +83,7 @@ MonsterDefinition.BaseStats
 
 아래 controller는 현재 CombatRunController, snapshot은 App이 캡처한 ProgressionCombatSnapshot이다.
 전역 변수나 새로 추가한 전체 데이터 getter를 뜻하지 않는다.
-HuntManager.BeginPrototypeRun이 전체 정보와 커서 증가량 스냅샷을 만들고,
+특성 연동을 켰을 때 HuntManager.BeginPrototypeRun이 전체 정보와 커서 증가량 스냅샷을 만들고,
 RunCoordinator.Start에 CombatSnapshot/커서 증가량/스킬 목록/SpawnPlan을 전달한다.
 CombatRunController는 PrepareRun 이후 CommitStart 이전에 일곱 스킬의 BaseStat과
 UpgradeStat을 합쳐 이번 런의 RuntimeStat으로 고정한다.

@@ -7,14 +7,20 @@
 구조는 [영어 JSON](../../Assets/CursorHunter/Data/Resources/GameData/game-data.en.json)에 둔다.
 강화 비용·선행 조건·명칭·커서 스탯 증가량은
 [성장 화면 설정](../../Assets/CursorHunter/Data/Resources/GameData/progression-config.en.json)으로 분리한다.
-플레이어의 구매·지갑은 별도 PlayerPrefs에 저장하며, 전투 시작 때 기본 스탯과 보유 특성의
-증가량을 합산한다.
+플레이어의 구매·지갑은 별도 PlayerPrefs에 저장한다. 현재 Main의 `HuntManager.Connect Trait Screen To Combat`는 꺼져 있으며, `TraitScreen_Runtime`의 구매·해금·강화·생산 보너스를 실제 전투에 반영하지 않는다. 전투는 Main 기본 스탯·스킬 BaseStat·기본 JSON·MonsterDefinition·Stage로 구성한다. 이 상태에서는 전투 보상을 특성 지갑에 지급하지 않고 전투 HUD의 특성 전체 정보 버튼도 숨긴다. 특성 화면과 구매·저장 기록은 유지한다. 연동을 다시 켜면 기존 합산·보상·정보창 경로를 사용한다.
 [키 바로 뒤 한국어 번역 JSON](game-data.ko.keys.json)은 원본의 모든 값을 유지하고 영문키(한국어)만 병기한다.
 [상세 한국어 해설 JSON](game-data.ko.reference.json)은 원본값·단위·설명·ID의 뜻까지 제공한다.
 두 한국어 파일은 사람이 읽는 참고서이며 게임에서 읽지 않는다.
 
 전투 개발자: [실제 조회 API와 값 대응표](contracts.md#전투에서-값을-읽는-실제-api).
 앞으로 구현할 자동 스킬의 공통 설계 기준은 [자동 스킬 기획서](../skill-design.md)를 따른다.
+기획자는 Main 씬의 `Tools > Cursor Hunter > Combat Balance`에서 최종 스탯을 직접 입력해
+실제 전투에 실시간 적용한다. [전투 밸런스 창](../combat-balance-editor-design.md)은
+베이스·커서 공격·7종 스킬·몬스터 및 스폰을 다루며, 테스트 보상은 지급하지 않는다.
+창 최상단에서 `실시간 테스트` 또는 `최종 설정 스탯` 모드를 선택하고, 그 아래 베이스·커서 공격·스킬·몬스터·스폰 분류에서 수치를 편집한다.
+커서 범위는 기존 기본 크기를 `1`로 보는 배율로 입력하며, `−`/`+` 버튼으로 0.1배씩 조절할 수 있다.
+`최종 설정 스탯`에서는 테스트값을 가져와 편집한 뒤 Save로 실제 기본값을 저장할 수 있다.
+`실시간 테스트`는 원본을 수정하지 않으며, Save도 구매·해금·지갑·Stage 편성을 바꾸지 않는다.
 유물 제거·몬스터 특성 자리·전투 데이터 분리 및 미완료 범위: [최신 인수인계](current-state-handoff-v0.0.4.md).
 
 현재 구현 기준: [전투 정보 v3 인수인계](current-state-handoff-v0.0.4.md). 이전 [v2 개편 기록](game-information-refactor-2026-10-01.md)은 과거 자료다. Unity **6000.3.13f1**.
@@ -51,7 +57,7 @@ macOS 설치 확인: `python3 tools/open_unity.py --check`. 확인 후 같은 �
 
 ## 현재 합류 기준
 
-- 커서 기본 스탯 컴포넌트와 보유 커서 특성의 증가량을 런 시작 때 합산한다. 자동 스킬 7종도 Main의 BaseStat과 스킬별 UpgradeStat 스냅샷을 전투 진입 때 합산해 런 동안 고정한다. 스킬·몬스터·재화 정보는 GameInformation v3 스냅샷을 사용한다.
+- 현재 전투는 기본 스탯·스킬 BaseStat·원본 전투 정보·Stage를 사용한다. 특성 연동을 다시 켜면 보유 커서 특성 증가량과 스킬별 UpgradeStat을 런 시작 때 합산한다. 스킬·몬스터·재화 정보는 GameInformation v3 스냅샷을 사용한다.
 - 일반 필드 15~30초, 자동 반경 공격·쿨타임, 일반 몬스터 10종 누적 생성.
 - BabyDragon 펫은 별도 자동 스킬이며 `stat.attack.01` 이후 가넷 40개로 해금한다. 실제 전투 화면의 크기·정렬·이펙트는 플레이테스트가 남았다. 유물 관련 데이터·UI·드롭은 제거했으며 새 일반 유물 시스템은 추후 설계한다.
 - JSON의 기존 몬스터 behaviorType은 None=0으로 유지한다. 신규 종별 행동·스탯 프로필은

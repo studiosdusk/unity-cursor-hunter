@@ -69,6 +69,14 @@ namespace CursorHunter.Combat
             }
         }
 
+        internal void RefreshBalance(float now, float previousDuration,
+            float nextDuration)
+        {
+            if (_active)
+                _returnAt = SkillBalanceMath.Retime(_returnAt, now,
+                    previousDuration, nextDuration);
+        }
+
         internal void ReturnToPool()
         {
             _active = false;

@@ -99,6 +99,33 @@ namespace CursorHunter.Combat
             if (_owner.Hit(_runId, target)) _hitTargets.Add(target);
         }
 
+        internal void RefreshBalance(float now, FlameExhaustRuntimeStat previous,
+            FlameExhaustRuntimeStat next, CircleCollider2D sourceHitArea,
+            SpriteRenderer sourceVisual)
+        {
+            if (!_active) return;
+            _expiresAt = SkillBalanceMath.Retime(_expiresAt, now,
+                previous.ProjectileDurationSeconds, next.ProjectileDurationSeconds);
+            _speed = next.SpeedWorldUnitsPerSecond;
+            RefreshGeometry(sourceHitArea, sourceVisual, next.CursorSizeRatio,
+                next.HitRadiusMultiplier);
+        }
+
+        internal void RefreshGeometry(CircleCollider2D sourceHitArea,
+            SpriteRenderer sourceVisual, float cursorSizeRatio, float hitRadiusMultiplier)
+        {
+            if (!_active) return;
+            Bounds sourceBounds = sourceHitArea.bounds;
+            hitArea.radius = Mathf.Max(0.01f,
+                Mathf.Max(sourceBounds.extents.x, sourceBounds.extents.y) *
+                hitRadiusMultiplier);
+            visualRenderer.transform.localScale = sourceVisual.transform.lossyScale *
+                cursorSizeRatio;
+            visualRenderer.transform.localPosition =
+                (sourceVisual.transform.position - sourceBounds.center) *
+                cursorSizeRatio;
+        }
+
         internal void ReturnToPool()
         {
             _active = false;

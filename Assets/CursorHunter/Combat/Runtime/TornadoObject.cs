@@ -138,6 +138,31 @@ namespace CursorHunter.Combat
             }
         }
 
+        internal void RefreshBalance(float now, TornadoRuntimeStat previous,
+            TornadoRuntimeStat next)
+        {
+            if (!_isActive) return;
+            _expiresAt = SkillBalanceMath.Retime(_expiresAt, now,
+                previous.DurationSeconds, next.DurationSeconds);
+            _nextTurnAt = SkillBalanceMath.Retime(_nextTurnAt, now,
+                _turnInterval, next.DirectionChangeSeconds);
+            _nextHitAt = SkillBalanceMath.Retime(_nextHitAt, now,
+                _hitInterval, next.HitIntervalSeconds);
+            if (_stoppedUntil > now)
+                _stoppedUntil = SkillBalanceMath.Retime(_stoppedUntil, now,
+                    _stopDuration, next.StopDurationSeconds);
+            _turnInterval = next.DirectionChangeSeconds;
+            _hitInterval = next.HitIntervalSeconds;
+            _stopChance = next.StopChanceOnDirectionChange;
+            _stopDuration = next.StopDurationSeconds;
+            _shrinkOutSeconds = Mathf.Clamp(next.ShrinkOutSeconds, 0f,
+                next.DurationSeconds);
+            _damage = next.Damage;
+            transform.localScale = _shrinkOutSeconds > 0f
+                ? _baseScale * Mathf.Clamp01((_expiresAt - now) / _shrinkOutSeconds)
+                : _baseScale;
+        }
+
         internal void ReturnToPool()
         {
             _isActive = false;

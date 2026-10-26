@@ -119,6 +119,18 @@ namespace CursorHunter.Combat
             }
         }
 
+        internal void RefreshBalance(float now, HeadshotRuntimeStat previous,
+            HeadshotRuntimeStat next)
+        {
+            if (!_active) return;
+            if (!_exploded)
+                _explodeAt = SkillBalanceMath.Retime(_explodeAt, now,
+                    previous.ExplosionDelaySeconds, next.ExplosionDelaySeconds);
+            _returnAt = SkillBalanceMath.Retime(_returnAt, now,
+                previous.EffectDurationSeconds, next.EffectDurationSeconds);
+            if (!_exploded) _returnAt = Mathf.Max(_returnAt, _explodeAt + 0.1f);
+        }
+
         internal void ReturnToPool()
         {
             _active = false;

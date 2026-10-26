@@ -15,7 +15,7 @@ namespace CursorHunter.App
     /// </summary>
     [DefaultExecutionOrder(-200)]
     [DisallowMultipleComponent]
-    public sealed class HuntManager : MonoBehaviour
+    public sealed partial class HuntManager : MonoBehaviour
     {
         public const float BossFieldDurationSeconds = 60f;
 
@@ -31,8 +31,13 @@ namespace CursorHunter.App
         [SerializeField] private AppUiRootController uiRootController;
         [SerializeField] private TraitScreenController progressionController;
 
+        [Header("Trait integration")]
+        [SerializeField, Tooltip("Connect trait purchases, combat rewards and the trait information popup to combat. Disabled while balancing authored base values.")]
+        private bool connectTraitScreenToCombat;
+        public bool IsTraitScreenConnectedToCombat => connectTraitScreenToCombat;
+
         [Header("Hunt run")]
-        [SerializeField, Tooltip("Stage roster used by the existing Enter button. Leave empty for the legacy progression roster.")]
+        [SerializeField, Tooltip("Stage roster used by the existing Enter button. Leave empty to use the current combat information roster.")]
         private CombatStageDefinition defaultStage;
         [SerializeField] private MonsterDefinition monsterDefinition;
         [SerializeField, Min(1)] private int aliveLimit = 80;
@@ -46,6 +51,7 @@ namespace CursorHunter.App
         private RunCoordinator _runCoordinator;
         private bool _coordinatorEventsSubscribed;
         private bool _pausedForInspection;
+        private bool _runUsesTraitScreen;
         private readonly HashSet<RunId> _settledRunIds =
             new HashSet<RunId>();
 
@@ -115,11 +121,13 @@ namespace CursorHunter.App
                     FindObjectsInactive.Include);
             }
 
-            if (progressionController == null)
+            if (connectTraitScreenToCombat && progressionController == null)
             {
                 progressionController = FindFirstObjectByType<TraitScreenController>(
                     FindObjectsInactive.Include);
             }
+            if (runHud != null)
+                runHud.SetTraitConnectionEnabled(connectTraitScreenToCombat);
         }
 
         private void OnEnable()
@@ -140,7 +148,7 @@ namespace CursorHunter.App
 
         /// <summary>
         /// Starts a selected inspector-authored stage. A null stage retains
-        /// the legacy progression-driven prototype roster.
+        /// the current combat information roster.
         /// </summary>
         public void BeginStageRun(CombatStageDefinition stage)
         {
@@ -165,23 +173,43 @@ namespace CursorHunter.App
 
             PlayerCombatStatsRuntime runtimeStats =
                 combatRunController.PlayerCombatStatsRuntime;
+            _runUsesTraitScreen = false;
+#if UNITY_EDITOR
+            if (_combatBalanceSettings != null)
+            {
+                BeginBalanceRun();
+                return;
+            }
+#endif
             CursorCombatStatBonusesSnapshot cursorStatBonuses = default;
             ProgressionCombatSnapshot progressionSnapshot = null;
-            if (progressionController != null)
+            string json = null;
+            if (connectTraitScreenToCombat && progressionController != null)
             {
                 progressionController.SetCursorCombatStatDefaults(runtimeStats.Defaults);
-                string json;
                 try { json = progressionController.CreateGameInformationJson(); }
                 catch (Exception exception)
                 {
                     Debug.LogError("Cannot prepare current player combat information: " + exception.Message, this);
                     return;
                 }
+                cursorStatBonuses =
+                    progressionController.CreateCursorCombatStatBonusesSnapshot();
+            }
+            else if (!connectTraitScreenToCombat)
+            {
+                TextAsset authored = Resources.Load<TextAsset>(GameDataDocument.RuntimeResourcePath);
+                if (authored != null) json = authored.text;
+            }
+            if (json != null)
+            {
                 if (!GameInformationJson.TryDeserialize(json, out var information, out string error))
                 {
                     Debug.LogError("Combat JSON rejected: " + error, this);
                     return;
                 }
+                if (!connectTraitScreenToCombat)
+                    ApplyAuthoredCombatDefaults(information, runtimeStats.Defaults);
                 if (stage != null)
                 {
                     if (!stage.TryApplyToInformation(information, out error))
@@ -191,11 +219,8 @@ namespace CursorHunter.App
                             this);
                         return;
                     }
-
-                    json = GameInformationJson.Serialize(information);
                 }
-                cursorStatBonuses =
-                    progressionController.CreateCursorCombatStatBonusesSnapshot();
+                json = GameInformationJson.Serialize(information);
                 progressionSnapshot = information.ToCombatSnapshot(
                     json,
                     cursorStatBonuses);
@@ -205,13 +230,13 @@ namespace CursorHunter.App
             else if (stage != null)
             {
                 Debug.LogError(
-                    $"Cannot enter stage '{stage.StageId}' without player combat information.",
+                    $"Cannot enter stage '{stage.StageId}' without combat information.",
                     this);
                 return;
             }
             else if (!allowPrototypeFallback)
             {
-                Debug.LogError("Game information producer is required.", this);
+                Debug.LogError("Combat information source is required.", this);
                 return;
             }
             CombatSnapshot combatSnapshot = progressionSnapshot == null
@@ -221,13 +246,13 @@ namespace CursorHunter.App
             if (!combatSnapshot.IsValid)
             {
                 Debug.LogWarning(
-                    "Progression produced an invalid combat snapshot; using the prototype fallback.",
+                    "Combat information produced an invalid snapshot; using the prototype fallback.",
                     this);
                 combatSnapshot = runtimeStats.DefaultsCombatSnapshot;
             }
 
             aliveLimit = Mathf.Max(1, aliveLimit);
-            durationSeconds = GetRunDuration(
+            float runDurationSeconds = GetRunDuration(
                 RunMode.NormalField,
                 progressionSnapshot,
                 durationSeconds);
@@ -254,16 +279,25 @@ namespace CursorHunter.App
                 RunMode.NormalField,
                 string.Empty,
                 CreateRunSeed(),
-                durationSeconds);
+                runDurationSeconds);
 
-            if (!_runCoordinator.Start(
+            string failureReason;
+            bool started = connectTraitScreenToCombat
+                ? _runCoordinator.Start(
                     runRequest,
                     combatSnapshot,
                     cursorStatBonuses,
                     progressionSnapshot == null
                         ? null : progressionSnapshot.Skills,
                     spawnPlan,
-                    out string failureReason))
+                    out failureReason)
+                : _runCoordinator.Start(
+                    runRequest,
+                    runtimeStats.DefaultsCombatSnapshot,
+                    progressionSnapshot == null ? null : progressionSnapshot.Skills,
+                    spawnPlan,
+                    out failureReason);
+            if (!started)
             {
                 Debug.LogWarning(
                     $"HuntManager could not start run '{runRequest.RunId}': " +
@@ -272,10 +306,11 @@ namespace CursorHunter.App
                 return;
             }
 
+            _runUsesTraitScreen = connectTraitScreenToCombat;
             // Keep the exact progression copy used by Combat available to
             // the Field HUD's read-only summary. The UI never re-reads live
             // trait dictionaries while a run is active.
-            if (progressionController != null)
+            if (_runUsesTraitScreen && progressionController != null)
             {
                 progressionController.SetActiveRunSnapshot(progressionSnapshot);
             }
@@ -306,7 +341,7 @@ namespace CursorHunter.App
 
         private void SyncCursorCombatStatDefaults()
         {
-            if (progressionController == null || combatRunController == null)
+            if (!connectTraitScreenToCombat || progressionController == null || combatRunController == null)
             {
                 return;
             }
@@ -315,10 +350,25 @@ namespace CursorHunter.App
                 combatRunController.PlayerCombatStatsRuntime.Defaults);
         }
 
+        private void ApplyAuthoredCombatDefaults(GameInformation information,
+            CursorCombatStatDefaultsSnapshot defaults)
+        {
+            information.stats.attackPower = defaults.AttackPower;
+            information.stats.attackRadiusWorldUnits = defaults.AttackRadiusWorldUnits;
+            information.stats.attackCooldownSeconds = defaults.AttackCooldownSeconds;
+            information.stats.criticalChancePercent = defaults.CriticalChancePercent;
+            information.stats.bossDamageMultiplier = defaults.BossDamageMultiplier;
+            information.stats.normalFieldDurationSeconds = GetRunDuration(
+                RunMode.NormalField, null, durationSeconds);
+            information.rules.criticalDamageMultiplier = defaults.CriticalDamageMultiplier;
+            foreach (SkillInformation skill in information.skills)
+                skill.upgrades = Array.Empty<SkillStatUpgradeInformation>();
+        }
+
         /// <summary>
         /// Resolves the duration at the App boundary. Normal fields use the
-        /// progression snapshot (15 seconds at the start, +5 seconds per
-        /// purchased node, capped at 30). Boss duration comes from JSON rules
+        /// captured run information, capped at 30 seconds. Trait duration
+        /// bonuses enter that information only when connected. Boss duration comes from JSON rules
         /// (60 seconds by default); legacy callers keep the 60-second fallback.
         /// </summary>
         public static float GetRunDuration(
@@ -390,7 +440,7 @@ namespace CursorHunter.App
                 runHud.Reset();
             }
 
-            if (progressionController != null)
+            if (connectTraitScreenToCombat && progressionController != null)
             {
                 progressionController.ClearActiveRunSnapshot();
             }
@@ -418,6 +468,8 @@ namespace CursorHunter.App
 
         private void Update()
         {
+            if (runHud != null)
+                runHud.SetTraitConnectionEnabled(connectTraitScreenToCombat);
             ReconcileInspectionPause();
             if (_runCoordinator == null ||
                 !_runCoordinator.IsActive ||
@@ -449,7 +501,12 @@ namespace CursorHunter.App
                 return;
             }
             bool shouldPause = !Application.isFocused ||
-                (progressionController != null && progressionController.IsSummaryOpen);
+                (connectTraitScreenToCombat && progressionController != null && progressionController.IsSummaryOpen);
+#if UNITY_EDITOR
+            if (IsCombatBalanceTestActive)
+                shouldPause = !UnityEditorInternal.InternalEditorUtility.isApplicationActive ||
+                    (connectTraitScreenToCombat && progressionController != null && progressionController.IsSummaryOpen);
+#endif
             if (shouldPause && _runCoordinator.State == RunState.Running)
                 _pausedForInspection = _runCoordinator.Pause();
             else if (!shouldPause && _pausedForInspection)
@@ -472,6 +529,9 @@ namespace CursorHunter.App
             {
                 runHud.ShowResult(result);
             }
+#if UNITY_EDITOR
+            FinishBalanceRun(result);
+#endif
         }
 
         private void HandleRunAborted(RunResult result)
@@ -488,10 +548,17 @@ namespace CursorHunter.App
             {
                 runHud.ShowResult(result);
             }
+#if UNITY_EDITOR
+            FinishBalanceRun(result);
+#endif
         }
 
         private void SettleRunRewards(RunResult result)
         {
+            if (!connectTraitScreenToCombat || !_runUsesTraitScreen) return;
+#if UNITY_EDITOR
+            if (IsBalanceResult(result)) return;
+#endif
             if (result.SettlementPolicy != RunSettlementPolicy.Eligible ||
                 result.Rewards == null ||
                 result.Rewards.Count == 0 ||
@@ -535,7 +602,7 @@ namespace CursorHunter.App
                 _runCoordinator = null;
             }
 
-            if (progressionController != null)
+            if (connectTraitScreenToCombat && progressionController != null)
             {
                 progressionController.ClearActiveRunSnapshot();
             }
