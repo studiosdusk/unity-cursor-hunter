@@ -174,7 +174,8 @@ namespace CursorHunter.Combat
             if (now >= _nextCastAt)
             {
                 Cast(now, bounds);
-                _nextCastAt = now + _runtime.CooldownSeconds;
+                _nextCastAt = now + _combat.ResolveAutoSkillCooldown(
+                    _runtime.CooldownSeconds);
                 _hasCast = true;
             }
 
@@ -212,7 +213,8 @@ namespace CursorHunter.Combat
                     _runtime.HitIntervalSeconds,
                     _runtime.StopChanceOnDirectionChange,
                     _runtime.StopDurationSeconds,
-                    _runtime.ShrinkOutSeconds, _runtime.Damage);
+                    _runtime.ShrinkOutSeconds, _runtime.Damage,
+                    _combat.AreaSkillRadiusMultiplier);
                 _active.Add(instance);
             }
         }

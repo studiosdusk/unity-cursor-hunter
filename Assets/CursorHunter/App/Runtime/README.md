@@ -5,19 +5,16 @@
 
 ## 전투 스테이지 설정
 
-현재 `HuntManager > Connect Trait Screen To Combat`는 꺼져 있다. 전투는 특성 구매·저장 상태를 읽지 않고 Main 기본 스탯·기본 JSON·스킬 BaseStat·MonsterDefinition·Stage로 실행한다. Inspector의 스킬 시험 사용 토글과 밸런스 에디터는 계속 사용할 수 있다. 특성 화면은 유지하되 전투 보상 지급·전체 정보 팝업도 분리한다. 다시 연동할 때만 이 옵션을 켠다.
+Main 씬의 `HuntManager > Connect Trait Screen To Combat`는 켜져 있다. 일반 전투는 같은 `TraitScreenController`가 만든 현재 구매·해금 상태 스냅샷으로 시작한다. 스탯은 특성 기본값과 구매 증가량을 반영하고, 스킬은 해금 상태와 정의된 강화 스냅샷을 읽으며, 몬스터는 해금 여부와 생산 수를 스폰 계획에 반영한다. 현재 성장 JSON은 스킬별 해금만 정의하고 강화 단계는 아직 없다. 전투 결과의 보상도 같은 특성 지갑으로 정산한다.
 
-`App/Stages/Stage01.asset`이 Main 씬 `HuntManager`의 `Default Stage`에 연결돼 있다.
-기존 전투 진입 버튼은 `BeginPrototypeRun()`을 호출하며 이 에셋의 설정으로 진입한다.
-스테이지를 추가하려면 `Cursor Hunter/Stages/Combat Stage` 에셋을 만들고
-`HuntManager.BeginStageRun(CombatStageDefinition)`에 해당 에셋을 전달한다.
+Main 전투 진입 버튼은 `BeginPrototypeRun()`을 호출한다. 특성 연결이 켜져 있으면 기본 스테이지 로스터를 적용하지 않고, 특성에서 실제 해금된 모든 몬스터를 사용한다. 특성 진행도를 따르지 않는 별도 스테이지는 `BeginStageRun(CombatStageDefinition)`으로 명시적으로 시작한다.
 
 `Monsters`의 각 행에서 `Monster` Definition, `Allow Spawn`, `Production`을 지정한다.
 허용된 행만 이번 런에 출현한다. `Allow Spawn`은 플레이어의 해금 여부와 관계없이
 이번 스테이지에 해당 종을 허용하며, 구매/저장 상태는 변경하지 않는다.
 `Production`의 `Base`, `Production2`, `Production3`, `Production4`는 몬스터 특성의
 생산 노드와 같은 1·2·3·4마리 단계다. `UsePlayerUpgrade`는 구매한 생산 단계를
-사용한다. 특성 연동이 꺼져 있으면 `UsePlayerUpgrade`도 구매 보너스 없는 기본 생성 수를 사용한다. 현재 모든 MonsterDefinition의 기본 PackSize는 1이다.
+사용한다. 현재 모든 MonsterDefinition의 기본 PackSize는 1이다.
 스테이지 설정은 런 시작 때 복사돼서 진행 중 인스펙터 변경에는 영향받지 않는다.
 
 ## 커서 스킨

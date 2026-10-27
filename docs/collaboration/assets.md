@@ -1,4 +1,4 @@
-> 현재 전투 스킬은 [자동 스킬 기획서](../skill-design.md)의 토네이도·헤드샷·벼락·화염 배기·매직볼·레이저다. 각 스킬의 컨트롤러와 전투 오브젝트는 프로젝트 소유 프리팹이다.
+> 현재 전투 스킬은 [자동 스킬 기획서](../skill-design.md)의 토네이도·헤드샷·벼락·화염 배기·마력 구체·레이저·베이비 드래곤이다. 각 스킬의 컨트롤러와 전투 오브젝트는 프로젝트 소유 프리팹이다.
 
 | 현재 스킬 | 컨트롤러 | 전투 오브젝트 | 시각 원본 |
 |---|---|---|---|
@@ -86,18 +86,20 @@
 | 보스 피해 배수 | `Icon_Skull03.png` | AS-10024 |
 | 일반 필드 시간 | `Icon_Timer.png` | AS-10047 |
 
-특성 화면의 노드 아이콘은 스킬별로 통일한다. 지정되지 않은 스킬 중 허리케인은 바람을
-연상시키는 날개, 메테오는 화염 충돌 아이콘으로 구성했다. 전체 배열과 GUID는
-[특성 UI 에셋 매핑](trait-ui-assets.md)과 [asset-map.json](asset-map.json)을 함께 갱신한다.
+특성 화면의 스킬 노드 아이콘은 현재 구현된 자동 스킬 기준으로 통일한다. Main 씬의
+`skillIcons[0..5]`은 토네이도·헤드샷·벼락·화염 배기·마력 구체·레이저 순서이며,
+베이비 드래곤은 `petIcon`을 사용한다. 전체 배열과 GUID는
+[특성 UI 에셋 매핑](trait-ui-assets.md)과 [asset-map.json](asset-map.json)에 반영한다.
 
-| 스킬 행 | UI 아이콘 | 번호 |
+| 스킬 | UI 아이콘 | 번호 |
 |---|---|---|
-| 파이어볼 | `Misc_Fire_01_Red.png` | AS-12435 |
-| 라이트닝 볼트 | `Stat_Skill_01.png` | AS-12514 |
-| 빙결 | `Economy_Gem_07_Blue.png` | AS-12140 |
-| 허리케인 | `Misc_Wing_01.png` (바람 대용) | AS-12485 |
-| 메테오 | `Skill1.png` (화염 충돌 대용) | AS-10050 |
-| 드래곤 브레스 | `Misc_Dragon_01_Red.png` | AS-12429 |
+| 토네이도 | `Misc_Wing_01.png` | AS-12485 |
+| 헤드샷 | `Gear_Bow_01.png` | AS-10409 |
+| 벼락 | `Stat_Skill_01.png` | AS-12514 |
+| 화염 배기 | `Misc_Fire_01_Red.png` | AS-12435 |
+| 마력 구체 | `Economy_Gem_07_Blue.png` | AS-12140 |
+| 레이저 | `UI_ETC_Target_02_Blue.png` | AS-12757 |
+| 베이비 드래곤 | `Pet_Baby Dragon.png` | AS-13610 |
 
 ## 조정·추가 제작
 - 다이아몬드: 현재 특성 화면은 `512/ItemIcon_Gem_Pentagon_Green.png`를 프로토타입

@@ -111,6 +111,18 @@ namespace CursorHunter.Contracts
         public float SpecialAbilityRadius { get; }
         public float SpecialAbilityStrength { get; }
 
+        public SpawnSnapshot WithSpawnInterval(float spawnIntervalSeconds)
+        {
+            return new SpawnSnapshot(
+                MonsterId, PrefabKey, MaxHealth, spawnIntervalSeconds, PackSize,
+                AliveLimit, GarnetReward, BonusDropCurrencyId, BonusDropAmount,
+                BonusDropChancePercent, BehaviorType, MovementMode, MoveSpeed,
+                VisualScale, HitAreaWidth, HitAreaHeight, OrbitRadius,
+                OrbitAngularSpeedDegrees, SpecialAbility,
+                SpecialAbilityIntervalSeconds, SpecialAbilityDurationSeconds,
+                SpecialAbilityRadius, SpecialAbilityStrength);
+        }
+
         public bool IsValid =>
             !string.IsNullOrWhiteSpace(MonsterId) &&
             !string.IsNullOrWhiteSpace(PrefabKey) &&

@@ -8,8 +8,8 @@ using UnityEngine;
 namespace CursorHunter.App
 {
     /// <summary>
-    /// The selected production trait for one species in this stage. The
-    /// numbered options match monster.xx.production.01/02/03 (2/3/4 spawns).
+    /// The selected production trait for one species in this stage. Fixed
+    /// options let an authored stage try production counts from one to five.
     /// </summary>
     public enum StageProductionOption
     {
@@ -17,7 +17,8 @@ namespace CursorHunter.App
         Base = 1,
         Production2 = 2,
         Production3 = 3,
-        Production4 = 4
+        Production4 = 4,
+        Production5 = 5
     }
 
     [Serializable]
@@ -26,7 +27,7 @@ namespace CursorHunter.App
         [SerializeField] private MonsterDefinition monster;
         [Tooltip("Allow this species in this stage, regardless of its purchased unlock node.")]
         [SerializeField] private bool allowSpawn;
-        [Tooltip("UsePlayerUpgrade keeps the purchased production count. Base and Production2/3/4 select the corresponding monster trait node for this run only.")]
+        [Tooltip("UsePlayerUpgrade keeps the purchased production count. Base and Production2/3/4/5 set a fixed pack size for this run only.")]
         [SerializeField] private StageProductionOption production =
             StageProductionOption.UsePlayerUpgrade;
 

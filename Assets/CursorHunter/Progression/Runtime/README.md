@@ -5,11 +5,11 @@
 
 ## Runtime trait screen
 
-현재 Main의 `HuntManager.Connect Trait Screen To Combat`는 꺼져 있다. 특성 화면과 구매·저장 기능은 유지하지만 실제 전투에는 특성 효과를 전달하지 않고 전투 보상을 받지 않는다. 아래의 전투 연동 설명은 이 옵션을 다시 켰을 때의 계약이다.
+Main의 `HuntManager.Connect Trait Screen To Combat`는 켜져 있다. Main 전투는 특성 화면의 실제 구매·해금 상태를 런 시작 시 복사해 사용한다. 구매한 스탯 증가량은 최종 `CombatSnapshot`에 합산하고, 스킬은 해금 상태와 지원되는 강화값을 사용하며, 몬스터는 해금 상태와 생산 수를 스폰 계획에 반영한다. 런 중에는 이 복사본이 고정되고 결과 보상은 같은 특성 지갑에 정산된다. Main 전투는 수동 밸런스 테스트 입력이나 기본 스테이지 로스터로 특성 진행도를 덮어쓰지 않는다.
 
 `TraitScreenController`는 `Main.unity`의 특성 화면 표시와 입력을 담당한다. 게임 데이터와
 진행 설정 JSON의 모든 Stat·Skill·Monster 노드를 하나의 전체 화면 연구 보드에 섞어 표시한다.
-현재 스킬 보드에는 토네이도 해금 노드만 있다.
+현재 스킬 보드의 7개 노드는 각 스킬 해금용이며, per-skill 강화 노드는 아직 설정되지 않았다. GameInformation의 스킬 강화 스냅샷과 Combat runtime은 지원하지만, 실제 값은 특성 JSON에 노드가 추가되어야 생긴다.
 
 신규 진행도와 전체 초기화는 `stat.attack.01` 중앙 시작점만 구매 가능하게 둔다. 시작점을
 해금하면 동서남북의 기본 스탯 선택지가 열리고, 각 분기는 설정 JSON의 선행 조건을 따라간다.

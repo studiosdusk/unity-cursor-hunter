@@ -37,7 +37,8 @@ namespace CursorHunter.App.Tests
             var configJson = Resources.Load<TextAsset>(GameDataDocument.ProgressionResourcePath).text;
             Assert.That(GameDataDocument.TryParse(infoJson, configJson, out var document, out var error), Is.True, error);
             Assert.That(infoJson, Does.Not.Contain("\"progression\""));
-            Assert.That(infoJson, Does.Not.Contain("\"relics\""));
+            Assert.That(infoJson, Does.Contain("\"relics\""));
+            Assert.That(Build(document).relics, Has.Length.EqualTo(20));
             Assert.That(configJson, Does.Not.Contain("\"information\""));
             Assert.That(GameDataDocument.TryParse(configJson, infoJson, out _, out _), Is.False);
             Assert.That(GameDataDocument.TryParse(infoJson, null, out _, out _), Is.False);

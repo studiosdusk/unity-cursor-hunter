@@ -162,9 +162,11 @@ namespace CursorHunter.Combat
             HeadshotEffect next = _free.Pop();
             next.Activate(this, _runId, target, now,
                 _runtime.ExplosionDelaySeconds,
-                _runtime.EffectDurationSeconds);
+                _runtime.EffectDurationSeconds,
+                _combat.AreaSkillRadiusMultiplier);
             _active.Add(next);
-            _nextCastAt = now + _runtime.CooldownSeconds;
+            _nextCastAt = now + _combat.ResolveAutoSkillCooldown(
+                _runtime.CooldownSeconds);
             _hasCast = true;
         }
 

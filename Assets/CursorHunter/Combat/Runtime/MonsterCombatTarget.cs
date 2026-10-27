@@ -564,6 +564,17 @@ namespace CursorHunter.Combat
             out long effectiveDamage,
             out bool killed)
         {
+            return ApplyDamage(runId, damage, false,
+                out effectiveDamage, out killed);
+        }
+
+        public bool ApplyDamage(
+            RunId runId,
+            long damage,
+            bool bypassShield,
+            out long effectiveDamage,
+            out bool killed)
+        {
             effectiveDamage = 0;
             killed = false;
 
@@ -573,7 +584,7 @@ namespace CursorHunter.Combat
                 return false;
             }
 
-            if (_isShielded && _shieldDamageReduction > 0f)
+            if (!bypassShield && _isShielded && _shieldDamageReduction > 0f)
             {
                 long blockedDamage = (long)Math.Ceiling(
                     damage * (double)_shieldDamageReduction);

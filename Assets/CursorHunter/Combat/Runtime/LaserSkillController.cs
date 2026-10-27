@@ -169,9 +169,11 @@ namespace CursorHunter.Combat
             LaserEffect next = _free.Pop();
             next.Activate(this, _runId, fieldBounds,
                 _random.NextFloat(0f, 1f), spawnPlaneZ, now,
-                _runtime.EffectDurationSeconds, _runtime.SizeMultiplier);
+                _runtime.EffectDurationSeconds, _runtime.SizeMultiplier *
+                    _combat.AreaSkillRadiusMultiplier);
             _active.Add(next);
-            _nextCastAt = now + _runtime.CooldownSeconds;
+            _nextCastAt = now + _combat.ResolveAutoSkillCooldown(
+                _runtime.CooldownSeconds);
             _hasCast = true;
             Physics2D.SyncTransforms();
             if (!next.Tick(now, _enemyFilter) && _active.Remove(next))

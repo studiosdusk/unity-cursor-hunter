@@ -13,6 +13,7 @@ namespace CursorHunter.Combat
         private MonsterCombatTarget _target;
         private RunId _runId;
         private Vector3 _lastPosition;
+        private Vector3 _baseScale;
         private float _explodeAt;
         private float _returnAt;
         private bool _exploded;
@@ -29,7 +30,11 @@ namespace CursorHunter.Combat
             }
         }
 
-        private void Awake() => CacheComponents();
+        private void Awake()
+        {
+            _baseScale = transform.localScale;
+            CacheComponents();
+        }
 
         private void CacheComponents()
         {
@@ -56,7 +61,8 @@ namespace CursorHunter.Combat
         }
 
         internal void Activate(HeadshotSkillController owner, RunId runId,
-            MonsterCombatTarget target, float now, float explosionDelay, float duration)
+            MonsterCombatTarget target, float now, float explosionDelay, float duration,
+            float areaRadiusMultiplier = 1f)
         {
             CacheComponents();
             _owner = owner;
@@ -67,6 +73,7 @@ namespace CursorHunter.Combat
             _returnAt = now + duration;
             _exploded = false;
             _active = true;
+            transform.localScale = _baseScale * Mathf.Max(0.01f, areaRadiusMultiplier);
             transform.position = _lastPosition;
             gameObject.SetActive(true);
             for (int i = 0; i < _particles.Length; i++)
@@ -138,6 +145,7 @@ namespace CursorHunter.Combat
             _target = null;
             _runId = default;
             _exploded = false;
+            transform.localScale = _baseScale;
             if (_particles != null)
             {
                 for (int i = 0; i < _particles.Length; i++)

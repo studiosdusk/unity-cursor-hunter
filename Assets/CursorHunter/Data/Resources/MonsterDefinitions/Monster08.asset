@@ -17,8 +17,8 @@ MonoBehaviour:
   prefabKey: Golem/Golem_Iron
   visualPrefab: {fileID: 1262332049845763274, guid: cbdaa21cc641e4c6284c48dbb9017356, type: 3}
   baseStats:
-    maxHealth: 230
-    spawnIntervalSeconds: 2.25
+    maxHealth: 345
+    spawnIntervalSeconds: 1.95
     packSize: 1
     moveSpeed: 0.45
     visualScale: 1

@@ -14,12 +14,15 @@ namespace CursorHunter.Contracts
         public GemstoneInformation[] gemstones;
         public MonsterInformation[] monsters;
         public SkillInformation[] skills;
+        public RelicInformation[] relics;
+        public RelicDropRulesInformation relicDropRules;
 
         public bool TryValidate(out string error)
         {
             error = string.Empty;
-            if (schemaVersion != 3 || balanceVersion < 1 || stats == null ||
-                gemstones == null || monsters == null || skills == null)
+            if (schemaVersion != 4 || balanceVersion < 1 || stats == null ||
+                gemstones == null || monsters == null || skills == null || relics == null ||
+                relicDropRules == null)
                 return Fail("Missing sections or unsupported schemaVersion.", out error);
             if (stats.attackPower < 1 || !Positive(stats.attackRadiusWorldUnits) ||
                 !Positive(stats.attackCooldownSeconds) || stats.attackCooldownSeconds < 0.05f ||
@@ -31,10 +34,15 @@ namespace CursorHunter.Contracts
                 !Positive(rules.bossFieldDurationSeconds) || rules.globalAliveLimit < 1 || rules.globalAliveLimit > 80 ||
                 rules.perMonsterAliveLimit < 1 || rules.perMonsterAliveLimit > rules.globalAliveLimit)
                 return Fail("Invalid combat rules (maximum 80 alive targets).", out error);
-            if (gemstones.Length != 6 || monsters.Length != 10 ||
+            if (relicDropRules.maxPerKill != 1 ||
+                relicDropRules.candidatePolicy != "unownedOnly" ||
+                relicDropRules.resolution != "sumFixedChanceThenWeightedPick" ||
+                !relicDropRules.preserveBaseChanceAfterAcquisition)
+                return Fail("Invalid relic drop rules.", out error);
+            if (gemstones.Length != 6 || monsters.Length != 10 || relics.Length != 20 ||
                 (skills.Length != 1 && skills.Length != 4 && skills.Length != 5 &&
                  skills.Length != 6 && skills.Length != 7))
-                return Fail("Expected 6 gemstones, 10 monsters and 1, 4, 5, 6 or 7 skills.", out error);
+                return Fail("Expected 6 gemstones, 10 monsters, 20 relics and 1, 4, 5, 6 or 7 skills.", out error);
             string[] gemIds = { "gem.garnet", "gem.topaz", "gem.amethyst", "gem.sapphire", "gem.diamond", "gem.dragon" };
             for (int i = 0; i < gemstones.Length; i++)
             {
@@ -74,6 +82,48 @@ namespace CursorHunter.Contracts
                         return Fail("Invalid skill upgrade.", out error);
                 }
             }
+            string[] relicIds = {
+                "relic.red_potion", "relic.blue_potion", "relic.monster_meat",
+                "relic.thief_shoes", "relic.archers_bow", "relic.warrior_armor",
+                "relic.wizards_hat", "relic.valor_ring", "relic.lucky_dice",
+                "relic.kraken_eye", "relic.four_leaf_clover", "relic.ancient_book",
+                "relic.adventurers_bag", "relic.compass", "relic.megaphone",
+                "relic.telescope", "relic.stone", "relic.rainbow_feather",
+                "relic.scales_of_judgment", "relic.treasure_chest"
+            };
+            string[] relicEffectIds = {
+                "cursorAttackDamagePercent", "autoSkillDamagePercent", "petDamagePercent",
+                "petMoveSpeedPercent", "petAttackIntervalReductionPercent",
+                "normalFieldDurationBonusSeconds", "areaSkillRadiusPercent",
+                "criticalDamageMultiplierBonus", "petDoubleDamageChancePercent",
+                "lowHealthExecuteChancePercent", "bonusGemDropChancePercent",
+                "petAttackRadiusPercent", "garnetKillRewardPercent",
+                "petDetectionRadiusPercent", "monsterSpawnIntervalReductionPercent",
+                "cursorAttackRadiusPercent", "fullHealthFirstHitDamagePercent",
+                "autoSkillCooldownReductionPercent", "bossDamagePercent",
+                "monsterKillRewardPercent"
+            };
+            var relicDropTotals = new float[monsters.Length];
+            for (int i = 0; i < relics.Length; i++)
+            {
+                RelicInformation relic = relics[i];
+                int sourceIndex = i / 2;
+                if (relic == null || relic.id != relicIds[i] ||
+                    relic.sourceMonsterId != "monster." + (sourceIndex + 1).ToString("00") ||
+                    relic.effectId != relicEffectIds[i] ||
+                    !Percent(relic.dropChancePercent) || relic.dropChancePercent <= 0f ||
+                    !Finite(relic.effectValue, 0f, 1000f) ||
+                    !Finite(relic.effectValue2, 0f, 100f))
+                    return Fail("Invalid relic ID, source, drop chance or effect data.", out error);
+                relicDropTotals[sourceIndex] += relic.dropChancePercent;
+                if (i == 9 && (relic.effectValue2 <= 0f || relic.effectValue2 > 100f))
+                    return Fail("Kraken Eye needs a valid low-health threshold.", out error);
+                if (i != 9 && relic.effectValue2 != 0f)
+                    return Fail("Only Kraken Eye uses a secondary effect value.", out error);
+            }
+            for (int i = 0; i < relicDropTotals.Length; i++)
+                if (relicDropTotals[i] > 100f)
+                    return Fail("A monster's individual relic drop chances cannot exceed 100%.", out error);
             return true;
         }
 
@@ -112,6 +162,15 @@ namespace CursorHunter.Contracts
                     value.gemstoneId, value.gemstoneAmount, value.gemstoneChancePercent,
                     value.productionCount, value.behaviorType);
             }
+            var relicSnapshots = new RelicCombatSnapshot[relics.Length];
+            for (int i = 0; i < relics.Length; i++)
+            {
+                RelicInformation value = relics[i];
+                relicSnapshots[i] = new RelicCombatSnapshot(
+                    value.id, value.owned, value.sourceMonsterId,
+                    value.dropChancePercent, value.effectId,
+                    value.effectValue, value.effectValue2);
+            }
             var combat = new CombatSnapshot(stats.attackPower,
                 stats.attackRadiusWorldUnits / BaseAttackRadiusWorldUnits,
                 stats.attackCooldownSeconds, 1, stats.criticalChancePercent,
@@ -119,10 +178,15 @@ namespace CursorHunter.Contracts
             return new ProgressionCombatSnapshot(combat, skillSnapshots, monsterSnapshots,
                 stats.normalFieldDurationSeconds, sourceJson, rules.globalAliveLimit,
                 rules.perMonsterAliveLimit, rules.bossFieldDurationSeconds,
-                cursorStatBonuses);
+                cursorStatBonuses, relicSnapshots,
+                new RelicDropRulesCombatSnapshot(relicDropRules.maxPerKill,
+                    relicDropRules.candidatePolicy, relicDropRules.resolution,
+                    relicDropRules.preserveBaseChanceAfterAcquisition));
         }
 
         public const float BaseAttackRadiusWorldUnits = 1.7253809f;
+        private static bool Finite(float value, float minimum, float maximum) =>
+            value >= minimum && value <= maximum && !float.IsNaN(value) && !float.IsInfinity(value);
         private static bool Positive(float value) => value > 0f && !float.IsNaN(value) && !float.IsInfinity(value);
         private static bool Percent(float value) => value >= 0f && value <= 100f && !float.IsNaN(value);
         private static bool Fail(string message, out string error) { error = message; return false; }
@@ -186,6 +250,31 @@ namespace CursorHunter.Contracts
     {
         public string statId;
         public float delta;
+    }
+
+    [Serializable]
+    public sealed class RelicInformation
+    {
+        public string id;
+        // True when the player has discovered this relic. Owned relic effects
+        // are copied into the run snapshot; drop chances remain fixed.
+        public bool owned;
+        public string sourceMonsterId;
+        public float dropChancePercent;
+        public string effectId;
+        // Units are defined by effectId. effectValue2 is reserved for
+        // conditional thresholds such as Kraken Eye's low-health percent.
+        public float effectValue;
+        public float effectValue2;
+    }
+
+    [Serializable]
+    public sealed class RelicDropRulesInformation
+    {
+        public int maxPerKill = 1;
+        public string candidatePolicy = "unownedOnly";
+        public string resolution = "sumFixedChanceThenWeightedPick";
+        public bool preserveBaseChanceAfterAcquisition = true;
     }
 
 }

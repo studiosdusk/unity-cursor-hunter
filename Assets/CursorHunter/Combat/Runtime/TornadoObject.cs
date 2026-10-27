@@ -22,6 +22,7 @@ namespace CursorHunter.Combat
         private float _stopChance;
         private float _stopDuration;
         private float _shrinkOutSeconds;
+        private float _areaRadiusMultiplier = 1f;
         private Vector3 _baseScale;
         private long _damage;
         private bool _isActive;
@@ -40,7 +41,8 @@ namespace CursorHunter.Combat
             TornadoSkillController owner, RunId runId, Vector2 position,
             float now, float duration, float turnInterval,
             float hitInterval, float stopChance,
-            float stopDuration, float shrinkOutSeconds, long damage)
+            float stopDuration, float shrinkOutSeconds, long damage,
+            float areaRadiusMultiplier = 1f)
         {
             _owner = owner;
             _runId = runId;
@@ -55,8 +57,9 @@ namespace CursorHunter.Combat
             _stopChance = stopChance;
             _stopDuration = stopDuration;
             _shrinkOutSeconds = Mathf.Clamp(shrinkOutSeconds, 0f, duration);
+            _areaRadiusMultiplier = Mathf.Max(0.01f, areaRadiusMultiplier);
             _damage = damage;
-            transform.localScale = _baseScale;
+            transform.localScale = _baseScale * _areaRadiusMultiplier;
             transform.position = new Vector3(position.x, position.y, transform.position.z);
             _direction = owner.RandomDirection();
             gameObject.SetActive(true);
@@ -111,8 +114,9 @@ namespace CursorHunter.Combat
             }
 
             transform.localScale = _shrinkOutSeconds > 0f
-                ? _baseScale * Mathf.Clamp01((_expiresAt - now) / _shrinkOutSeconds)
-                : _baseScale;
+                ? _baseScale * _areaRadiusMultiplier *
+                    Mathf.Clamp01((_expiresAt - now) / _shrinkOutSeconds)
+                : _baseScale * _areaRadiusMultiplier;
 
             return true;
         }
@@ -159,8 +163,9 @@ namespace CursorHunter.Combat
                 next.DurationSeconds);
             _damage = next.Damage;
             transform.localScale = _shrinkOutSeconds > 0f
-                ? _baseScale * Mathf.Clamp01((_expiresAt - now) / _shrinkOutSeconds)
-                : _baseScale;
+                ? _baseScale * _areaRadiusMultiplier *
+                    Mathf.Clamp01((_expiresAt - now) / _shrinkOutSeconds)
+                : _baseScale * _areaRadiusMultiplier;
         }
 
         internal void ReturnToPool()
@@ -169,6 +174,7 @@ namespace CursorHunter.Combat
             _runId = default;
             _owner = null;
             _damage = 0L;
+            _areaRadiusMultiplier = 1f;
             transform.localScale = _baseScale;
             if (_particles != null)
             {

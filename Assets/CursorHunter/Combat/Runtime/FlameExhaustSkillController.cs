@@ -158,7 +158,8 @@ namespace CursorHunter.Combat
                 for (int i = 0; i < _activeProjectiles.Count; i++)
                     _activeProjectiles[i].RefreshGeometry(sourceCursorHitArea,
                         sourceCursorVisual, _runtime.CursorSizeRatio,
-                        _runtime.HitRadiusMultiplier);
+                        _runtime.HitRadiusMultiplier,
+                        _combat.AreaSkillRadiusMultiplier);
             }
 
             if (_combat.IsPaused)
@@ -233,10 +234,12 @@ namespace CursorHunter.Combat
                 sourceCursorVisual, direction, now,
                 _runtime.ProjectileDurationSeconds,
                 _runtime.SpeedWorldUnitsPerSecond,
-                _runtime.CursorSizeRatio, _runtime.HitRadiusMultiplier);
+                _runtime.CursorSizeRatio, _runtime.HitRadiusMultiplier,
+                _combat.AreaSkillRadiusMultiplier);
             _activeProjectiles.Add(next);
             next.Tick(now, _enemyFilter);
-            _nextCastAt = now + _runtime.CooldownSeconds;
+            _nextCastAt = now + _combat.ResolveAutoSkillCooldown(
+                _runtime.CooldownSeconds);
             _hasCast = true;
         }
 

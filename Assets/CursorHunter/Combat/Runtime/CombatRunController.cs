@@ -31,12 +31,19 @@ namespace CursorHunter.Combat
             new List<ICombatTarget>(128);
         private readonly Dictionary<string, long> _resourceRewards =
             new Dictionary<string, long>(StringComparer.Ordinal);
+        private readonly Dictionary<string, double> _fractionalRewardRemainders =
+            new Dictionary<string, double>(StringComparer.Ordinal);
 
         private RunRequest _runRequest;
         private readonly List<IRunSkillController> _skillControllers =
             new List<IRunSkillController>(7);
         private readonly Dictionary<string, IRunSkillController> _skillControllersById =
             new Dictionary<string, IRunSkillController>(StringComparer.Ordinal);
+        private RelicCombatSnapshot[] _relicSnapshots = Array.Empty<RelicCombatSnapshot>();
+        private IReadOnlyList<RelicCombatSnapshot> _relicSnapshotView =
+            Array.AsReadOnly(Array.Empty<RelicCombatSnapshot>());
+        private RelicDropRulesCombatSnapshot _relicDropRules;
+        private RelicCombatModifiers _relicModifiers;
         private SeededRandom _random;
         private float _elapsedSeconds;
         private float _durationSeconds;
@@ -51,6 +58,7 @@ namespace CursorHunter.Combat
         private bool _isPaused;
         private bool _completionRequested;
         private bool _abortRequested;
+        private bool _hasInvalidSkillControllerSet;
 
         public event Action<RunEndReason> CompletionRequested;
         public event Action<RunEndReason> AbortRequested;
@@ -81,6 +89,17 @@ namespace CursorHunter.Combat
         public CombatSnapshot CombatSnapshot => playerCombatStatsRuntime != null
             ? playerCombatStatsRuntime.Snapshot
             : default;
+        public IReadOnlyList<RelicCombatSnapshot> RelicSnapshots => _relicSnapshotView;
+        public RelicDropRulesCombatSnapshot RelicDropRules => _relicDropRules;
+        public RelicCombatModifiers RelicModifiers => _relicModifiers;
+        public float AreaSkillRadiusMultiplier =>
+            _relicModifiers.AreaSkillRadiusMultiplier;
+
+        public float ResolveAutoSkillCooldown(float baseCooldownSeconds)
+        {
+            return Mathf.Max(0.1f,
+                baseCooldownSeconds * _relicModifiers.AutoSkillCooldownMultiplier);
+        }
         public PlayerCombatStatsRuntime PlayerCombatStatsRuntime
         {
             get
@@ -209,6 +228,11 @@ namespace CursorHunter.Combat
             _garnetEarned = 0;
             _effectiveDamage = 0;
             _resourceRewards.Clear();
+            _fractionalRewardRemainders.Clear();
+            _relicSnapshots = Array.Empty<RelicCombatSnapshot>();
+            _relicSnapshotView = Array.AsReadOnly(_relicSnapshots);
+            _relicDropRules = default;
+            _relicModifiers = default;
             _isPrepared = true;
             _isRunning = false;
             _isPaused = false;
@@ -250,6 +274,10 @@ namespace CursorHunter.Combat
             _abortRequested = false;
             _lastBasicHitAt.Clear();
             ResetAttackPath();
+            _relicSnapshots = Array.Empty<RelicCombatSnapshot>();
+            _relicSnapshotView = Array.AsReadOnly(_relicSnapshots);
+            _relicDropRules = default;
+            _relicModifiers = default;
             playerCombatStatsRuntime.SetRunActive(false);
             StopAllSkills();
             PresentationReset?.Invoke();
@@ -419,9 +447,34 @@ namespace CursorHunter.Combat
 
         public bool ConfigureSkills(IReadOnlyList<SkillCombatSnapshot> skills)
         {
+            return ConfigureSkills(skills, false);
+        }
+
+        /// <summary>
+        /// Configures skills from an immutable run snapshot. Main's Trait path
+        /// requires every skill ID and every unlocked controller to match; it
+        /// must not silently substitute editor toggles or omit broken skills.
+        /// </summary>
+        public bool ConfigureSkills(
+            IReadOnlyList<SkillCombatSnapshot> skills,
+            bool requireExactSnapshotMapping)
+        {
             StopAllSkills();
             if (!_isPrepared && !_isRunning) return false;
-            if (!RefreshSkillControllers()) return false;
+            bool validControllerSet = RefreshSkillControllers();
+            if (requireExactSnapshotMapping && !validControllerSet)
+            {
+                Debug.LogError(
+                    "Trait skill mapping is incomplete: Main must have one valid controller per skill ID.",
+                    this);
+                return false;
+            }
+
+            if (requireExactSnapshotMapping && skills == null)
+            {
+                Debug.LogError("Trait skill snapshot is missing.", this);
+                return false;
+            }
 
             var snapshots = new Dictionary<string, SkillCombatSnapshot>(
                 StringComparer.Ordinal);
@@ -430,14 +483,77 @@ namespace CursorHunter.Combat
                 for (int i = 0; i < skills.Count; i++)
                 {
                     SkillCombatSnapshot skill = skills[i];
-                    if (!skill.IsValid || snapshots.ContainsKey(skill.SkillId))
-                        return false;
+                    if (!skill.IsValid)
+                    {
+                        if (requireExactSnapshotMapping)
+                        {
+                            Debug.LogError(
+                                "Trait skill snapshot is invalid for '" + skill.SkillId + "'.",
+                                this);
+                            return false;
+                        }
+                        Debug.LogWarning(
+                            "Ignoring invalid skill snapshot '" + skill.SkillId +
+                            "'; other skills and the run will continue.", this);
+                        continue;
+                    }
+                    if (snapshots.ContainsKey(skill.SkillId))
+                    {
+                        if (requireExactSnapshotMapping)
+                        {
+                            Debug.LogError(
+                                "Trait skill snapshot contains duplicate ID '" + skill.SkillId + "'.",
+                                this);
+                            return false;
+                        }
+                        Debug.LogWarning(
+                            "Ignoring duplicate skill snapshot '" + skill.SkillId +
+                            "'; the first valid snapshot will be used.", this);
+                        continue;
+                    }
                     snapshots.Add(skill.SkillId, skill);
                 }
             }
-            foreach (SkillCombatSnapshot skill in snapshots.Values)
-                if (skill.Unlocked && !_skillControllersById.ContainsKey(skill.SkillId))
+            if (requireExactSnapshotMapping &&
+                (snapshots.Count != _skillControllersById.Count ||
+                 snapshots.Count != skills.Count))
+            {
+                Debug.LogError(
+                    "Trait skill mapping mismatch: snapshot and Main controller IDs must match exactly.",
+                    this);
+                return false;
+            }
+
+            if (requireExactSnapshotMapping)
+            {
+                foreach (string skillId in snapshots.Keys)
+                {
+                    if (_skillControllersById.ContainsKey(skillId)) continue;
+                    Debug.LogError(
+                        "Trait skill '" + skillId + "' has no Main scene controller.",
+                        this);
                     return false;
+                }
+                if (_skillBalanceOverrides != null)
+                    ClearSkillBalanceOverrides();
+            }
+
+            foreach (SkillCombatSnapshot skill in snapshots.Values)
+            {
+                if (skill.Unlocked && !_skillControllersById.ContainsKey(skill.SkillId))
+                {
+                    if (requireExactSnapshotMapping)
+                    {
+                        Debug.LogError(
+                            "Unlocked Trait skill '" + skill.SkillId + "' has no scene controller.",
+                            this);
+                        return false;
+                    }
+                    Debug.LogWarning(
+                        "Unlocked skill '" + skill.SkillId +
+                        "' has no scene controller; continuing without it.", this);
+                }
+            }
 
             for (int i = 0; i < _skillControllers.Count; i++)
             {
@@ -452,13 +568,92 @@ namespace CursorHunter.Combat
                 }
                 if (!snapshots.TryGetValue(controller.Id, out SkillCombatSnapshot skill))
                     skill = new SkillCombatSnapshot(controller.Id, false);
-                if (!controller.IsAcquiredForRun(skill.Unlocked)) continue;
+                bool acquired = requireExactSnapshotMapping
+                    ? skill.Unlocked
+                    : controller.IsAcquiredForRun(skill.Unlocked);
+                if (!acquired) continue;
 
                 MonoBehaviour component = (MonoBehaviour)controller;
-                if (component.isActiveAndEnabled &&
-                    controller.ConfigureForRun(this, _runRequest.RunId,
-                        _runRequest.Seed, skill)) continue;
-                StopAllSkills();
+                if (requireExactSnapshotMapping &&
+                    (component == null || !component.isActiveAndEnabled))
+                {
+                    Debug.LogError(
+                        "Unlocked Trait skill '" + controller.Id + "' has an inactive controller.",
+                        this);
+                    StopAllSkills();
+                    return false;
+                }
+                try
+                {
+                    if (component.isActiveAndEnabled &&
+                        controller.ConfigureForRun(this, _runRequest.RunId,
+                            _runRequest.Seed, skill)) continue;
+                }
+                catch (Exception exception)
+                {
+                    Debug.LogError(
+                        "Skill '" + controller.Id +
+                        "' threw during preparation. " +
+                        exception, component);
+                }
+                if (requireExactSnapshotMapping)
+                {
+                    Debug.LogError(
+                        "Unlocked Trait skill '" + controller.Id +
+                        "' could not be prepared; refusing to start a mismatched run.",
+                        component);
+                    StopAllSkills();
+                    return false;
+                }
+                Debug.LogWarning(
+                    "Skill '" + controller.Id +
+                    "' could not be prepared; continuing the run without it.",
+                    component);
+                StopSkillSafely(controller);
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Captures relic definitions and ownership from the run's validated
+        /// progression snapshot. Effects and drops are consumed by combat
+        /// systems through this read-only view.
+        /// </summary>
+        public bool ConfigureRelics(
+            IReadOnlyList<RelicCombatSnapshot> relics,
+            RelicDropRulesCombatSnapshot dropRules)
+        {
+            if ((!_isPrepared && !_isRunning) || !dropRules.IsValid)
+                return false;
+
+            int count = relics == null ? 0 : relics.Count;
+            if (count != 0 && count != 20)
+                return false;
+
+            var copied = new RelicCombatSnapshot[count];
+            var seenIds = new HashSet<string>(StringComparer.Ordinal);
+            for (int i = 0; i < count; i++)
+            {
+                RelicCombatSnapshot relic = relics[i];
+                if (!relic.IsValid || !seenIds.Add(relic.RelicId))
+                    return false;
+                copied[i] = relic;
+            }
+
+            _relicSnapshots = copied;
+            _relicSnapshotView = Array.AsReadOnly(_relicSnapshots);
+            _relicDropRules = dropRules;
+            try
+            {
+                _relicModifiers = RelicCombatModifiers.From(_relicSnapshotView);
+            }
+            catch (ArgumentException exception)
+            {
+                Debug.LogError("CombatRunController rejected relic effects: " + exception.Message, this);
+                _relicSnapshots = Array.Empty<RelicCombatSnapshot>();
+                _relicSnapshotView = Array.AsReadOnly(_relicSnapshots);
+                _relicDropRules = default;
+                _relicModifiers = default;
                 return false;
             }
             return true;
@@ -468,32 +663,52 @@ namespace CursorHunter.Combat
         {
             _skillControllers.Clear();
             _skillControllersById.Clear();
+            _hasInvalidSkillControllerSet = false;
             MonoBehaviour[] components = GetComponentsInChildren<MonoBehaviour>(true);
             for (int i = 0; i < components.Length; i++)
             {
                 if (!(components[i] is IRunSkillController controller)) continue;
-                if (!SkillStatUpgrade.IsKnownSkill(controller.Id) ||
-                    _skillControllersById.ContainsKey(controller.Id))
+                if (!SkillStatUpgrade.IsKnownSkill(controller.Id))
                 {
-                    Debug.LogError("Duplicate or unknown skill controller: " +
+                    _hasInvalidSkillControllerSet = true;
+                    Debug.LogWarning("Ignoring unknown skill controller: " +
                         controller.Id, components[i]);
-                    _skillControllers.Clear();
-                    _skillControllersById.Clear();
-                    return false;
+                    continue;
+                }
+                if (_skillControllersById.ContainsKey(controller.Id))
+                {
+                    _hasInvalidSkillControllerSet = true;
+                    Debug.LogWarning("Ignoring duplicate skill controller: " +
+                        controller.Id + "; the first controller will be used.",
+                        components[i]);
+                    continue;
                 }
                 _skillControllersById.Add(controller.Id, controller);
                 _skillControllers.Add(controller);
             }
-            return true;
+            return !_hasInvalidSkillControllerSet;
         }
 
         private void StopAllSkills()
         {
             for (int i = 0; i < _skillControllers.Count; i++)
+                StopSkillSafely(_skillControllers[i]);
+        }
+
+        private void StopSkillSafely(IRunSkillController controller)
+        {
+            if (!(controller is MonoBehaviour component) || component == null)
+                return;
+            try
             {
-                IRunSkillController controller = _skillControllers[i];
-                if (controller is MonoBehaviour component && component != null)
-                    controller.StopSkill();
+                controller.StopSkill();
+            }
+            catch (Exception exception)
+            {
+                Debug.LogError(
+                    "Skill '" + controller.Id +
+                    "' threw while stopping; continuing run cleanup. " +
+                    exception, component);
             }
         }
 
@@ -504,6 +719,15 @@ namespace CursorHunter.Combat
                    target.RunId == runId && target.IsActive && target.IsRegistered &&
                    rawDamage > 0L &&
                    ApplyBundle(target, rawDamage, CombatDamageSource.Skill);
+        }
+
+        public bool TryApplyPetDamage(RunId runId, ICombatTarget target, long rawDamage)
+        {
+            return IsRunning && _elapsedSeconds < _durationSeconds &&
+                   runId == _runRequest.RunId && target != null &&
+                   target.RunId == runId && target.IsActive && target.IsRegistered &&
+                   rawDamage > 0L &&
+                   ApplyBundle(target, rawDamage, CombatDamageSource.Skill, true);
         }
 
         public bool TryCompleteRun(
@@ -576,10 +800,13 @@ namespace CursorHunter.Combat
         }
 
         private bool ApplyBundle(ICombatTarget target, long skillDamage = 0L,
-            CombatDamageSource source = CombatDamageSource.CursorAttack)
+            CombatDamageSource source = CombatDamageSource.CursorAttack,
+            bool isPetDamage = false)
         {
             bool wasCritical = RollCriticalHit();
-            if (!TryGetHitDamage(wasCritical, out long hitDamage, skillDamage))
+            bool execute = TryRollLowHealthExecute(target);
+            if (!TryGetHitDamage(wasCritical, target, source, isPetDamage,
+                    execute, out long hitDamage, skillDamage))
             {
                 RequestAbort(RunEndReason.NumericOverflow);
                 return false;
@@ -593,11 +820,23 @@ namespace CursorHunter.Combat
                 source == CombatDamageSource.CursorAttack &&
                 target is IHitEffectAnchor hitAnchor &&
                 hitAnchor.TryGetHitEffectBounds(out hitBounds);
-            bool applied = target.ApplyDamage(
-                _runRequest.RunId,
-                hitDamage,
-                out long effectiveDamage,
-                out bool killed);
+            bool applied;
+            long effectiveDamage;
+            bool killed;
+            if (execute && target is MonsterCombatTarget executableTarget)
+            {
+                applied = executableTarget.ApplyDamage(
+                    _runRequest.RunId, hitDamage, true,
+                    out effectiveDamage, out killed);
+            }
+            else
+            {
+                applied = target.ApplyDamage(
+                    _runRequest.RunId,
+                    hitDamage,
+                    out effectiveDamage,
+                    out killed);
+            }
 
             if (!applied)
             {
@@ -644,10 +883,23 @@ namespace CursorHunter.Combat
                 return true;
             }
 
+            long garnetReward = target.GarnetReward;
+            bool normalMonsterKill = _runRequest.Mode == RunMode.NormalField &&
+                target is MonsterCombatTarget;
+            if (normalMonsterKill && !TryScaleReward(
+                    "gem.garnet",
+                    garnetReward,
+                    _relicModifiers.NormalMonsterRewardMultiplier,
+                    out garnetReward))
+            {
+                RequestAbort(RunEndReason.NumericOverflow);
+                return true;
+            }
+
             if (_defeatedCount == int.MaxValue ||
                 !TryAddNonNegative(
                     _garnetEarned,
-                    target.GarnetReward,
+                    garnetReward,
                     out long nextGarnetEarned))
             {
                 RequestAbort(RunEndReason.NumericOverflow);
@@ -656,7 +908,7 @@ namespace CursorHunter.Combat
 
             _defeatedCount++;
             _garnetEarned = nextGarnetEarned;
-            if (!TryRecordReward("gem.garnet", target.GarnetReward))
+            if (!TryRecordReward("gem.garnet", garnetReward))
             {
                 RequestAbort(RunEndReason.NumericOverflow);
                 return true;
@@ -665,7 +917,8 @@ namespace CursorHunter.Combat
             if (!TryRecordBonusDrop(
                     target.BonusDropCurrencyId,
                     target.BonusDropAmount,
-                    target.BonusDropChancePercent))
+                    target.BonusDropChancePercent,
+                    normalMonsterKill))
             {
                 RequestAbort(RunEndReason.NumericOverflow);
                 return true;
@@ -680,9 +933,48 @@ namespace CursorHunter.Combat
                    _random.NextFloat(0f, 100f) < playerCombatStatsRuntime.CriticalChancePercent;
         }
 
-        private bool TryGetHitDamage(bool critical, out long damage, long skillDamage = 0L)
+        private bool TryGetHitDamage(
+            bool critical,
+            ICombatTarget target,
+            CombatDamageSource source,
+            bool isPetDamage,
+            bool execute,
+            out long damage,
+            long skillDamage = 0L)
         {
             double scaled = skillDamage > 0 ? skillDamage : playerCombatStatsRuntime.AttackPower;
+
+            if (source == CombatDamageSource.CursorAttack)
+            {
+                scaled *= _relicModifiers.CursorAttackDamageMultiplier;
+            }
+            else if (isPetDamage)
+            {
+                scaled *= _relicModifiers.PetDamageMultiplier;
+                float doubleDamageChance = Mathf.Clamp(
+                    _relicModifiers.PetDoubleDamageChancePercent, 0f, 100f);
+                if (doubleDamageChance > 0f && _random != null &&
+                    _random.NextFloat(0f, 100f) < doubleDamageChance)
+                {
+                    scaled *= 2d;
+                }
+            }
+            else
+            {
+                scaled *= _relicModifiers.AutoSkillDamageMultiplier;
+            }
+
+            if (execute && target is MonsterCombatTarget executableTarget)
+            {
+                scaled = executableTarget.MaxHealth;
+            }
+            else if (_runRequest.Mode == RunMode.NormalField &&
+                target is MonsterCombatTarget fullHealthTarget &&
+                fullHealthTarget.CurrentHealth == fullHealthTarget.MaxHealth)
+            {
+                scaled *= 1d + _relicModifiers.FullHealthFirstHitDamagePercent / 100d;
+            }
+
             if (_runRequest.Mode == RunMode.Boss)
             {
                 scaled *= playerCombatStatsRuntime.BossDamageMultiplier;
@@ -709,10 +1001,30 @@ namespace CursorHunter.Combat
             return true;
         }
 
+        private bool TryRollLowHealthExecute(ICombatTarget target)
+        {
+            if (_runRequest.Mode != RunMode.NormalField ||
+                !(target is MonsterCombatTarget monster) ||
+                monster.MaxHealth <= 0L ||
+                monster.CurrentHealth <= 0L ||
+                _relicModifiers.LowHealthExecuteChancePercent <= 0f ||
+                _relicModifiers.LowHealthExecuteThresholdPercent <= 0f ||
+                _random == null)
+            {
+                return false;
+            }
+
+            double healthPercent = monster.CurrentHealth * 100d / monster.MaxHealth;
+            return healthPercent <= _relicModifiers.LowHealthExecuteThresholdPercent &&
+                   _random.NextFloat(0f, 100f) < Mathf.Clamp(
+                       _relicModifiers.LowHealthExecuteChancePercent, 0f, 100f);
+        }
+
         private bool TryRecordBonusDrop(
             string currencyId,
             long amount,
-            float chancePercent)
+            float chancePercent,
+            bool isNormalMonsterKill)
         {
             if (amount <= 0L || string.IsNullOrWhiteSpace(currencyId) ||
                 chancePercent <= 0f || _random == null)
@@ -725,9 +1037,59 @@ namespace CursorHunter.Combat
                 return true;
             }
 
+            long resolvedAmount = amount;
+            if (isNormalMonsterKill && !TryScaleReward(
+                    currencyId,
+                    resolvedAmount,
+                    _relicModifiers.AllNormalMonsterRewardMultiplier,
+                    out resolvedAmount))
+            {
+                return false;
+            }
+
+            if (isNormalMonsterKill && currencyId.StartsWith("gem.", StringComparison.Ordinal) &&
+                _relicModifiers.BonusGemDropChancePercent > 0f &&
+                _random.NextFloat(0f, 100f) < Mathf.Clamp(
+                    _relicModifiers.BonusGemDropChancePercent, 0f, 100f))
+            {
+                if (resolvedAmount == long.MaxValue) return false;
+                resolvedAmount++;
+            }
+
             return TryRecordReward(
                 currencyId,
-                amount);
+                resolvedAmount);
+        }
+
+        private bool TryScaleReward(
+            string currencyId,
+            long amount,
+            float multiplier,
+            out long scaledAmount)
+        {
+            if (amount <= 0L || multiplier <= 1f)
+            {
+                scaledAmount = amount;
+                return true;
+            }
+
+            double result = amount * (double)multiplier;
+            if (_fractionalRewardRemainders.TryGetValue(currencyId, out double remainder))
+                result += remainder;
+            if (double.IsNaN(result) || double.IsInfinity(result) ||
+                result < 0d || result > long.MaxValue)
+            {
+                scaledAmount = 0L;
+                return false;
+            }
+
+            scaledAmount = (long)Math.Floor(result);
+            double nextRemainder = result - scaledAmount;
+            if (nextRemainder <= 0d)
+                _fractionalRewardRemainders.Remove(currencyId);
+            else
+                _fractionalRewardRemainders[currencyId] = nextRemainder;
+            return true;
         }
 
         private bool TryRecordReward(string currencyId, long amount)

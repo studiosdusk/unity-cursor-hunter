@@ -120,7 +120,8 @@ namespace CursorHunter.Combat
             _runId = runId;
             if (_balance != null) skill = default;
             _runtime = new PetRuntimeStat(BalanceBasis, skill,
-                combat.CombatSnapshot.AttackPower);
+                combat.CombatSnapshot.AttackPower,
+                combat.RelicModifiers);
             _animation = petRoot.GetComponent<SkeletonAnimation>();
             ConfigureVisualSorting();
             _lastElapsedSeconds = combat.ElapsedSeconds;
@@ -374,7 +375,7 @@ namespace CursorHunter.Combat
 
             Vector3 effectPosition = _target.TryGetHitEffectBounds(out Bounds bounds)
                 ? bounds.center : (Vector3)nearestPoint;
-            if (_combat.TryApplySkillDamage(_runId, _target, _runtime.Damage))
+            if (_combat.TryApplyPetDamage(_runId, _target, _runtime.Damage))
                 PlayImpactEffect(effectPosition, now);
         }
 
@@ -465,7 +466,8 @@ namespace CursorHunter.Combat
             PetRuntimeStat previous = _runtime;
             _balance = next;
             _runtime = new PetRuntimeStat(BalanceBasis, default,
-                combat.CombatSnapshot.AttackPower);
+                combat.CombatSnapshot.AttackPower,
+                combat.RelicModifiers);
             float now = combat.ElapsedSeconds;
             _nextAttackAt = SkillBalanceMath.Retime(_nextAttackAt, now,
                 previous.AttackIntervalSeconds, _runtime.AttackIntervalSeconds);

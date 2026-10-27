@@ -55,8 +55,8 @@ namespace CursorHunter.App
             SpawnPlan spawnPlan, IReadOnlyList<string> enabledMonsterIds,
             out string failureReason)
         {
-            return StartInternal(request, combatSnapshot, null, null, spawnPlan,
-                out failureReason, enabledMonsterIds, true);
+            return StartInternal(request, combatSnapshot, null, null, null,
+                default, spawnPlan, out failureReason, enabledMonsterIds, true);
         }
 
         public bool Start(
@@ -70,6 +70,8 @@ namespace CursorHunter.App
                 combatSnapshot,
                 null,
                 null,
+                null,
+                default,
                 spawnPlan,
                 out failureReason);
         }
@@ -82,7 +84,7 @@ namespace CursorHunter.App
             out string failureReason)
         {
             return StartInternal(request, combatSnapshot, null, skills,
-                spawnPlan, out failureReason);
+                null, default, spawnPlan, out failureReason);
         }
 
         public bool Start(
@@ -97,6 +99,8 @@ namespace CursorHunter.App
                 combatSnapshot,
                 cursorStatBonuses,
                 null,
+                null,
+                default,
                 spawnPlan,
                 out failureReason);
         }
@@ -110,7 +114,40 @@ namespace CursorHunter.App
             out string failureReason)
         {
             return StartInternal(request, combatSnapshot, cursorStatBonuses,
-                skills, spawnPlan, out failureReason);
+                skills, null, default, spawnPlan, out failureReason);
+        }
+
+        public bool Start(
+            RunRequest request,
+            CombatSnapshot combatSnapshot,
+            CursorCombatStatBonusesSnapshot cursorStatBonuses,
+            IReadOnlyList<SkillCombatSnapshot> skills,
+            IReadOnlyList<RelicCombatSnapshot> relics,
+            RelicDropRulesCombatSnapshot relicDropRules,
+            SpawnPlan spawnPlan,
+            out string failureReason)
+        {
+            return StartInternal(request, combatSnapshot, cursorStatBonuses,
+                skills, relics, relicDropRules, spawnPlan, out failureReason);
+        }
+
+        /// <summary>
+        /// Starts from a fully resolved progression snapshot. Combat stats
+        /// already include the purchased trait deltas, so App must pass that
+        /// value directly instead of applying a second, parallel bonus path.
+        /// </summary>
+        public bool Start(
+            RunRequest request,
+            CombatSnapshot combatSnapshot,
+            IReadOnlyList<SkillCombatSnapshot> skills,
+            IReadOnlyList<RelicCombatSnapshot> relics,
+            RelicDropRulesCombatSnapshot relicDropRules,
+            SpawnPlan spawnPlan,
+            out string failureReason)
+        {
+            return StartInternal(request, combatSnapshot, null, skills,
+                relics, relicDropRules, spawnPlan, out failureReason,
+                requireExactSkillMapping: true);
         }
 
         private bool StartInternal(
@@ -118,10 +155,13 @@ namespace CursorHunter.App
             CombatSnapshot combatSnapshot,
             CursorCombatStatBonusesSnapshot? cursorStatBonuses,
             IReadOnlyList<SkillCombatSnapshot> skills,
+            IReadOnlyList<RelicCombatSnapshot> relics,
+            RelicDropRulesCombatSnapshot relicDropRules,
             SpawnPlan spawnPlan,
             out string failureReason,
             IReadOnlyList<string> enabledMonsterIds = null,
-            bool discardRewards = false)
+            bool discardRewards = false,
+            bool requireExactSkillMapping = false)
         {
             failureReason = string.Empty;
 
@@ -170,6 +210,9 @@ namespace CursorHunter.App
             bool combatStarted = false;
             try
             {
+                RelicCombatModifiers relicModifiers =
+                    RelicCombatModifiers.From(relics);
+                combatSnapshot = relicModifiers.ApplyTo(combatSnapshot);
                 bool prepared = cursorStatBonuses.HasValue
                     ? _combatRunController.PrepareRun(
                         request,
@@ -189,7 +232,18 @@ namespace CursorHunter.App
 
                 combatPrepared = true;
 
-                if (!_combatRunController.ConfigureSkills(skills))
+                if (!_combatRunController.ConfigureRelics(relics, relicDropRules))
+                {
+                    return FailStart(session,
+                        "CombatRunController rejected relic preparation.",
+                        true, false, false, out failureReason);
+                }
+
+                // Skill controllers capture the run's relic modifiers while
+                // preparing their runtime stats, so relics must be configured
+                // before they are enabled.
+                if (!_combatRunController.ConfigureSkills(skills,
+                    requireExactSkillMapping))
                 {
                     return FailStart(session,
                         "CombatRunController rejected skill preparation.",

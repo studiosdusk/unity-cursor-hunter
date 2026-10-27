@@ -21,9 +21,22 @@ namespace CursorHunter.Progression
             Func<string, long> wallet,
             CursorCombatStatDefaultsSnapshot? cursorStatDefaults)
         {
+            return Build(document, purchased, wallet, cursorStatDefaults, null);
+        }
+
+        public static GameInformation Build(
+            GameDataDocument document,
+            ISet<string> purchased,
+            Func<string, long> wallet,
+            CursorCombatStatDefaultsSnapshot? cursorStatDefaults,
+            ISet<string> ownedRelicIds)
+        {
             if (document == null || purchased == null || wallet == null)
                 throw new ArgumentNullException("Game data builder inputs cannot be null.");
             var result = JsonUtility.FromJson<GameInformation>(JsonUtility.ToJson(document.information));
+            if (ownedRelicIds != null && result.relics != null)
+                foreach (RelicInformation relic in result.relics)
+                    if (relic != null) relic.owned = ownedRelicIds.Contains(relic.id);
             if (cursorStatDefaults.HasValue)
             {
                 ApplyCursorStatDefaults(result, cursorStatDefaults.Value);

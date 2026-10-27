@@ -530,5 +530,54 @@
     "guid": "87129087663ba4d509b75eb67c6a60c0",
     "status": "runtime-applied",
     "note": "드래그 중 48px 커서로 축소해 표시"
+  },
+  {
+    "design_id": "trait.skill.tornado.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/IconPack/2D Minimal-IconPack/Icons/512/Misc_Wing_01.png",
+    "guid": "fcd38e409ef5e4edaa3bd7133ec1ec42",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "trait.skill.headshot.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/IconPack/2D Minimal-IconPack/Icons/512/Gear_Bow_01.png",
+    "guid": "84e3504adeb474cd78690f0e7ce48a69",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "trait.skill.thunder.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/IconPack/2D Minimal-IconPack/Icons/512/Stat_Skill_01.png",
+    "guid": "38a8954969c164e11966eb392a34b908",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "trait.skill.flame-exhaust.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/IconPack/2D Minimal-IconPack/Icons/512/Misc_Fire_01_Red.png",
+    "guid": "a70c8c3de09a6455cbaf0b8cf355d184",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "trait.skill.magic-ball.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/IconPack/2D Minimal-IconPack/Icons/512/Economy_Gem_07_Blue.png",
+    "guid": "381b4004bc4324decb6e29a822246072",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "trait.skill.laser.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/IconPack/2D Minimal-IconPack/Icons/512/UI_ETC_Target_02_Blue.png",
+    "guid": "8725c96846cc04e13b9bd0282edb30dd",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "trait.skill.baby-dragon.icon",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/2D Characters-PetPack4/Sprites/Thumbnail/2x/Pet_Baby Dragon.png",
+    "guid": "e3db040c4cdb5234bbbea8c36b533fe2",
+    "status": "runtime-applied"
   }
 ]

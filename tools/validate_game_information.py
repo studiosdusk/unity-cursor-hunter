@@ -1,4 +1,4 @@
-"""Read-only checks for the v3 JSON handoff. Never opens Unity or runs the game."""
+"""Read-only checks for the v4 JSON handoff. Never opens Unity or runs the game."""
 import argparse
 import json
 import math
@@ -45,8 +45,10 @@ def main():
     def finite_positive(value):
         return isinstance(value, (int, float)) and math.isfinite(value) and value > 0
 
-    check(data["schemaVersion"] == example["schemaVersion"] == 3, "Schema version must be 3")
-    check(set(example) == {"schemaVersion", "balanceVersion", "stats", "rules", "gemstones", "monsters", "skills"}, "Unexpected JSON sections")
+    check(data["schemaVersion"] == example["schemaVersion"] == 4, "Schema version must be 4")
+    check(set(example) == {"schemaVersion", "balanceVersion", "stats", "rules", "gemstones", "monsters", "skills", "relics", "relicDropRules"}, "Unexpected JSON sections")
+    check(len(example["relics"]) == 20, "Expected 20 combat relic definitions")
+    check(example["relicDropRules"].get("maxPerKill") == 1, "Relic drop cap must be one per kill")
     gems = ["gem." + name for name in ["garnet", "topaz", "amethyst", "sapphire", "diamond", "dragon"]]
     check([g["id"] for g in example["gemstones"]] == gems, "Gemstone IDs/order changed")
     check(len(data["monsters"]) == len(example["monsters"]) == 10, "Expected 10 monsters")
@@ -108,7 +110,10 @@ def main():
     check(known_currencies == set(gems), "Some currencies have no attainable monster source")
     for skill in data["skills"]:
         check(skill["currencyId"] in known_currencies, "Unattainable skill currency")
-        check(skill["id"] in ("skill.tornado", "skill.pet_baby_dragon"),
+        check(skill["id"] in (
+            "skill.tornado", "skill.headshot", "skill.thunder",
+            "skill.flame_exhaust", "skill.magic_ball", "skill.laser",
+            "skill.pet_baby_dragon"),
               "Unexpected purchased skill category")
     tornado_controller = BASE / "Combat/Prefabs/Skills/TornadoSkillController.prefab"
     tornado_object = BASE / "Combat/Prefabs/Skills/TornadoObject.prefab"
@@ -199,6 +204,10 @@ def main():
 
     controller = (BASE / "Progression/Runtime/TraitScreenController.cs").read_text()
     check("CreateGameInformationJson" in controller and "SourceJson" in controller, "Summary must use captured JSON")
+    check("GetOwnedRelicIds" in controller, "Relic test ownership is not included in resolved JSON")
+    combat = (BASE / "Combat/Runtime/CombatRunController.cs").read_text()
+    check("ConfigureRelics" in combat and "RelicSnapshots" in combat,
+          "Relic combat snapshot handoff is missing")
     check("GetGemstoneDropWeight" not in controller, "Old weighted gemstone unlock path remains")
     catalog = (BASE / "Progression/Runtime/TraitCatalog.cs").read_text()
     check('AddGemstoneChain' not in catalog and '"stat.multiClick"' not in catalog, "Old unlock/multi-click catalog remains")
@@ -230,7 +239,7 @@ def main():
                         errors.append(f"C# syntax: {path.relative_to(ROOT)}:{node.start_point.row+1} {node.type}")
                     stack.extend(node.children)
     if errors: raise SystemExit("\n".join(errors))
-    print("PASS: JSON sections, 10 monsters, seven skill IDs, currency reachability, prefab IDs, TMP, scene and render settings" + (", C# syntax" if args.syntax else ""))
+    print("PASS: JSON sections, 10 monsters, seven skill IDs, 20 combat relic definitions, currency reachability, prefab IDs, TMP, scene and render settings" + (", C# syntax" if args.syntax else ""))
     print("Unity import, semantic compilation and gameplay were NOT run.")
 
 if __name__ == "__main__":

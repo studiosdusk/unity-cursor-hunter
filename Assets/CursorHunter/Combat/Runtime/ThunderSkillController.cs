@@ -159,7 +159,8 @@ namespace CursorHunter.Combat
                 _runtime.ImpactDelaySeconds,
                 _runtime.EffectDurationSeconds);
             _active.Add(next);
-            _nextCastAt = now + _runtime.CooldownSeconds;
+            _nextCastAt = now + _combat.ResolveAutoSkillCooldown(
+                _runtime.CooldownSeconds);
             _hasCast = true;
         }
 

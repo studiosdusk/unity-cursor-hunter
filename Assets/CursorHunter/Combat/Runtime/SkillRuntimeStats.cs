@@ -318,23 +318,29 @@ namespace CursorHunter.Combat
     internal readonly struct PetRuntimeStat
     {
         internal PetRuntimeStat(PetBaseStat basis,
-            SkillCombatSnapshot upgrades, long attackPower)
+            SkillCombatSnapshot upgrades, long attackPower,
+            RelicCombatModifiers relics = default)
         {
             DamageMultiplier = SkillStatMath.Add(basis.DamageMultiplier,
                 upgrades, "damageMultiplier", 0.01f);
             Damage = SkillStatMath.ScaleDamage(attackPower, DamageMultiplier);
-            AttackIntervalSeconds = SkillStatMath.Add(
+            float attackInterval = SkillStatMath.Add(
                 basis.AttackIntervalSeconds, upgrades,
                 "attackIntervalSeconds", 0.5f);
+            AttackIntervalSeconds = Mathf.Max(0.5f, attackInterval *
+                (1f - Mathf.Clamp(relics.PetAttackIntervalReductionPercent, 0f, 95f) / 100f));
             MoveSpeedWorldUnitsPerSecond = SkillStatMath.Add(
                 basis.MoveSpeedWorldUnitsPerSecond, upgrades,
-                "moveSpeedWorldUnitsPerSecond", 0.01f);
+                "moveSpeedWorldUnitsPerSecond", 0.01f) *
+                relics.PetMoveSpeedMultiplier;
             DetectionRadiusWorldUnits = SkillStatMath.Add(
                 basis.DetectionRadiusWorldUnits, upgrades,
-                "detectionRadiusWorldUnits", 0.01f);
+                "detectionRadiusWorldUnits", 0.01f) *
+                relics.PetDetectionRadiusMultiplier;
             AttackRangeWorldUnits = SkillStatMath.Add(
                 basis.AttackRangeWorldUnits, upgrades,
-                "attackRangeWorldUnits", 0.01f);
+                "attackRangeWorldUnits", 0.01f) *
+                relics.PetAttackRadiusMultiplier;
             CursorLeashWorldUnits = Mathf.Max(AttackRangeWorldUnits,
                 basis.CursorLeashWorldUnits);
             IdleDistanceWorldUnits = Mathf.Max(0f,

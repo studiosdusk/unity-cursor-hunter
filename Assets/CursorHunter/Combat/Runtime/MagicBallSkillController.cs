@@ -163,7 +163,8 @@ namespace CursorHunter.Combat
                     _random.NextFloat(0f, 1f), _random.NextFloat(0f, 1f));
                 if (!_ball.Activate(this, _runId, fieldBounds, spawnFraction,
                     spawnPlaneZ, startingDirections[directionIndex].normalized,
-                    now, _runtime.SizeMultiplier)) return;
+                    now, _runtime.SizeMultiplier *
+                        _combat.AreaSkillRadiusMultiplier)) return;
             }
             Physics2D.SyncTransforms();
             _ball.Tick(now, fieldBounds, _enemyFilter,

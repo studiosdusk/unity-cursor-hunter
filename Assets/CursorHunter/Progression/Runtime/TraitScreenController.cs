@@ -657,7 +657,24 @@ namespace CursorHunter.Progression
         {
             return GameInformationBuilder.Build(_document, _purchased,
                 id => GetGemstoneBalance(GetGemstoneIndexById(id)),
-                _cursorCombatStatDefaults);
+                _cursorCombatStatDefaults, GetOwnedRelicIds());
+        }
+
+        private HashSet<string> GetOwnedRelicIds()
+        {
+            EnsureRelicEntries();
+            var ownedIds = new HashSet<string>(StringComparer.Ordinal);
+            RelicInformation[] definitions = _document == null ||
+                _document.information == null
+                ? null
+                : _document.information.relics;
+            if (definitions == null) return ownedIds;
+            int count = Mathf.Min(definitions.Length, relicEntries.Count);
+            for (int i = 0; i < count; i++)
+                if (definitions[i] != null && relicEntries[i] != null &&
+                    relicEntries[i].IsObtained)
+                    ownedIds.Add(definitions[i].id);
+            return ownedIds;
         }
 
         public void SetCursorCombatStatDefaults(
@@ -3257,6 +3274,32 @@ namespace CursorHunter.Progression
                     skillTitle + " · " + skill.id,
                     GetTabAccent(TraitTab.Skill));
                 AddLocalizedInfo("해금 상태", "enabled", skill.enabled ? "해금" : "잠김");
+            }
+
+            CreateSummarySection(_summaryOverlayContent, "유물 전투 효과와 드롭 정보",
+                new Color(0.92f, 0.69f, 0.28f, 1f));
+            for (int i = 0; i < information.relics.Length; i++)
+            {
+                RelicInformation relic = information.relics[i];
+                string title = i < relicEntries.Count && relicEntries[i] != null &&
+                               !string.IsNullOrWhiteSpace(relicEntries[i].Title)
+                    ? relicEntries[i].Title
+                    : relic.id;
+                CreateSummaryCategory(_summaryOverlayContent,
+                    title + " · " + relic.id, new Color(0.92f, 0.69f, 0.28f, 1f));
+                AddLocalizedInfo("획득 상태", "owned", relic.owned ? "획득" : "미획득");
+                EntityTextDefinition sourceMonster = _document == null
+                    ? null
+                    : _document.FindEntity(relic.sourceMonsterId);
+                AddLocalizedInfo("드롭 몬스터", "sourceMonsterId",
+                    sourceMonster == null ? relic.sourceMonsterId : sourceMonster.displayName);
+                AddLocalizedInfo("개별 드롭 확률(%)", "dropChancePercent",
+                    relic.dropChancePercent);
+                AddLocalizedInfo("전투 효과 ID", "effectId", relic.effectId);
+                AddLocalizedInfo("효과 수치", "effectValue", relic.effectValue);
+                if (relic.effectValue2 > 0f)
+                    AddLocalizedInfo("보조 효과 수치(%)", "effectValue2",
+                        relic.effectValue2);
             }
 
             CreateSummarySection(_summaryOverlayContent, "통합 연구 트리 전체 진행도", AvailableColor);
@@ -6172,9 +6215,15 @@ namespace CursorHunter.Progression
                 return;
             }
 
+            Mouse mouse = Mouse.current;
+            if (mouse == null)
+            {
+                return;
+            }
+
             if (RectTransformUtility.ScreenPointToLocalPointInRectangle(
                     _runtimeRoot,
-                    Input.mousePosition,
+                    mouse.position.ReadValue(),
                     GetUiCamera(),
                     out Vector2 localPosition))
             {
@@ -6197,8 +6246,6 @@ namespace CursorHunter.Progression
                 case "stat.critical": return LocalizationCatalog.Get("ui.critical", "치명타");
                 case "stat.boss": return LocalizationCatalog.Get("ui.boss", "보스 피해 배수");
                 case "stat.fieldDuration": return LocalizationCatalog.Get("ui.category.fieldDuration", "일반 필드 시간");
-                case "skill.cursorAura": return LocalizationCatalog.Get("ui.category.petAura", "펫 동료");
-                case "skill.pet_baby_dragon": return "베이비 드래곤";
                 default: return GetLocalizedEntityName(category.Id, category.Title);
             }
         }
@@ -6218,7 +6265,6 @@ namespace CursorHunter.Progression
                 case "stat.critical": return "ui.critical";
                 case "stat.boss": return "ui.boss";
                 case "stat.fieldDuration": return "ui.category.fieldDuration";
-                case "skill.cursorAura": return "ui.category.petAura";
                 default: return string.Empty;
             }
         }
@@ -7852,7 +7898,19 @@ namespace CursorHunter.Progression
             {
                 string skillId = GetEntityRootId(id, "skill.");
                 if (string.Equals(id, skillId, StringComparison.Ordinal))
-                    return "배우면 전투에서 사용할 수 있습니다.";
+                {
+                    switch (skillId)
+                    {
+                        case "skill.tornado": return "필드에 토네이도를 만들어 범위 안의 적을 반복 공격합니다.";
+                        case "skill.headshot": return "무작위 적을 조준한 뒤 폭발시켜 주변 적까지 공격합니다.";
+                        case "skill.thunder": return "무작위 적 하나에게 벼락을 떨어뜨립니다.";
+                        case "skill.flame_exhaust": return "커서에서 불꽃 투사체를 발사해 적을 공격합니다.";
+                        case "skill.magic_ball": return "마력 구체가 필드를 이동하며 닿은 적을 공격합니다.";
+                        case "skill.laser": return "필드에 레이저를 생성해 빔에 닿은 적을 공격합니다.";
+                        case "skill.pet_baby_dragon": return "베이비 드래곤이 커서를 따라다니며 가까운 적을 자동 공격합니다.";
+                        default: return "배우면 전투에서 사용할 수 있습니다.";
+                    }
+                }
                 if (id.EndsWith(".damage", StringComparison.Ordinal))
                     return "스킬 피해량을 높입니다.";
                 if (id.EndsWith(".radius", StringComparison.Ordinal))
@@ -8061,7 +8119,7 @@ namespace CursorHunter.Progression
                 _document,
                 purchased,
                 id => GetGemstoneBalance(GetGemstoneIndexById(id)),
-                _cursorCombatStatDefaults);
+                _cursorCombatStatDefaults, GetOwnedRelicIds());
         }
 
         private UpgradeNodeData FindUpgradeNodeData(string nodeId)
@@ -8185,12 +8243,11 @@ namespace CursorHunter.Progression
             switch (id)
             {
                 case "skill.tornado": return "토네이도";
-                case "skill.fireball": return "파이어볼";
-                case "skill.lightning": return "라이트닝 볼트";
-                case "skill.freeze": return "빙결";
-                case "skill.hurricane": return "허리케인";
-                case "skill.meteor": return "메테오";
-                case "skill.dragonBreath": return "드래곤 브레스";
+                case "skill.headshot": return "헤드샷";
+                case "skill.thunder": return "벼락";
+                case "skill.flame_exhaust": return "화염 배기";
+                case "skill.magic_ball": return "마력 구체";
+                case "skill.laser": return "레이저";
                 case "skill.cursorAura": return "펫 동료";
                 case "skill.pet_baby_dragon": return "베이비 드래곤";
                 case "monster.01": return "그루터기";

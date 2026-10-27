@@ -32,7 +32,7 @@ namespace CursorHunter.App
         [SerializeField] private TraitScreenController progressionController;
 
         [Header("Trait integration")]
-        [SerializeField, Tooltip("Connect trait purchases, combat rewards and the trait information popup to combat. Disabled while balancing authored base values.")]
+        [SerializeField, Tooltip("Use the exact unlocked and upgraded values from the Trait screen in normal combat.")]
         private bool connectTraitScreenToCombat;
         public bool IsTraitScreenConnectedToCombat => connectTraitScreenToCombat;
 
@@ -143,7 +143,10 @@ namespace CursorHunter.App
         /// </summary>
         public void BeginPrototypeRun()
         {
-            BeginStageRun(defaultStage);
+            // The main run must use the player's actual unlocked roster and
+            // production upgrades. Authored stage rosters remain available
+            // through the explicit BeginStageRun entry point.
+            BeginStageRun(connectTraitScreenToCombat ? null : defaultStage);
         }
 
         /// <summary>
@@ -175,7 +178,7 @@ namespace CursorHunter.App
                 combatRunController.PlayerCombatStatsRuntime;
             _runUsesTraitScreen = false;
 #if UNITY_EDITOR
-            if (_combatBalanceSettings != null)
+            if (_combatBalanceSettings != null && !connectTraitScreenToCombat)
             {
                 BeginBalanceRun();
                 return;
@@ -234,6 +237,13 @@ namespace CursorHunter.App
                     this);
                 return;
             }
+            else if (connectTraitScreenToCombat)
+            {
+                Debug.LogError(
+                    "Cannot start Main combat: the Trait progression snapshot could not be created.",
+                    this);
+                return;
+            }
             else if (!allowPrototypeFallback)
             {
                 Debug.LogError("Combat information source is required.", this);
@@ -245,6 +255,13 @@ namespace CursorHunter.App
 
             if (!combatSnapshot.IsValid)
             {
+                if (connectTraitScreenToCombat)
+                {
+                    Debug.LogError(
+                        "Cannot start Main combat: the Trait combat snapshot is invalid.",
+                        this);
+                    return;
+                }
                 Debug.LogWarning(
                     "Combat information produced an invalid snapshot; using the prototype fallback.",
                     this);
@@ -252,10 +269,14 @@ namespace CursorHunter.App
             }
 
             aliveLimit = Mathf.Max(1, aliveLimit);
+            RelicCombatModifiers relicModifiers = progressionSnapshot == null
+                ? default
+                : RelicCombatModifiers.From(progressionSnapshot.Relics);
             float runDurationSeconds = GetRunDuration(
                 RunMode.NormalField,
                 progressionSnapshot,
-                durationSeconds);
+                durationSeconds,
+                relicModifiers);
             schemaVersion = Mathf.Max(1, schemaVersion);
             balanceVersion = Mathf.Max(1, balanceVersion);
 
@@ -286,9 +307,12 @@ namespace CursorHunter.App
                 ? _runCoordinator.Start(
                     runRequest,
                     combatSnapshot,
-                    cursorStatBonuses,
                     progressionSnapshot == null
                         ? null : progressionSnapshot.Skills,
+                    progressionSnapshot == null
+                        ? null : progressionSnapshot.Relics,
+                    progressionSnapshot == null
+                        ? default : progressionSnapshot.RelicDropRules,
                     spawnPlan,
                     out failureReason)
                 : _runCoordinator.Start(
@@ -374,7 +398,8 @@ namespace CursorHunter.App
         public static float GetRunDuration(
             RunMode mode,
             ProgressionCombatSnapshot progressionSnapshot,
-            float fallbackNormalDurationSeconds = 15f)
+            float fallbackNormalDurationSeconds = 15f,
+            RelicCombatModifiers relicModifiers = default)
         {
             if (mode == RunMode.Boss)
             {
@@ -384,7 +409,8 @@ namespace CursorHunter.App
             if (progressionSnapshot != null)
             {
                 return Mathf.Clamp(
-                    progressionSnapshot.NormalFieldDurationSeconds,
+                    progressionSnapshot.NormalFieldDurationSeconds +
+                    relicModifiers.NormalFieldDurationBonusSeconds,
                     15f,
                     30f);
             }
@@ -659,6 +685,8 @@ namespace CursorHunter.App
                     out spawnPlan,
                     out string stageError))
                 {
+                    spawnPlan = ApplyRelicSpawnInterval(
+                        spawnPlan, progressionSnapshot);
                     return true;
                 }
 
@@ -690,6 +718,7 @@ namespace CursorHunter.App
                     SpawnSnapshot snapshot = definition.CreateSnapshotWithProductionBonus(
                         progressionSnapshot.PerMonsterAliveLimit,
                         monster.ProductionBonusCount);
+                    snapshot = ApplyRelicSpawnInterval(snapshot, progressionSnapshot);
                     if (!snapshot.IsValid)
                     {
                         failureResult = new SpawnStartResult(
@@ -784,9 +813,38 @@ namespace CursorHunter.App
             }
 
             spawnPlan = new SpawnPlan(
-                ApplyProgressionToSpawnSnapshot(fallbackSnapshot, progressionSnapshot),
+                ApplyRelicSpawnInterval(
+                    ApplyProgressionToSpawnSnapshot(fallbackSnapshot, progressionSnapshot),
+                    progressionSnapshot),
                 prototypeFallbackPrefab);
             return true;
+        }
+
+        private static SpawnSnapshot ApplyRelicSpawnInterval(
+            SpawnSnapshot snapshot,
+            ProgressionCombatSnapshot progressionSnapshot)
+        {
+            if (progressionSnapshot == null) return snapshot;
+            RelicCombatModifiers modifiers =
+                RelicCombatModifiers.From(progressionSnapshot.Relics);
+            float reduction = Mathf.Clamp(
+                modifiers.MonsterSpawnIntervalReductionPercent, 0f, 95f) / 100f;
+            if (reduction <= 0f) return snapshot;
+            return snapshot.WithSpawnInterval(Mathf.Max(
+                0.1f, snapshot.SpawnIntervalSeconds * (1f - reduction)));
+        }
+
+        private static SpawnPlan ApplyRelicSpawnInterval(
+            SpawnPlan spawnPlan,
+            ProgressionCombatSnapshot progressionSnapshot)
+        {
+            if (spawnPlan == null || progressionSnapshot == null) return spawnPlan;
+            var entries = new List<SpawnPlanEntry>(spawnPlan.Entries.Count);
+            foreach (SpawnPlanEntry entry in spawnPlan.Entries)
+                entries.Add(new SpawnPlanEntry(
+                    ApplyRelicSpawnInterval(entry.Snapshot, progressionSnapshot),
+                    entry.VisualPrefab));
+            return new SpawnPlan(entries, spawnPlan.GlobalAliveLimit);
         }
 
         private bool TryCreateSpawnPlan(
@@ -808,6 +866,7 @@ namespace CursorHunter.App
             }
 
             spawnPlan = new SpawnPlan(snapshot, definition.VisualPrefab);
+            spawnPlan = ApplyRelicSpawnInterval(spawnPlan, progressionSnapshot);
             failureResult = new SpawnStartResult(
                 SpawnStartStatus.Started,
                 "Monster definition snapshot and prefab are ready.");
