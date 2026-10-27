@@ -12,7 +12,7 @@ namespace CursorHunter.Combat
     /// </summary>
     [DefaultExecutionOrder(1000)]
     [DisallowMultipleComponent]
-    public sealed class PetSkillController : MonoBehaviour, IRunSkillController
+    public sealed class PetSkillController : MonoBehaviour, IRunSkillController, ISkillBalanceController
     {
         public const string SkillId = "skill.pet_baby_dragon";
         private const int GroundRingSortingOrder = -1;
@@ -77,6 +77,7 @@ namespace CursorHunter.Combat
         private float _impactAt;
         private float _attackEndsAt;
         private bool _configured;
+        private SkillBalanceSettings _balance;
         private bool _visible;
         private bool _attackPending;
         private bool _impactResolved;
@@ -101,6 +102,7 @@ namespace CursorHunter.Combat
         }
 
         internal bool IsAcquiredForRun(bool savedAcquired) =>
+            _balance != null ? _balance.Enabled :
             savedAcquired || Application.isEditor && editorSkillAcquired;
 
         internal bool ConfigureForRun(CombatRunController combat, RunId runId,
@@ -116,8 +118,10 @@ namespace CursorHunter.Combat
 
             _combat = combat;
             _runId = runId;
-            _runtime = new PetRuntimeStat(baseStat, skill,
-                combat.CombatSnapshot.AttackPower);
+            if (_balance != null) skill = default;
+            _runtime = new PetRuntimeStat(BalanceBasis, skill,
+                combat.CombatSnapshot.AttackPower,
+                combat.RelicModifiers);
             _animation = petRoot.GetComponent<SkeletonAnimation>();
             ConfigureVisualSorting();
             _lastElapsedSeconds = combat.ElapsedSeconds;
@@ -371,7 +375,7 @@ namespace CursorHunter.Combat
 
             Vector3 effectPosition = _target.TryGetHitEffectBounds(out Bounds bounds)
                 ? bounds.center : (Vector3)nearestPoint;
-            if (_combat.TryApplySkillDamage(_runId, _target, _runtime.Damage))
+            if (_combat.TryApplyPetDamage(_runId, _target, _runtime.Damage))
                 PlayImpactEffect(effectPosition, now);
         }
 
@@ -411,6 +415,66 @@ namespace CursorHunter.Combat
             for (int i = 0; i < _activeEffects.Count; i++)
                 _activeEffects[i].SetPaused(paused);
         }
+
+        private PetBaseStat BalanceBasis => _balance == null ? baseStat :
+            SkillBalanceMath.Read<PetBaseStat>(_balance);
+
+        public SkillBalanceSettings CaptureBalanceSettings() =>
+            SkillBalanceMath.Capture(SkillId, _balance != null ? _balance.Enabled :
+                _configured || Application.isEditor && editorSkillAcquired,
+                BalanceBasis, _runtime, _configured);
+
+        public bool ValidateBalanceSettings(SkillBalanceSettings settings, out string error)
+        {
+            if (!SkillBalanceMath.Validate(settings, CaptureBalanceSettings(), out error))
+                return false;
+            PetBaseStat value = SkillBalanceMath.Read<PetBaseStat>(settings);
+            if (value.CursorLeashWorldUnits < value.AttackRangeWorldUnits)
+            {
+                error = "커서 추적 한계는 공격 사거리 이상이어야 합니다.";
+                return false;
+            }
+            if (settings.Enabled && (petRoot == null || cursorAnchor == null || petRoot == cursorAnchor || attackEffectPrefab == null))
+            {
+                error = "스킬 프리팹·카메라·전투 참조를 확인하세요.";
+                return false;
+            }
+            return true;
+        }
+
+        public bool ApplyBalanceSettings(CombatRunController combat, RunId runId,
+            ulong seed, SkillBalanceSettings settings)
+        {
+            if (combat == null || !runId.IsValid ||
+                !ValidateBalanceSettings(settings, out _)) return false;
+            SkillBalanceSettings next = settings.Clone();
+            if (!next.Enabled)
+            {
+                StopSkill();
+                _balance = next;
+                return true;
+            }
+            if (!_configured || _combat != combat || _runId != runId)
+            {
+                SkillBalanceSettings previousSettings = _balance;
+                _balance = next;
+                if (ConfigureForRun(combat, runId, seed)) return true;
+                _balance = previousSettings;
+                return false;
+            }
+
+            PetRuntimeStat previous = _runtime;
+            _balance = next;
+            _runtime = new PetRuntimeStat(BalanceBasis, default,
+                combat.CombatSnapshot.AttackPower,
+                combat.RelicModifiers);
+            float now = combat.ElapsedSeconds;
+            _nextAttackAt = SkillBalanceMath.Retime(_nextAttackAt, now,
+                previous.AttackIntervalSeconds, _runtime.AttackIntervalSeconds);
+            return true;
+        }
+
+        public void ClearBalanceSettings() => _balance = null;
 
         internal void StopSkill()
         {

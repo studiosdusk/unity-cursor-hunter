@@ -156,6 +156,27 @@ namespace CursorHunter.Combat
             return true;
         }
 
+        internal bool CanApplyLiveBalance()
+        {
+            ResolveHierarchy();
+            return visualRoot != null && hitArea != null && hitAreaCollider != null;
+        }
+
+        /// <summary>Changes final stats without reseeding actions or restarting ability clocks.</summary>
+        internal void ApplyLiveBalance(SpawnSnapshot snapshot, Bounds movementBounds)
+        {
+            float facing = visualRoot.localScale.x < 0f ? -1f : 1f;
+            ApplyPresentation(snapshot);
+            Vector3 scale = visualRoot.localScale;
+            scale.x *= facing;
+            visualRoot.localScale = scale;
+            _moveSpeed = snapshot.MoveSpeed;
+            if (_velocity.sqrMagnitude > 0f) _velocity = _velocity.normalized * _moveSpeed;
+            _boundsMin = movementBounds.min;
+            _boundsMax = movementBounds.max;
+            // Position, current action, hit stop, and special ability state intentionally survive.
+        }
+
         /// <summary>
         /// Binds one movement instance to a run and its screen-space world bounds.
         /// </summary>

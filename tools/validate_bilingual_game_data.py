@@ -80,7 +80,11 @@ def validate_documents():
     assert 'ProgressionResourcePath = "GameData/progression-config.en"' in loader
     for script in (ROOT / "Assets/CursorHunter").rglob("*.cs"):
         text = script.read_text()
-        assert "game-data.ko" not in text and "GameData/active-data" not in text, script
+        assert "GameData/active-data" not in text, script
+        # The explicit Editor Save tool synchronizes the two non-runtime
+        # Korean reference documents. Runtime code must still never load them.
+        if "Editor" not in script.relative_to(ROOT / "Assets/CursorHunter").parts:
+            assert "game-data.ko" not in text, script
     schema = json.loads((ROOT / "docs/collaboration/game-data-document.schema.json").read_text())
     for document in documents:
         info, progression = document["information"], document["progression"]

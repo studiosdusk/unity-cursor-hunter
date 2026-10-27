@@ -338,6 +338,84 @@ namespace CursorHunter.Combat
                        behaviorSeed);
         }
 
+        public bool CanApplyBalance(SpawnSnapshot snapshot, out string error)
+        {
+            error = string.Empty;
+            if (!_isInitialized || !snapshot.IsValid || snapshot.MonsterId != _monsterId)
+            {
+                error = "몬스터 전투 데이터 또는 대상 ID가 유효하지 않습니다.";
+                return false;
+            }
+            if (_isDead) return true;
+            ResolveBehaviorController();
+            if (_behaviorController == null || !_behaviorController.CanApplyLiveBalance())
+            {
+                error = "몬스터의 VisualRoot 또는 HitArea가 없습니다.";
+                return false;
+            }
+            return true;
+        }
+
+        /// <summary>Updates a living body without damage, revival, movement reset, or reward settlement.</summary>
+        public bool TryApplyBalance(SpawnSnapshot snapshot, Bounds movementBounds, out string error)
+        {
+            if (!CanApplyBalance(snapshot, out error)) return false;
+            if (_isDead) return true;
+            _currentHealth = ScaleRemainingHealth(_currentHealth, _maxHealth, snapshot.MaxHealth);
+            _maxHealth = snapshot.MaxHealth;
+            _garnetReward = snapshot.GarnetReward;
+            _bonusDropCurrencyId = snapshot.BonusDropCurrencyId;
+            _bonusDropAmount = snapshot.BonusDropAmount;
+            _bonusDropChancePercent = snapshot.BonusDropChancePercent;
+            _behaviorController.ApplyLiveBalance(snapshot, movementBounds);
+            if (showHealthBar)
+            {
+                EnsureHealthBar();
+                _healthBar.Initialize(_maxHealth);
+                _healthBar.SetHealth(_currentHealth);
+                Bounds visualBounds = CalculateVisualBounds();
+                if (healthBarAnchor != null)
+                {
+                    healthBarAnchor.position = new Vector3(visualBounds.center.x,
+                        visualBounds.max.y + 0.16f, visualBounds.center.z);
+                }
+                _healthBar.Configure(visualBounds, healthBarAnchor != null);
+            }
+            return true;
+        }
+
+        private static long ScaleRemainingHealth(long health, long previousMaximum, long nextMaximum)
+        {
+            if (health == previousMaximum) return nextMaximum;
+            if (nextMaximum == previousMaximum) return health;
+            // Exact ceil(health * nextMaximum / previousMaximum). Long division
+            // avoids both Int64 multiplication overflow and floating point loss
+            // at very large HP values. The remainder always stays below divisor.
+            ulong divisor = (ulong)previousMaximum;
+            ulong multiplicand = (ulong)health;
+            ulong multiplier = (ulong)nextMaximum;
+            ulong quotient = 0UL;
+            ulong remainder = 0UL;
+            for (int bit = 62; bit >= 0; bit--)
+            {
+                quotient *= 2UL;
+                if (remainder >= divisor - remainder)
+                {
+                    remainder -= divisor - remainder;
+                    quotient++;
+                }
+                else remainder *= 2UL;
+                if (((multiplier >> bit) & 1UL) == 0UL) continue;
+                if (remainder >= divisor - multiplicand)
+                {
+                    remainder -= divisor - multiplicand;
+                    quotient++;
+                }
+                else remainder += multiplicand;
+            }
+            return (long)(quotient + (remainder > 0UL ? 1UL : 0UL));
+        }
+
         /// <summary>
         /// Removes this instance from the current run immediately. Unity's
         /// Destroy is deferred, so this guard is required before pooled or
@@ -486,6 +564,17 @@ namespace CursorHunter.Combat
             out long effectiveDamage,
             out bool killed)
         {
+            return ApplyDamage(runId, damage, false,
+                out effectiveDamage, out killed);
+        }
+
+        public bool ApplyDamage(
+            RunId runId,
+            long damage,
+            bool bypassShield,
+            out long effectiveDamage,
+            out bool killed)
+        {
             effectiveDamage = 0;
             killed = false;
 
@@ -495,7 +584,7 @@ namespace CursorHunter.Combat
                 return false;
             }
 
-            if (_isShielded && _shieldDamageReduction > 0f)
+            if (!bypassShield && _isShielded && _shieldDamageReduction > 0f)
             {
                 long blockedDamage = (long)Math.Ceiling(
                     damage * (double)_shieldDamageReduction);

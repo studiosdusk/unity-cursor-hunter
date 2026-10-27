@@ -1,6 +1,6 @@
 # 유물 효과와 몬스터 드롭 초안
 
-작성일: 2026-10-21. 2026-10-22 기준으로 20개 유물의 이름·아이콘·설명·효과 수치·출처·개별 확률을 GameInformation v4 JSON에 등록하고 런 시작 `ProgressionCombatSnapshot`까지 전달한다. 실제 처치 드롭 판정, 유물 보유 저장, 전투 피해·보상에 효과를 적용하는 처리는 아직 구현되어 있지 않다.
+작성일: 2026-10-21. 2026-10-27 기준으로 20개 유물의 이름·아이콘·설명·효과 수치·출처·개별 확률을 GameInformation v4 JSON에 등록하고 런 시작 `ProgressionCombatSnapshot`까지 전달한다. 소유 중인 유물 효과는 런 시작 때 집계해 Combat 피해·펫·스킬 범위/쿨타임·스폰 간격·시간·보상 처리에 적용한다. 몬스터 처치 후 실제 유물 드롭 판정과 획득 상태 저장은 아직 구현하지 않았다.
 
 ## 드롭 규칙
 
@@ -41,7 +41,9 @@
 
 ## 런타임 JSON 전달 데이터
 
-각 `information.relics[]` 정의에는 `id`, `owned`, `sourceMonsterId`, `dropChancePercent`, `effectId`, `effectValue`, `effectValue2`가 있다. 표시 이름·아이콘·설명은 현재 `RelicCollectionCatalog`의 표시 데이터가 담당한다. 테스트 도구의 획득 상태는 `owned`에 들어가며 런 시작 시 `ProgressionCombatSnapshot.Relics`에 복사된다. `relicDropRules`도 함께 전달되며, Combat은 이 읽기 전용 입력을 바탕으로 이후 처치 시 0개 또는 최대 1개를 계산할 수 있다. 실제 획득 결과 저장과 공개 화면 연결은 후속 작업이다. Combat은 저장소를 직접 수정하지 않는다.
+각 `information.relics[]` 정의에는 `id`, `owned`, `sourceMonsterId`, `dropChancePercent`, `effectId`, `effectValue`, `effectValue2`가 있다. 표시 이름·아이콘·설명은 현재 `RelicCollectionCatalog`의 표시 데이터가 담당한다. 테스트 도구의 획득 상태는 `owned`에 들어가며 런 시작 시 `ProgressionCombatSnapshot.Relics`로 복사된다. `RunCoordinator`가 보유한 효과만 집계하고 `CombatRunController`가 이번 런의 전투·보상 처리에서 사용한다. `relicDropRules`도 전달되지만, 처치 기반 드롭 굴림과 획득 저장은 아직 연결되지 않았다. Combat은 저장소를 직접 수정하지 않는다.
+
+따라서 현재는 특성/유물 테스트 도구에서 유물을 보유 상태로 만든 뒤 새 전투를 시작해야 그 효과를 확인할 수 있다. 런 중 소유 상태를 바꿔도 이미 복사한 런 스냅샷에는 반영되지 않는다.
 
 `effectId`는 다음 구현의 안정된 분기 키다. 퍼센트 효과 수치는 `effectValue=5`가 5%처럼 퍼센트 포인트로 저장되며, 초와 배수는 해당 단위를 그대로 쓴다. 크라켄의 눈은 `effectValue=50` 발동 확률, `effectValue2=30` 최대 체력 기준 퍼센트를 쓴다.
 

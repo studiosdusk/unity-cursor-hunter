@@ -693,6 +693,22 @@ namespace CursorHunter.Progression
             }
         }
 
+#if UNITY_EDITOR
+        /// <summary>Refresh authored combat data without reloading purchases or wallets.</summary>
+        public bool ReloadAuthoredCombatDefaults(out string error)
+        {
+            error = string.Empty;
+            if (_document == null) return true;
+            TextAsset asset = Resources.Load<TextAsset>(GameDataDocument.RuntimeResourcePath);
+            if (asset == null)
+            { error = "Missing authored combat information."; return false; }
+            if (!GameInformationJson.TryDeserialize(asset.text, out GameInformation information,
+                out error)) return false;
+            _document.information = information;
+            return true;
+        }
+#endif
+
         private void EnsureProgressionState()
         {
             if (_activeCatalog != null)

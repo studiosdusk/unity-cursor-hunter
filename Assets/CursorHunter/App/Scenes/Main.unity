@@ -19246,10 +19246,6 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 1460028810}
     - target: {fileID: 183643787152222627, guid: a18f2540445db4baeb1591f73b373812, type: 3}
-      propertyPath: editorSkillAcquired
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 183643787152222627, guid: a18f2540445db4baeb1591f73b373812, type: 3}
       propertyPath: sourceCursorHitArea
       value: 
       objectReference: {fileID: 1460028809}
@@ -19340,10 +19336,6 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 200002, guid: 7e0b7f29e00d4ad5b386346e462b55a7, type: 3}
-      propertyPath: editorSkillAcquired
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 200002, guid: 7e0b7f29e00d4ad5b386346e462b55a7, type: 3}
       propertyPath: baseStat.SizeMultiplier
       value: 2
       objectReference: {fileID: 0}
@@ -19380,10 +19372,6 @@ PrefabInstance:
     - target: {fileID: 200001, guid: b21218ff7ac644739e1ee81958f02e56, type: 3}
       propertyPath: m_LocalPosition.z
       value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 200002, guid: b21218ff7ac644739e1ee81958f02e56, type: 3}
-      propertyPath: editorSkillAcquired
-      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 200002, guid: b21218ff7ac644739e1ee81958f02e56, type: 3}
       propertyPath: baseStat.CooldownSeconds
@@ -31592,7 +31580,8 @@ MonoBehaviour:
   testPanelToggleController: {fileID: 1836197417}
   uiRootController: {fileID: 2188000111}
   progressionController: {fileID: 760100001}
-  defaultStage: {fileID: 11400000, guid: 9bd12519f36e4a1983a0dd9dad013f4c, type: 2}
+  connectTraitScreenToCombat: 1
+  defaultStage: {fileID: 0}
   monsterDefinition: {fileID: 11400000, guid: 7afc7c4d89551704be3531d7298dc4c6, type: 2}
   aliveLimit: 80
   durationSeconds: 15
@@ -32068,10 +32057,6 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 100002, guid: 6c0b154b29c24f6fb996f9d64d28c6b0, type: 3}
-      propertyPath: editorSkillAcquired
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 100002, guid: 6c0b154b29c24f6fb996f9d64d28c6b0, type: 3}
       propertyPath: baseStat.MoveSpeedWorldUnitsPerSecond
       value: 4
       objectReference: {fileID: 0}
@@ -32105,10 +32090,6 @@ PrefabInstance:
       propertyPath: m_LocalPosition.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 100002, guid: c283c7ef8add4497a2666a076d4221e2, type: 3}
-      propertyPath: editorSkillAcquired
-      value: 1
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -32138,10 +32119,6 @@ PrefabInstance:
     - target: {fileID: 100001, guid: e02fac92204840f3b67d812feb1ae407, type: 3}
       propertyPath: m_LocalPosition.z
       value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 100002, guid: e02fac92204840f3b67d812feb1ae407, type: 3}
-      propertyPath: editorSkillAcquired
-      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 100002, guid: e02fac92204840f3b67d812feb1ae407, type: 3}
       propertyPath: baseStat.CooldownSeconds
@@ -32181,10 +32158,6 @@ PrefabInstance:
       propertyPath: cursorAnchor
       value: 
       objectReference: {fileID: 1460028808}
-    - target: {fileID: 100002, guid: 3be6ee6328fa4db0afd3f8b88c6eca64, type: 3}
-      propertyPath: editorSkillAcquired
-      value: 1
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

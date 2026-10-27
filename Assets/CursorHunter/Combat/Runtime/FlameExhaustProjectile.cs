@@ -21,6 +21,7 @@ namespace CursorHunter.Combat
         private float _lastTickAt;
         private float _expiresAt;
         private float _speed;
+        private float _areaRadiusMultiplier = 1f;
         private bool _active;
 
         public bool IsActive => _active;
@@ -29,7 +30,8 @@ namespace CursorHunter.Combat
         internal void Activate(FlameExhaustSkillController owner, RunId runId,
             CircleCollider2D sourceHitArea, SpriteRenderer sourceVisual,
             Vector2 direction, float now, float duration, float speed,
-            float visualSizeRatio, float hitRadiusMultiplier)
+            float visualSizeRatio, float hitRadiusMultiplier,
+            float areaRadiusMultiplier = 1f)
         {
             _owner = owner;
             _runId = runId;
@@ -37,6 +39,7 @@ namespace CursorHunter.Combat
             _lastTickAt = now;
             _expiresAt = now + duration;
             _speed = speed;
+            _areaRadiusMultiplier = Mathf.Max(0.01f, areaRadiusMultiplier);
             _hitTargets.Clear();
             _active = true;
 
@@ -45,7 +48,8 @@ namespace CursorHunter.Combat
             transform.position = sourceBounds.center;
             hitArea.radius = Mathf.Max(0.01f,
                 Mathf.Max(sourceBounds.extents.x, sourceBounds.extents.y) *
-                Mathf.Max(0.01f, hitRadiusMultiplier));
+                Mathf.Max(0.01f, hitRadiusMultiplier) *
+                _areaRadiusMultiplier);
             visualRenderer.sprite = sourceVisual.sprite;
             visualRenderer.color = sourceVisual.color;
             visualRenderer.sharedMaterial = sourceVisual.sharedMaterial;
@@ -99,11 +103,41 @@ namespace CursorHunter.Combat
             if (_owner.Hit(_runId, target)) _hitTargets.Add(target);
         }
 
+        internal void RefreshBalance(float now, FlameExhaustRuntimeStat previous,
+            FlameExhaustRuntimeStat next, CircleCollider2D sourceHitArea,
+            SpriteRenderer sourceVisual)
+        {
+            if (!_active) return;
+            _expiresAt = SkillBalanceMath.Retime(_expiresAt, now,
+                previous.ProjectileDurationSeconds, next.ProjectileDurationSeconds);
+            _speed = next.SpeedWorldUnitsPerSecond;
+            RefreshGeometry(sourceHitArea, sourceVisual, next.CursorSizeRatio,
+                next.HitRadiusMultiplier, _areaRadiusMultiplier);
+        }
+
+        internal void RefreshGeometry(CircleCollider2D sourceHitArea,
+            SpriteRenderer sourceVisual, float cursorSizeRatio,
+            float hitRadiusMultiplier, float areaRadiusMultiplier = 1f)
+        {
+            if (!_active) return;
+            _areaRadiusMultiplier = Mathf.Max(0.01f, areaRadiusMultiplier);
+            Bounds sourceBounds = sourceHitArea.bounds;
+            hitArea.radius = Mathf.Max(0.01f,
+                Mathf.Max(sourceBounds.extents.x, sourceBounds.extents.y) *
+                hitRadiusMultiplier * _areaRadiusMultiplier);
+            visualRenderer.transform.localScale = sourceVisual.transform.lossyScale *
+                cursorSizeRatio;
+            visualRenderer.transform.localPosition =
+                (sourceVisual.transform.position - sourceBounds.center) *
+                cursorSizeRatio;
+        }
+
         internal void ReturnToPool()
         {
             _active = false;
             _owner = null;
             _runId = default;
+            _areaRadiusMultiplier = 1f;
             _hitTargets.Clear();
             _sweepHits.Clear();
             _overlaps.Clear();

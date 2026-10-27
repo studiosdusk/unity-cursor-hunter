@@ -38,6 +38,8 @@ App이 Data/Progression에서 런 입력을 만들어 Combat에 전달한다. Pr
 - 일반 몬스터는 공용 `Combat/Prefabs/Monsters/MonsterRoot.prefab`을 사용한다. 종별
   `MonsterDefinition`이 Base 스탯·드랍·외형 참조를 가지고, 재사용 가능한
   `MonsterBehaviorProfile` 목록을 Base 위에 합성해 런 스냅샷으로 복사한다.
+  전투 밸런스 창에서 최종 기본값을 저장한 Definition은 `baseStatsAreFinalValues`를 켜서
+  수치 배율을 중복 적용하지 않는다. 프로필의 이동 모드와 특수 능력은 계속 합성한다.
 - HP/보상은 전투 프리팹에 저장하지 않는다. 전투는 App이 만든 `SpawnSnapshot`만 사용한다.
 - 데이터는 하나의 거대한 GameData.asset에 몰지 않는다. ID는 파일명/표시명/enum 순서와 독립적으로 고정한다.
 - Addressables, DI 프레임워크, 공용 전역 이벤트 버스는 현 단계에 추가하지 않는다.
@@ -45,6 +47,8 @@ App이 Data/Progression에서 런 입력을 만들어 Combat에 전달한다. Pr
 이 구조는 텍스트 코드 충돌과 씬 동시 편집을 줄인다. 계약/통합 작업이 사용자에게 몰리는 비용이 있으며, 공통 파일 충돌을 완전히 없애지는 못한다.
 
 ## 현재 통합 경로 — 전투 정보 v4 (2026-10-22)
+
+2026-10-27 현재 Main은 `HuntManager.connectTraitScreenToCombat = true`다. Main 전투 시작은 특성 화면에서 생성한 최종 전투 스냅샷을 소비하며, 구매한 노드가 기본 수치·스킬 해금·몬스터 해금/생산량에 반영된다. Main의 기본 실행은 수동 전투 밸런스 테스트 설정과 기본 스테이지 고정 로스터로 특성 데이터를 덮어쓰지 않는다. Progression은 App/Combat 구현을 직접 참조하지 않는다.
 
 GameDataDocument.Load는 두 영어 리소스를 읽는다. Main 씬의
 `PlayerCombatStatsDefaults` 컴포넌트는 커서 핵심 스탯의 공통 기본값을 별도로 소유한다.
@@ -54,12 +58,13 @@ GameDataDocument.Load는 두 영어 리소스를 읽는다. Main 씬의
 
 App이 기본 스탯 스냅샷을 Progression에 제공한다. GameInformationBuilder가 이 기본값과
 구매한 커서 스탯 증가량을 합쳐 전체 정보 JSON을 만든다. Progression은 별도의
-`CursorCombatStatBonusesSnapshot`도 App에 반환한다. App은 이를 런 시작 시 Combat에 전달하고,
-`PlayerCombatStatsRuntime`은 매 런 기본 컴포넌트에서 초기화한 뒤 증가량을 적용한다.
-전체 정보 팝업은 같은 최종 SourceJson을 표시한다. Combat은 UI/PlayerPrefs/성장 설정을 직접 읽지 않는다.
+`CursorCombatStatBonusesSnapshot`도 데이터 검증·상세 정보를 위해 반환하지만, Main 전투에는
+최종 `CombatSnapshot`을 직접 전달한다. `PlayerCombatStatsRuntime`이 그 최종값을 런 시작 시
+복사하므로 같은 증가량을 다시 더하지 않는다. 전체 정보 팝업은 같은 최종 SourceJson을 표시한다.
+Combat은 UI/PlayerPrefs/성장 설정을 직접 읽지 않는다.
 진행도 원본 상태는 아직 TraitScreenController가 소유하며 독립 상태 서비스를 새로 만든 것은 아니다.
 
-GameInformation v4 JSON에는 유물 20종의 ID·획득 상태·드롭 몬스터·개별 확률·효과 키/수치와 드롭 규칙이 있다. Progression은 현재 도감 테스트 상태를 포함해 불변 `RelicCombatSnapshot` 목록으로 복사하고, App의 런 시작 계약이 이를 `CombatRunController.ConfigureRelics`로 전달한다. 실제 처치 드롭·저장·효과 소비 로직은 별도 구현이 필요하다. progression/entities/fieldHelp/implementation은 전투 JSON에 포함하지 않는다.
+GameInformation v4 JSON에는 유물 20종의 ID·획득 상태·드롭 몬스터·개별 확률·효과 키/수치와 드롭 규칙이 있다. Progression은 현재 도감 테스트 상태를 포함해 불변 `RelicCombatSnapshot` 목록으로 복사하고, App의 런 시작 계약이 이를 Combat에 전달한다. `RelicCombatModifiers`가 소유 유물의 효과를 집계해 커서 공격/반경, 스킬 피해/범위/쿨타임, 펫 능력치, 필드 시간, 몬스터 생성 간격, 처치 보상에 반영한다. 실제 처치 드롭 굴림과 획득 상태 저장은 아직 구현되지 않았다. progression/entities/fieldHelp/implementation은 전투 JSON에 포함하지 않는다.
 성장 설정에는 통합 연구 23분류/90노드와 7개 전투 스킬 해금 노드가 있다. 스킬별 강화 단계는 아직 없다. fieldHelp/implementation은 실행 문서에서 제거했다.
 JSON의 `behaviorType`은 이전 호환을 위해 `None=0`으로 보존한다. 신규 종별 특성은
 Data의 조합형 프로필로 구성하고, 이동 모드·이동 속도·시각 크기·명중 영역 크기와

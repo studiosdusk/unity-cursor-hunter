@@ -7,8 +7,7 @@
 구조는 [영어 JSON](../../Assets/CursorHunter/Data/Resources/GameData/game-data.en.json)에 둔다.
 강화 비용·선행 조건·명칭·커서 스탯 증가량은
 [성장 화면 설정](../../Assets/CursorHunter/Data/Resources/GameData/progression-config.en.json)으로 분리한다.
-플레이어의 구매·지갑은 별도 PlayerPrefs에 저장하며, 전투 시작 때 기본 스탯과 보유 특성의
-증가량을 합산한다.
+플레이어의 구매·지갑은 별도 PlayerPrefs에 저장한다. Main의 `HuntManager.Connect Trait Screen To Combat`는 켜져 있으며, 기본 전투 시작은 특성 화면의 구매·해금 상태를 런 시작 스냅샷으로 사용한다. 수동 전투 밸런스 창은 별도의 개발 테스트 경로다. 특성 연구 화면에는 최종 전투 수치를 수동 편집하는 패널을 두지 않는다.
 [키 바로 뒤 한국어 번역 JSON](game-data.ko.keys.json)은 원본의 모든 값을 유지하고 영문키(한국어)만 병기한다.
 [상세 한국어 해설 JSON](game-data.ko.reference.json)은 원본값·단위·설명·ID의 뜻까지 제공한다.
 두 한국어 파일은 사람이 읽는 참고서이며 게임에서 읽지 않는다.
@@ -16,6 +15,14 @@
 전투 개발자: [실제 조회 API와 값 대응표](contracts.md#전투에서-값을-읽는-실제-api).
 앞으로 구현할 자동 스킬의 공통 설계 기준은 [자동 스킬 기획서](../skill-design.md)를 따른다.
 전투 데이터의 기본 계약: [전투 정보 v4 인수인계](current-state-handoff-v0.0.4.md), 현재 스킬·유물 상태: 아래 `현재 합류 기준`과 [유물 드롭 설계](../relic-drop-design.md).
+기획자는 Main 씬의 `Tools > Cursor Hunter > Combat Balance`에서 최종 스탯을 직접 입력해
+실제 전투에 실시간 적용한다. [전투 밸런스 창](../combat-balance-editor-design.md)은
+베이스·커서 공격·7종 스킬·몬스터 및 스폰을 다루며, 테스트 보상은 지급하지 않는다.
+창 최상단에서 `실시간 테스트` 또는 `최종 설정 스탯` 모드를 선택하고, 그 아래 베이스·커서 공격·스킬·몬스터·스폰 분류에서 수치를 편집한다.
+커서 범위는 기존 기본 크기를 `1`로 보는 배율로 입력하며, `−`/`+` 버튼으로 0.1배씩 조절할 수 있다.
+`최종 설정 스탯`에서는 테스트값을 가져와 편집한 뒤 Save로 실제 기본값을 저장할 수 있다.
+`실시간 테스트`는 원본을 수정하지 않으며, Save도 구매·해금·지갑·Stage 편성을 바꾸지 않는다.
+유물 제거·몬스터 특성 자리·전투 데이터 분리 및 미완료 범위: [최신 인수인계](current-state-handoff-v0.0.4.md).
 
 현재 구현 기준: [전투 정보 v4 인수인계](current-state-handoff-v0.0.4.md). 이전 [v2 개편 기록](game-information-refactor-2026-10-01.md)은 과거 자료다. Unity **6000.3.13f1**.
 macOS 설치 확인: `python3 tools/open_unity.py --check`. 확인 후 같은 명령에서 `--check`를 빼면 지정 버전으로 프로젝트를 연다. 커스텀 경로는 `--editor /설치경로/Unity.app`으로 지정한다. Windows에서는 Hub에서 같은 버전을 선택한다.
@@ -54,7 +61,7 @@ macOS 설치 확인: `python3 tools/open_unity.py --check`. 확인 후 같은 �
 - 커서 기본 스탯 컴포넌트와 보유 커서 특성의 증가량을 런 시작 때 합산한다. 자동 스킬 7종도 Main의 BaseStat과 스킬별 UpgradeStat 스냅샷을 전투 진입 때 합산해 런 동안 고정한다. 스킬·몬스터·재화·유물 정의는 GameInformation v4 스냅샷을 사용한다.
 - 일반 필드 15~30초, 자동 반경 공격·쿨타임, 일반 몬스터 10종 누적 생성.
 - 전투 스킬은 토네이도·헤드샷·벼락·화염 배기·마력 구체·레이저·베이비 드래곤 7종이다. 통합 연구에서 각 스킬은 `stat.attack.01` 뒤 가넷 40개로 해금하며, 스킬 강화 단계는 아직 없다. Main 씬의 `Editor Play Mode test / Skill Acquired` 토글은 Editor 전투 시 구매 저장 없이 개별 효과를 시험한다.
-- 유물 20종의 고정 ID·출처 몬스터·개별 확률·효과 ID/수치와 단일 드롭 규칙이 JSON에 있다. 획득 상태와 정의는 `ProgressionCombatSnapshot.Relics` 및 `RelicDropRules`를 거쳐 `CombatRunController.RelicSnapshots` / `RelicDropRules`에 런 시작 때 복사된다. 테스트 도구로 설정한 획득 상태도 포함된다. 실제 처치 드롭 판정, 보유 저장, 효과 실행은 아직 구현되지 않았다. 기획은 [유물 드롭 설계](../relic-drop-design.md)를 기준으로 한다.
+- 유물 20종의 고정 ID·출처 몬스터·개별 확률·효과 ID/수치와 단일 드롭 규칙이 JSON에 있다. 소유 상태와 정의는 런 시작에 복사되어 커서/스킬/펫/스폰/보상 효과에 반영된다. 테스트 도구의 보유 상태도 다음 전투에 적용된다. 처치 후 실제 유물 드롭 굴림 및 획득 상태 저장은 아직 연결되지 않았다. 기획은 [유물 드롭 설계](../relic-drop-design.md)를 기준으로 한다.
 - JSON의 기존 몬스터 behaviorType은 None=0으로 유지한다. 신규 종별 행동·스탯 프로필은
   MonsterDefinition과 MonsterBehaviorProfile 에셋에서 구성한다.
 - 젬 별도 해금 트리는 제거. 일반 몬스터가 해당 젬을 공급한다.

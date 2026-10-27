@@ -113,6 +113,18 @@ namespace CursorHunter.Combat
             }
         }
 
+        internal void RefreshBalance(float now, ThunderRuntimeStat previous,
+            ThunderRuntimeStat next)
+        {
+            if (!_active) return;
+            if (!_struck)
+                _impactAt = SkillBalanceMath.Retime(_impactAt, now,
+                    previous.ImpactDelaySeconds, next.ImpactDelaySeconds);
+            _returnAt = SkillBalanceMath.Retime(_returnAt, now,
+                previous.EffectDurationSeconds, next.EffectDurationSeconds);
+            if (!_struck) _returnAt = Mathf.Max(_returnAt, _impactAt + 0.01f);
+        }
+
         internal void ReturnToPool()
         {
             _active = false;

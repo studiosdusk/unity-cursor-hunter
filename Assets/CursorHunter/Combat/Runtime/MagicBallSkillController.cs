@@ -6,7 +6,7 @@ namespace CursorHunter.Combat
     /// <summary>Owns one magic ball for the whole run.</summary>
     [DefaultExecutionOrder(1000)]
     [DisallowMultipleComponent]
-    public sealed class MagicBallSkillController : MonoBehaviour, IRunSkillController
+    public sealed class MagicBallSkillController : MonoBehaviour, IRunSkillController, ISkillBalanceController
     {
         public const string SkillId = "skill.magic_ball";
 
@@ -63,10 +63,14 @@ namespace CursorHunter.Combat
         private ContactFilter2D _enemyFilter;
         private float _castAt;
         private bool _configured;
+        private SkillBalanceSettings _balance;
+        private SeededRandom _balanceRandom;
+        private RunId _balanceRandomRun;
         private bool _visualsPaused;
 
         public bool BallIsActive => _ball != null && _ball.IsActive;
         internal bool IsAcquiredForRun(bool savedAcquired) =>
+            _balance != null ? _balance.Enabled :
             savedAcquired || Application.isEditor && editorSkillAcquired;
 
         private void Awake()
@@ -104,7 +108,8 @@ namespace CursorHunter.Combat
             _combat = combat;
             _runId = runId;
             _random = new SeededRandom(seed ^ 0x4D4147494342414CUL);
-            _runtime = new MagicBallRuntimeStat(baseStat, skill,
+            if (_balance != null) skill = default;
+            _runtime = new MagicBallRuntimeStat(BalanceBasis, skill,
                 combat.CombatSnapshot.AttackPower);
             _castAt = combat.ElapsedSeconds + _runtime.FirstCastDelaySeconds;
             _enemyFilter = new ContactFilter2D
@@ -158,7 +163,8 @@ namespace CursorHunter.Combat
                     _random.NextFloat(0f, 1f), _random.NextFloat(0f, 1f));
                 if (!_ball.Activate(this, _runId, fieldBounds, spawnFraction,
                     spawnPlaneZ, startingDirections[directionIndex].normalized,
-                    now, _runtime.SizeMultiplier)) return;
+                    now, _runtime.SizeMultiplier *
+                        _combat.AreaSkillRadiusMultiplier)) return;
             }
             Physics2D.SyncTransforms();
             _ball.Tick(now, fieldBounds, _enemyFilter,
@@ -193,6 +199,90 @@ namespace CursorHunter.Combat
         {
             return IsCurrentRun(runId) && target != null &&
                 _combat.TryApplySkillDamage(runId, target, _runtime.Damage);
+        }
+
+        private MagicBallBaseStat BalanceBasis => _balance == null ? baseStat :
+            SkillBalanceMath.Read<MagicBallBaseStat>(_balance);
+
+        public SkillBalanceSettings CaptureBalanceSettings() =>
+            SkillBalanceMath.Capture(SkillId, _balance != null ? _balance.Enabled :
+                _configured || Application.isEditor && editorSkillAcquired,
+                BalanceBasis, _runtime, _configured);
+
+        public bool ValidateBalanceSettings(SkillBalanceSettings settings, out string error)
+        {
+            if (!SkillBalanceMath.Validate(settings, CaptureBalanceSettings(), out error))
+                return false;
+            if (settings.Enabled && (ballPrefab == null || !ballPrefab.HasHitbox || (worldCamera == null && Camera.main == null) || !HasValidStartingDirections()))
+            {
+                error = "스킬 프리팹·카메라·전투 참조를 확인하세요.";
+                return false;
+            }
+            return true;
+        }
+
+        public bool ApplyBalanceSettings(CombatRunController combat, RunId runId,
+            ulong seed, SkillBalanceSettings settings)
+        {
+            if (combat == null || !runId.IsValid ||
+                !ValidateBalanceSettings(settings, out _)) return false;
+            SkillBalanceSettings next = settings.Clone();
+            if (!next.Enabled)
+            {
+                if (_configured && _runId == runId)
+                {
+                    _balanceRandom = _random;
+                    _balanceRandomRun = runId;
+                }
+                StopSkill();
+                _balance = next;
+                return true;
+            }
+            if (!_configured || _combat != combat || _runId != runId)
+            {
+                SkillBalanceSettings previousSettings = _balance;
+                _balance = next;
+                if (ConfigureForRun(combat, runId, seed))
+                {
+                    if (_balanceRandomRun == runId && _balanceRandom != null)
+                        _random = _balanceRandom;
+                    return true;
+                }
+                _balance = previousSettings;
+                return false;
+            }
+
+            MagicBallRuntimeStat previous = _runtime;
+            _balance = next;
+            _runtime = new MagicBallRuntimeStat(BalanceBasis, default,
+                combat.CombatSnapshot.AttackPower);
+            float now = combat.ElapsedSeconds;
+            if (!BallIsActive)
+                _castAt = SkillBalanceMath.Retime(_castAt, now,
+                    previous.FirstCastDelaySeconds, _runtime.FirstCastDelaySeconds);
+            else _ball.RefreshBalance(now, previous.SameTargetHitCooldownSeconds,
+                _runtime.SameTargetHitCooldownSeconds, _runtime.SizeMultiplier);
+            return true;
+        }
+
+        public void ClearBalanceSettings()
+        {
+            _balance = null;
+            _balanceRandom = null;
+            _balanceRandomRun = default;
+        }
+
+        private bool HasValidStartingDirections()
+        {
+            if (startingDirections == null || startingDirections.Length != 8) return false;
+            for (int i = 0; i < startingDirections.Length; i++)
+            {
+                Vector2 direction = startingDirections[i];
+                if (direction.sqrMagnitude < 0.0001f ||
+                    float.IsNaN(direction.x) || float.IsInfinity(direction.x) ||
+                    float.IsNaN(direction.y) || float.IsInfinity(direction.y)) return false;
+            }
+            return true;
         }
 
         internal void StopSkill()

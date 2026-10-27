@@ -17,6 +17,7 @@ namespace CursorHunter.App
         private readonly RunIdRegistry _runIdRegistry = new RunIdRegistry();
         private RunSession _session;
         private bool _disposed;
+        private bool _discardRewards;
 
         public RunCoordinator(
             CombatRunController combatRunController,
@@ -43,6 +44,21 @@ namespace CursorHunter.App
 
         public RunSession Session => _session;
 
+        public bool MarkAsBalanceTest()
+        {
+            if (!IsActive) return false;
+            _discardRewards = true;
+            return true;
+        }
+
+        public bool StartBalanceTest(RunRequest request, CombatSnapshot combatSnapshot,
+            SpawnPlan spawnPlan, IReadOnlyList<string> enabledMonsterIds,
+            out string failureReason)
+        {
+            return StartInternal(request, combatSnapshot, null, null, null,
+                default, spawnPlan, out failureReason, enabledMonsterIds, true);
+        }
+
         public bool Start(
             RunRequest request,
             CombatSnapshot combatSnapshot,
@@ -58,6 +74,17 @@ namespace CursorHunter.App
                 default,
                 spawnPlan,
                 out failureReason);
+        }
+
+        public bool Start(
+            RunRequest request,
+            CombatSnapshot combatSnapshot,
+            IReadOnlyList<SkillCombatSnapshot> skills,
+            SpawnPlan spawnPlan,
+            out string failureReason)
+        {
+            return StartInternal(request, combatSnapshot, null, skills,
+                null, default, spawnPlan, out failureReason);
         }
 
         public bool Start(
@@ -104,6 +131,25 @@ namespace CursorHunter.App
                 skills, relics, relicDropRules, spawnPlan, out failureReason);
         }
 
+        /// <summary>
+        /// Starts from a fully resolved progression snapshot. Combat stats
+        /// already include the purchased trait deltas, so App must pass that
+        /// value directly instead of applying a second, parallel bonus path.
+        /// </summary>
+        public bool Start(
+            RunRequest request,
+            CombatSnapshot combatSnapshot,
+            IReadOnlyList<SkillCombatSnapshot> skills,
+            IReadOnlyList<RelicCombatSnapshot> relics,
+            RelicDropRulesCombatSnapshot relicDropRules,
+            SpawnPlan spawnPlan,
+            out string failureReason)
+        {
+            return StartInternal(request, combatSnapshot, null, skills,
+                relics, relicDropRules, spawnPlan, out failureReason,
+                requireExactSkillMapping: true);
+        }
+
         private bool StartInternal(
             RunRequest request,
             CombatSnapshot combatSnapshot,
@@ -112,7 +158,10 @@ namespace CursorHunter.App
             IReadOnlyList<RelicCombatSnapshot> relics,
             RelicDropRulesCombatSnapshot relicDropRules,
             SpawnPlan spawnPlan,
-            out string failureReason)
+            out string failureReason,
+            IReadOnlyList<string> enabledMonsterIds = null,
+            bool discardRewards = false,
+            bool requireExactSkillMapping = false)
         {
             failureReason = string.Empty;
 
@@ -144,6 +193,7 @@ namespace CursorHunter.App
 
             RunSession session = new RunSession();
             _session = session;
+            _discardRewards = discardRewards;
 
             if (!session.Start(request))
             {
@@ -160,6 +210,9 @@ namespace CursorHunter.App
             bool combatStarted = false;
             try
             {
+                RelicCombatModifiers relicModifiers =
+                    RelicCombatModifiers.From(relics);
+                combatSnapshot = relicModifiers.ApplyTo(combatSnapshot);
                 bool prepared = cursorStatBonuses.HasValue
                     ? _combatRunController.PrepareRun(
                         request,
@@ -179,13 +232,6 @@ namespace CursorHunter.App
 
                 combatPrepared = true;
 
-                if (!_combatRunController.ConfigureSkills(skills))
-                {
-                    return FailStart(session,
-                        "CombatRunController rejected skill preparation.",
-                        true, false, false, out failureReason);
-                }
-
                 if (!_combatRunController.ConfigureRelics(relics, relicDropRules))
                 {
                     return FailStart(session,
@@ -193,8 +239,19 @@ namespace CursorHunter.App
                         true, false, false, out failureReason);
                 }
 
+                // Skill controllers capture the run's relic modifiers while
+                // preparing their runtime stats, so relics must be configured
+                // before they are enabled.
+                if (!_combatRunController.ConfigureSkills(skills,
+                    requireExactSkillMapping))
+                {
+                    return FailStart(session,
+                        "CombatRunController rejected skill preparation.",
+                        true, false, false, out failureReason);
+                }
+
                 SpawnStartResult spawnStartResult =
-                    _monsterSpawner.StartRun(request, spawnPlan);
+                    _monsterSpawner.StartRun(request, spawnPlan, enabledMonsterIds);
                 if (!spawnStartResult.Succeeded)
                 {
                     return FailStart(
@@ -250,6 +307,7 @@ namespace CursorHunter.App
             RunEndReason endReason,
             RunSettlementPolicy settlementPolicy)
         {
+            if (_discardRewards) settlementPolicy = RunSettlementPolicy.Discard;
             if (_disposed || _session == null || !_session.IsActive)
             {
                 return false;
@@ -319,6 +377,7 @@ namespace CursorHunter.App
             RunEndReason endReason,
             RunSettlementPolicy settlementPolicy)
         {
+            if (_discardRewards) settlementPolicy = RunSettlementPolicy.Discard;
             if (_disposed || _session == null || !_session.IsActive)
             {
                 return false;

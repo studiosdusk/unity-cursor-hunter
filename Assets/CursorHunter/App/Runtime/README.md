@@ -5,10 +5,9 @@
 
 ## 전투 스테이지 설정
 
-`App/Stages/Stage01.asset`이 Main 씬 `HuntManager`의 `Default Stage`에 연결돼 있다.
-기존 전투 진입 버튼은 `BeginPrototypeRun()`을 호출하며 이 에셋의 설정으로 진입한다.
-스테이지를 추가하려면 `Cursor Hunter/Stages/Combat Stage` 에셋을 만들고
-`HuntManager.BeginStageRun(CombatStageDefinition)`에 해당 에셋을 전달한다.
+Main 씬의 `HuntManager > Connect Trait Screen To Combat`는 켜져 있다. 일반 전투는 같은 `TraitScreenController`가 만든 현재 구매·해금 상태 스냅샷으로 시작한다. 스탯은 특성 기본값과 구매 증가량을 반영하고, 스킬은 해금 상태와 정의된 강화 스냅샷을 읽으며, 몬스터는 해금 여부와 생산 수를 스폰 계획에 반영한다. 현재 성장 JSON은 스킬별 해금만 정의하고 강화 단계는 아직 없다. 전투 결과의 보상도 같은 특성 지갑으로 정산한다.
+
+Main 전투 진입 버튼은 `BeginPrototypeRun()`을 호출한다. 특성 연결이 켜져 있으면 기본 스테이지 로스터를 적용하지 않고, 특성에서 실제 해금된 모든 몬스터를 사용한다. 특성 진행도를 따르지 않는 별도 스테이지는 `BeginStageRun(CombatStageDefinition)`으로 명시적으로 시작한다.
 
 `Monsters`의 각 행에서 `Monster` Definition, `Allow Spawn`, `Production`을 지정한다.
 허용된 행만 이번 런에 출현한다. `Allow Spawn`은 플레이어의 해금 여부와 관계없이

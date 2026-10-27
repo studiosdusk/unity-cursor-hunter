@@ -7,7 +7,7 @@
 - 20개 유물의 고정 ID, 획득 상태, 출처 몬스터, 개별 드롭 확률, 전투 효과 ID와 수치를 `game-data.en.json`에 추가했다.
 - `relicDropRules`에는 미획득 유물만 후보로 사용, 처치당 최대 1개, 성공 시 고정 개별 확률로 가중 선택, 다른 유물을 얻어도 남은 유물 확률을 올리지 않는 규칙을 기록했다.
 - `GameInformationBuilder`가 도감/테스트 도구의 획득 상태를 `owned`에 반영한다. `GameInformation.ToCombatSnapshot`은 20개 정의와 드롭 정책을 불변 `ProgressionCombatSnapshot.Relics` / `RelicDropRules`로 복사한다.
-- 실제 처치 드롭 굴림, 유물 획득 저장, 효과를 피해·보상에 적용하는 Combat 소비자는 아직 구현하지 않았다. 현재는 Combat이 런 시작 데이터를 받을 수 있는 계약까지 연결했다.
+- 소유한 유물의 효과는 런 시작에 집계해 커서 공격/반경, 자동 스킬, 펫, 필드 시간, 몬스터 생성 간격, 처치 보상에 적용한다. 실제 처치 드롭 굴림과 유물 획득 상태 저장은 아직 연결되지 않았다.
 - 일반 몬스터의 `behaviorType`은 이전 호환을 위해 `None=0`이다. 종별 실제 행동은 `MonsterDefinition` / `MonsterBehaviorProfile` 데이터로 구성한다.
 
 ## 2. 파일과 현재 상태
@@ -35,7 +35,7 @@ progression 구매/지갑 + 테스트 도구의 유물 획득 ID
  → App의 전투 시작 경계 → Combat
 ```
 
-Combat은 `snapshot.Relics`에서 `RelicCombatSnapshot.RelicId`, `Owned`, `SourceMonsterId`, `DropChancePercent`, `EffectId`, `EffectValue`, `EffectValue2`를 읽을 수 있다. `snapshot.RelicDropRules`는 한 처치 최대 수, 후보 정책, 판정 방식과 고정 확률 규칙을 전달한다. 피해/보상 효과 처리와 실제 드롭 정산은 후속 구현이다.
+Combat은 `snapshot.Relics`에서 `RelicCombatSnapshot.RelicId`, `Owned`, `SourceMonsterId`, `DropChancePercent`, `EffectId`, `EffectValue`, `EffectValue2`를 읽는다. 런 시작 때 `RelicCombatModifiers`가 보유 효과를 집계해 피해·반경·쿨타임·펫·필드 시간·생성 간격·처치 보상에 적용한다. `snapshot.RelicDropRules`는 한 처치 최대 수, 후보 정책, 판정 방식과 고정 확률 규칙을 전달하지만 실제 드롭 정산 및 획득 상태 저장은 후속 구현이다.
 
 기존 전투 정보 API도 유지한다. 공격력·쿨타임·치명타는 `controller.CombatSnapshot`; 스킬은 `SkillCombatSnapshot`; 몬스터는 `MonsterCombatSnapshot` → `SpawnSnapshot`; 시작 시 JSON은 `snapshot.SourceJson`에서 읽는다. 매 프레임 JSON을 재생성하거나 역직렬화하지 않는다.
 
