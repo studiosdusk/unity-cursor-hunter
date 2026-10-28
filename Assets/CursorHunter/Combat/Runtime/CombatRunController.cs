@@ -67,6 +67,7 @@ namespace CursorHunter.Combat
         /// </summary>
         public event Action<long> CriticalHit;
         public event Action<CombatDamageApplied> DamageApplied;
+        public event Action<CombatRewardResolved> RewardResolved;
         public event Action PresentationReset;
 
         public RunId CurrentRunId => _isRunning ? _runRequest.RunId : default;
@@ -827,6 +828,27 @@ namespace CursorHunter.Combat
                 source == CombatDamageSource.CursorAttack &&
                 target is IHitEffectAnchor hitAnchor &&
                 hitAnchor.TryGetHitEffectBounds(out hitBounds);
+            Vector3 rewardPosition = default;
+            bool hasRewardPosition = false;
+            if (RewardResolved != null)
+            {
+                if (hasHitBounds)
+                {
+                    rewardPosition = hitBounds.center;
+                    hasRewardPosition = true;
+                }
+                else if (target is IHitEffectAnchor rewardAnchor &&
+                    rewardAnchor.TryGetHitEffectBounds(out Bounds rewardBounds))
+                {
+                    rewardPosition = rewardBounds.center;
+                    hasRewardPosition = true;
+                }
+                else if (target is Component component)
+                {
+                    rewardPosition = component.transform.position;
+                    hasRewardPosition = true;
+                }
+            }
             bool applied;
             long effectiveDamage;
             long displayDamage = hitDamage;
@@ -904,11 +926,30 @@ namespace CursorHunter.Combat
                 return true;
             }
 
+            string bonusId = target.BonusDropCurrencyId;
+            if (!TryResolveBonusDrop(bonusId, target.BonusDropAmount,
+                    target.BonusDropChancePercent, normalMonsterKill, out long bonusAmount))
+            {
+                RequestAbort(RunEndReason.NumericOverflow);
+                return true;
+            }
+            // Normalize a bonus in the base currency before validating or committing anything.
+            if (bonusId == "gem.garnet")
+            {
+                if (!TryAddNonNegative(garnetReward, bonusAmount, out garnetReward))
+                {
+                    RequestAbort(RunEndReason.NumericOverflow);
+                    return true;
+                }
+                bonusAmount = 0L;
+            }
             if (_defeatedCount == int.MaxValue ||
                 !TryAddNonNegative(
                     _garnetEarned,
                     garnetReward,
-                    out long nextGarnetEarned))
+                    out long nextGarnetEarned) ||
+                !TryAddNonNegative(GetResourceEarned("gem.garnet"), garnetReward, out _) ||
+                !TryAddNonNegative(GetResourceEarned(bonusId), bonusAmount, out _))
             {
                 RequestAbort(RunEndReason.NumericOverflow);
                 return true;
@@ -916,20 +957,21 @@ namespace CursorHunter.Combat
 
             _defeatedCount++;
             _garnetEarned = nextGarnetEarned;
-            if (!TryRecordReward("gem.garnet", garnetReward))
+            TryRecordReward("gem.garnet", garnetReward);
+            TryRecordReward(bonusId, bonusAmount);
+            if (garnetReward > 0L || bonusAmount > 0L)
             {
-                RequestAbort(RunEndReason.NumericOverflow);
-                return true;
-            }
-
-            if (!TryRecordBonusDrop(
-                    target.BonusDropCurrencyId,
-                    target.BonusDropAmount,
-                    target.BonusDropChancePercent,
-                    normalMonsterKill))
-            {
-                RequestAbort(RunEndReason.NumericOverflow);
-                return true;
+                try
+                {
+                    RewardResolved?.Invoke(new CombatRewardResolved(_runRequest.RunId,
+                        _defeatedCount, rewardPosition, hasRewardPosition,
+                        garnetReward, bonusId, bonusAmount));
+                }
+                catch (Exception exception)
+                {
+                    // Presentation cannot roll back a committed reward or interrupt combat.
+                    Debug.LogException(exception, this);
+                }
             }
             return true;
         }
@@ -1028,12 +1070,13 @@ namespace CursorHunter.Combat
                        _relicModifiers.LowHealthExecuteChancePercent, 0f, 100f);
         }
 
-        private bool TryRecordBonusDrop(
+        private bool TryResolveBonusDrop(
             string currencyId,
             long amount,
             float chancePercent,
-            bool isNormalMonsterKill)
+            bool isNormalMonsterKill, out long resolvedAmount)
         {
+            resolvedAmount = 0L;
             if (amount <= 0L || string.IsNullOrWhiteSpace(currencyId) ||
                 chancePercent <= 0f || _random == null)
             {
@@ -1045,7 +1088,7 @@ namespace CursorHunter.Combat
                 return true;
             }
 
-            long resolvedAmount = amount;
+            resolvedAmount = amount;
             if (isNormalMonsterKill && !TryScaleReward(
                     currencyId,
                     resolvedAmount,
@@ -1064,9 +1107,7 @@ namespace CursorHunter.Combat
                 resolvedAmount++;
             }
 
-            return TryRecordReward(
-                currencyId,
-                resolvedAmount);
+            return true;
         }
 
         private bool TryScaleReward(

@@ -20,22 +20,38 @@ namespace CursorHunter.App
         [SerializeField] private TraitScreenController progressionController;
         [SerializeField] private Font uiFont;
         [SerializeField] private CombatGemstoneList gemstoneList;
+        [Tooltip("씬에 배치된 남은 시간 텍스트. 초:1/100초로 표시합니다. 예: 15:00")]
+        [SerializeField] private TextMeshProUGUI timerText;
+        [Tooltip("남은 시간이 3초 이하일 때의 텍스트 색상")]
+        [SerializeField] private Color timerWarningColor = new Color32(255, 102, 77, 255);
 
         private TextMeshProUGUI _timerText;
+        private int _displayedTimerCentiseconds = -1;
+        private Color _timerNormalColor;
+        private bool _hasTimerNormalColor;
+        private bool _showingRun;
         private Button _progressionInfoButton;
         private GameObject _resultPanel;
         private TextMeshProUGUI _resultText;
         private TMP_FontAsset _runtimeFont;
         private bool _traitConnectionEnabled;
+        private bool _waitingForCollection;
+        private RunResult _pendingResult;
+
+        private void Update()
+        {
+            if (!_waitingForCollection || gemstoneList != null && gemstoneList.IsFinishingCollection) return;
+            _waitingForCollection = false;
+            DisplayResult(_pendingResult);
+        }
 
         public void SetTraitConnectionEnabled(bool enabled)
         {
             _traitConnectionEnabled = enabled;
             if (_progressionInfoButton != null)
             {
-                bool showingRun = _timerText != null && _timerText.gameObject.activeSelf;
                 bool showingResult = _resultPanel != null && _resultPanel.activeSelf;
-                _progressionInfoButton.gameObject.SetActive(enabled && (showingRun || showingResult));
+                _progressionInfoButton.gameObject.SetActive(enabled && (_showingRun || showingResult));
             }
         }
 
@@ -79,7 +95,7 @@ namespace CursorHunter.App
 
             if (_timerText == null)
             {
-                _timerText = CreateText(
+                _timerText = timerText != null ? timerText : CreateText(
                     "PrototypeTimerText",
                     canvas.transform,
                     new Vector2(0.5f, 1f),
@@ -89,6 +105,7 @@ namespace CursorHunter.App
                     new Vector2(260f, 90f),
                     26,
                     TextAnchor.UpperCenter);
+                _displayedTimerCentiseconds = -1;
             }
 
             if (_resultPanel == null)
@@ -107,6 +124,8 @@ namespace CursorHunter.App
         public void ShowRunning(CombatRunController combat, MonsterSpawner spawner)
         {
             if (combat == null) return;
+            _showingRun = true;
+            _waitingForCollection = false;
             if (_timerText == null || _traitConnectionEnabled && _progressionInfoButton == null)
             {
                 Initialize();
@@ -118,11 +137,17 @@ namespace CursorHunter.App
             }
 
             gemstoneList?.ShowRunning(combat, spawner);
-            int displaySeconds = Mathf.CeilToInt(Mathf.Max(0f, combat.RemainingSeconds));
-            _timerText.text =
-                $"TIME {displaySeconds:00}\nKILLS {combat.DefeatedCount}";
-            if (gemstoneList == null)
-                _timerText.text += $"\nGARNET +{combat.GarnetEarned}";
+            if (timerText != null)
+            {
+                ShowRemainingTime(combat.RemainingSeconds);
+            }
+            else
+            {
+                int displaySeconds = Mathf.CeilToInt(Mathf.Max(0f, combat.RemainingSeconds));
+                _timerText.text = $"TIME {displaySeconds:00}\nKILLS {combat.DefeatedCount}";
+                if (gemstoneList == null)
+                    _timerText.text += $"\nGARNET +{combat.GarnetEarned}";
+            }
             _timerText.gameObject.SetActive(true);
 
             if (_progressionInfoButton != null)
@@ -139,14 +164,24 @@ namespace CursorHunter.App
 
         public void ShowResult(RunResult result)
         {
+            _showingRun = false;
+            ShowRemainingTime(0f);
             if (_resultPanel == null || _traitConnectionEnabled && _progressionInfoButton == null)
             {
                 Initialize();
             }
 
             gemstoneList?.ShowResult(result);
+            _pendingResult = result;
+            _waitingForCollection = gemstoneList != null && gemstoneList.IsFinishingCollection;
+            if (_waitingForCollection) return;
+            DisplayResult(result);
+        }
 
-            if (_timerText != null)
+        private void DisplayResult(RunResult result)
+        {
+
+            if (_timerText != null && timerText == null)
             {
                 _timerText.gameObject.SetActive(false);
             }
@@ -237,8 +272,11 @@ namespace CursorHunter.App
         /// </summary>
         public void Reset()
         {
+            _showingRun = false;
+            _waitingForCollection = false;
             gemstoneList?.Clear();
-            if (_timerText != null)
+            ShowRemainingTime(0f, false);
+            if (_timerText != null && timerText == null)
             {
                 _timerText.text = string.Empty;
                 _timerText.gameObject.SetActive(false);
@@ -253,6 +291,24 @@ namespace CursorHunter.App
             {
                 _progressionInfoButton.gameObject.SetActive(false);
             }
+        }
+
+        private void ShowRemainingTime(float seconds, bool showWarning = true)
+        {
+            if (timerText == null) return;
+            if (!_hasTimerNormalColor)
+            {
+                _timerNormalColor = timerText.color;
+                _hasTimerNormalColor = true;
+            }
+            Color color = showWarning && seconds <= 3f ? timerWarningColor : _timerNormalColor;
+            if (timerText.color != color) timerText.color = color;
+
+            // Round up so the display reaches zero only when combat time expires.
+            int centiseconds = Mathf.CeilToInt(Mathf.Max(0f, seconds) * 100f);
+            if (_displayedTimerCentiseconds == centiseconds) return;
+            _displayedTimerCentiseconds = centiseconds;
+            timerText.SetText("{0:00}:{1:00}", centiseconds / 100, centiseconds % 100);
         }
 
         private Button CreateProgressionInfoButton()
@@ -318,6 +374,12 @@ namespace CursorHunter.App
             Image image = panelObject.GetComponent<Image>();
             image.color = new Color(0.06f, 0.08f, 0.12f, 0.94f);
             image.raycastTarget = true;
+
+            Canvas foreground = panelObject.AddComponent<Canvas>();
+            foreground.overrideSorting = true;
+            foreground.sortingLayerID = canvas.sortingLayerID;
+            foreground.sortingOrder = canvas.sortingOrder + 20;
+            panelObject.AddComponent<GraphicRaycaster>();
 
             _resultText = CreateText(
                 "ResultText",

@@ -18,6 +18,7 @@ namespace CursorHunter.App
             public GemstoneIconView icon;
             public TMP_Text amountText;
             [NonSerialized] private long _displayedAmount = -1L;
+            public void InvalidateAmount() { _displayedAmount = -1L; }
 
             public void SetAmount(long amount)
             {
@@ -28,7 +29,13 @@ namespace CursorHunter.App
         }
 
         [SerializeField] private Entry[] entries = Array.Empty<Entry>();
+        [SerializeField] private GemstoneCollectionController collectionController;
         private RunId _runId;
+        public bool IsFinishingCollection => collectionController != null && collectionController.IsFinishing;
+        private void OnDisable()
+        {
+            if (collectionController != null) collectionController.CancelPresentation(false, false);
+        }
 
         public void ShowRunning(CombatRunController combat, MonsterSpawner spawner)
         {
@@ -38,6 +45,8 @@ namespace CursorHunter.App
                 Clear();
                 _runId = combat.CurrentRunId;
             }
+            if (collectionController != null && Application.isPlaying)
+                collectionController.BeginRun(combat);
 
             foreach (Entry entry in entries)
             {
@@ -46,7 +55,8 @@ namespace CursorHunter.App
                 long earned = combat.GetResourceEarned(id);
                 // Keep already earned drops visible if a live balance edit disables their source.
                 bool visible = earned > 0L || CanDrop(spawner, id);
-                entry.SetAmount(earned);
+                if (collectionController != null && collectionController.Owns(_runId)) entry.InvalidateAmount();
+                else entry.SetAmount(earned);
                 if (entry.root.activeSelf != visible) entry.root.SetActive(visible);
             }
         }
@@ -54,6 +64,11 @@ namespace CursorHunter.App
         public void ShowResult(RunResult result)
         {
             if (!_runId.IsValid || result.RunId != _runId) return;
+            if (collectionController != null && collectionController.Owns(_runId))
+            {
+                collectionController.CompleteRun(result);
+                return;
+            }
             foreach (Entry entry in entries)
             {
                 if (entry == null || entry.root == null || entry.icon == null) continue;
@@ -72,6 +87,7 @@ namespace CursorHunter.App
 
         public void Clear()
         {
+            if (collectionController != null) collectionController.CancelPresentation();
             _runId = default;
             foreach (Entry entry in entries)
             {

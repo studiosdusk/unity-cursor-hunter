@@ -22,6 +22,16 @@
 젬스톤을 표시하지 않으며, 게임 시작 후 특성·전투·정산 화면에는 해금된 종류만 표시한다.
 
 ## 재사용 방식
+
+2026-10-28 젬 수집은 Main의 `GemstoneCollectionController`가
+[GemstoneFlyView.prefab](../../Assets/CursorHunter/App/Prefabs/GemstoneFlyView.prefab)을 미리 풀링하고
+기존 `GemstoneIconCatalog`의 Sprite를 종류별로 지정한다. 소/중/대는 1/5/10을 나타내며
+착점은 각 수량 TMP 중심이다. 공급사 원본 대신 App 소유 프리팹과
+[기본 수집음](../../Assets/CursorHunter/App/Audio/GemCollect.wav)·
+[추가 젬 수집음](../../Assets/CursorHunter/App/Audio/GemCollectBonus.wav)을 사용한다.
+두 수집음은 짧은 합성 톤이며 Inspector에서 Clip·Mixer·음량을 교체/조절할 수 있다.
+설정 및 검수 방법은 [젬 수집 구현 기준](../gemstone-collection-presentation-design.md)을 따른다.
+
 원본 Assets/DownLoadAssets는 기본적으로 보존한다. 각 모듈 소유 폴더에 Variant 또는 시각 래퍼를 만든다. GUID는 원본 추적용이며 런타임 로더 구현이 아니다.
 2026-10-16 전투의 박쥐·전갈·눈요정·거미·골렘·봉오리·해골군주는
 `Combat/Art/MonsterDeath`의 반복하지 않는 Dead 클립을 사용한다. 각 종의

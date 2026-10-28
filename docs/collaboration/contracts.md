@@ -117,6 +117,7 @@ CombatRunController는 PrepareRun 이후 CommitStart 이전에 특성 스냅샷�
 | 개체 현재 체력 | MonsterCombatTarget.CurrentHealth (MaxHealth는 시작/최대 체력) |
 | 런 진행 | controller.ElapsedSeconds, RemainingSeconds, DefeatedCount, GarnetEarned, EffectiveDamage |
 | 이번 런의 종류별 젬 획득량 | controller.GetResourceEarned(currencyId), 미획득 종류는 0. 영구 잔액과 독립 |
+| 처치 보상 표시 사건 | controller.RewardResolved(CombatRewardResolved): 원자적 기록 완료 후 RunId·런 내 순번·사망 전 몸 위치·Garnet·BonusCurrencyId/BonusAmount 전달. 같은 가넷 ID 보너스는 Garnet에 정규화. UI 완료가 실제 지급 조건이 아님 |
 | 일반/보스 제한 시간 | snapshot.NormalFieldDurationSeconds / BossFieldDurationSeconds |
 | 생성 상한 | snapshot.GlobalAliveLimit / PerMonsterAliveLimit |
 | 전체 시작 정보 | snapshot.SourceJson → GameInformationJson.TryDeserialize (App에서만) |
