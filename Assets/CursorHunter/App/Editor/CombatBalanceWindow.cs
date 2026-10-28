@@ -796,8 +796,6 @@ namespace CursorHunter.App.Editor
                 case "attackIntervalSeconds": return "공격 간격 (초)";
                 case "detectionRadiusWorldUnits": return "탐지 반경 (월드 단위)";
                 case "attackRangeWorldUnits": return "공격 사거리 (월드 단위)";
-                case "cursorLeashWorldUnits": return "커서 추적 거리 (월드 단위)";
-                case "idleDistanceWorldUnits": return "대기 거리 (월드 단위)";
                 default: return ObjectNames.NicifyVariableName(id);
             }
         }

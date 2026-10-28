@@ -12,7 +12,7 @@ namespace CursorHunter.Combat.Tests
         [TestCase(typeof(FlameExhaustSkillController), 8)]
         [TestCase(typeof(MagicBallSkillController), 5)]
         [TestCase(typeof(LaserSkillController), 5)]
-        [TestCase(typeof(PetSkillController), 7)]
+        [TestCase(typeof(PetSkillController), 5)]
         public void EveryAuthoredSkillFieldIsExposedWithFiniteMetadata(Type type, int count)
         {
             var root = new GameObject("Balance schema");

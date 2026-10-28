@@ -311,8 +311,6 @@ namespace CursorHunter.Combat
         [Min(0.01f)] public float MoveSpeedWorldUnitsPerSecond;
         [Min(0.01f)] public float DetectionRadiusWorldUnits;
         [Min(0.01f)] public float AttackRangeWorldUnits;
-        [Min(0.01f)] public float CursorLeashWorldUnits;
-        [Min(0f)] public float IdleDistanceWorldUnits;
     }
 
     internal readonly struct PetRuntimeStat
@@ -341,10 +339,6 @@ namespace CursorHunter.Combat
                 basis.AttackRangeWorldUnits, upgrades,
                 "attackRangeWorldUnits", 0.01f) *
                 relics.PetAttackRadiusMultiplier;
-            CursorLeashWorldUnits = Mathf.Max(AttackRangeWorldUnits,
-                basis.CursorLeashWorldUnits);
-            IdleDistanceWorldUnits = Mathf.Max(0f,
-                basis.IdleDistanceWorldUnits);
         }
 
         internal float DamageMultiplier { get; }
@@ -353,7 +347,5 @@ namespace CursorHunter.Combat
         internal float MoveSpeedWorldUnitsPerSecond { get; }
         internal float DetectionRadiusWorldUnits { get; }
         internal float AttackRangeWorldUnits { get; }
-        internal float CursorLeashWorldUnits { get; }
-        internal float IdleDistanceWorldUnits { get; }
     }
 }
