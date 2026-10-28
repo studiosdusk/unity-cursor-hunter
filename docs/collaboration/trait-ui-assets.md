@@ -68,11 +68,36 @@
 | 전리품 | 일반 Monster1~20, 보스 v1~v5 | 125 | 랜덤 드롭 도감 + 조각 해금·4단계 강화 |
 | 펫 | 펫 1 해금 + 영역/공격력/주기/영역 강화 | 5 | 자동 공격 보조 행 |
 
-### 현재 런타임 배열의 실제 에셋
+### 공용 젬스톤 아이콘 저장소 (2026-10-28)
+
+젬스톤 이미지는 `Assets/CursorHunter/Data/Resources/GameData/GemstoneIconCatalog.asset`에서
+관리한다. 각 항목은 고정 `gemstoneId`, 실제 `Sprite` 참조, 참고용 프로젝트 `assetPath`를
+저장한다. 원본 이미지를 수정하거나 복제하지 않으며, 빌드에서도 Sprite 참조로 가져온다.
+Inspector에서 Icon을 바꾸면 경로도 갱신된다.
+
+```csharp
+using CursorHunter.Data;
+
+image.sprite = GemstoneIconCatalog.LoadDefault().GetIcon("gem.topaz");
+```
+
+등록 ID는 `gem.garnet`, `gem.topaz`, `gem.amethyst`, `gem.sapphire`, `gem.diamond`,
+`gem.dragon`이며 차례대로 Red, Yellow, Purple, Blue, Green, Gray 이미지를 사용한다.
+존재하지 않는 ID는 `GetIcon`이 null을 반환한다. 경로는 `TryGetEntry(id, out var entry)`의
+`entry.AssetPath`에서 조회한다. 에디터 경로 문자열을 런타임 이미지 로딩에 사용하지 않는다.
+
+Main의 `InGameObjects/GemStone/Icon`에는 `GemstoneIconView`를 연결하고 가넷으로 설정했다.
+Inspector의 Gemstone Id 또는 `SetGemstone("gem.topaz")`로 종류를 바꾼다. 에디터에서
+미리 보려면 컴포넌트 메뉴의 `Refresh Gemstone Icon`을 실행한다.
+보유 젬스톤 목록·비용·몬스터 배지도 같은 저장소를 우선 조회한다.
+기존 `gemstoneIcons` 배열은 저장소에 해당 항목이 없는 구형/개별 씬의 대체용으로만 유지한다.
+Combat에서는 Data를 직접 참조하지 않고 App UI에서 아이콘을 연결한다.
+
+### 현재 런타임 아이콘의 실제 에셋
 
 | 컨트롤러 필드/배열 | 인덱스 규칙 | 실제 에셋 |
 |---|---|---|
-| `gemstoneIcons` | 0 가넷, 1 토파즈, 2 자수정, 3 사파이어, 4 다이아몬드, 5 드래곤 젬 | `Icon_ItemIcons/512/ItemIcon_Gem_Pentagon_Red.png`, `...Yellow.png`, `...Purple.png`, `...Blue.png`, `...Green.png`, `...Gray.png` |
+| `GemstoneIconCatalog` | `gem.garnet`, `gem.topaz`, `gem.amethyst`, `gem.sapphire`, `gem.diamond`, `gem.dragon` | `Icon_ItemIcons/512/ItemIcon_Gem_Pentagon_Red.png`, `...Yellow.png`, `...Purple.png`, `...Blue.png`, `...Green.png`, `...Gray.png` |
 | `skillIcons` | 0~5 = 토네이도·헤드샷·벼락·화염 배기·마력 구체·레이저 | `Main.unity`에 매핑된 현재 스킬별 아이콘 |
 | `monsterIcons` | 0~9 = monster.01~monster.10 | 아래 몬스터 아이콘 배열에 표시한 AS 번호의 Body 스프라이트 |
 | `petIcon` / `petIcons` | 베이비 드래곤 노드 아이콘, 단일 아이콘 우선 | AS-13610 `Ghost/Ghost_Baby/Body.png` |
@@ -101,7 +126,7 @@
 상세 패널에 표시한다.
 
 노드 비용은 화폐 ID에 따라 해당 젬스톤 이름·보유량·비용을 보여준다. 테스트 무료 모드에서도
-원래 비용은 표시하며, 사용 가능한 젬스톤은 `gemstoneIcons` 배열(가넷 Red, 토파즈 Yellow,
+원래 비용은 표시하며, 사용 가능한 젬스톤은 `GemstoneIconCatalog`(가넷 Red, 토파즈 Yellow,
 자수정 Purple, 사파이어 Blue, 다이아몬드 Green, 드래곤 Gray)에서 색상 아이콘을 가져온다.
 
 ## 공통 UI 스프라이트
@@ -178,16 +203,16 @@
 `GameInformationBuilder`가 사용 가능 상태로 계산한다. 별도의 젬스톤 해금·확률 강화
 노드나 랜덤 젬 등장 가중치는 사용하지 않는다.
 
-새 젬스톤을 처음 공급하는 몬스터의 연구 노드 우측 상단에 `gemstoneIcons` 배열의
+새 젬스톤을 처음 공급하는 몬스터의 연구 노드 우측 상단에 `GemstoneIconCatalog`의
 색상 아이콘을 표시한다. 잠겨 이름을 숨긴 몬스터에는 배지를 보여주지 않는다.
 
-| 몬스터 노드 | 해금되는 젬스톤 | `gemstoneIcons` 인덱스 |
-|---|---|---:|
-| monster.02 여왕벌 | 토파즈 | 1 |
-| monster.04 가면유령 | 자수정 | 2 |
-| monster.06 눈요정 | 사파이어 | 3 |
-| monster.08 골렘 | 다이아몬드 | 4 |
-| monster.09 봉오리 | 드래곤 젬 | 5 |
+| 몬스터 노드 | 해금되는 젬스톤 | 아이콘 ID |
+|---|---|---|
+| monster.02 여왕벌 | 토파즈 | `gem.topaz` |
+| monster.04 가면유령 | 자수정 | `gem.amethyst` |
+| monster.06 눈요정 | 사파이어 | `gem.sapphire` |
+| monster.08 골렘 | 다이아몬드 | `gem.diamond` |
+| monster.09 봉오리 | 드래곤 젬 | `gem.dragon` |
 
 가넷은 시작부터 공급되므로 배지를 붙이지 않는다. 같은 젬을 공급하는 후속 몬스터에는
 새 젬 해금 배지를 반복 표시하지 않는다.

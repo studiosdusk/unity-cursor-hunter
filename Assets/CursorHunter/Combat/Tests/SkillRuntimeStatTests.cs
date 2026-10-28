@@ -156,9 +156,7 @@ namespace CursorHunter.Combat.Tests
                 AttackIntervalSeconds = 1.2f,
                 MoveSpeedWorldUnitsPerSecond = 4f,
                 DetectionRadiusWorldUnits = 8f,
-                AttackRangeWorldUnits = 1.5f,
-                CursorLeashWorldUnits = 10f,
-                IdleDistanceWorldUnits = 1.5f
+                AttackRangeWorldUnits = 1.5f
             };
             var snapshot = new SkillCombatSnapshot(PetSkillController.SkillId,
                 true, new[]

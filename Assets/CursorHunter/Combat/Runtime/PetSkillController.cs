@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CursorHunter.Contracts;
+using Spine;
 using Spine.Unity;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -16,6 +17,7 @@ namespace CursorHunter.Combat
     {
         public const string SkillId = "skill.pet_baby_dragon";
         private const int GroundRingSortingOrder = -1;
+        private const float ScanIntervalSeconds = 0.1f;
 
         string IRunSkillController.Id => SkillId;
         bool IRunSkillController.IsAcquiredForRun(bool savedAcquired) =>
@@ -33,7 +35,6 @@ namespace CursorHunter.Combat
         [Header("Scene references")]
         [SerializeField] private Transform petRoot;
         [SerializeField] private Transform groundRing;
-        [SerializeField] private Transform cursorAnchor;
         [SerializeField] private Camera worldCamera;
         [SerializeField] private GameObject attackEffectPrefab;
 
@@ -44,9 +45,7 @@ namespace CursorHunter.Combat
             AttackIntervalSeconds = 1.2f,
             MoveSpeedWorldUnitsPerSecond = 4f,
             DetectionRadiusWorldUnits = 8f,
-            AttackRangeWorldUnits = 1.5f,
-            CursorLeashWorldUnits = 10f,
-            IdleDistanceWorldUnits = 1.5f
+            AttackRangeWorldUnits = 1.5f
         };
 
         [Header("Attack presentation")]
@@ -80,10 +79,13 @@ namespace CursorHunter.Combat
         private SkillBalanceSettings _balance;
         private bool _visible;
         private bool _attackPending;
+        private TrackEntry _attackTrack;
         private bool _impactResolved;
         private bool _visualsPaused;
         private float _lastVisualSortingY;
         private bool _hasVisualSortingY;
+        private Vector3 _spawnPosition;
+        private bool _hasSpawnPosition;
         private string _currentAnimation;
 
         public bool IsPetVisible => _visible && petRoot != null &&
@@ -110,12 +112,18 @@ namespace CursorHunter.Combat
         {
             StopSkill();
             if (combat == null || !runId.IsValid || petRoot == null ||
-                cursorAnchor == null || petRoot == cursorAnchor ||
                 attackEffectPrefab == null)
                 return false;
             if (!string.IsNullOrEmpty(skill.SkillId) &&
                 (skill.SkillId != SkillId || !skill.IsValid)) return false;
 
+            // Capture once so a later run starts at the authored scene position,
+            // rather than wherever the last target led the pet.
+            if (!_hasSpawnPosition)
+            {
+                _spawnPosition = petRoot.position;
+                _hasSpawnPosition = true;
+            }
             _combat = combat;
             _runId = runId;
             if (_balance != null) skill = default;
@@ -169,25 +177,34 @@ namespace CursorHunter.Combat
                     _impactResolved = true;
                     ResolveImpact(now);
                 }
-                if (now < _attackEndsAt) return;
+                // Combat time and Spine playback can advance at different rates.
+                // Keep locomotion locked until the actual attack finishes as well.
+                if (now < _attackEndsAt ||
+                    _attackTrack != null && !_attackTrack.IsComplete) return;
                 _attackPending = false;
+                _attackTrack = null;
+                PlayAnimation("Idle", true);
+                // Let the renderer replace the attack pose before moving the root.
+                return;
             }
 
             Vector2 petPosition = petRoot.position;
-            Vector2 cursorPosition = cursorAnchor.position;
-            if (!CanPursue(_target, cursorPosition)) _target = null;
+            if (!IsValidTarget(_target)) _target = null;
+            // Keep a valid target. Only scan while idle, at most ten times a second.
             if (_target == null && now >= _nextScanAt)
             {
-                SelectNearestTarget(petPosition, cursorPosition);
-                _nextScanAt = now + 0.1f;
+                SelectNearestTarget(petPosition);
+                _nextScanAt = now + ScanIntervalSeconds;
             }
 
             if (_target != null)
             {
                 Vector2 hitPoint = _target.GetClosestHitPoint(petPosition);
-                float distance = Vector2.Distance(petPosition, hitPoint);
-                if (distance > _runtime.AttackRangeWorldUnits)
+                float distanceSquared = (hitPoint - petPosition).sqrMagnitude;
+                if (distanceSquared > _runtime.AttackRangeWorldUnits *
+                    _runtime.AttackRangeWorldUnits)
                 {
+                    float distance = Mathf.Sqrt(distanceSquared);
                     float step = Mathf.Min(delta * _runtime.MoveSpeedWorldUnitsPerSecond,
                         distance - _runtime.AttackRangeWorldUnits * 0.9f);
                     MoveTowards(hitPoint, step);
@@ -195,33 +212,17 @@ namespace CursorHunter.Combat
                     return;
                 }
                 Face(hitPoint);
-                if (now >= _nextAttackAt)
-                {
-                    StartAttack(now);
-                    return;
-                }
+                if (now >= _nextAttackAt && TryStartAttack(now)) return;
                 PlayAnimation("Idle", true);
                 return;
             }
 
-            Vector2 idlePosition = GetIdlePosition(cursorPosition);
-            if (Vector2.Distance(petPosition, idlePosition) > 0.05f)
-            {
-                MoveTowards(idlePosition,
-                    delta * _runtime.MoveSpeedWorldUnitsPerSecond);
-                PlayAnimation("Walk", true);
-            }
-            else
-            {
-                PlayAnimation("Idle", true);
-            }
+            PlayAnimation("Idle", true);
         }
 
         private void ShowPet()
         {
-            Vector2 idlePosition = GetIdlePosition(cursorAnchor.position);
-            Vector3 position = petRoot.position;
-            petRoot.position = new Vector3(idlePosition.x, idlePosition.y, position.z);
+            petRoot.position = _spawnPosition;
             petRoot.gameObject.SetActive(true);
             RefreshVisualSorting();
             _visible = true;
@@ -230,28 +231,14 @@ namespace CursorHunter.Combat
             PlayAnimation("Idle", true);
         }
 
-        private Vector2 GetIdlePosition(Vector2 cursorPosition)
+        private bool IsValidTarget(MonsterCombatTarget target)
         {
-            float side = cursorPosition.x >= 0f ? -1f : 1f;
-            return cursorPosition + Vector2.right *
-                side * _runtime.IdleDistanceWorldUnits;
+            return target != null && target.gameObject.activeInHierarchy &&
+                target.RunId == _runId && target.IsActive &&
+                target.IsRegistered && target.IsVulnerable;
         }
 
-        private bool CanPursue(MonsterCombatTarget target,
-            Vector2 cursorPosition)
-        {
-            if (target == null || !target.gameObject.activeInHierarchy ||
-                target.RunId != _runId || !target.IsActive ||
-                !target.IsRegistered || !target.IsVulnerable)
-                return false;
-            Vector2 nearestToCursor = target.GetClosestHitPoint(cursorPosition);
-            return (nearestToCursor - cursorPosition).sqrMagnitude <=
-                _runtime.CursorLeashWorldUnits *
-                _runtime.CursorLeashWorldUnits;
-        }
-
-        private void SelectNearestTarget(Vector2 petPosition,
-            Vector2 cursorPosition)
+        private void SelectNearestTarget(Vector2 petPosition)
         {
             MonsterCombatTarget.CollectActiveForRun(_runId, _eligibleTargets);
             if (_eligibleTargets.Count == 0) return;
@@ -261,7 +248,6 @@ namespace CursorHunter.Combat
             for (int i = 0; i < _eligibleTargets.Count; i++)
             {
                 MonsterCombatTarget candidate = _eligibleTargets[i];
-                if (!CanPursue(candidate, cursorPosition)) continue;
                 Vector2 point = candidate.GetClosestHitPoint(petPosition);
                 float distanceSquared = (point - petPosition).sqrMagnitude;
                 if (distanceSquared > bestDistanceSquared) continue;
@@ -350,20 +336,30 @@ namespace CursorHunter.Combat
             _animation.Skeleton.ScaleX = magnitude * (difference < 0f ? -1f : 1f);
         }
 
-        private void StartAttack(float now)
+        private bool TryStartAttack(float now)
         {
+            // Enemy transforms can move after the last physics step. Synchronize
+            // only when an attack is ready, not on every pursuit frame.
+            Physics2D.SyncTransforms();
+            Vector2 petPosition = petRoot.position;
+            Vector2 hitPoint = _target.GetClosestHitPoint(petPosition);
+            if ((hitPoint - petPosition).sqrMagnitude >
+                _runtime.AttackRangeWorldUnits * _runtime.AttackRangeWorldUnits)
+                return false;
+            Face(hitPoint);
             _attackPending = true;
             _impactResolved = false;
             _impactAt = now + Mathf.Max(0f, impactDelaySeconds);
             _attackEndsAt = now + Mathf.Max(
                 attackAnimationSeconds, impactDelaySeconds);
             _nextAttackAt = now + _runtime.AttackIntervalSeconds;
-            PlayAnimation("Attack", false);
+            _attackTrack = PlayAnimation("Attack", false);
+            return true;
         }
 
         private void ResolveImpact(float now)
         {
-            if (_target == null || !CanPursue(_target, cursorAnchor.position))
+            if (!IsValidTarget(_target))
                 return;
             Physics2D.SyncTransforms();
             Vector2 petPosition = petRoot.position;
@@ -379,11 +375,17 @@ namespace CursorHunter.Combat
                 PlayImpactEffect(effectPosition, now);
         }
 
-        private void PlayAnimation(string name, bool loop)
+        private TrackEntry PlayAnimation(string name, bool loop)
         {
-            if (_animation == null || _currentAnimation == name) return;
-            _animation.AnimationState.SetAnimation(0, name, loop);
+            if (_animation == null || loop && _currentAnimation == name) return null;
+            TrackEntry entry = _animation.AnimationState.SetAnimation(0, name, loop);
+            // Attack is a stationary action: neither the walk pose on entry nor
+            // the completed attack on exit should blend into a moving root.
+            if (name == "Attack" || entry.MixingFrom != null &&
+                entry.MixingFrom.Animation.Name == "Attack")
+                entry.MixDuration = 0f;
             _currentAnimation = name;
+            return entry;
         }
 
         private void PlayImpactEffect(Vector3 position, float now)
@@ -428,13 +430,7 @@ namespace CursorHunter.Combat
         {
             if (!SkillBalanceMath.Validate(settings, CaptureBalanceSettings(), out error))
                 return false;
-            PetBaseStat value = SkillBalanceMath.Read<PetBaseStat>(settings);
-            if (value.CursorLeashWorldUnits < value.AttackRangeWorldUnits)
-            {
-                error = "커서 추적 한계는 공격 사거리 이상이어야 합니다.";
-                return false;
-            }
-            if (settings.Enabled && (petRoot == null || cursorAnchor == null || petRoot == cursorAnchor || attackEffectPrefab == null))
+            if (settings.Enabled && (petRoot == null || attackEffectPrefab == null))
             {
                 error = "스킬 프리팹·카메라·전투 참조를 확인하세요.";
                 return false;
@@ -493,6 +489,7 @@ namespace CursorHunter.Combat
             _configured = false;
             _visible = false;
             _attackPending = false;
+            _attackTrack = null;
             _impactResolved = false;
             _visualsPaused = false;
             _currentAnimation = null;

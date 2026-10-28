@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Reflection;
+using CursorHunter.App;
 using CursorHunter.Contracts;
 using NUnit.Framework;
 using UnityEngine;
@@ -38,6 +39,7 @@ namespace CursorHunter.Combat.Tests
             Assert.That(field, Is.Not.Null);
             Transform pet = (Transform)field.GetValue(controller);
             Assert.That(pet, Is.Not.Null);
+            Vector3 spawnPosition = pet.position;
             Transform ring = pet.Find("MagicCircle1_Green");
             Assert.That(ring, Is.Not.Null);
             Transform configuredRing = (Transform)typeof(PetSkillController)
@@ -51,6 +53,14 @@ namespace CursorHunter.Combat.Tests
                     BindingFlags.NonPublic | BindingFlags.Instance)
                 .GetValue(controller);
             Assert.That(worldCamera, Is.Not.Null);
+            MainCursorController cursor = Object.FindFirstObjectByType<MainCursorController>();
+            Assert.That(cursor, Is.Not.Null);
+            cursor.enabled = false;
+            Transform cursorAnchor = (Transform)typeof(MainCursorController)
+                .GetField("_cursorTransform", BindingFlags.NonPublic | BindingFlags.Instance)
+                .GetValue(cursor);
+            Assert.That(cursorAnchor, Is.Not.Null);
+            cursorAnchor.position = new Vector3(100f, 100f, 0f);
 
             CombatRunController combat =
                 controller.GetComponentInParent<CombatRunController>();
@@ -64,6 +74,12 @@ namespace CursorHunter.Combat.Tests
             yield return null;
 
             Assert.That(controller.IsPetVisible, Is.True);
+            Assert.That(pet.position, Is.EqualTo(spawnPosition));
+            cursorAnchor.position = new Vector3(-100f, -100f, 0f);
+            combat.AdvanceTime(0.2f);
+            yield return null;
+            Assert.That(pet.position, Is.EqualTo(spawnPosition),
+                "Moving the real Main cursor must not move an idle pet.");
             Assert.That(ring.gameObject.activeInHierarchy, Is.True);
             SortingGroup sortingGroup = pet.GetComponent<SortingGroup>();
             Assert.That(sortingGroup, Is.Not.Null);

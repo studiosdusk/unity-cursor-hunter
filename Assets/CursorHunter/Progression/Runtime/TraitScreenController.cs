@@ -59,7 +59,9 @@ namespace CursorHunter.Progression
         [SerializeField] private Sprite monsterIcon;
         [SerializeField] private Sprite petIcon;
         [SerializeField] private Sprite dragHandCursorSprite;
-        [SerializeField] private Sprite[] gemstoneIcons = new Sprite[0];
+        [SerializeField] private GemstoneIconCatalog gemstoneIconCatalog;
+        // Retained as a fallback for older/custom scenes without a matching catalog entry.
+        [SerializeField, HideInInspector] private Sprite[] gemstoneIcons = new Sprite[0];
         [SerializeField] private Sprite[] skillIcons = new Sprite[0];
         [SerializeField] private Sprite[] monsterIcons = new Sprite[0];
         [SerializeField] private Sprite[] petIcons = new Sprite[0];
@@ -2426,6 +2428,12 @@ namespace CursorHunter.Progression
 
         private Sprite GetGemstoneIcon(int index)
         {
+            GemstoneIconCatalog icons = gemstoneIconCatalog != null
+                ? gemstoneIconCatalog : GemstoneIconCatalog.LoadDefault();
+            TraitGemstoneDefinition gemstone = GetGemstoneDefinition(index);
+            Sprite sharedIcon = icons != null && gemstone != null ? icons.GetIcon(gemstone.Id) : null;
+            if (sharedIcon != null) return sharedIcon;
+
             if (gemstoneIcons != null && index >= 0 && index < gemstoneIcons.Length &&
                 gemstoneIcons[index] != null)
             {

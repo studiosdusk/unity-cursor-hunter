@@ -47,7 +47,6 @@ MonoBehaviour:
   editorSkillAcquired: 0
   petRoot: {fileID: 0}
   groundRing: {fileID: 0}
-  cursorAnchor: {fileID: 0}
   worldCamera: {fileID: 0}
   attackEffectPrefab: {fileID: 5107304801680389854, guid: 797527cd75a36424db3d5aaea2a449fd, type: 3}
   baseStat:
@@ -56,8 +55,6 @@ MonoBehaviour:
     MoveSpeedWorldUnitsPerSecond: 4
     DetectionRadiusWorldUnits: 8
     AttackRangeWorldUnits: 1.5
-    CursorLeashWorldUnits: 10
-    IdleDistanceWorldUnits: 1.5
   impactDelaySeconds: 0.167
   attackAnimationSeconds: 0.5
   effectEmissionSeconds: 0.3

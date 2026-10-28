@@ -5,9 +5,13 @@
     "CursorHunter.App",
     "CursorHunter.Data",
     "CursorHunter.Combat",
-    "CursorHunter.Contracts"
+    "CursorHunter.Contracts",
+    "Unity.TextMeshPro",
+    "UnityEngine.UI"
   ],
-  "includePlatforms": ["Editor"],
+  "includePlatforms": [
+    "Editor"
+  ],
   "autoReferenced": false,
   "noEngineReferences": false
 }

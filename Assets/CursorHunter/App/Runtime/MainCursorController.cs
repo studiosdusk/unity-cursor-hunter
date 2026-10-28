@@ -68,8 +68,7 @@ namespace CursorHunter.App
 
         private void Update()
         {
-            // The pet uses this world anchor even while the visible cursor is
-            // hidden and the native OS cursor is active.
+            // Keep the attack anchor current while the native OS cursor is active.
             RefreshCursorPosition();
         }
 

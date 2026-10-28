@@ -142,25 +142,44 @@ namespace CursorHunter.Combat.Tests
             _manager.enabled = true;
             Assert.That(_manager.Initialize(), Is.True);
             var target = new FakeTarget { RunId = _combat.CurrentRunId };
-            ApplyHit.Invoke(_combat, new object[] { target, 0L, CombatDamageSource.CursorAttack });
+            ApplyHit.Invoke(_combat, new object[] { target, 0L, CombatDamageSource.CursorAttack, false });
             Assert.That(_manager.ActiveCount, Is.EqualTo(1));
             Assert.That(_manager.MergedCount, Is.Zero, "Duplicate subscriptions would merge the event twice.");
         }
 
         [Test]
-        public void EventCarriesClampedLethalDamageAndPreDeathAnchor()
+        public void LethalHitDisplaysFullDamageWhileHealthAndTotalsStayClamped()
         {
-            var target = new FakeTarget { RunId = _combat.CurrentRunId, Health = 3L };
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
+                "Assets/CursorHunter/Combat/Prefabs/Monsters/MonsterRoot.prefab");
+            var target = Object.Instantiate(prefab, _root.transform).GetComponent<MonsterCombatTarget>();
+            target.Initialize(new SpawnSnapshot("monster.01", "test", 12L, 1f, 1, 80, 0L),
+                _combat.CurrentRunId);
+            Vector3 textPosition = target.DamageTextPosition;
             CombatDamageApplied captured = default;
             int count = 0;
             _combat.DamageApplied += hit => { captured = hit; count++; };
-            ApplyHit.Invoke(_combat, new object[] { target, 0L, CombatDamageSource.CursorAttack });
+            ApplyHit.Invoke(_combat, new object[] { target, 0L, CombatDamageSource.CursorAttack, false });
             Assert.That(count, Is.EqualTo(1));
-            Assert.That(captured.EffectiveDamage, Is.EqualTo(3L));
-            Assert.That(captured.WorldPosition, Is.EqualTo(new Vector3(1f, 2f, 0f)));
+            Assert.That(target.CurrentHealth, Is.EqualTo(2L));
+            Assert.That(captured.EffectiveDamage, Is.EqualTo(10L));
+            Assert.That(captured.DisplayDamage, Is.EqualTo(10L));
+            Assert.That(ActiveText().GetParsedText(), Is.EqualTo("10"));
+            _manager.AdvancePresentation(1f);
+
+            ApplyHit.Invoke(_combat, new object[] { target, 0L, CombatDamageSource.CursorAttack, false });
+            Assert.That(count, Is.EqualTo(2));
+            Assert.That(target.CurrentHealth, Is.Zero);
+            Assert.That(target.IsDead, Is.True);
+            Assert.That(captured.EffectiveDamage, Is.EqualTo(2L));
+            Assert.That(captured.DisplayDamage, Is.EqualTo(10L));
+            Assert.That(captured.WorldPosition, Is.EqualTo(textPosition));
             Assert.That(_manager.ActiveCount, Is.EqualTo(1));
-            ApplyHit.Invoke(_combat, new object[] { target, 0L, CombatDamageSource.CursorAttack });
-            Assert.That(count, Is.EqualTo(1), "Dead target must not emit another number.");
+            Assert.That(ActiveText().GetParsedText(), Is.EqualTo("10"));
+            Assert.That(_combat.EffectiveDamage, Is.EqualTo(12L));
+            Assert.That(_combat.DefeatedCount, Is.EqualTo(1));
+            ApplyHit.Invoke(_combat, new object[] { target, 0L, CombatDamageSource.CursorAttack, false });
+            Assert.That(count, Is.EqualTo(2), "Dead target must not emit another number.");
         }
 
         [Test]
@@ -168,15 +187,17 @@ namespace CursorHunter.Combat.Tests
         {
             _combat.TryAbortRun(RunEndReason.UserExit, default, out _);
             StartRun("critical-run", 100f);
-            var target = new FakeTarget { RunId = _combat.CurrentRunId, Health = 1000L };
+            var target = new FakeTarget { RunId = _combat.CurrentRunId, Health = 3L };
             CombatDamageApplied captured = default;
             _combat.DamageApplied += hit => captured = hit;
-            ApplyHit.Invoke(_combat, new object[] { target, 25L, CombatDamageSource.Skill });
+            ApplyHit.Invoke(_combat, new object[] { target, 25L, CombatDamageSource.Skill, false });
             Assert.That(captured.Source, Is.EqualTo(CombatDamageSource.Skill));
             Assert.That(captured.HasHitEffectPosition, Is.False);
             Assert.That(captured.IsCritical, Is.True);
-            Assert.That(captured.EffectiveDamage, Is.EqualTo(50L));
+            Assert.That(captured.EffectiveDamage, Is.EqualTo(3L));
+            Assert.That(captured.DisplayDamage, Is.EqualTo(50L));
             Assert.That(ActiveText().name, Is.EqualTo("DamageText_Critical"));
+            Assert.That(ActiveText().GetParsedText(), Is.EqualTo("50"));
         }
 
         [Test]

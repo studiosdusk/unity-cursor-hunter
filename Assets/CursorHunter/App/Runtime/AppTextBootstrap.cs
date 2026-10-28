@@ -15,7 +15,8 @@ namespace CursorHunter.App
             {
                 // Damage numbers keep the two font/material styles authored in their prefab.
                 if (text.GetComponentInParent<DamageText_Root>(true) != null) continue;
-                text.font = font;
+                if (text.GetComponent<TextSettingIgnore>() == null)
+                    text.font = font;
                 if (text.GetComponent<LocalizedTmpLabel>() == null)
                     LocalizationCatalog.BindKnown(text, text.text);
             }
