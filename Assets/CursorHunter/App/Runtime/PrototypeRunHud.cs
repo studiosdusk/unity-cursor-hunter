@@ -20,6 +20,7 @@ namespace CursorHunter.App
         [SerializeField] private TraitScreenController progressionController;
         [SerializeField] private Font uiFont;
         [SerializeField] private CombatGemstoneList gemstoneList;
+        [SerializeField] private BattleResultPresentation battleResult;
         [Tooltip("씬에 배치된 남은 시간 텍스트. 초:1/100초로 표시합니다. 예: 15:00")]
         [SerializeField] private TextMeshProUGUI timerText;
         [Tooltip("남은 시간이 3초 이하일 때의 텍스트 색상")]
@@ -37,6 +38,8 @@ namespace CursorHunter.App
         private bool _traitConnectionEnabled;
         private bool _waitingForCollection;
         private RunResult _pendingResult;
+        private RunId _activeRunId;
+        private bool _acceptResult;
 
         private void Update()
         {
@@ -50,7 +53,7 @@ namespace CursorHunter.App
             _traitConnectionEnabled = enabled;
             if (_progressionInfoButton != null)
             {
-                bool showingResult = _resultPanel != null && _resultPanel.activeSelf;
+                bool showingResult = battleResult == null && _resultPanel != null && _resultPanel.activeSelf;
                 _progressionInfoButton.gameObject.SetActive(enabled && (_showingRun || showingResult));
             }
         }
@@ -108,7 +111,9 @@ namespace CursorHunter.App
                 _displayedTimerCentiseconds = -1;
             }
 
-            if (_resultPanel == null)
+            if (battleResult != null)
+                battleResult.Hide();
+            if (battleResult == null && _resultPanel == null)
             {
                 _resultPanel = CreateResultPanel();
             }
@@ -118,12 +123,14 @@ namespace CursorHunter.App
                 _progressionInfoButton = CreateProgressionInfoButton();
             }
 
-            _resultPanel.SetActive(false);
+            if (_resultPanel != null) _resultPanel.SetActive(false);
         }
 
         public void ShowRunning(CombatRunController combat, MonsterSpawner spawner)
         {
             if (combat == null) return;
+            _activeRunId = combat.CurrentRunId;
+            _acceptResult = combat.IsRunActive;
             _showingRun = true;
             _waitingForCollection = false;
             if (_timerText == null || _traitConnectionEnabled && _progressionInfoButton == null)
@@ -164,14 +171,23 @@ namespace CursorHunter.App
 
         public void ShowResult(RunResult result)
         {
+            if (battleResult != null && (!_acceptResult || result.RunId != _activeRunId)) return;
+            _acceptResult = false;
             _showingRun = false;
             ShowRemainingTime(0f);
-            if (_resultPanel == null || _traitConnectionEnabled && _progressionInfoButton == null)
+            if ((battleResult == null && _resultPanel == null) || (_traitConnectionEnabled && _progressionInfoButton == null))
             {
                 Initialize();
             }
 
             gemstoneList?.ShowResult(result);
+            if (battleResult != null)
+            {
+                _waitingForCollection = false;
+                if (_progressionInfoButton != null) _progressionInfoButton.gameObject.SetActive(false);
+                battleResult.Show(result);
+                return;
+            }
             _pendingResult = result;
             _waitingForCollection = gemstoneList != null && gemstoneList.IsFinishingCollection;
             if (_waitingForCollection) return;
@@ -273,7 +289,10 @@ namespace CursorHunter.App
         public void Reset()
         {
             _showingRun = false;
+            _acceptResult = false;
+            _activeRunId = default;
             _waitingForCollection = false;
+            battleResult?.Hide();
             gemstoneList?.Clear();
             ShowRemainingTime(0f, false);
             if (_timerText != null && timerText == null)

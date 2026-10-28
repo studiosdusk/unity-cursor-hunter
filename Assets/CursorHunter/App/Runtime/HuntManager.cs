@@ -52,6 +52,7 @@ namespace CursorHunter.App
         private bool _coordinatorEventsSubscribed;
         private bool _pausedForInspection;
         private bool _runUsesTraitScreen;
+        private CombatStageDefinition _lastStartedStage;
         private readonly HashSet<RunId> _settledRunIds =
             new HashSet<RunId>();
 
@@ -331,6 +332,7 @@ namespace CursorHunter.App
             }
 
             _runUsesTraitScreen = connectTraitScreenToCombat;
+            _lastStartedStage = stage;
             // Keep the exact progression copy used by Combat available to
             // the Field HUD's read-only summary. The UI never re-reads live
             // trait dictionaries while a run is active.
@@ -487,6 +489,12 @@ namespace CursorHunter.App
             {
                 uiRootController.ShowMainMenu();
             }
+        }
+
+        /// <summary>Reuses the last field selection with a fresh RunId and current progression snapshot.</summary>
+        public void ReplayLastRun()
+        {
+            BeginStageRun(_lastStartedStage);
         }
 
         private void Update()
