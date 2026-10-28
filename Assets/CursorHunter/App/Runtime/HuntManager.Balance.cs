@@ -225,8 +225,7 @@ namespace CursorHunter.App
             if (runHud != null)
             {
                 runHud.Initialize();
-                runHud.ShowRunning(combatRunController.RemainingSeconds,
-                    combatRunController.DefeatedCount, combatRunController.GarnetEarned);
+                runHud.ShowRunning(combatRunController, monsterSpawner);
             }
         }
 

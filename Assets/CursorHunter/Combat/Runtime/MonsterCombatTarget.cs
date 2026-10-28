@@ -575,8 +575,21 @@ namespace CursorHunter.Combat
             out long effectiveDamage,
             out bool killed)
         {
+            return ApplyDamage(runId, damage, bypassShield,
+                out effectiveDamage, out killed, out _);
+        }
+
+        public bool ApplyDamage(
+            RunId runId,
+            long damage,
+            bool bypassShield,
+            out long effectiveDamage,
+            out bool killed,
+            out long displayDamage)
+        {
             effectiveDamage = 0;
             killed = false;
+            displayDamage = 0;
 
             if (!IsActive || !_isVulnerable || !BelongsTo(runId) ||
                 damage <= 0 || _currentHealth <= 0)
@@ -595,6 +608,7 @@ namespace CursorHunter.Combat
                 damage -= blockedDamage;
             }
 
+            displayDamage = damage;
             effectiveDamage = damage < _currentHealth ? damage : _currentHealth;
             _currentHealth -= effectiveDamage;
             if (showHealthBar && _healthBar != null)

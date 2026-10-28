@@ -128,6 +128,7 @@ namespace CursorHunter.Combat
         {
             if (_slots == null || !isActiveAndEnabled || !combatRunController.IsRunning ||
                 hit.RunId != combatRunController.CurrentRunId || hit.EffectiveDamage <= 0L ||
+                hit.DisplayDamage <= 0L ||
                 hit.Target == null || !hit.HasWorldPosition || !IsFinite(hit.WorldPosition)) return;
             if (_runId != hit.RunId) ResetPresentation();
 
@@ -137,9 +138,9 @@ namespace CursorHunter.Combat
                 Slot existing = _slots[_active[i]];
                 if (mergeWindowSeconds > 0f && ReferenceEquals(existing.Target, hit.Target) &&
                     existing.Critical == hit.IsCritical && existing.Age <= mergeWindowSeconds &&
-                    long.MaxValue - existing.Damage >= hit.EffectiveDamage)
+                    long.MaxValue - existing.Damage >= hit.DisplayDamage)
                 {
-                    existing.Damage += hit.EffectiveDamage;
+                    existing.Damage += hit.DisplayDamage;
                     existing.View.SetDamage(existing.Damage);
                     mergedCount++;
                     // Keep original age/trajectory: continuous hits cannot make a popup immortal.
@@ -166,7 +167,7 @@ namespace CursorHunter.Combat
             slot.Target = hit.Target;
             slot.Origin = hit.WorldPosition + spawnOffset;
             slot.Critical = hit.IsCritical;
-            slot.Damage = hit.EffectiveDamage;
+            slot.Damage = hit.DisplayDamage;
             slot.Age = 0f;
             slot.Order = _spawnSequence++;
             slot.Motion = motionVariants != null && motionVariants.Length > 0

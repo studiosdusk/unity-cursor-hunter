@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c2d9c3d52f69450fbd0c31ecd6254610, type: 3}
+  m_Name: GemstoneIconCatalog
+  m_EditorClassIdentifier:
+  entries:
+  - gemstoneId: gem.garnet
+    icon: {fileID: 21300000, guid: 6f40e5d50d0934e45aac02171a570c88, type: 3}
+    assetPath: Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Icon_ItemIcons/512/ItemIcon_Gem_Pentagon_Red.png
+  - gemstoneId: gem.topaz
+    icon: {fileID: 21300000, guid: e7456ed055303479fa545fea773f4bf1, type: 3}
+    assetPath: Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Icon_ItemIcons/512/ItemIcon_Gem_Pentagon_Yellow.png
+  - gemstoneId: gem.amethyst
+    icon: {fileID: 21300000, guid: e74fb0eb39fbd4d94ab0f7601df612ca, type: 3}
+    assetPath: Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Icon_ItemIcons/512/ItemIcon_Gem_Pentagon_Purple.png
+  - gemstoneId: gem.sapphire
+    icon: {fileID: 21300000, guid: db445bdb34cc34ec78fc713c3278d6db, type: 3}
+    assetPath: Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Icon_ItemIcons/512/ItemIcon_Gem_Pentagon_Blue.png
+  - gemstoneId: gem.diamond
+    icon: {fileID: 21300000, guid: f0ec595ceb4954cb58e8a1acec6720c5, type: 3}
+    assetPath: Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Icon_ItemIcons/512/ItemIcon_Gem_Pentagon_Green.png
+  - gemstoneId: gem.dragon
+    icon: {fileID: 21300000, guid: 80437da613ef64ecab96530c087df0f0, type: 3}
+    assetPath: Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Icon_ItemIcons/512/ItemIcon_Gem_Pentagon_Gray.png

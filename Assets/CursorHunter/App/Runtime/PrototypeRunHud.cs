@@ -1,4 +1,5 @@
 using CursorHunter.Contracts;
+using CursorHunter.Combat;
 using CursorHunter.Progression;
 using System.Text;
 using UnityEngine;
@@ -18,6 +19,7 @@ namespace CursorHunter.App
         [SerializeField] private Canvas canvas;
         [SerializeField] private TraitScreenController progressionController;
         [SerializeField] private Font uiFont;
+        [SerializeField] private CombatGemstoneList gemstoneList;
 
         private TextMeshProUGUI _timerText;
         private Button _progressionInfoButton;
@@ -72,18 +74,21 @@ namespace CursorHunter.App
                 _runtimeFont = LocalizedTypography.GetFont(uiFont);
             }
 
+            if (gemstoneList == null)
+                gemstoneList = canvas.GetComponentInChildren<CombatGemstoneList>(true);
+
             if (_timerText == null)
             {
                 _timerText = CreateText(
                     "PrototypeTimerText",
                     canvas.transform,
-                    new Vector2(0f, 1f),
-                    new Vector2(0f, 1f),
-                    new Vector2(0f, 1f),
-                    new Vector2(32f, -28f),
+                    new Vector2(0.5f, 1f),
+                    new Vector2(0.5f, 1f),
+                    new Vector2(0.5f, 1f),
+                    new Vector2(0f, -28f),
                     new Vector2(260f, 90f),
                     26,
-                    TextAnchor.UpperLeft);
+                    TextAnchor.UpperCenter);
             }
 
             if (_resultPanel == null)
@@ -99,8 +104,9 @@ namespace CursorHunter.App
             _resultPanel.SetActive(false);
         }
 
-        public void ShowRunning(float remainingSeconds, int defeatedCount, long garnetEarned)
+        public void ShowRunning(CombatRunController combat, MonsterSpawner spawner)
         {
+            if (combat == null) return;
             if (_timerText == null || _traitConnectionEnabled && _progressionInfoButton == null)
             {
                 Initialize();
@@ -111,9 +117,12 @@ namespace CursorHunter.App
                 return;
             }
 
-            int displaySeconds = Mathf.CeilToInt(Mathf.Max(0f, remainingSeconds));
+            gemstoneList?.ShowRunning(combat, spawner);
+            int displaySeconds = Mathf.CeilToInt(Mathf.Max(0f, combat.RemainingSeconds));
             _timerText.text =
-                $"TIME {displaySeconds:00}\nKILLS {defeatedCount}\nGARNET +{garnetEarned}";
+                $"TIME {displaySeconds:00}\nKILLS {combat.DefeatedCount}";
+            if (gemstoneList == null)
+                _timerText.text += $"\nGARNET +{combat.GarnetEarned}";
             _timerText.gameObject.SetActive(true);
 
             if (_progressionInfoButton != null)
@@ -134,6 +143,8 @@ namespace CursorHunter.App
             {
                 Initialize();
             }
+
+            gemstoneList?.ShowResult(result);
 
             if (_timerText != null)
             {
@@ -226,6 +237,7 @@ namespace CursorHunter.App
         /// </summary>
         public void Reset()
         {
+            gemstoneList?.Clear();
             if (_timerText != null)
             {
                 _timerText.text = string.Empty;

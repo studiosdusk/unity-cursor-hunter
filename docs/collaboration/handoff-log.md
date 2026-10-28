@@ -943,3 +943,30 @@
 - 같은 이름의 애니메이션 재생 생략은 반복 동작에만 적용한다. 단발 Attack은 연속 공격 시에도 매번 처음부터 재생한다. 공격 시작 직전에는 물리 좌표를 동기화해, 적이 이미 사거리를 벗어났는데 이전 콜라이더 위치로 공격을 시작하고 쿨타임을 소비하는 경로를 막았다. 추적 중 매 프레임 동기화는 하지 않는다.
 - 약 0.167초의 선딜레이 동안 적이 사거리 밖으로 이동하면 명중이 취소되는 기존 규칙도 확인했다. 이때 무적·사망·다른 런 검사와 이미 소비된 공격 주기는 유지한다. 사거리 안에서 시작한 공격을 무조건 명중시키는 방식으로 판정을 바꾸지는 않았다.
 - `PetSkillPlayModeTests`에 실제 BabyDragon Spine 프리팹을 사용하는 완료·혼합·연속 공격 회귀와 오래된 물리 좌표 회귀를 추가했다. 수정 전 3개 실패를 재현했고, 수정 후 격리 Unity 6000.3.13f1 펫 PlayMode 8개 및 협업 정적 검사·공백 검사가 통과했다. 수동 Game 뷰 검증은 수행하지 않았다.
+
+### 2026-10-28 · Combat — 마지막 타격의 데미지 숫자를 남은 체력으로 제한하지 않음
+
+- `CombatDamageApplied.DisplayDamage`를 표시 전용 값으로 분리했다. `MonsterCombatTarget`은 보호막 피해 감소 이후, 남은 체력으로 제한하기 이전의 값을 반환하고 `CombatRunController`가 이벤트에 전달한다. `DamageTextManager`의 표시·합산·오버플로 검사는 이 값을 사용한다. 실제 체력 감소량인 `EffectiveDamage`, 누적 피해, 처치·보상과 기존 호출부 호환성은 유지한다.
+- 기존 `DamageTextTests`를 갱신해 실제 몬스터 프리팹의 체력 12에 공격력 10으로 두 번 공격하면 숫자는 각각 10, 체력은 2·0, 누적 피해는 12, 처치는 1회인 것을 확인했다. 치명타 스킬의 마지막 타격도 전체 피해량을 표시하며 죽은 대상에는 추가 숫자를 만들지 않는다. 테스트의 리플렉션 호출을 현재 `ApplyBundle` 인자에 맞췄다.
+- 격리 Unity 6000.3.13f1에서 컴파일과 EditMode의 `DamageTextTests` 10개·`MonsterBalanceTests` 9개가 통과했다. 협업 정적 검사와 공백 검사도 통과했다. PlayMode 및 수동 Game 뷰 시각 검증은 수행하지 않았다.
+
+
+### 2026-10-28 · Data/App/Progression — 공용 젬스톤 아이콘 저장소
+
+- `GemstoneIconCatalog`와 `Data/Resources/GameData/GemstoneIconCatalog.asset`에 6종 젬스톤의 고정 ID, 원본 이미지 경로, Sprite 참조를 등록했다. 기존 512px 오각형 Red/Yellow/Purple/Blue/Green/Gray 아이콘을 참조하며 공급사 원본은 변경하지 않았다. `LoadDefault().GetIcon(id)`로 빌드에서도 조회하고 `TryGetEntry`로 경로를 확인한다.
+- `TraitScreenController`의 젬스톤 목록·비용·몬스터 배지가 공용 저장소를 우선 조회한다. 기존 배열은 구형/개별 씬의 대체용으로 보존했다. Main의 `InGameObjects/GemStone/Icon`에 `GemstoneIconView`와 기본 가넷을 연결했고, Inspector ID나 `SetGemstone`으로 종류를 바꿀 수 있다. 다른 씬 편집과 텍스트·잔액은 보존했다.
+- 협업 정적 검사, 6종 ID/파일 경로/Sprite GUID 대조, 이번 씬 변경의 참조·범위·공백 검사가 통과했다. Unity 참조 DLL을 사용한 외부 Roslyn 컴파일에서 Data/Progression/App 세 어셈블리가 통과했다. Unity import/Play Mode 및 Game 뷰 시각 검증은 수행하지 않았다. 전체 작업 트리의 공백 검사에는 이번 수정 전부터 있던 Main 씬 직렬화 공백이 남아 있다.
+
+### 2026-10-28 · App/Combat — 전투 젬스톤 획득 목록
+
+- Main의 `GemStoneLists`에 가넷·토파즈·자수정·사파이어·다이아몬드·드래곤 젬 6개 행을 미리 배치했다. 기존 행의 배경·폰트 예외·TargetPoint를 유지하고 공용 아이콘 카탈로그의 종류별 ID와 Sprite를 연결했다. 복사되어 있던 메인 메뉴 복귀 Button은 제거하고 표시 요소의 Raycast를 껐다.
+- `CombatGemstoneList`는 현재 SpawnPlan의 활성 몬스터와 실제 드롭 수량·확률로 표시 여부를 정한다. 획득 가능한 종류는 0부터 표시하고 `CombatRunController.GetResourceEarned(id)`로 이번 런의 누적 수량을 읽는다. 실시간 밸런스 편집으로 공급원을 꺼도 이미 획득한 종류는 남긴다. UI에서 영구 지갑을 읽거나 변경하지 않는다.
+- `PrototypeRunHud`를 일반/밸런스 전투 시작·진행·결과·Reset에 연결했다. 마지막 프레임의 획득량은 RunResult로 보정하며 이전 RunId의 결과를 거부한다. 매 프레임에는 문자열을 재생성하지 않고 수량이 달라진 행만 갱신한다. VerticalLayoutGroup은 Upper Left, 높이 확장 해제, 간격 24로 활성 행만 위에서부터 쌓는다. 기존 타이머·처치 수는 목록과 겹치지 않도록 상단 중앙으로 옮겼다.
+- Unity 6000.3.13f1 격리 복제본에서 컴파일과 관련 EditMode 24개, 신규 Main PlayMode 1개가 통과했다. 6종 씬 연결·희소 목록 정렬·실제 처치 보상·Int64·마지막 처치·재시작·오래된 결과·실시간 편집·일반/밸런스 진입·메인 메뉴 초기화·PlayerPrefs 불변을 검증했다. 협업 경계 및 변경 범위의 참조·공백 검사도 통과했다. 수동 Game 뷰 시각 검증은 수행하지 않았다.
+- 기존 `CombatBalanceMainScenePlayModeTests` 2개는 현재 Main의 `connectTraitScreenToCombat = true`에서 기본 시작이 밸런스 모드라고 가정하는 40/96행에서 실패했다. 이 설정과 분기 조건은 이번 변경 이전부터 존재하며, 기존 테스트나 실제 특성 연동 설정은 수정하지 않았다. 신규 테스트는 현재 일반 진입과 명시적으로 특성 연동을 끈 밸런스 진입을 각각 확인한다.
+
+### 2026-10-28 · App — 젬스톤 하단 2열 배치와 수량 색상
+
+- 사용자 참고 이미지에 맞춰 첫 가넷 행은 큰 크기로 유지하고, 나머지 5종은 씬에 미리 만든 `SecondaryGemstones`의 GridLayoutGroup 아래로 이동했다. 고정 2열, 가로 간격 24·세로 간격 16으로 왼쪽부터 채운다. 작은 행과 아이콘 높이는 기존의 절반이며 숫자 최대 크기는 36이다. 최상위 VerticalLayoutGroup은 첫 행과 그리드의 실제 필요 높이만 배치한다. 비활성 종류는 빈 칸을 남기지 않는다.
+- 수량 글자색은 가넷 `#FF8277`, 토파즈 `#FFD45C`, 자수정 `#D6A1FF`, 사파이어 `#79BFFF`, 다이아몬드 `#83EEA0`, 드래곤 젬 `#E4E9F1`로 지정했다. 현재 카탈로그의 빨강·노랑·보라·파랑·초록·회색 아이콘에 대응하는 밝은 색이며, 기존 TMP_TiltWarp_Outline의 검은 외곽선과 그림자·글꼴 예외 설정을 유지한다. 전투 보상 및 표시 조건 코드는 변경하지 않았다.
+- 격리 Unity 6000.3.13f1에서 기존 젬 목록 EditMode 3개를 갱신해 1개만 보이는 하단 목록·전체 5종의 2열 위치·자동 높이·수량 갱신·초기화를 확인했다. 별도 임시 시각 검사까지 포함한 4개 검사가 통과했고 실제 씬 UI를 600×420 이미지로 렌더링해 숫자색·검은 외곽선·배치를 확인했다. 협업 경계와 이번 씬 변경의 로컬 참조 검사도 통과했다.

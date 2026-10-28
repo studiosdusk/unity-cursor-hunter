@@ -116,6 +116,7 @@ CombatRunController는 PrepareRun 이후 CommitStart 이전에 특성 스냅샷�
 | 유물 드롭 정책 | `ProgressionCombatSnapshot.RelicDropRules` → `CombatRunController.RelicDropRules`: MaxPerKill, CandidatePolicy, Resolution, PreserveBaseChanceAfterAcquisition |
 | 개체 현재 체력 | MonsterCombatTarget.CurrentHealth (MaxHealth는 시작/최대 체력) |
 | 런 진행 | controller.ElapsedSeconds, RemainingSeconds, DefeatedCount, GarnetEarned, EffectiveDamage |
+| 이번 런의 종류별 젬 획득량 | controller.GetResourceEarned(currencyId), 미획득 종류는 0. 영구 잔액과 독립 |
 | 일반/보스 제한 시간 | snapshot.NormalFieldDurationSeconds / BossFieldDurationSeconds |
 | 생성 상한 | snapshot.GlobalAliveLimit / PerMonsterAliveLimit |
 | 전체 시작 정보 | snapshot.SourceJson → GameInformationJson.TryDeserialize (App에서만) |
@@ -150,7 +151,7 @@ Data 참조가 없는 Combat 어셈블리에서 위 파싱 메서드를 호출�
 
 ## 시작 정보와 현재 상태를 혼동하지 않는다
 
-- SourceJson의 젬 amount는 시작 시 잔액. 진행 중 수익은 GarnetEarned/종료 RunResult.Rewards다.
+- SourceJson의 젬 amount는 시작 시 잔액. 진행 중 수익은 GetResourceEarned(currencyId)/GarnetEarned, 종료 수익은 RunResult.Rewards다.
 - 전체 정보 팝업/JSON 복사는 활성 런의 SourceJson을 표시하고, 런 밖에서는 현재 프로필을 합산한다. 결과 화면에서는 마지막 런 정보가 유지될 수 있다.
 - 매 타격/매 프레임 JSON 파싱이나 스냅샷 재생성을 하지 않는다.
 - 배열은 런 시작 시 복사되어 읽기 전용으로 노출된다. 후속 UI 구매는 다음 런부터 반영된다.

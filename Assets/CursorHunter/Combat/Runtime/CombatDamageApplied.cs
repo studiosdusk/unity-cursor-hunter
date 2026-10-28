@@ -35,11 +35,13 @@ namespace CursorHunter.Combat
         public CombatDamageApplied(RunId runId, ICombatTarget target, long damage,
             bool critical, Vector3 worldPosition, bool hasWorldPosition,
             CombatDamageSource source, Vector3 hitEffectPosition,
-            bool hasHitEffectPosition, float hitEffectSizeWorldUnits)
+            bool hasHitEffectPosition, float hitEffectSizeWorldUnits,
+            long? displayDamage = null)
         {
             RunId = runId;
             Target = target;
             EffectiveDamage = damage;
+            DisplayDamage = displayDamage ?? damage;
             IsCritical = critical;
             WorldPosition = worldPosition;
             HasWorldPosition = hasWorldPosition;
@@ -51,7 +53,10 @@ namespace CursorHunter.Combat
 
         public RunId RunId { get; }
         public ICombatTarget Target { get; }
+        /// <summary>Health actually removed, capped by the target's remaining health.</summary>
         public long EffectiveDamage { get; }
+        /// <summary>Damage after mitigation, before the remaining-health cap.</summary>
+        public long DisplayDamage { get; }
         public bool IsCritical { get; }
         public Vector3 WorldPosition { get; }
         public bool HasWorldPosition { get; }

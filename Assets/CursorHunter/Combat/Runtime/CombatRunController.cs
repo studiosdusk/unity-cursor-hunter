@@ -83,6 +83,13 @@ namespace CursorHunter.Combat
                 : 0f;
         public int DefeatedCount => _defeatedCount;
         public long GarnetEarned => _garnetEarned;
+        /// <summary>Current run earnings only; does not read or mutate the permanent wallet.</summary>
+        public long GetResourceEarned(string currencyId)
+        {
+            return currencyId != null && _resourceRewards.TryGetValue(currencyId, out long amount)
+                ? amount : 0L;
+        }
+
         public long EffectiveDamage => _effectiveDamage;
         public LayerMask EnemyLayers => enemyLayers;
         public bool IsBossRun => _isRunning && _runRequest.Mode == RunMode.Boss;
@@ -822,12 +829,13 @@ namespace CursorHunter.Combat
                 hitAnchor.TryGetHitEffectBounds(out hitBounds);
             bool applied;
             long effectiveDamage;
+            long displayDamage = hitDamage;
             bool killed;
-            if (execute && target is MonsterCombatTarget executableTarget)
+            if (target is MonsterCombatTarget damageTarget)
             {
-                applied = executableTarget.ApplyDamage(
-                    _runRequest.RunId, hitDamage, true,
-                    out effectiveDamage, out killed);
+                applied = damageTarget.ApplyDamage(
+                    _runRequest.RunId, hitDamage, execute,
+                    out effectiveDamage, out killed, out displayDamage);
             }
             else
             {
@@ -864,7 +872,7 @@ namespace CursorHunter.Combat
                 DamageApplied?.Invoke(new CombatDamageApplied(
                     _runRequest.RunId, target, effectiveDamage, wasCritical,
                     hitPosition, anchor != null, source, hitBounds.center, hasHitBounds,
-                    Mathf.Max(hitBounds.size.x, hitBounds.size.y)));
+                    Mathf.Max(hitBounds.size.x, hitBounds.size.y), displayDamage));
             }
 
             if (wasCritical && effectiveDamage > 0L)
