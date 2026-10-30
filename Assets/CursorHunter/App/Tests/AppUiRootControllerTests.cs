@@ -9,6 +9,15 @@ namespace CursorHunter.App.Tests
     {
         private readonly List<GameObject> _objects =
             new List<GameObject>();
+        private const string TutorialKey = "cursor_hunter.progression.v1.starter-tutorial-complete";
+        private int? _tutorialComplete;
+
+        [SetUp]
+        public void UseEstablishedProfileForNavigationTests()
+        {
+            _tutorialComplete = PlayerPrefs.HasKey(TutorialKey) ? PlayerPrefs.GetInt(TutorialKey) : (int?)null;
+            PlayerPrefs.SetInt(TutorialKey, 1);
+        }
 
         [TearDown]
         public void TearDown()
@@ -22,6 +31,9 @@ namespace CursorHunter.App.Tests
             }
 
             _objects.Clear();
+            if (_tutorialComplete.HasValue) PlayerPrefs.SetInt(TutorialKey, _tutorialComplete.Value);
+            else PlayerPrefs.DeleteKey(TutorialKey);
+            PlayerPrefs.Save();
         }
 
         [Test]

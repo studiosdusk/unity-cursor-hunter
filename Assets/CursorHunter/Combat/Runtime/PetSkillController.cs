@@ -354,6 +354,7 @@ namespace CursorHunter.Combat
                 attackAnimationSeconds, impactDelaySeconds);
             _nextAttackAt = now + _runtime.AttackIntervalSeconds;
             _attackTrack = PlayAnimation("Attack", false);
+            CombatAudioFeedback.PlaySkill(SkillId);
             return true;
         }
 

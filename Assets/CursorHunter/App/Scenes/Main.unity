@@ -12679,7 +12679,6 @@ MonoBehaviour:
   skillIcon: {fileID: 21300000, guid: 13756a141b0b84db08f0c80f06bb5d45, type: 3}
   monsterIcon: {fileID: 21300000, guid: 6b3d80100f82a44bb8968db0ec8c98e3, type: 3}
   petIcon: {fileID: 21300000, guid: e3db040c4cdb5234bbbea8c36b533fe2, type: 3}
-  dragHandCursorSprite: {fileID: 21300000, guid: 87129087663ba4d509b75eb67c6a60c0, type: 3}
   gemstoneIconCatalog: {fileID: 11400000, guid: ed7e8a581bb147bdadba351c88f00ec9, type: 2}
   gemstoneIcons:
   - {fileID: 21300000, guid: 6f40e5d50d0934e45aac02171a570c88, type: 3}
@@ -12689,23 +12688,24 @@ MonoBehaviour:
   - {fileID: 21300000, guid: f0ec595ceb4954cb58e8a1acec6720c5, type: 3}
   - {fileID: 21300000, guid: 80437da613ef64ecab96530c087df0f0, type: 3}
   skillIcons:
-  - {fileID: 21300000, guid: fcd38e409ef5e4edaa3bd7133ec1ec42, type: 3}
   - {fileID: 21300000, guid: 84e3504adeb474cd78690f0e7ce48a69, type: 3}
+  - {fileID: 21300000, guid: fcd38e409ef5e4edaa3bd7133ec1ec42, type: 3}
   - {fileID: 21300000, guid: 38a8954969c164e11966eb392a34b908, type: 3}
   - {fileID: 21300000, guid: a70c8c3de09a6455cbaf0b8cf355d184, type: 3}
   - {fileID: 21300000, guid: 381b4004bc4324decb6e29a822246072, type: 3}
   - {fileID: 21300000, guid: 8725c96846cc04e13b9bd0282edb30dd, type: 3}
   monsterIcons:
   - {fileID: 21300000, guid: 81366e1f0ef95fb4ca021ff158c9bbd7, type: 3}
-  - {fileID: 21300000, guid: 2d4b5fe9210026e4f9646afa8d381ba8, type: 3}
+  - {fileID: 21300000, guid: 46fa022d7d7f6e741ab54b2481f73084, type: 3}
   - {fileID: 21300000, guid: 9731bdc77bdd099499cd873c1fb95277, type: 3}
-  - {fileID: 21300000, guid: fb2ef077ca7cff145b786fe98437bf42, type: 3}
+  - {fileID: 21300000, guid: 05f79d22c8aa05941922a68b388ed9cd, type: 3}
+  - {fileID: 21300000, guid: 7e2cacd5ae582be4b8a01ec0292d35b7, type: 3}
+  - {fileID: 21300000, guid: d8527bbb0c6fabd4fa5a81df3a311acc, type: 3}
+  - {fileID: 21300000, guid: 27c7f323c4c073a419bda2ab90cc40ea, type: 3}
   - {fileID: 21300000, guid: 58ecdefa4b1d13344a5d2d437e661188, type: 3}
-  - {fileID: 21300000, guid: 0760c09a431bc7243a8a3895187b7ea1, type: 3}
-  - {fileID: 21300000, guid: fce62f34b0be7a94295f5b4a12f24dca, type: 3}
-  - {fileID: 21300000, guid: 2fd0633512126e646a8fe810019b0737, type: 3}
   - {fileID: 21300000, guid: 6c63eea5ac3d47f41a4ada2581ce61f3, type: 3}
-  - {fileID: 21300000, guid: 9ed7185891b014c4a8a16be35bb06d34, type: 3}
+  - {fileID: 21300000, guid: e8a4f1b855cceee4cb4ec88d35ca7636, type: 3}
+  affordableNodeBadgeSprite: {fileID: 21300000, guid: 01c94d2830b4d4e48bac276d763beee1, type: 3}
   petIcons:
   - {fileID: 21300000, guid: e3db040c4cdb5234bbbea8c36b533fe2, type: 3}
   uiFont: {fileID: 12800000, guid: 76d037539f56c45a1ba293f2dff49672, type: 3}
@@ -39074,7 +39074,7 @@ MonoBehaviour:
   mergeWindowSeconds: 0.1
   lifetimeSeconds: 0.8
   spawnOffset: {x: 0, y: 0.22, z: -0.05}
-  normalScale: 1
+  normalScale: 1.12
   criticalScale: 1.2
   fadeStart: 0.65
   motionVariants:

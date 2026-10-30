@@ -79,7 +79,7 @@ namespace CursorHunter.App
                 label.font = LocalizedTypography.GetFont(null);
                 if (label.fontSize >= 24f) label.fontStyle |= FontStyles.Bold;
             }
-            upgradeButton.onClick.AddListener(ReturnToLobby);
+            upgradeButton.onClick.AddListener(OpenUpgrades);
             retryButton.onClick.AddListener(Retry);
             skipButton.onClick.AddListener(CompleteReveal);
             resultSkipButton.onClick.AddListener(CompleteReveal);
@@ -99,7 +99,7 @@ namespace CursorHunter.App
 
         private void OnDestroy()
         {
-            if (upgradeButton != null) upgradeButton.onClick.RemoveListener(ReturnToLobby);
+            if (upgradeButton != null) upgradeButton.onClick.RemoveListener(OpenUpgrades);
             if (retryButton != null) retryButton.onClick.RemoveListener(Retry);
             if (skipButton != null) skipButton.onClick.RemoveListener(CompleteReveal);
             if (resultSkipButton != null) resultSkipButton.onClick.RemoveListener(CompleteReveal);
@@ -122,6 +122,10 @@ namespace CursorHunter.App
             title.text = "전투 종료";
             subtitle.gameObject.SetActive(result.SettlementPolicy == RunSettlementPolicy.Discard);
             subtitle.text = "테스트 전투 / 보상 지급 없음";
+            TMP_Text upgradeLabel = upgradeButton.GetComponentInChildren<TMP_Text>(true);
+            if (upgradeLabel != null)
+                upgradeLabel.text = huntManager != null && huntManager.IsTraitScreenConnectedToCombat
+                    ? "특성 강화" : "로비로";
             hint.text = "클릭하면 바로 보기";
             hint.gameObject.SetActive(true);
             _visibleRewardCount = 0;
@@ -259,12 +263,12 @@ namespace CursorHunter.App
             actions.interactable = true;
         }
 
-        private void ReturnToLobby()
+        private void OpenUpgrades()
         {
             if (!IsReady || _navigating || huntManager == null) return;
             _navigating = true;
             actions.interactable = false;
-            huntManager.ReturnToMainMenu();
+            huntManager.ReturnToResearch();
         }
 
         private void Retry()

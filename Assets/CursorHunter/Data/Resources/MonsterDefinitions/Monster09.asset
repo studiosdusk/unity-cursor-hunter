@@ -17,7 +17,7 @@ MonoBehaviour:
   prefabKey: Bud/Bud_Fire
   visualPrefab: {fileID: 1540547564045579843, guid: 2cdc6c19ee582417d926a49df1f6abc1, type: 3}
   baseStats:
-    maxHealth: 480
+    maxHealth: 160
     spawnIntervalSeconds: 2.1
     packSize: 1
     moveSpeed: 0.45

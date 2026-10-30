@@ -165,6 +165,7 @@ namespace CursorHunter.Combat
                     spawnPlaneZ, startingDirections[directionIndex].normalized,
                     now, _runtime.SizeMultiplier *
                         _combat.AreaSkillRadiusMultiplier)) return;
+                CombatAudioFeedback.PlaySkill(SkillId);
             }
             Physics2D.SyncTransforms();
             _ball.Tick(now, fieldBounds, _enemyFilter,

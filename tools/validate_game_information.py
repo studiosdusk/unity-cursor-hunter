@@ -108,13 +108,26 @@ def main():
                         check(match[2] == source_guid, f"Prefab GUID mismatch: {expected_id}")
                         check(f"--- !u!1 &{match[1]}\n" in source.read_text(), f"Prefab root fileID missing: {expected_id}")
     check(known_currencies == set(gems), "Some currencies have no attainable monster source")
+    expected_progression_skills = {
+        "skill.pet_baby_dragon", "skill.tornado", "skill.thunder",
+        "skill.flame_exhaust", "skill.magic_ball", "skill.laser",
+    }
+    check({skill["id"] for skill in data["skills"]} == expected_progression_skills,
+          "Progression skill categories must contain the starter pet and five boss-tier skills")
     for skill in data["skills"]:
         check(skill["currencyId"] in known_currencies, "Unattainable skill currency")
-        check(skill["id"] in (
-            "skill.tornado", "skill.headshot", "skill.thunder",
-            "skill.flame_exhaust", "skill.magic_ball", "skill.laser",
-            "skill.pet_baby_dragon"),
-              "Unexpected purchased skill category")
+    skill_unlock_tiers = {
+        skill_id: categories[skill_id]["nodes"][0]["requiredBossTier"]
+        for skill_id in categories if skill_id.startswith("skill.")
+    }
+    check(skill_unlock_tiers == {
+        "skill.pet_baby_dragon": 0,
+        "skill.tornado": 1,
+        "skill.thunder": 2,
+        "skill.flame_exhaust": 3,
+        "skill.magic_ball": 4,
+        "skill.laser": 5,
+    }, "The pet is a tier-zero skill and each boss tier unlocks one skill")
     tornado_controller = BASE / "Combat/Prefabs/Skills/TornadoSkillController.prefab"
     tornado_object = BASE / "Combat/Prefabs/Skills/TornadoObject.prefab"
     check(tornado_controller.exists(), "Missing tornado controller prefab")
@@ -196,8 +209,10 @@ def main():
               "BabyDragon skill controller is not under Main CombatManager")
         check("propertyPath: petRoot" in pet_scene and
               "objectReference: {fileID: 2127624400}" in pet_scene and
-              "propertyPath: cursorAnchor" in pet_scene and
-              "objectReference: {fileID: 1460028808}" in pet_scene,
+              "propertyPath: groundRing" in pet_scene and
+              "objectReference: {fileID: 1999272709}" in pet_scene and
+              "propertyPath: worldCamera" in pet_scene and
+              "objectReference: {fileID: 1273511514}" in pet_scene,
               "BabyDragon skill scene references are missing")
         check("m_SourcePrefab: {fileID: 100100000, guid: 5110becfdecf74563833b775b9ce1677, type: 3}" in pet_scene,
               "BabyDragon's child ally ring is missing from Main")

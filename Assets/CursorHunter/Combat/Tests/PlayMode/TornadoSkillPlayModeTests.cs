@@ -11,12 +11,34 @@ namespace CursorHunter.Combat.Tests
     public sealed class TornadoSkillPlayModeTests
     {
         private Scene _sandboxScene;
+        private AudioSource[] _busyVoices;
+        private float _listenerVolume;
+
+        [UnitySetUp]
+        public IEnumerator SilenceAutomatedPlayback()
+        {
+            _listenerVolume = AudioListener.volume;
+            AudioListener.volume = 0f;
+            yield return null;
+        }
 
         [UnityTearDown]
         public IEnumerator UnloadSandbox()
         {
+            if (_busyVoices != null)
+            {
+                foreach (AudioSource source in _busyVoices)
+                {
+                    if (source == null) continue;
+                    source.Stop();
+                    source.loop = false;
+                    source.clip = null;
+                }
+                _busyVoices = null;
+            }
             if (_sandboxScene.IsValid() && _sandboxScene.isLoaded)
                 yield return SceneManager.UnloadSceneAsync(_sandboxScene);
+            AudioListener.volume = _listenerVolume;
         }
 
         [UnityTest]
@@ -180,6 +202,99 @@ namespace CursorHunter.Combat.Tests
             Assert.Ignore("The sandbox scene is loaded through the Editor PlayMode runner.");
             yield break;
 #endif
+        }
+
+        [UnityTest]
+        public IEnumerator TornadoAudioSurvivesBusyHitVoicesAndFollowsTheSkillLifetime()
+        {
+#if UNITY_EDITOR
+            _sandboxScene = UnityEditor.SceneManagement.EditorSceneManager.LoadSceneInPlayMode(
+                "Assets/CursorHunter/Combat/Scenes/CombatSandbox.unity",
+                new LoadSceneParameters(LoadSceneMode.Additive));
+            yield return null;
+            yield return null;
+            CursorHitEffectSandbox sandbox = Object.FindFirstObjectByType<CursorHitEffectSandbox>();
+            typeof(CursorHitEffectSandbox).GetField("_autoHit",
+                BindingFlags.NonPublic | BindingFlags.Instance).SetValue(sandbox, false);
+            CombatRunController combat = sandbox.GetComponent<CombatRunController>();
+            TornadoSkillController controller = sandbox.GetComponentInChildren<TornadoSkillController>(true);
+            SetBaseStat(controller, "Count", 3);
+            SetBaseStat(controller, "FirstCastDelaySeconds", 0.05f);
+            SetBaseStat(controller, "DurationSeconds", 0.6f);
+            SetBaseStat(controller, "ShrinkOutSeconds", 0.15f);
+            SetBaseStat(controller, "CooldownSeconds", 10f);
+            combat.ConfigureSkills(new[] { new SkillCombatSnapshot(TornadoSkillController.SkillId, true) });
+
+            AudioSource cast = controller.transform.Find("TornadoAudio/Cast").GetComponent<AudioSource>();
+            AudioSource wind = controller.transform.Find("TornadoAudio/Wind").GetComponent<AudioSource>();
+            System.Type sharedAudio = typeof(TornadoSkillController).Assembly.GetType(
+                "CursorHunter.Combat.CombatAudioFeedback");
+            sharedAudio.GetMethod("PlayMonsterHit", BindingFlags.Public | BindingFlags.Static)
+                .Invoke(null, new object[] { "monster.01" });
+            _busyVoices = (AudioSource[])sharedAudio.GetField("Sources",
+                BindingFlags.NonPublic | BindingFlags.Static).GetValue(null);
+            foreach (AudioSource source in _busyVoices)
+            {
+                source.Stop();
+                source.clip = wind.clip;
+                source.loop = true;
+                source.Play();
+                Assert.That(source.isPlaying, Is.True);
+                Assert.That(cast.priority, Is.LessThan(source.priority));
+            }
+
+            combat.AdvanceTime(0.08f);
+            yield return null;
+            Assert.That(controller.ActiveObjectCount, Is.EqualTo(3));
+            Assert.That(cast.isPlaying, Is.True, "Busy hit/death channels must not drop the cast cue.");
+            Assert.That(wind.isPlaying && wind.loop, Is.True);
+            Assert.That(cast.volume, Is.GreaterThan(0.5f));
+            Assert.That(wind.volume, Is.GreaterThan(0f));
+            AssertAudibleStereoClip(cast.clip, 0.8f);
+            AssertAudibleStereoClip(wind.clip, 1.5f);
+
+            Assert.That(combat.PauseRun(), Is.True);
+            yield return null;
+            Assert.That(cast.isPlaying || wind.isPlaying, Is.False);
+            Assert.That(combat.ResumeRun(), Is.True);
+            yield return null;
+            Assert.That(wind.isPlaying, Is.True);
+
+            combat.AdvanceTime(0.7f);
+            yield return null;
+            Assert.That(controller.ActiveObjectCount, Is.Zero);
+            yield return new WaitForSecondsRealtime(0.4f);
+            Assert.That(wind.isPlaying, Is.False, "The wind must fade out after the last object expires.");
+
+            combat.AdvanceTime(10f);
+            yield return null;
+            Assert.That(wind.isPlaying, Is.True);
+            Assert.That(controller.transform.Find("TornadoAudio").childCount, Is.EqualTo(2),
+                "Overlapping casts reuse the same two sources.");
+            Assert.That(combat.TryAbortRun(RunEndReason.UserExit, default, out _), Is.True);
+            yield return null;
+            Assert.That(cast.isPlaying || wind.isPlaying, Is.False);
+#else
+            Assert.Ignore("The sandbox scene is loaded through the Editor PlayMode runner.");
+            yield break;
+#endif
+        }
+
+        private static void AssertAudibleStereoClip(AudioClip clip, float minimumDuration)
+        {
+            Assert.That(clip.channels, Is.EqualTo(2));
+            Assert.That(clip.length, Is.GreaterThan(minimumDuration));
+            var samples = new float[clip.samples * clip.channels];
+            Assert.That(clip.GetData(samples, 0), Is.True);
+            double energy = 0;
+            float peak = 0;
+            foreach (float sample in samples)
+            {
+                energy += sample * sample;
+                peak = Mathf.Max(peak, Mathf.Abs(sample));
+            }
+            Assert.That(System.Math.Sqrt(energy / samples.Length), Is.GreaterThan(0.05));
+            Assert.That(peak, Is.InRange(0.5f, 0.9f));
         }
 
         private static float CapturedMoveSpeed(TornadoSkillController controller)
