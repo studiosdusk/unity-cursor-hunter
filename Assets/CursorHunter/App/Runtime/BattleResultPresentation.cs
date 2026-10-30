@@ -58,6 +58,7 @@ namespace CursorHunter.App
         [SerializeField, Min(0.05f)] private float countSeconds = 0.3f;
         [SerializeField, Min(0.05f)] private float buttonPopupSeconds = 0.22f;
         [SerializeField] private bool reduceMotion;
+        [SerializeField, Range(0f, 1f)] private float countTickVolume = 0.14f;
 
         public bool IsVisible => overlay != null && overlay.activeSelf;
         public bool IsReady => _phase == Phase.Ready;
@@ -70,6 +71,8 @@ namespace CursorHunter.App
         private bool _navigating;
         private int _visibleRewardCount;
         private Sequence _buttonSequence;
+        private AudioSource _countTickSource;
+        private AudioClip _countTickClip;
 
         private void Awake()
         {
@@ -81,10 +84,11 @@ namespace CursorHunter.App
                 label.font = LocalizedTypography.GetFont(null);
                 if (label.fontSize >= 24f) label.fontStyle |= FontStyles.Bold;
             }
-            upgradeButton.onClick.AddListener(ReturnToLobby);
+            upgradeButton.onClick.AddListener(OpenUpgrades);
             retryButton.onClick.AddListener(Retry);
             skipButton.onClick.AddListener(CompleteReveal);
             resultSkipButton.onClick.AddListener(CompleteReveal);
+            CreateCountTickAudio();
             Hide();
         }
 
@@ -101,7 +105,9 @@ namespace CursorHunter.App
 
         private void OnDestroy()
         {
-            if (upgradeButton != null) upgradeButton.onClick.RemoveListener(ReturnToLobby);
+            StopCountTickAudio();
+            if (_countTickClip != null) Destroy(_countTickClip);
+            if (upgradeButton != null) upgradeButton.onClick.RemoveListener(OpenUpgrades);
             if (retryButton != null) retryButton.onClick.RemoveListener(Retry);
             if (skipButton != null) skipButton.onClick.RemoveListener(CompleteReveal);
             if (resultSkipButton != null) resultSkipButton.onClick.RemoveListener(CompleteReveal);
@@ -128,7 +134,10 @@ namespace CursorHunter.App
             subtitle.text = boss && !result.BossDefeated ? "시간 안에 토벌하지 못했습니다. 강화 후 다시 도전하세요." : "테스트 전투 / 보상 지급 없음";
             retryButton.GetComponentInChildren<TMP_Text>(true).text = boss && result.BossDefeated
                 ? result.BossStage < 20 ? "다음 단계 도전" : "일반 전투" : "다시 도전";
-            upgradeButton.GetComponentInChildren<TMP_Text>(true).text = "업그레이드";
+            TMP_Text upgradeLabel = upgradeButton.GetComponentInChildren<TMP_Text>(true);
+            if (upgradeLabel != null)
+                upgradeLabel.text = huntManager != null && huntManager.IsTraitScreenConnectedToCombat
+                    ? "특성 강화" : "로비로";
             hint.text = "클릭하면 바로 보기";
             hint.gameObject.SetActive(true);
             _visibleRewardCount = 0;
@@ -160,6 +169,7 @@ namespace CursorHunter.App
 
         public void Hide()
         {
+            StopCountTickAudio();
             _phase = Phase.Hidden;
             _buttonSequence?.Kill(false);
             _buttonSequence = null;
@@ -238,13 +248,60 @@ namespace CursorHunter.App
             resultUI.alpha = 1f;
             resultUI.transform.localScale = Vector3.one;
             float progress = reduceMotion ? 1f : Mathf.Clamp01(elapsed / Mathf.Max(0.05f, countSeconds));
-            // A few deliberate number ticks, without easing, stagger, bounce or sparkle.
-            float steppedProgress = Mathf.Floor(progress * 8f) / 8f;
+            float easedProgress = progress * progress * (3f - 2f * progress);
+            if (_visibleRewardCount > 0 && progress < 1f && countTickVolume > 0f)
+                StartCountTickAudio();
+            else
+                StopCountTickAudio();
             foreach (RewardRow row in rewards)
             {
                 if (row.earned <= 0) continue;
-                SetAmount(row, InterpolateAmount(row.earned, steppedProgress));
+                SetAmount(row, InterpolateAmount(row.earned, easedProgress));
             }
+        }
+
+        private void CreateCountTickAudio()
+        {
+            GameObject audioObject = new GameObject("RewardCountTickAudio");
+            audioObject.transform.SetParent(transform, false);
+            _countTickSource = audioObject.AddComponent<AudioSource>();
+            _countTickSource.playOnAwake = false;
+            _countTickSource.loop = true;
+            _countTickSource.spatialBlend = 0f;
+            _countTickSource.ignoreListenerPause = false;
+            _countTickSource.volume = 0f;
+
+            const int sampleRate = 22050;
+            const float duration = 0.09f;
+            int sampleCount = Mathf.CeilToInt(sampleRate * duration);
+            var samples = new float[sampleCount];
+            for (int i = 0; i < sampleCount; i++)
+            {
+                float time = i / (float)sampleRate;
+                float envelope = Mathf.Exp(-time * 58f) * Mathf.Clamp01(time / 0.002f);
+                float tone = Mathf.Sin(2f * Mathf.PI * (920f - 210f * time) * time);
+                float overtone = Mathf.Sin(2f * Mathf.PI * 1480f * time) * 0.2f;
+                samples[i] = (tone * 0.42f + overtone) * envelope;
+            }
+
+            _countTickClip = AudioClip.Create("Reward_Count_Tick", sampleCount, 1, sampleRate, false);
+            _countTickClip.SetData(samples, 0);
+            _countTickClip.hideFlags = HideFlags.HideAndDontSave;
+            _countTickSource.clip = _countTickClip;
+        }
+
+        private void StartCountTickAudio()
+        {
+            if (_countTickSource == null || _countTickSource.isPlaying) return;
+            _countTickSource.volume = countTickVolume;
+            _countTickSource.Play();
+        }
+
+        private void StopCountTickAudio()
+        {
+            if (_countTickSource == null) return;
+            if (_countTickSource.isPlaying) _countTickSource.Stop();
+            _countTickSource.volume = 0f;
         }
 
         public void CompleteReveal()
@@ -279,12 +336,12 @@ namespace CursorHunter.App
             actions.interactable = true;
         }
 
-        private void ReturnToLobby()
+        private void OpenUpgrades()
         {
             if (!IsReady || _navigating || huntManager == null) return;
             _navigating = true;
             actions.interactable = false;
-            huntManager.OpenUpgrades();
+            huntManager.ReturnToResearch();
             if (IsVisible) RestoreActionsAfterRejectedNavigation();
         }
 

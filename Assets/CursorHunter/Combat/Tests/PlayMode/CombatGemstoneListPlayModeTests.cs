@@ -36,7 +36,14 @@ namespace CursorHunter.Combat.Tests
             var list = Object.FindFirstObjectByType<CombatGemstoneList>(FindObjectsInactive.Include);
             string savedProfile = PlayerPrefs.GetString("cursor_hunter.progression.v1", "missing");
 
-            // Exercise the scene's actual trait-connected entry point first.
+            // This fixture covers authored combat HUD behavior without
+            // purchasing into or mutating the user's real profile.
+            typeof(HuntManager).GetField("connectTraitScreenToCombat",
+                BindingFlags.Instance | BindingFlags.NonPublic).SetValue(_hunt, false);
+            typeof(HuntManager).GetField("defaultStage",
+                BindingFlags.Instance | BindingFlags.NonPublic).SetValue(_hunt,
+                UnityEditor.AssetDatabase.LoadAssetAtPath<CombatStageDefinition>(
+                    "Assets/CursorHunter/App/Stages/Stage01.asset"));
             _hunt.BeginPrototypeRun();
             Assert.That(combat.IsRunActive, Is.True);
             Assert.That(list.GetComponentsInChildren<GemstoneIconView>(), Is.Not.Empty);
@@ -133,6 +140,8 @@ namespace CursorHunter.Combat.Tests
             settings.UsePlayerProgression = false;
             settings.DurationSeconds = 15f;
             foreach (SkillBalanceSettings skill in settings.Skills) skill.Enabled = false;
+            foreach (MonsterBalanceSettings monster in settings.Monsters)
+                monster.Enabled = monster.MonsterId == "monster.01";
             Assert.That(_hunt.TrySetCombatBalanceSettings(settings, out string error), Is.True, error);
             _hunt.BeginPrototypeRun();
             Assert.That(timer.gameObject.activeInHierarchy, Is.True);

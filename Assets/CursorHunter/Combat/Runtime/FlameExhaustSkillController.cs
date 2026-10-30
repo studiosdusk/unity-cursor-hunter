@@ -72,7 +72,6 @@ namespace CursorHunter.Combat
         private bool _hasCast;
         private bool _visualsPaused;
         private bool _poolWarningLogged;
-        private bool _hitEffectPoolWarningLogged;
         private bool _hitEffectPoolStarved;
         private bool _refreshProjectileGeometry;
 
@@ -100,8 +99,7 @@ namespace CursorHunter.Combat
             _runId = runId;
             _random = new SeededRandom(seed ^ 0x464C414D45584UL);
             if (_balance != null) skill = default;
-            _runtime = new FlameExhaustRuntimeStat(BalanceBasis, skill,
-                combat.CombatSnapshot.AttackPower);
+            _runtime = new FlameExhaustRuntimeStat(BalanceBasis, skill);
             _hasCast = false;
             _nextCastAt = combat.ElapsedSeconds + _runtime.FirstCastDelaySeconds;
             _enemyFilter = new ContactFilter2D
@@ -113,7 +111,6 @@ namespace CursorHunter.Combat
             _configured = true;
             _visualsPaused = false;
             _poolWarningLogged = false;
-            _hitEffectPoolWarningLogged = false;
             _hitEffectPoolStarved = false;
 
             int needed = SkillBalanceMath.PoolNeed(_runtime.ProjectileDurationSeconds,
@@ -247,6 +244,7 @@ namespace CursorHunter.Combat
             _nextCastAt = now + _combat.ResolveAutoSkillCooldown(
                 _runtime.CooldownSeconds);
             _hasCast = true;
+            CombatAudioFeedback.PlaySkill(SkillId);
         }
 
         internal bool IsCurrentRun(RunId runId) =>
@@ -268,24 +266,44 @@ namespace CursorHunter.Combat
             // Damage was applied successfully even if it ended this run.
             if (!IsCurrentRun(runId)) return true;
 
+            FlameExhaustHitEffect effect;
             if (_freeHitEffects.Count > 0)
             {
-                FlameExhaustHitEffect effect = _freeHitEffects.Pop();
-                effect.Activate(position, _random.NextFloat(0f, 360f),
-                    _combat.ElapsedSeconds,
-                    _runtime.HitEffectDurationSeconds,
-                    targetSize > 0f ? targetSize : 1f);
-                _activeHitEffects.Add(effect);
+                effect = _freeHitEffects.Pop();
             }
             else
             {
                 _hitEffectPoolStarved = true;
-                if (!_hitEffectPoolWarningLogged)
+                if (_activeHitEffects.Count == 0)
                 {
-                    _hitEffectPoolWarningLogged = true;
-                    Debug.LogWarning("Flame Exhaust hit VFX pool exhausted; damage was still applied.", this);
+                    // ConfigureForRun always warms at least one instance. Keep a
+                    // defensive fallback so a damaged pool cannot suppress feedback.
+                    effect = Instantiate(hitEffectPrefab, transform);
+                }
+                else
+                {
+                    // Keep the newest hit visible when a burst exceeds the pool.
+                    // Recycle the effect that has been visible the longest.
+                    int oldestIndex = 0;
+                    float oldestActivation = _activeHitEffects[0].ActivatedAt;
+                    for (int i = 1; i < _activeHitEffects.Count; i++)
+                    {
+                        float activatedAt = _activeHitEffects[i].ActivatedAt;
+                        if (activatedAt >= oldestActivation) continue;
+                        oldestActivation = activatedAt;
+                        oldestIndex = i;
+                    }
+
+                    effect = _activeHitEffects[oldestIndex];
+                    _activeHitEffects.RemoveAt(oldestIndex);
+                    effect.ReturnToPool();
                 }
             }
+
+            effect.Activate(position, _random.NextFloat(0f, 360f),
+                _combat.ElapsedSeconds, _runtime.HitEffectDurationSeconds,
+                targetSize > 0f ? targetSize : 1f);
+            _activeHitEffects.Add(effect);
             return true;
         }
 
@@ -342,8 +360,7 @@ namespace CursorHunter.Combat
 
             FlameExhaustRuntimeStat previous = _runtime;
             _balance = next;
-            _runtime = new FlameExhaustRuntimeStat(BalanceBasis, default,
-                combat.CombatSnapshot.AttackPower);
+            _runtime = new FlameExhaustRuntimeStat(BalanceBasis, default);
             float now = combat.ElapsedSeconds;
             _nextCastAt = SkillBalanceMath.Retime(_nextCastAt, now,
                 _hasCast ? previous.CooldownSeconds : previous.FirstCastDelaySeconds,

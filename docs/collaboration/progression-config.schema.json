@@ -210,8 +210,8 @@
           "items": {
             "$ref": "#/$defs/category"
           },
-          "minItems": 23,
-          "maxItems": 23
+          "minItems": 22,
+          "maxItems": 22
         },
         "bossRewards": {
           "type": "array",

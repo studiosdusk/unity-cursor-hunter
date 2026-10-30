@@ -646,10 +646,12 @@ namespace CursorHunter.Combat
                 SetMoving(false);
                 _deathRunId = _runId;
                 killed = true;
+                CombatAudioFeedback.PlayMonsterDeath(_monsterId);
                 StartDeathAnimation();
                 return true;
             }
 
+            CombatAudioFeedback.PlayMonsterHit(_monsterId);
             PlayHitAnimation();
             return true;
         }

@@ -25,6 +25,7 @@ namespace CursorHunter.Contracts
                 defeatedCount,
                 garnetEarned,
                 effectiveDamage,
+                null,
                 null)
         {
         }
@@ -38,6 +39,21 @@ namespace CursorHunter.Contracts
             long garnetEarned,
             long effectiveDamage,
             IReadOnlyList<ResourceRewardSnapshot> rewards)
+            : this(request, endReason, settlementPolicy, elapsedSeconds,
+                defeatedCount, garnetEarned, effectiveDamage, rewards, null)
+        {
+        }
+
+        public RunResult(
+            RunRequest request,
+            RunEndReason endReason,
+            RunSettlementPolicy settlementPolicy,
+            float elapsedSeconds,
+            int defeatedCount,
+            long garnetEarned,
+            long effectiveDamage,
+            IReadOnlyList<ResourceRewardSnapshot> rewards,
+            IReadOnlyList<string> relicAwards)
         {
             if (!request.IsValid)
             {
@@ -83,6 +99,9 @@ namespace CursorHunter.Contracts
             Rewards = rewards == null
                 ? Array.Empty<ResourceRewardSnapshot>()
                 : CopyRewards(rewards);
+            RelicAwards = relicAwards == null
+                ? Array.Empty<string>()
+                : CopyRelicAwards(relicAwards);
         }
 
         public RunId RunId { get; }
@@ -99,6 +118,7 @@ namespace CursorHunter.Contracts
         public long GarnetEarned { get; }
         public long EffectiveDamage { get; }
         public IReadOnlyList<ResourceRewardSnapshot> Rewards { get; }
+        public IReadOnlyList<string> RelicAwards { get; }
 
         private static ResourceRewardSnapshot[] CopyRewards(
             IReadOnlyList<ResourceRewardSnapshot> source)
@@ -107,6 +127,26 @@ namespace CursorHunter.Contracts
             for (int i = 0; i < source.Count; i++)
             {
                 copy[i] = source[i];
+            }
+
+            return copy;
+        }
+
+        private static string[] CopyRelicAwards(IReadOnlyList<string> source)
+        {
+            var copy = new string[source.Count];
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            for (int i = 0; i < source.Count; i++)
+            {
+                string id = source[i];
+                if (string.IsNullOrWhiteSpace(id) || !seen.Add(id))
+                {
+                    throw new ArgumentException(
+                        "RunResult relic awards must contain unique, non-empty IDs.",
+                        nameof(source));
+                }
+
+                copy[i] = id;
             }
 
             return copy;

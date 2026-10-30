@@ -134,15 +134,28 @@ def validate_documents():
         for entry in document["entities"]:
             assert entry["displayName"] and entry["description"]
         categories = {entry["id"]: entry for entry in progression["categories"]}
-        assert len(categories) == len(progression["categories"]) == 23
+        assert len(categories) == len(progression["categories"]) == 22
         nodes = {n["id"]: n for c in progression["categories"] for n in c["nodes"]}
-        assert len(nodes) == sum(len(c["nodes"]) for c in categories.values()) == 90
-        skill_ids = [
-            "skill.tornado", "skill.headshot", "skill.thunder",
-            "skill.flame_exhaust", "skill.magic_ball", "skill.laser",
-            "skill.pet_baby_dragon"]
-        for skill_id in skill_ids:
-            assert [node["id"] for node in categories[skill_id]["nodes"]] == [skill_id]
+        assert len(nodes) == sum(len(c["nodes"]) for c in categories.values()) == 103
+        skill_tiers = {
+            "skill.tornado": 1,
+            "skill.thunder": 2,
+            "skill.flame_exhaust": 3,
+            "skill.magic_ball": 4,
+            "skill.laser": 5,
+        }
+        for skill_id, tier in skill_tiers.items():
+            skill_nodes = categories[skill_id]["nodes"]
+            assert skill_nodes[0]["id"] == skill_id
+            assert skill_nodes[0]["requiredBossTier"] == tier
+            assert any(node["id"].startswith(skill_id + ".damage.") for node in skill_nodes)
+            assert any(node["id"].startswith(skill_id + ".radius.") for node in skill_nodes)
+        assert "skill.headshot" not in categories
+        pet_nodes = categories["skill.pet_baby_dragon"]["nodes"]
+        assert pet_nodes[0]["id"] == "skill.pet_baby_dragon"
+        assert pet_nodes[0]["requiredBossTier"] == 0
+        assert any(node["id"].startswith("skill.pet_baby_dragon.damage.") for node in pet_nodes)
+        assert any(node["id"].startswith("skill.pet_baby_dragon.simultaneousHits.") for node in pet_nodes)
         currency = {g["id"] for g in info["gemstones"]}
         ordered_nodes = set()
         for c in categories.values():
@@ -187,7 +200,7 @@ def validate_documents():
 
 def main():
     validate_documents()
-    print("PASS: English-only runtime input, Korean detailed/key-only references, separate growth configuration, 23 categories / 90 nodes, seven purchasable skills, 20 relic definitions and fixed-drop rules, behaviorType=0, schema, references and rewards")
+    print("PASS: English-only runtime input, Korean detailed/key-only references, separate growth configuration, 22 categories / 103 nodes, starter pet plus five boss-tier skill unlocks, seven combat skill definitions, 20 relic definitions and fixed-drop rules, behaviorType=0, schema, references and rewards")
     print("No Unity or game execution.")
 
 if __name__ == "__main__":

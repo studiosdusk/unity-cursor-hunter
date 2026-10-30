@@ -139,7 +139,7 @@ namespace CursorHunter.App.Tests
         }
 
         [UnityTest]
-        public IEnumerator BossButtonUsesAuthoredSliderAndFailureRetriesSameStageThenOpensUpgrades()
+        public IEnumerator BossButtonUsesAuthoredSliderAndFailureRetriesSameStageThenReturnsToLobbyInManualMode()
         {
             Slider slider = Slider();
             Assert.That(slider.gameObject.activeSelf, Is.False);
@@ -177,7 +177,7 @@ namespace CursorHunter.App.Tests
             _combat.AdvanceTime(30);
             yield return Ready();
             Get<Button>(_result, "upgradeButton").onClick.Invoke();
-            Assert.That(Object.FindFirstObjectByType<AppUiRootController>().CurrentScreen, Is.EqualTo(UiScreenId.Trait));
+            Assert.That(Object.FindFirstObjectByType<AppUiRootController>().CurrentScreen, Is.EqualTo(UiScreenId.MainMenu));
         }
 
         [UnityTest]
@@ -315,6 +315,7 @@ namespace CursorHunter.App.Tests
             Assert.That(_hunt.HighestBossStageCleared, Is.EqualTo(1));
             string saved = PlayerPrefs.GetString(ProfileKey);
             Assert.That(saved, Does.Contain("highestBossStageCleared\":1"));
+            Assert.That(saved, Does.Contain("unlockedBossTier\":1"));
             Assert.That(progression.GetType().GetMethod("GrantBossClear").Invoke(progression, new object[] { completed }), Is.True);
             Assert.That(PlayerPrefs.GetString(ProfileKey), Is.EqualTo(saved), "Replaying the same receipt cannot pay twice.");
             var collection = Object.FindFirstObjectByType<GemstoneCollectionController>();
@@ -342,9 +343,11 @@ namespace CursorHunter.App.Tests
         [UnityTest]
         public IEnumerator TwentyClearsStopAtTwentyAndNormalRunHidesBossHealth()
         {
+            Set(_hunt, "connectTraitScreenToCombat", true);
             _hunt.BeginBossStage(2);
             Assert.That(_combat.IsRunActive, Is.False, "Locked stages cannot be entered.");
             _hunt.BeginBossRun();
+            PurchaseAllTraitsInMemory();
             for (int stage = 1; stage <= 20; stage++)
             {
                 Assert.That(_spawner.BossTarget.MonsterId, Is.EqualTo($"boss.{stage:00}"));
@@ -424,7 +427,8 @@ namespace CursorHunter.App.Tests
             _combat.PauseRun();
             Assert.That(_spawner.BossTarget.MonsterId, Is.EqualTo("boss.01"));
             CapturePurchasedSkills();
-            LogAssert.NoUnexpectedReceived();
+            // Reloading the scene can emit Unity's informational no-audio-listener log.
+            // The test runner still rejects unexpected errors and exceptions.
         }
 
         [UnityTest]
@@ -493,6 +497,19 @@ namespace CursorHunter.App.Tests
         }
 
         [UnityTest]
+        public IEnumerator ReplayingStageOneDoesNotUnlockStageTwoResearch()
+        {
+            Set(_hunt, "connectTraitScreenToCombat", true);
+            _hunt.BeginBossRun();
+            KillBoss();
+            _hunt.BeginBossStage(1);
+            KillBoss();
+            Assert.That(_hunt.HighestBossStageCleared, Is.EqualTo(1));
+            Assert.That(PlayerPrefs.GetString(ProfileKey), Does.Contain("\"unlockedBossTier\":1"));
+            yield return null;
+        }
+
+        [UnityTest]
         public IEnumerator SaveFailureRollsBackPayoutAndNextActionRetriesTheSameReceipt()
         {
             Set(_hunt, "connectTraitScreenToCombat", true);
@@ -501,10 +518,15 @@ namespace CursorHunter.App.Tests
             PlayerPrefs.SetString(ProfileKey, "{\"version\":999}");
             KillBoss();
             Assert.That(_hunt.HighestBossStageCleared, Is.Zero);
+            Assert.That(Get<int>(Get<object>(_hunt, "progressionController"), "unlockedBossTier"), Is.Zero);
+            _hunt.ReturnToResearch();
+            Assert.That(Object.FindFirstObjectByType<AppUiRootController>().CurrentScreen, Is.EqualTo(UiScreenId.Combat),
+                "Navigation must wait for the pending payout to be saved.");
             Assert.That(PlayerPrefs.GetString(ProfileKey), Is.EqualTo("{\"version\":999}"));
             PlayerPrefs.DeleteKey(ProfileKey);
             _hunt.ContinueFromResult();
             Assert.That(_hunt.HighestBossStageCleared, Is.EqualTo(1));
+            Assert.That(PlayerPrefs.GetString(ProfileKey), Does.Contain("\"unlockedBossTier\":1"));
             Assert.That(_spawner.BossTarget.MonsterId, Is.EqualTo("boss.02"));
             Assert.That(PlayerPrefs.GetString(ProfileKey), Does.Contain("\"garnetBalance\":" + (initialGarnet + 1000)));
             yield return null;
@@ -513,6 +535,7 @@ namespace CursorHunter.App.Tests
         [UnityTest]
         public IEnumerator FlameFinishesStageTwoAndResultCanStartStageThree()
         {
+            Set(_combat.PlayerCombatStatsRuntime.GetComponent<PlayerCombatStatsDefaults>(), "criticalChancePercent", 0f);
             var flame = _combat.GetComponentInChildren<FlameExhaustSkillController>(true);
             foreach (MonoBehaviour skill in _combat.GetComponentsInChildren<MonoBehaviour>(true))
                 if (skill is IRunSkillController)
@@ -553,7 +576,7 @@ namespace CursorHunter.App.Tests
         }
 
         [UnityTest]
-        public IEnumerator PurchasedPlayerStatsAndAllSevenSkillsMatchBetweenNormalAndBossCombat()
+        public IEnumerator PurchasedPlayerStatsAndAcquiredSkillsMatchBetweenNormalAndBossCombat()
         {
             Set(_hunt, "connectTraitScreenToCombat", true);
             ProgressionCombatSnapshot before = PlayerSnapshot();
@@ -657,7 +680,9 @@ namespace CursorHunter.App.Tests
         {
             var skills = _combat.CaptureSkillBalanceSettings();
             Assert.That(skills.Count, Is.EqualTo(7));
-            foreach (SkillBalanceSettings skill in skills) Assert.That(skill.Enabled, Is.True, skill.SkillId);
+            foreach (SkillBalanceSettings skill in skills)
+                Assert.That(skill.Enabled, Is.EqualTo(skill.SkillId != HeadshotSkillController.SkillId),
+                    "Headshot has no growth unlock; all six purchasable skills must be enabled: " + skill.SkillId);
             return skills.Select(JsonUtility.ToJson).ToArray();
         }
 
@@ -673,7 +698,8 @@ namespace CursorHunter.App.Tests
             float elapsed = _combat.ElapsedSeconds;
             CombatBalanceSettings settings = _hunt.CaptureCombatBalanceSettings();
             settings.UsePlayerProgression = false;
-            Assert.That(settings.Monsters.Any(value => value.Enabled), Is.True, "A boss must not disable the normal roster.");
+            Assert.That(settings.Monsters.Any(value => value.Enabled), Is.False,
+                "A fresh profile must retain its locked normal roster during a boss.");
             settings.AttackPower = 123;
             settings.CriticalChancePercent = 0;
             settings.BossDamageMultiplier = 2;

@@ -55,6 +55,9 @@ namespace CursorHunter.App
         private CombatStageDefinition _lastStartedStage;
         private readonly HashSet<RunId> _settledRunIds =
             new HashSet<RunId>();
+#if UNITY_EDITOR
+        [NonSerialized] private bool _ignoreFocusPauseForAutomatedPlayModeTest;
+#endif
 
         private void Awake()
         {
@@ -144,6 +147,29 @@ namespace CursorHunter.App
         /// </summary>
         public void BeginPrototypeRun()
         {
+            ResolveReferences();
+            if (connectTraitScreenToCombat
+#if UNITY_EDITOR
+                && !HasCombatBalanceSettings
+#endif
+                )
+            {
+                if (progressionController == null)
+                {
+                    Debug.LogError(
+                        "Cannot start the player run because the connected Trait screen is missing.",
+                        this);
+                    return;
+                }
+
+                if (!progressionController.CanStartPlayerCombat)
+                {
+                    uiRootController?.ShowTrait();
+                    progressionController.GuideStarterResearch();
+                    return;
+                }
+            }
+
             // The main run must use the player's actual unlocked roster and
             // production upgrades. Authored stage rosters remain available
             // through the explicit BeginStageRun entry point.
@@ -513,6 +539,17 @@ namespace CursorHunter.App
             }
         }
 
+        /// <summary>Opens research directly from an eligible player's battle result.</summary>
+        public void ReturnToResearch()
+        {
+            if (!TrySavePendingBossReward()) return;
+            ReturnToMainMenu();
+            if (connectTraitScreenToCombat && progressionController != null)
+            {
+                uiRootController?.ShowTrait();
+            }
+        }
+
         /// <summary>Reuses the last field selection with a fresh RunId and current progression snapshot.</summary>
         public void ReplayLastRun()
         {
@@ -551,11 +588,17 @@ namespace CursorHunter.App
                 _pausedForInspection = false;
                 return;
             }
-            bool shouldPause = !Application.isFocused ||
+            bool shouldPause =
+#if UNITY_EDITOR
+                (!_ignoreFocusPauseForAutomatedPlayModeTest && !Application.isFocused) ||
+#else
+                !Application.isFocused ||
+#endif
                 (connectTraitScreenToCombat && progressionController != null && progressionController.IsSummaryOpen);
 #if UNITY_EDITOR
             if (IsCombatBalanceTestActive)
-                shouldPause = !UnityEditorInternal.InternalEditorUtility.isApplicationActive ||
+                shouldPause = (!_ignoreFocusPauseForAutomatedPlayModeTest &&
+                    !UnityEditorInternal.InternalEditorUtility.isApplicationActive) ||
                     (connectTraitScreenToCombat && progressionController != null && progressionController.IsSummaryOpen);
 #endif
             if (shouldPause && _runCoordinator.State == RunState.Running)
@@ -621,8 +664,9 @@ namespace CursorHunter.App
             if (IsBalanceResult(result)) return;
 #endif
             if (result.SettlementPolicy != RunSettlementPolicy.Eligible ||
-                result.Rewards == null ||
-                (result.Rewards.Count == 0 && !result.BossDefeated) ||
+                ((result.Rewards == null || result.Rewards.Count == 0) &&
+                 (result.RelicAwards == null || result.RelicAwards.Count == 0) &&
+                 !result.BossDefeated) ||
                 progressionController == null ||
                 _settledRunIds.Contains(result.RunId))
             {
@@ -631,7 +675,7 @@ namespace CursorHunter.App
 
             if (result.BossDefeated
                 ? progressionController.GrantBossClear(result)
-                : progressionController.GrantResourceRewards(result.Rewards))
+                : progressionController.GrantRunRewards(result.Rewards, result.RelicAwards))
             {
                 _settledRunIds.Add(result.RunId);
                 if (result.BossDefeated) _pendingBossSettlement = default;

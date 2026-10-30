@@ -14,10 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: CursorHunter.Data::CursorHunter.Data.MonsterDefinition
   monsterId: monster.04
   displayName: 가면유령
-  prefabKey: Ghost/Ghost_Mask
-  visualPrefab: {fileID: 1702457686898916737, guid: 6ee1557c3a5461b4fa884bdd8d8b1a3a, type: 3}
+  prefabKey: Alien/Alien_Vampire
+  visualPrefab: {fileID: 988590369048469843, guid: 2192b96d6284417c942207acdea3157c, type: 3}
   baseStats:
-    maxHealth: 85
+    maxHealth: 32
     spawnIntervalSeconds: 1.35
     packSize: 1
     moveSpeed: 0.45
@@ -26,7 +26,7 @@ MonoBehaviour:
     hitAreaHeight: 1.2
     garnetReward: 6
     bonusDropCurrencyId: gem.amethyst
-    bonusDropAmount: 1
+    bonusDropAmount: 3
     bonusDropChancePercent: 100
   behaviorProfiles:
   - {fileID: 11400000, guid: d56cfff401af4e5ab650c502e9aca9b3, type: 2}

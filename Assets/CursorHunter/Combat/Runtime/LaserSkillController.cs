@@ -88,8 +88,7 @@ namespace CursorHunter.Combat
             _runId = runId;
             _random = new SeededRandom(seed ^ 0x4C41534552UL);
             if (_balance != null) skill = default;
-            _runtime = new LaserRuntimeStat(BalanceBasis, skill,
-                combat.CombatSnapshot.AttackPower);
+            _runtime = new LaserRuntimeStat(BalanceBasis, skill);
             _hasCast = false;
             _nextCastAt = combat.ElapsedSeconds + _runtime.FirstCastDelaySeconds;
             _enemyFilter = new ContactFilter2D
@@ -179,6 +178,7 @@ namespace CursorHunter.Combat
             _nextCastAt = now + _combat.ResolveAutoSkillCooldown(
                 _runtime.CooldownSeconds);
             _hasCast = true;
+            CombatAudioFeedback.PlaySkill(SkillId);
             Physics2D.SyncTransforms();
             if (!next.Tick(now, _enemyFilter) && _active.Remove(next))
             {
@@ -271,8 +271,7 @@ namespace CursorHunter.Combat
 
             LaserRuntimeStat previous = _runtime;
             _balance = next;
-            _runtime = new LaserRuntimeStat(BalanceBasis, default,
-                combat.CombatSnapshot.AttackPower);
+            _runtime = new LaserRuntimeStat(BalanceBasis, default);
             float now = combat.ElapsedSeconds;
             _nextCastAt = SkillBalanceMath.Retime(_nextCastAt, now,
                 _hasCast ? previous.CooldownSeconds : previous.FirstCastDelaySeconds,

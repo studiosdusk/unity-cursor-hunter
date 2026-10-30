@@ -32,11 +32,21 @@
 두 수집음은 짧은 합성 톤이며 Inspector에서 Clip·Mixer·음량을 교체/조절할 수 있다.
 설정 및 검수 방법은 [젬 수집 구현 기준](../gemstone-collection-presentation-design.md)을 따른다.
 
+기본 버튼 클릭음·연구/강화·유물 발견음은 `Progression/Runtime/TraitAudioFeedback`에서
+런타임 합성한다. App의 화면 버튼과 Trait의 런타임 생성 버튼이 클릭음을 재생한다.
+토네이도는 `Combat/Runtime/TornadoAudioFeedback`의 0.95초 발동 돌풍과 2초 스테레오
+회전음 루프를 사용한다. 피격·처치음 풀과 분리된 전용 채널 2개를 재사용하며,
+`TornadoSkillController`의 Cast Sound Volume / Wind Sound Volume으로 음량을 조절한다.
+`App/Resources/Audio/PeacefulFantasyLoop.wav`는 로비·특성·필드 선택용으로 만든
+오리지널 21초 스테레오 루프다. 부드러운 현악 아르페지오와 플루트 선율을 사용하며,
+App 화면 전환에서 자동 재생/페이드 정지한다. Combat 화면에서는 재생하지 않는다.
+
 원본 Assets/DownLoadAssets는 기본적으로 보존한다. 각 모듈 소유 폴더에 Variant 또는 시각 래퍼를 만든다. GUID는 원본 추적용이며 런타임 로더 구현이 아니다.
-2026-10-16 전투의 박쥐·전갈·눈요정·거미·골렘·봉오리·해골군주는
-`Combat/Art/MonsterDeath`의 반복하지 않는 Dead 클립을 사용한다. 각 종의
-`Combat/Prefabs/Monsters/Visuals` 프리팹 Variant가 Animator Override Controller로
-해당 클립만 교체하며, MonsterDefinition은 이 Variant를 참조한다.
+2026-10-30 전투 몬스터의 `MonsterDefinition.visualPrefab`과 특성 화면의
+`monsterIcons`는 같은 종의 아트 원본을 사용한다. 전투 시각 Variant가 있는 종은
+`Combat/Prefabs/Monsters/Visuals`에서 원본 프리팹을 감싼다. 일부 Variant는
+Dead 클립을 Override하고, 나머지는 원본 Animator를 사용한다.
+여왕벌은 Fly/Bat 계열에서 Bee_Honey로 수정해 이름과 외형을 일치시켰다.
 2026-10-05 사용자 요청에 따라 예외적으로 `EnemyMonster 2/Animations`의 17종 Animator Controller에 Walker와 같은 전이·파라미터를 직접 적용했다. 각 종의 클립, 컨트롤러 GUID, 50개 프리팹 연결은 유지한다.
 아래 링크의 에셋을 Unity에서 선택한 뒤 스프라이트 모드, pivot, 픽셀 크기, sorting, URP 머티리얼, emission/loop/stop을 점검한다.
 

@@ -16,15 +16,14 @@ namespace CursorHunter.App.Tests
         [TestCase(6)] [TestCase(7)] [TestCase(8)] [TestCase(9)] [TestCase(10)]
         [TestCase(11)] [TestCase(12)] [TestCase(13)] [TestCase(14)] [TestCase(15)]
         [TestCase(16)] [TestCase(17)] [TestCase(18)] [TestCase(19)] [TestCase(20)]
-        public void LaterBossesUseDistinctUnusedVisualsAndNoSpecialAbility(int stage)
+        public void LaterBossesKeepDistinctDedicatedVisualsAndNoSpecialAbility(int stage)
         {
             var bosses = Resources.LoadAll<BossDefinition>("BossDefinitions");
             BossDefinition boss = bosses.Single(x => x.Stage == stage);
             GameObject Original(GameObject prefab) => PrefabUtility.GetCorrespondingObjectFromOriginalSource(prefab) ?? prefab;
             GameObject source = Original(boss.VisualPrefab);
-            foreach (MonsterDefinition monster in Resources.LoadAll<MonsterDefinition>("MonsterDefinitions"))
-                if (monster.VisualPrefab != null)
-                    Assert.That(source, Is.Not.SameAs(Original(monster.VisualPrefab)), monster.name);
+            // Master now uses the stage 16/20 source art for normal monsters too.
+            // Preserve the authored boss roster and require distinct dedicated boss variants.
             foreach (BossDefinition other in bosses.Where(x => x.Stage >= 6 && x.Stage != stage))
                 Assert.That(source, Is.Not.SameAs(Original(other.VisualPrefab)), other.name);
             Assert.That(AssetDatabase.GetAssetPath(boss.VisualPrefab), Does.StartWith("Assets/CursorHunter/Combat/Prefabs/Monsters/BossVisuals/"));
@@ -109,11 +108,16 @@ namespace CursorHunter.App.Tests
                 PlayerPrefs.DeleteKey(key);
                 Assert.That(TraitProgressionStore.Save(1234, new long[] { 1234, 40 },
                     new[] { "stat.attack.01" }, new Dictionary<string, int>(),
-                    new Dictionary<string, string>(), 7, new[] { "boss-receipt" }), Is.True);
+                    new Dictionary<string, string>(), unlockedBossTier: 5,
+                    ownedRelicIds: new[] { "relic.red_potion" },
+                    highestBossStageCleared: 7,
+                    settledBossRunIds: new[] { "boss-receipt" }), Is.True);
                 Assert.That(TraitProgressionStore.TryLoad(out var loaded), Is.True);
                 Assert.That(loaded.highestBossStageCleared, Is.EqualTo(7));
                 Assert.That(loaded.settledBossRunIds, Is.EqualTo(new[] { "boss-receipt" }));
                 Assert.That(loaded.garnetBalance, Is.EqualTo(1234));
+                Assert.That(loaded.unlockedBossTier, Is.EqualTo(5));
+                Assert.That(loaded.ownedRelicIds, Is.EqualTo(new[] { "relic.red_potion" }));
                 PlayerPrefs.SetString(key, "{\"version\":4,\"garnetBalance\":99}");
                 Assert.That(TraitProgressionStore.TryLoad(out loaded), Is.True);
                 Assert.That(loaded.highestBossStageCleared, Is.Zero);

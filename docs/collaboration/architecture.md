@@ -64,14 +64,14 @@ App이 기본 스탯 스냅샷을 Progression에 제공한다. GameInformationBu
 Combat은 UI/PlayerPrefs/성장 설정을 직접 읽지 않는다.
 진행도 원본 상태는 아직 TraitScreenController가 소유하며 독립 상태 서비스를 새로 만든 것은 아니다.
 
-GameInformation v4 JSON에는 유물 20종의 ID·획득 상태·드롭 몬스터·개별 확률·효과 키/수치와 드롭 규칙이 있다. Progression은 현재 도감 테스트 상태를 포함해 불변 `RelicCombatSnapshot` 목록으로 복사하고, App의 런 시작 계약이 이를 Combat에 전달한다. `RelicCombatModifiers`가 소유 유물의 효과를 집계해 커서 공격/반경, 스킬 피해/범위/쿨타임, 펫 능력치, 필드 시간, 몬스터 생성 간격, 처치 보상에 반영한다. 실제 처치 드롭 굴림과 획득 상태 저장은 아직 구현되지 않았다. progression/entities/fieldHelp/implementation은 전투 JSON에 포함하지 않는다.
-성장 설정에는 통합 연구 23분류/90노드와 7개 전투 스킬 해금 노드가 있다. 스킬별 강화 단계는 아직 없다. fieldHelp/implementation은 실행 문서에서 제거했다.
+GameInformation v4 JSON에는 유물 20종의 ID·획득 상태·드롭 몬스터·개별 확률·효과 키/수치와 드롭 규칙이 있다. Progression은 현재 도감 테스트 상태를 포함해 불변 `RelicCombatSnapshot` 목록으로 복사하고, App의 런 시작 계약이 이를 Combat에 전달한다. `RelicCombatModifiers`가 소유 유물의 효과를 집계해 커서 공격/반경, 스킬 피해/범위/쿨타임, 펫 능력치, 필드 시간, 몬스터 생성 간격, 처치 보상에 반영한다. 실제 처치 드롭은 RunResult의 유물 ID로 전달하며, App이 재화와 함께 version 6 진행도에 저장한다. progression/entities/fieldHelp/implementation은 전투 JSON에 포함하지 않는다.
+성장 설정에는 통합 연구 22분류/103노드가 있다. 베이비 드래곤은 보스 0단계의 첫 스킬이며, 토네이도·번개·화염 투사체·마력 구체·레이저는 보스 1~5단계에서 하나씩 해금된다. 전투 JSON은 헤드샷 정의를 포함한 7종의 스킬 정보를 유지하지만 헤드샷은 현재 성장 트리에서 구매할 수 없다.
 JSON의 `behaviorType`은 이전 호환을 위해 `None=0`으로 보존한다. 신규 종별 특성은
 Data의 조합형 프로필로 구성하고, 이동 모드·이동 속도·시각 크기·명중 영역 크기와
 특수 능력 설정을 `SpawnSnapshot`에 복사해 공용 MonsterRoot가 적용한다. 일반 몬스터
 10종, 스킬 7종, 젬 6종, 일반 필드 최대 30초를 유지한다.
 
-유물 런타임 제거로 조각 드롭·지갑·구매·능력치 보정이 빠져 있다. 진행도 저장 version은 4이며, 최초 v4 저장 전 기존 원문을 별도 PlayerPrefs 키에 백업한다.
-일반 강화·젬은 유지한다. Combat은 지급 후보만 반환하며 저장소를 수정하지 않는다.
+이전 조각 지갑·유물 구매 체계는 제거되었고, 현재 20종 유물의 소유 스냅샷·전투 효과·처치 드롭·정산 저장을 연결한다. 처치당 최대 하나를 고정 확률로 판정하고, RunResult에 담아 재화와 함께 정산한다. 진행도 저장 version은 6이며 첫 v6 저장 전 기존 원문을 .before-v6 키에 백업한다. Unity에서 실제 전투·저장 재실행 검수는 남아 있다.
+일반 강화·젬·보스 단계는 저장한다. Combat은 지급 후보만 반환하며 저장소를 수정하지 않는다.
 
 [최신 인수인계](current-state-handoff-v0.0.4.md)와 [계약·조회 API](contracts.md)를 함께 읽는다.

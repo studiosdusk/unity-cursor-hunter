@@ -60,11 +60,47 @@ def main():
     check(all(finite_positive(v) and v >= .05 for v in data["attackCooldownSeconds"]), "Invalid cooldown")
     check(all(data["attackCooldownSeconds"][i] > data["attackCooldownSeconds"][i+1] for i in range(4)), "Cooldown upgrades must decrease")
     known_currencies = {"gem.garnet"}
-    death_variants = {
-        2: "Bat", 5: "Scorpion", 6: "Fairy", 7: "Spider",
-        8: "Golem", 9: "Bud", 10: "Skeleton",
-    }
+    override_controllers = {}
+    animation_clips = {}
+    for path in ROOT.rglob("*.overrideController"):
+        meta = Path(str(path) + ".meta")
+        if meta.exists():
+            match = re.search(r"^guid: ([0-9a-f]+)$", meta.read_text(), re.MULTILINE)
+            if match:
+                override_controllers[match[1]] = path
+    for path in ROOT.rglob("*.anim"):
+        meta = Path(str(path) + ".meta")
+        if meta.exists():
+            match = re.search(r"^guid: ([0-9a-f]+)$", meta.read_text(), re.MULTILINE)
+            if match:
+                animation_clips[match[1]] = path
     ids = set()
+    main_scene_path = BASE / "App/Scenes/Main.unity"
+    main_scene_text = main_scene_path.read_text()
+    icon_block = re.search(r"(?m)^  monsterIcons:\n((?:  - .*\n)+)", main_scene_text)
+    scene_monster_icon_guids = (
+        re.findall(r"guid: ([0-9a-f]{32})", icon_block[1]) if icon_block else []
+    )
+    check(len(scene_monster_icon_guids) == 10, "Main scene must map all ten monster icons")
+
+    def get_body_sprite_guid(prefab_path):
+        prefab_text = prefab_path.read_text()
+        documents = re.split(r"(?=^--- !u!)", prefab_text, flags=re.MULTILINE)
+        game_object_names = {}
+        for document in documents:
+            game_object = re.match(r"^--- !u!1 &(\d+)", document)
+            name = re.search(r"(?m)^  m_Name: (.+)$", document)
+            if game_object and name:
+                game_object_names[game_object[1]] = name[1]
+        for document in documents:
+            renderer = re.match(r"^--- !u!212 &", document)
+            game_object = re.search(r"(?m)^  m_GameObject: \{fileID: (\d+)\}", document)
+            sprite = re.search(r"(?m)^  m_Sprite: \{fileID: \d+, guid: ([0-9a-f]{32}), type: 3\}", document)
+            if (renderer and game_object and sprite and
+                    game_object_names.get(game_object[1], "").startswith("Body")):
+                return sprite[1]
+        return None
+
     for index, monster in enumerate(data["monsters"], 1):
         expected_id = f"monster.{index:02}"
         check(monster["id"] == expected_id and expected_id not in ids, "Monster ID/order mismatch")
@@ -85,36 +121,62 @@ def main():
                 check(source.exists(), f"Missing prefab path: {source}")
                 if source.exists():
                     source_guid = re.search(r"^guid: ([0-9a-f]+)$", Path(str(source) + ".meta").read_text(), re.MULTILINE)[1]
-                    if index in death_variants:
-                        species = death_variants[index]
-                        variant = BASE / "Combat/Prefabs/Monsters/Visuals" / (source.stem + "_Combat.prefab")
-                        controller = variant.with_name(species + "_DeathOnce.overrideController")
-                        clip = BASE / "Combat/Art/MonsterDeath" / species / "Dead.anim"
-                        for asset in (variant, controller, clip):
-                            check(asset.exists(), f"Missing death asset: {asset}")
-                        if all(asset.exists() for asset in (variant, controller, clip)):
-                            variant_guid = re.search(r"^guid: ([0-9a-f]+)$", Path(str(variant) + ".meta").read_text(), re.MULTILINE)[1]
-                            controller_guid = re.search(r"^guid: ([0-9a-f]+)$", Path(str(controller) + ".meta").read_text(), re.MULTILINE)[1]
-                            clip_guid = re.search(r"^guid: ([0-9a-f]+)$", Path(str(clip) + ".meta").read_text(), re.MULTILINE)[1]
-                            check(match[2] == variant_guid, f"Death variant GUID mismatch: {expected_id}")
-                            check(f"m_SourcePrefab: {{fileID: 100100000, guid: {source_guid}, type: 3}}" in variant.read_text(),
-                                  f"Death variant source mismatch: {expected_id}")
-                            check(f"objectReference: {{fileID: 22100000, guid: {controller_guid}, type: 2}}" in variant.read_text(),
-                                  f"Death controller missing from variant: {expected_id}")
-                            check(f"m_OverrideClip: {{fileID: 7400000, guid: {clip_guid}, type: 2}}" in controller.read_text(),
-                                  f"Nonlooping death clip missing from controller: {expected_id}")
-                            check("m_LoopTime: 0" in clip.read_text(), f"Death clip still loops: {expected_id}")
+                    if index <= len(scene_monster_icon_guids):
+                        sprite_dir = ROOT / "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites" / monster["prefabKey"]
+                        sprite = next((candidate for candidate in (sprite_dir / "Body.png", sprite_dir / "Body_Fire.png") if candidate.exists()), None)
+                        check(sprite is not None, f"Missing body icon source: {expected_id}")
+                        if sprite is not None:
+                            sprite_guid = re.search(r"^guid: ([0-9a-f]+)$", Path(str(sprite) + ".meta").read_text(), re.MULTILINE)[1]
+                            check(scene_monster_icon_guids[index - 1] == sprite_guid,
+                                  f"Trait icon does not match the combat monster body: {expected_id}")
+                            check(get_body_sprite_guid(source) == sprite_guid,
+                                  f"Combat prefab body does not match its selected icon source: {expected_id}")
+                    variant = BASE / "Combat/Prefabs/Monsters/Visuals" / (source.stem + "_Combat.prefab")
+                    if variant.exists():
+                        variant_guid = re.search(r"^guid: ([0-9a-f]+)$", Path(str(variant) + ".meta").read_text(), re.MULTILINE)[1]
+                        check(match[2] == variant_guid, f"Combat visual variant GUID mismatch: {expected_id}")
+                        variant_text = variant.read_text()
+                        check(f"m_SourcePrefab: {{fileID: 100100000, guid: {source_guid}, type: 3}}" in variant_text,
+                              f"Combat visual source mismatch: {expected_id}")
+                        controller_match = re.search(
+                            r"propertyPath: m_Controller[\s\S]*?objectReference: \{fileID: 22100000, guid: ([0-9a-f]+), type: 2\}",
+                            variant_text)
+                        if controller_match:
+                            controller = override_controllers.get(controller_match[1])
+                            check(controller is not None, f"Missing death override controller asset: {expected_id}")
+                            if controller is not None:
+                                clip_match = re.search(
+                                    r"m_OverrideClip: \{fileID: 7400000, guid: ([0-9a-f]+), type: 2\}",
+                                    controller.read_text())
+                                clip = animation_clips.get(clip_match[1]) if clip_match else None
+                                check(clip is not None, f"Death override clip is missing: {expected_id}")
+                                if clip is not None:
+                                    check("m_LoopTime: 0" in clip.read_text(),
+                                          f"Death override clip still loops: {expected_id}")
                     else:
                         check(match[2] == source_guid, f"Prefab GUID mismatch: {expected_id}")
                         check(f"--- !u!1 &{match[1]}\n" in source.read_text(), f"Prefab root fileID missing: {expected_id}")
     check(known_currencies == set(gems), "Some currencies have no attainable monster source")
+    expected_progression_skills = {
+        "skill.pet_baby_dragon", "skill.tornado", "skill.thunder",
+        "skill.flame_exhaust", "skill.magic_ball", "skill.laser",
+    }
+    check({skill["id"] for skill in data["skills"]} == expected_progression_skills,
+          "Progression skill categories must contain the starter pet and five boss-tier skills")
     for skill in data["skills"]:
         check(skill["currencyId"] in known_currencies, "Unattainable skill currency")
-        check(skill["id"] in (
-            "skill.tornado", "skill.headshot", "skill.thunder",
-            "skill.flame_exhaust", "skill.magic_ball", "skill.laser",
-            "skill.pet_baby_dragon"),
-              "Unexpected purchased skill category")
+    skill_unlock_tiers = {
+        skill_id: categories[skill_id]["nodes"][0]["requiredBossTier"]
+        for skill_id in categories if skill_id.startswith("skill.")
+    }
+    check(skill_unlock_tiers == {
+        "skill.pet_baby_dragon": 0,
+        "skill.tornado": 1,
+        "skill.thunder": 2,
+        "skill.flame_exhaust": 3,
+        "skill.magic_ball": 4,
+        "skill.laser": 5,
+    }, "The pet is a tier-zero skill and each boss tier unlocks one skill")
     tornado_controller = BASE / "Combat/Prefabs/Skills/TornadoSkillController.prefab"
     tornado_object = BASE / "Combat/Prefabs/Skills/TornadoObject.prefab"
     check(tornado_controller.exists(), "Missing tornado controller prefab")
@@ -196,8 +258,10 @@ def main():
               "BabyDragon skill controller is not under Main CombatManager")
         check("propertyPath: petRoot" in pet_scene and
               "objectReference: {fileID: 2127624400}" in pet_scene and
-              "propertyPath: cursorAnchor" in pet_scene and
-              "objectReference: {fileID: 1460028808}" in pet_scene,
+              "propertyPath: groundRing" in pet_scene and
+              "objectReference: {fileID: 1999272709}" in pet_scene and
+              "propertyPath: worldCamera" in pet_scene and
+              "objectReference: {fileID: 1273511514}" in pet_scene,
               "BabyDragon skill scene references are missing")
         check("m_SourcePrefab: {fileID: 100100000, guid: 5110becfdecf74563833b775b9ce1677, type: 3}" in pet_scene,
               "BabyDragon's child ally ring is missing from Main")

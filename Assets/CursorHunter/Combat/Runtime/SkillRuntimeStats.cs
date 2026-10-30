@@ -32,9 +32,9 @@ namespace CursorHunter.Combat
             return Mathf.Max(1, (int)total);
         }
 
-        internal static long ScaleDamage(long attackPower, float multiplier)
+        internal static long ScaleDamage(float skillDamage)
         {
-            double value = attackPower * (double)Mathf.Max(0.01f, multiplier);
+            double value = Mathf.Max(0.01f, skillDamage);
             return value >= long.MaxValue
                 ? long.MaxValue
                 : Math.Max(1L, (long)Math.Round(value,
@@ -48,6 +48,7 @@ namespace CursorHunter.Combat
         [Min(1)] public int Count;
         [Min(0.1f)] public float DurationSeconds;
         [Min(0.01f)] public float DamageMultiplier;
+        [Min(0.1f)] public float RadiusMultiplier;
         [Min(0.1f)] public float CooldownSeconds;
         [Min(0f)] public float FirstCastDelaySeconds;
         [Min(0.1f)] public float HitIntervalSeconds;
@@ -61,15 +62,20 @@ namespace CursorHunter.Combat
     internal readonly struct TornadoRuntimeStat
     {
         internal TornadoRuntimeStat(TornadoBaseStat basis,
-            SkillCombatSnapshot upgrades, long attackPower, int maximumCount)
+            SkillCombatSnapshot upgrades, int maximumCount)
         {
             Count = Mathf.Min(SkillStatMath.AddCount(basis.Count, upgrades, "count"),
                 Mathf.Max(1, maximumCount));
             DurationSeconds = SkillStatMath.Add(basis.DurationSeconds, upgrades,
                 "durationSeconds", 0.1f);
             DamageMultiplier = SkillStatMath.Add(basis.DamageMultiplier, upgrades,
-                "damageMultiplier", 0.01f);
-            Damage = SkillStatMath.ScaleDamage(attackPower, DamageMultiplier);
+                "damage", 0.01f) + upgrades.GetUpgrade("damageMultiplier");
+            Damage = SkillStatMath.ScaleDamage(DamageMultiplier);
+            float radiusBase = basis.RadiusMultiplier > 0f
+                ? basis.RadiusMultiplier
+                : 1f;
+            RadiusMultiplier = radiusBase * SkillStatMath.Add(1f, upgrades,
+                "radius", 0.1f);
             CooldownSeconds = SkillStatMath.Add(basis.CooldownSeconds, upgrades,
                 "cooldownSeconds", 0.1f);
             FirstCastDelaySeconds = SkillStatMath.Add(basis.FirstCastDelaySeconds,
@@ -94,6 +100,7 @@ namespace CursorHunter.Combat
         internal float DurationSeconds { get; }
         internal float DamageMultiplier { get; }
         internal long Damage { get; }
+        internal float RadiusMultiplier { get; }
         internal float CooldownSeconds { get; }
         internal float FirstCastDelaySeconds { get; }
         internal float HitIntervalSeconds { get; }
@@ -113,12 +120,13 @@ namespace CursorHunter.Combat
         [Min(0.1f)] public float EffectDurationSeconds;
         [Min(0.01f)] public float SplashDamageMultiplier;
         [Min(0.01f)] public float BossDamageMultiplier;
+        [Min(0.1f)] public float RadiusMultiplier;
     }
 
     internal readonly struct HeadshotRuntimeStat
     {
         internal HeadshotRuntimeStat(HeadshotBaseStat basis,
-            SkillCombatSnapshot upgrades, long attackPower)
+            SkillCombatSnapshot upgrades)
         {
             CooldownSeconds = SkillStatMath.Add(basis.CooldownSeconds, upgrades,
                 "cooldownSeconds", 0.1f);
@@ -131,14 +139,18 @@ namespace CursorHunter.Combat
                     "effectDurationSeconds", 0.1f), ExplosionDelaySeconds + 0.1f);
             SplashDamageMultiplier = SkillStatMath.Add(
                 basis.SplashDamageMultiplier, upgrades,
-                "splashDamageMultiplier", 0.01f);
+                "damage", 0.01f) + upgrades.GetUpgrade("splashDamageMultiplier");
             BossDamageMultiplier = SkillStatMath.Add(
                 basis.BossDamageMultiplier, upgrades,
                 "bossDamageMultiplier", 0.01f);
-            SplashDamage = SkillStatMath.ScaleDamage(attackPower,
-                SplashDamageMultiplier);
-            BossDamage = SkillStatMath.ScaleDamage(attackPower,
-                BossDamageMultiplier);
+            SplashDamage = SkillStatMath.ScaleDamage(SplashDamageMultiplier);
+            BossDamage = SkillStatMath.ScaleDamage(
+                SplashDamageMultiplier * BossDamageMultiplier);
+            float radiusBase = basis.RadiusMultiplier > 0f
+                ? basis.RadiusMultiplier
+                : 1f;
+            RadiusMultiplier = radiusBase * SkillStatMath.Add(1f, upgrades,
+                "radius", 0.1f);
         }
 
         internal float CooldownSeconds { get; }
@@ -149,6 +161,7 @@ namespace CursorHunter.Combat
         internal float BossDamageMultiplier { get; }
         internal long SplashDamage { get; }
         internal long BossDamage { get; }
+        internal float RadiusMultiplier { get; }
     }
 
     [Serializable]
@@ -159,12 +172,14 @@ namespace CursorHunter.Combat
         [Min(0f)] public float ImpactDelaySeconds;
         [Min(0.1f)] public float EffectDurationSeconds;
         [Min(0.01f)] public float DamageMultiplier;
+        [Min(0.1f)] public float RadiusWorldUnits;
+        [Min(0.01f)] public float RadiusMultiplier;
     }
 
     internal readonly struct ThunderRuntimeStat
     {
         internal ThunderRuntimeStat(ThunderBaseStat basis,
-            SkillCombatSnapshot upgrades, long attackPower)
+            SkillCombatSnapshot upgrades)
         {
             CooldownSeconds = SkillStatMath.Add(basis.CooldownSeconds, upgrades,
                 "cooldownSeconds", 0.1f);
@@ -176,8 +191,16 @@ namespace CursorHunter.Combat
                 SkillStatMath.Add(basis.EffectDurationSeconds, upgrades,
                     "effectDurationSeconds", 0.1f), ImpactDelaySeconds + 0.01f);
             DamageMultiplier = SkillStatMath.Add(basis.DamageMultiplier, upgrades,
-                "damageMultiplier", 0.01f);
-            Damage = SkillStatMath.ScaleDamage(attackPower, DamageMultiplier);
+                "damage", 0.01f) + upgrades.GetUpgrade("damageMultiplier");
+            Damage = SkillStatMath.ScaleDamage(DamageMultiplier);
+            float radiusBase = basis.RadiusWorldUnits > 0f
+                ? basis.RadiusWorldUnits
+                : 1.5f;
+            float radiusMultiplier = basis.RadiusMultiplier > 0f
+                ? basis.RadiusMultiplier
+                : 1f;
+            RadiusWorldUnits = radiusBase * radiusMultiplier *
+                SkillStatMath.Add(1f, upgrades, "radius", 0.1f);
         }
 
         internal float CooldownSeconds { get; }
@@ -186,6 +209,7 @@ namespace CursorHunter.Combat
         internal float EffectDurationSeconds { get; }
         internal float DamageMultiplier { get; }
         internal long Damage { get; }
+        internal float RadiusWorldUnits { get; }
     }
 
     [Serializable]
@@ -204,7 +228,7 @@ namespace CursorHunter.Combat
     internal readonly struct FlameExhaustRuntimeStat
     {
         internal FlameExhaustRuntimeStat(FlameExhaustBaseStat basis,
-            SkillCombatSnapshot upgrades, long attackPower)
+            SkillCombatSnapshot upgrades)
         {
             CooldownSeconds = SkillStatMath.Add(basis.CooldownSeconds, upgrades,
                 "cooldownSeconds", 0.1f);
@@ -214,10 +238,12 @@ namespace CursorHunter.Combat
             SpeedWorldUnitsPerSecond = Mathf.Max(0f,
                 basis.SpeedWorldUnitsPerSecond);
             CursorSizeRatio = Mathf.Clamp(basis.CursorSizeRatio, 0.05f, 1f);
-            HitRadiusMultiplier = Mathf.Max(0.01f,
-                basis.HitRadiusMultiplier);
-            DamageMultiplier = Mathf.Max(0.01f, basis.DamageMultiplier);
-            Damage = SkillStatMath.ScaleDamage(attackPower, DamageMultiplier);
+            HitRadiusMultiplier = (basis.HitRadiusMultiplier > 0f
+                ? basis.HitRadiusMultiplier
+                : 1.2f) * SkillStatMath.Add(1f, upgrades, "radius", 0.1f);
+            DamageMultiplier = SkillStatMath.Add(basis.DamageMultiplier, upgrades,
+                "damage", 0.01f) + upgrades.GetUpgrade("damageMultiplier");
+            Damage = SkillStatMath.ScaleDamage(DamageMultiplier);
             HitEffectDurationSeconds = Mathf.Max(0.1f,
                 basis.HitEffectDurationSeconds);
         }
@@ -246,17 +272,17 @@ namespace CursorHunter.Combat
     internal readonly struct MagicBallRuntimeStat
     {
         internal MagicBallRuntimeStat(MagicBallBaseStat basis,
-            SkillCombatSnapshot upgrades, long attackPower)
+            SkillCombatSnapshot upgrades)
         {
             FirstCastDelaySeconds = Mathf.Max(0f, basis.FirstCastDelaySeconds);
             MoveSpeedWorldUnitsPerSecond = SkillStatMath.Add(
                 basis.MoveSpeedWorldUnitsPerSecond, upgrades,
                 "moveSpeedWorldUnitsPerSecond", 0.01f);
             SizeMultiplier = SkillStatMath.Add(basis.SizeMultiplier,
-                upgrades, "sizeMultiplier", 0.01f);
+                upgrades, "radius", 0.01f) + upgrades.GetUpgrade("sizeMultiplier");
             DamageMultiplier = SkillStatMath.Add(basis.DamageMultiplier,
-                upgrades, "damageMultiplier", 0.01f);
-            Damage = SkillStatMath.ScaleDamage(attackPower, DamageMultiplier);
+                upgrades, "damage", 0.01f) + upgrades.GetUpgrade("damageMultiplier");
+            Damage = SkillStatMath.ScaleDamage(DamageMultiplier);
             SameTargetHitCooldownSeconds = Mathf.Max(0f,
                 basis.SameTargetHitCooldownSeconds);
         }
@@ -282,17 +308,17 @@ namespace CursorHunter.Combat
     internal readonly struct LaserRuntimeStat
     {
         internal LaserRuntimeStat(LaserBaseStat basis,
-            SkillCombatSnapshot upgrades, long attackPower)
+            SkillCombatSnapshot upgrades)
         {
             CooldownSeconds = SkillStatMath.Add(basis.CooldownSeconds,
                 upgrades, "cooldownSeconds", 0.1f);
             FirstCastDelaySeconds = Mathf.Max(0f, basis.FirstCastDelaySeconds);
             EffectDurationSeconds = Mathf.Max(0.1f, basis.EffectDurationSeconds);
             SizeMultiplier = SkillStatMath.Add(basis.SizeMultiplier,
-                upgrades, "sizeMultiplier", 0.01f);
+                upgrades, "radius", 0.01f) + upgrades.GetUpgrade("sizeMultiplier");
             DamageMultiplier = SkillStatMath.Add(basis.DamageMultiplier,
-                upgrades, "damageMultiplier", 0.01f);
-            Damage = SkillStatMath.ScaleDamage(attackPower, DamageMultiplier);
+                upgrades, "damage", 0.01f) + upgrades.GetUpgrade("damageMultiplier");
+            Damage = SkillStatMath.ScaleDamage(DamageMultiplier);
         }
 
         internal float CooldownSeconds { get; }
@@ -306,6 +332,7 @@ namespace CursorHunter.Combat
     [Serializable]
     internal struct PetBaseStat
     {
+        [Min(1)] public int SimultaneousHits;
         [Min(0.01f)] public float DamageMultiplier;
         [Min(0.5f)] public float AttackIntervalSeconds;
         [Min(0.01f)] public float MoveSpeedWorldUnitsPerSecond;
@@ -316,12 +343,15 @@ namespace CursorHunter.Combat
     internal readonly struct PetRuntimeStat
     {
         internal PetRuntimeStat(PetBaseStat basis,
-            SkillCombatSnapshot upgrades, long attackPower,
+            SkillCombatSnapshot upgrades,
             RelicCombatModifiers relics = default)
         {
             DamageMultiplier = SkillStatMath.Add(basis.DamageMultiplier,
-                upgrades, "damageMultiplier", 0.01f);
-            Damage = SkillStatMath.ScaleDamage(attackPower, DamageMultiplier);
+                upgrades, "damage", 0.01f) + upgrades.GetUpgrade("damageMultiplier");
+            Damage = SkillStatMath.ScaleDamage(DamageMultiplier);
+            SimultaneousHits = SkillStatMath.AddCount(
+                basis.SimultaneousHits > 0 ? basis.SimultaneousHits : 1,
+                upgrades, "simultaneousHits");
             float attackInterval = SkillStatMath.Add(
                 basis.AttackIntervalSeconds, upgrades,
                 "attackIntervalSeconds", 0.5f);
@@ -343,6 +373,7 @@ namespace CursorHunter.Combat
 
         internal float DamageMultiplier { get; }
         internal long Damage { get; }
+        internal int SimultaneousHits { get; }
         internal float AttackIntervalSeconds { get; }
         internal float MoveSpeedWorldUnitsPerSecond { get; }
         internal float DetectionRadiusWorldUnits { get; }

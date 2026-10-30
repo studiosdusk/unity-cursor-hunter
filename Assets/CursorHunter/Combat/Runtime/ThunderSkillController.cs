@@ -34,7 +34,9 @@ namespace CursorHunter.Combat
             FirstCastDelaySeconds = 0f,
             ImpactDelaySeconds = 0.1f,
             EffectDurationSeconds = 0.5f,
-            DamageMultiplier = 4f
+            DamageMultiplier = 4f,
+            RadiusWorldUnits = 1.5f,
+            RadiusMultiplier = 1f
         };
 
         [Header("Pool")]
@@ -42,6 +44,8 @@ namespace CursorHunter.Combat
 
         private readonly List<MonsterCombatTarget> _eligibleTargets =
             new List<MonsterCombatTarget>(80);
+        private readonly HashSet<MonsterCombatTarget> _uniqueSplashTargets =
+            new HashSet<MonsterCombatTarget>();
         private readonly List<ThunderEffect> _active = new List<ThunderEffect>(2);
         private readonly Stack<ThunderEffect> _free = new Stack<ThunderEffect>(2);
 
@@ -78,8 +82,7 @@ namespace CursorHunter.Combat
             _runId = runId;
             _random = new SeededRandom(seed ^ 0x5448554E444552UL);
             if (_balance != null) skill = default;
-            _runtime = new ThunderRuntimeStat(BalanceBasis, skill,
-                combat.CombatSnapshot.AttackPower);
+            _runtime = new ThunderRuntimeStat(BalanceBasis, skill);
             _hasCast = false;
             _nextCastAt = combat.ElapsedSeconds + _runtime.FirstCastDelaySeconds;
             _configured = true;
@@ -166,6 +169,7 @@ namespace CursorHunter.Combat
             _nextCastAt = now + _combat.ResolveAutoSkillCooldown(
                 _runtime.CooldownSeconds);
             _hasCast = true;
+            CombatAudioFeedback.PlaySkill(SkillId);
         }
 
         internal bool IsCurrentRun(RunId runId) =>
@@ -180,10 +184,40 @@ namespace CursorHunter.Combat
                 return;
 
             _combat.TryApplySkillDamage(runId, target, _runtime.Damage);
+            if (_runtime.RadiusWorldUnits <= 0f || !IsCurrentRun(runId)) return;
+
+            Vector2 center = target.transform.position;
+            float radiusSquared = _runtime.RadiusWorldUnits * _runtime.RadiusWorldUnits;
+            MonsterCombatTarget.CollectActiveForRun(_runId, _eligibleTargets);
+            _uniqueSplashTargets.Clear();
+            for (int index = 0; index < _eligibleTargets.Count; index++)
+            {
+                MonsterCombatTarget candidate = _eligibleTargets[index];
+                if (candidate == null || candidate == target || !candidate.IsVulnerable)
+                    continue;
+                Vector2 hitPoint = candidate.GetClosestHitPoint(center);
+                if ((hitPoint - center).sqrMagnitude <= radiusSquared)
+                    _uniqueSplashTargets.Add(candidate);
+            }
+
+            foreach (MonsterCombatTarget candidate in _uniqueSplashTargets)
+            {
+                if (!IsCurrentRun(runId)) break;
+                _combat.TryApplySkillDamage(runId, candidate, _runtime.Damage);
+            }
         }
 
-        private ThunderBaseStat BalanceBasis => _balance == null ? baseStat :
-            SkillBalanceMath.Read<ThunderBaseStat>(_balance);
+        private ThunderBaseStat BalanceBasis
+        {
+            get
+            {
+                ThunderBaseStat basis = _balance == null ? baseStat :
+                    SkillBalanceMath.Read<ThunderBaseStat>(_balance);
+                if (basis.RadiusWorldUnits <= 0f) basis.RadiusWorldUnits = 1.5f;
+                if (basis.RadiusMultiplier <= 0f) basis.RadiusMultiplier = 1f;
+                return basis;
+            }
+        }
 
         public SkillBalanceSettings CaptureBalanceSettings() =>
             SkillBalanceMath.Capture(SkillId, _balance != null ? _balance.Enabled :
@@ -241,8 +275,7 @@ namespace CursorHunter.Combat
 
             ThunderRuntimeStat previous = _runtime;
             _balance = next;
-            _runtime = new ThunderRuntimeStat(BalanceBasis, default,
-                combat.CombatSnapshot.AttackPower);
+            _runtime = new ThunderRuntimeStat(BalanceBasis, default);
             float now = combat.ElapsedSeconds;
             _nextCastAt = SkillBalanceMath.Retime(_nextCastAt, now,
                 _hasCast ? previous.CooldownSeconds : previous.FirstCastDelaySeconds,

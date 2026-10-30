@@ -35,7 +35,8 @@ namespace CursorHunter.Combat
             ExplosionDelaySeconds = 1.15f,
             EffectDurationSeconds = 2.5f,
             SplashDamageMultiplier = 2f,
-            BossDamageMultiplier = 10f
+            BossDamageMultiplier = 10f,
+            RadiusMultiplier = 1f
         };
 
         [Header("Pool")]
@@ -83,8 +84,7 @@ namespace CursorHunter.Combat
             _runId = runId;
             _random = new SeededRandom(seed ^ 0x4845414453484F54UL);
             if (_balance != null) skill = default;
-            _runtime = new HeadshotRuntimeStat(BalanceBasis, skill,
-                combat.CombatSnapshot.AttackPower);
+            _runtime = new HeadshotRuntimeStat(BalanceBasis, skill);
             _hasCast = false;
             _nextCastAt = combat.ElapsedSeconds + _runtime.FirstCastDelaySeconds;
             _configured = true;
@@ -167,11 +167,12 @@ namespace CursorHunter.Combat
             next.Activate(this, _runId, target, now,
                 _runtime.ExplosionDelaySeconds,
                 _runtime.EffectDurationSeconds,
-                _combat.AreaSkillRadiusMultiplier);
+                _runtime.RadiusMultiplier * _combat.AreaSkillRadiusMultiplier);
             _active.Add(next);
             _nextCastAt = now + _combat.ResolveAutoSkillCooldown(
                 _runtime.CooldownSeconds);
             _hasCast = true;
+            CombatAudioFeedback.PlaySkill(SkillId);
         }
 
         internal bool IsCurrentRun(RunId runId) =>
@@ -221,8 +222,16 @@ namespace CursorHunter.Combat
             }
         }
 
-        private HeadshotBaseStat BalanceBasis => _balance == null ? baseStat :
-            SkillBalanceMath.Read<HeadshotBaseStat>(_balance);
+        private HeadshotBaseStat BalanceBasis
+        {
+            get
+            {
+                HeadshotBaseStat basis = _balance == null ? baseStat :
+                    SkillBalanceMath.Read<HeadshotBaseStat>(_balance);
+                if (basis.RadiusMultiplier <= 0f) basis.RadiusMultiplier = 1f;
+                return basis;
+            }
+        }
 
         public SkillBalanceSettings CaptureBalanceSettings() =>
             SkillBalanceMath.Capture(SkillId, _balance != null ? _balance.Enabled :
@@ -280,8 +289,7 @@ namespace CursorHunter.Combat
 
             HeadshotRuntimeStat previous = _runtime;
             _balance = next;
-            _runtime = new HeadshotRuntimeStat(BalanceBasis, default,
-                combat.CombatSnapshot.AttackPower);
+            _runtime = new HeadshotRuntimeStat(BalanceBasis, default);
             float now = combat.ElapsedSeconds;
             _nextCastAt = SkillBalanceMath.Retime(_nextCastAt, now,
                 _hasCast ? previous.CooldownSeconds : previous.FirstCastDelaySeconds,

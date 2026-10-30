@@ -21,10 +21,10 @@ namespace CursorHunter.App.Tests
             var document = GameDataDocument.Load();
             Assert.That(GameDataDocument.RuntimeResourcePath, Is.EqualTo("GameData/game-data.en"));
             Assert.That(document.locale, Is.EqualTo("en"));
-            Assert.That(document.progression.categories.Length, Is.EqualTo(18));
+            Assert.That(document.progression.categories.Length, Is.EqualTo(22));
             int count = 0;
             foreach (var category in document.progression.categories) count += category.nodes.Length;
-            Assert.That(count, Is.EqualTo(85));
+            Assert.That(count, Is.EqualTo(103));
             document.locale = "ko";
             Assert.That(document.TryValidate(out _), Is.False);
             Assert.That(GameDataDocument.TryParse("{\"문서안내\":{}}", "{}", out _, out _), Is.False);
@@ -72,6 +72,32 @@ namespace CursorHunter.App.Tests
         }
 
         [Test]
+        public void CombatMonsterDefinitionsMatchJsonHealthAndGemstoneRewards()
+        {
+            GameDataDocument document = GameDataDocument.Load();
+            MonsterDefinition[] definitions = Resources.LoadAll<MonsterDefinition>("MonsterDefinitions");
+            var definitionsById = new Dictionary<string, MonsterDefinition>();
+            foreach (MonsterDefinition definition in definitions)
+                definitionsById.Add(definition.MonsterId, definition);
+
+            foreach (MonsterInformation information in document.information.monsters)
+            {
+                Assert.That(definitionsById.TryGetValue(information.id, out MonsterDefinition definition),
+                    Is.True, "Missing combat definition for " + information.id);
+                Assert.That(definition.MaxHealth, Is.EqualTo(information.hitPoints), information.id + " HP");
+                Assert.That(definition.SpawnIntervalSeconds,
+                    Is.EqualTo(information.spawnIntervalSeconds).Within(0.001f), information.id + " spawn interval");
+                Assert.That(definition.GarnetReward, Is.EqualTo(information.garnetReward), information.id + " garnet reward");
+                Assert.That(definition.BonusDropAmount, Is.EqualTo(information.gemstoneAmount), information.id + " bonus drop amount");
+                Assert.That(definition.BonusDropChancePercent,
+                    Is.EqualTo(information.gemstoneChancePercent).Within(0.001f), information.id + " bonus drop chance");
+                if (information.gemstoneAmount > 0)
+                    Assert.That(definition.BonusDropCurrencyId, Is.EqualTo(information.gemstoneId),
+                        information.id + " bonus drop currency");
+            }
+        }
+
+        [Test]
         public void EveryPurchasedNodeUsesItsJsonEffect()
         {
             var document = GameDataDocument.Load();
@@ -79,25 +105,25 @@ namespace CursorHunter.App.Tests
             foreach (var category in document.progression.categories)
                 foreach (var node in category.nodes) purchased.Add(node.id);
             var result = Build(document, purchased);
-            Assert.That(result.stats.attackPower, Is.EqualTo(100));
-            Assert.That(result.stats.bossDamageMultiplier, Is.EqualTo(4));
+            Assert.That(result.stats.attackPower, Is.EqualTo(36));
+            Assert.That(result.stats.bossDamageMultiplier, Is.EqualTo(2f).Within(0.001f));
             Assert.That(result.stats.normalFieldDurationSeconds, Is.EqualTo(30));
             Assert.That(result.skills[0].enabled, Is.True);
             Assert.That(result.skills[6].enabled, Is.True);
             foreach (var monster in result.monsters)
             {
                 Assert.That(monster.enabled, Is.True);
-                Assert.That(monster.productionCount, Is.EqualTo(4));
+                Assert.That(monster.productionCount, Is.EqualTo(5));
             }
         }
 
         [Test]
-        public void TornadoHasOnlyAnUnlockNodeUntilUpgradesAreDesigned()
+        public void TornadoHasUnlockAndIndependentDamageAndRadiusResearch()
         {
             var document = GameDataDocument.Load();
             UpgradeCategoryData category = System.Array.Find(
                 document.progression.categories, value => value.id == "skill.tornado");
-            Assert.That(category.nodes, Has.Length.EqualTo(1));
+            Assert.That(category.nodes, Has.Length.EqualTo(3));
             Assert.That(category.nodes[0].id, Is.EqualTo("skill.tornado"));
             Assert.That(category.nodes[0].operation, Is.EqualTo("enable"));
             Assert.That(Build(document, new HashSet<string> { "skill.tornado" })
@@ -111,8 +137,8 @@ namespace CursorHunter.App.Tests
             UpgradeCategoryData category = System.Array.Find(
                 document.progression.categories,
                 value => value.id == "skill.pet_baby_dragon");
-            Assert.That(category.nodes, Has.Length.EqualTo(1));
-            Assert.That(category.nodes[0].cost, Is.EqualTo(40));
+            Assert.That(category.nodes, Has.Length.EqualTo(5));
+            Assert.That(category.nodes[0].cost, Is.EqualTo(80));
             Assert.That(category.nodes[0].prerequisiteNodeId,
                 Is.EqualTo("stat.attack.01"));
             Assert.That(Build(document).skills[6].enabled, Is.False);

@@ -17,7 +17,7 @@ MonoBehaviour:
   prefabKey: Walker/Walker_Mushroom
   visualPrefab: {fileID: 7181800864280875092, guid: 5199f7f24931ec249be66cc4e940a24d, type: 3}
   baseStats:
-    maxHealth: 55
+    maxHealth: 37
     spawnIntervalSeconds: 1.2
     packSize: 1
     moveSpeed: 0.45
@@ -26,7 +26,7 @@ MonoBehaviour:
     hitAreaHeight: 1.2
     garnetReward: 5
     bonusDropCurrencyId: gem.topaz
-    bonusDropAmount: 1
+    bonusDropAmount: 4
     bonusDropChancePercent: 100
   behaviorProfiles:
   - {fileID: 11400000, guid: 27244024086e4476abc73bc422f6e10c, type: 2}

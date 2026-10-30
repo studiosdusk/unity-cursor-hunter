@@ -14,10 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: CursorHunter.Data::CursorHunter.Data.MonsterDefinition
   monsterId: monster.07
   displayName: 벌집
-  prefabKey: Spider/Spider_Frozen
-  visualPrefab: {fileID: 1303142630433847808, guid: 7c1868fcc58df457288e0d27a225c57b, type: 3}
+  prefabKey: Skeleton/Skeleton_Soldier
+  visualPrefab: {fileID: 6119787576993411367, guid: c765c82675dd40f39d034c792f4c568b, type: 3}
   baseStats:
-    maxHealth: 255
+    maxHealth: 90
     spawnIntervalSeconds: 1.8
     packSize: 1
     moveSpeed: 0.45
@@ -26,7 +26,7 @@ MonoBehaviour:
     hitAreaHeight: 1.2
     garnetReward: 9
     bonusDropCurrencyId: gem.sapphire
-    bonusDropAmount: 1
+    bonusDropAmount: 5
     bonusDropChancePercent: 100
   behaviorProfiles:
   - {fileID: 11400000, guid: ae22e549ee464746876ea87545e33da2, type: 2}

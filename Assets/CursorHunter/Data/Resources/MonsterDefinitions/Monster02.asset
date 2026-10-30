@@ -14,10 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: CursorHunter.Data::CursorHunter.Data.MonsterDefinition
   monsterId: monster.02
   displayName: 여왕벌
-  prefabKey: Bat/Bat_Cave
-  visualPrefab: {fileID: 6229969659333629366, guid: 2d4fc260c7be94876974cedf7530353e, type: 3}
+  prefabKey: Bee/Bee_Honey
+  visualPrefab: {fileID: 7331409942788575104, guid: 5b1d17d58cb627b44a4ba33c14e2f9ec, type: 3}
   baseStats:
-    maxHealth: 30
+    maxHealth: 20
     spawnIntervalSeconds: 1.05
     packSize: 1
     moveSpeed: 0.45
@@ -26,7 +26,7 @@ MonoBehaviour:
     hitAreaHeight: 1.2
     garnetReward: 4
     bonusDropCurrencyId: gem.topaz
-    bonusDropAmount: 1
+    bonusDropAmount: 3
     bonusDropChancePercent: 100
   behaviorProfiles:
   - {fileID: 11400000, guid: 83e980cdfb5d4021aac4028b280d24d1, type: 2}

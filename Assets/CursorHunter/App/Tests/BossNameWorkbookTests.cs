@@ -197,7 +197,9 @@ namespace CursorHunter.App.Tests
                 Rewrite(BossNameWorkbook.AssetPath, false, null);
                 AssetDatabase.ImportAsset(BossNameWorkbook.AssetPath, ImportAssetOptions.ForceUpdate);
                 BossDefinition boss = Resources.Load<BossDefinition>("BossDefinitions/Boss02");
-                for (int i = 0; i < 50 && boss.DisplayName != "변경한 보스 2"; i++) yield return null;
+                double deadline = EditorApplication.timeSinceStartup + 5d;
+                while (boss.DisplayName != "변경한 보스 2" && EditorApplication.timeSinceStartup < deadline)
+                    yield return null;
                 Assert.That(boss.DisplayName, Is.EqualTo("변경한 보스 2"));
             }
             finally

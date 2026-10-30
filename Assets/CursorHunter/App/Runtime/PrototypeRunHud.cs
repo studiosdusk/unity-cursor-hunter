@@ -1,6 +1,7 @@
 using CursorHunter.Contracts;
 using CursorHunter.Combat;
 using CursorHunter.Progression;
+using System;
 using System.Text;
 using UnityEngine;
 using UnityEngine.UI;
@@ -40,13 +41,144 @@ namespace CursorHunter.App
         private RunResult _pendingResult;
         private RunId _activeRunId;
         private bool _acceptResult;
+        private CombatRunController _observedCombat;
+#if UNITY_EDITOR
+        private TextMeshProUGUI _editorPlaytimeText;
+        private double _editorPlaytimeElapsed;
+        private double _editorStageElapsed;
+        private int _editorObservedBossTier = -1;
+        private long _editorPlaytimeLastSecond = -1;
+        private bool _editorApplicationPaused;
+#endif
+
+        private void Start()
+        {
+#if UNITY_EDITOR
+            _editorPlaytimeElapsed = 0d;
+            _editorStageElapsed = 0d;
+            _editorObservedBossTier = progressionController != null
+                ? progressionController.CurrentBossUnlockTier
+                : 0;
+#endif
+        }
+
+#if UNITY_EDITOR
+        private void OnApplicationPause(bool paused) => _editorApplicationPaused = paused;
+#endif
 
         private void Update()
         {
+#if UNITY_EDITOR
+            UpdateEditorPlaytimeClock();
+#endif
             if (!_waitingForCollection || gemstoneList != null && gemstoneList.IsFinishingCollection) return;
             _waitingForCollection = false;
             DisplayResult(_pendingResult);
         }
+
+#if UNITY_EDITOR
+        private void UpdateEditorPlaytimeClock()
+        {
+            if (_editorPlaytimeText == null)
+            {
+                if (canvas == null)
+                {
+                    canvas = GameObject.Find("UICanvas")?.GetComponent<Canvas>();
+                }
+                if (canvas == null)
+                {
+                    canvas = FindFirstObjectByType<Canvas>(FindObjectsInactive.Include);
+                }
+                if (canvas == null)
+                {
+                    return;
+                }
+
+                if (_runtimeFont == null)
+                {
+                    _runtimeFont = LocalizedTypography.GetFont(uiFont);
+                }
+
+                GameObject clockObject = new GameObject(
+                    "EditorPlaytimeClock",
+                    typeof(RectTransform),
+                    typeof(Image));
+                clockObject.transform.SetParent(canvas.transform, false);
+                RectTransform clockRect = clockObject.GetComponent<RectTransform>();
+                clockRect.anchorMin = new Vector2(0f, 1f);
+                clockRect.anchorMax = new Vector2(0f, 1f);
+                clockRect.pivot = new Vector2(0f, 1f);
+                clockRect.anchoredPosition = new Vector2(24f, -24f);
+                clockRect.sizeDelta = new Vector2(420f, 48f);
+
+                Image clockBackground = clockObject.GetComponent<Image>();
+                clockBackground.color = new Color(0.025f, 0.06f, 0.11f, 0.82f);
+                clockBackground.raycastTarget = false;
+
+                Canvas foreground = clockObject.AddComponent<Canvas>();
+                foreground.overrideSorting = true;
+                foreground.sortingLayerID = canvas.sortingLayerID;
+                foreground.sortingOrder = canvas.sortingOrder + 30;
+
+                _editorPlaytimeText = CreateText(
+                    "Label",
+                    clockObject.transform,
+                    Vector2.zero,
+                    Vector2.one,
+                    new Vector2(0.5f, 0.5f),
+                    Vector2.zero,
+                    new Vector2(-16f, -8f),
+                    14,
+                    TextAnchor.MiddleCenter);
+                _editorPlaytimeText.color = new Color(0.84f, 0.91f, 1f, 1f);
+                _editorPlaytimeText.fontStyle = FontStyles.Bold;
+            }
+
+            if (progressionController == null)
+            {
+                progressionController = FindFirstObjectByType<TraitScreenController>(
+                    FindObjectsInactive.Include);
+            }
+
+            int bossTier = progressionController != null
+                ? progressionController.CurrentBossUnlockTier
+                : 0;
+            if (_editorObservedBossTier < 0)
+            {
+                _editorObservedBossTier = bossTier;
+            }
+            else if (bossTier != _editorObservedBossTier)
+            {
+                _editorObservedBossTier = bossTier;
+                _editorStageElapsed = 0d;
+            }
+
+            bool paused = _editorApplicationPaused || !Application.isFocused ||
+                Time.timeScale <= 0.001f || (_observedCombat != null && _observedCombat.IsPaused);
+            if (!paused)
+            {
+                double delta = Math.Max(0d, Time.unscaledDeltaTime);
+                _editorPlaytimeElapsed += delta;
+                _editorStageElapsed += delta;
+            }
+
+            long elapsedSeconds = Math.Max(0L, (long)_editorPlaytimeElapsed);
+            if (elapsedSeconds == _editorPlaytimeLastSecond)
+            {
+                return;
+            }
+
+            _editorPlaytimeLastSecond = elapsedSeconds;
+            long hours = elapsedSeconds / 3600;
+            int minutes = (int)(elapsedSeconds / 60 % 60);
+            int seconds = (int)(elapsedSeconds % 60);
+            long stageSeconds = Math.Max(0L, (long)_editorStageElapsed);
+            int stageMinutes = (int)(stageSeconds / 60 % 60);
+            int stageRemainder = (int)(stageSeconds % 60);
+            int displayedBoss = Mathf.Clamp(bossTier + 1, 1, 5);
+            _editorPlaytimeText.text = $"전체 {hours:00}:{minutes:00}:{seconds:00}   보스 {displayedBoss}단계 {stageMinutes:00}:{stageRemainder:00}";
+        }
+#endif
 
         public void SetTraitConnectionEnabled(bool enabled)
         {
@@ -129,6 +261,7 @@ namespace CursorHunter.App
         public void ShowRunning(CombatRunController combat, MonsterSpawner spawner)
         {
             if (combat == null) return;
+            _observedCombat = combat;
             _activeRunId = combat.CurrentRunId;
             _acceptResult = combat.IsRunActive;
             _showingRun = true;
@@ -171,6 +304,7 @@ namespace CursorHunter.App
 
         public void ShowResult(RunResult result)
         {
+            _observedCombat = null;
             if (battleResult != null && (!_acceptResult || result.RunId != _activeRunId)) return;
             _acceptResult = false;
             _showingRun = false;
@@ -212,8 +346,8 @@ namespace CursorHunter.App
                               result.EndReason == RunEndReason.StartFailed ||
                               result.EndReason == RunEndReason.NumericOverflow;
             string resultTitle = wasAborted
-                ? "HUNT ABORTED"
-                : "HUNT COMPLETE";
+                ? "전투 중단"
+                : "전투 완료";
 
             StringBuilder rewardText = new StringBuilder();
             int displayedRewardCount = 0;
@@ -229,7 +363,7 @@ namespace CursorHunter.App
 
                     if (displayedRewardCount == 0)
                     {
-                        rewardText.Append("\nREWARDS ");
+                        rewardText.Append("\n추가 보상 ");
                     }
 
                     if (displayedRewardCount > 0)
@@ -237,7 +371,7 @@ namespace CursorHunter.App
                         rewardText.Append(", ");
                     }
 
-                    rewardText.Append(reward.CurrencyId)
+                    rewardText.Append(GetLocalizedCurrencyName(reward.CurrencyId))
                         .Append(" +")
                         .Append(reward.Amount);
                     displayedRewardCount++;
@@ -246,10 +380,10 @@ namespace CursorHunter.App
 
             _resultText.text =
                 resultTitle + "\n\n" +
-                $"TIME {result.ElapsedSeconds:0.0}s\n" +
-                $"KILLS {result.DefeatedCount}\n" +
-                $"GARNET +{result.GarnetEarned}\n" +
-                $"DAMAGE {result.EffectiveDamage}" +
+                $"전투 시간 {result.ElapsedSeconds:0.0}초\n" +
+                $"처치 수 {result.DefeatedCount}\n" +
+                $"가넷 +{result.GarnetEarned}\n" +
+                $"총 피해 {result.EffectiveDamage}" +
                 rewardText;
             _resultPanel.SetActive(true);
 
@@ -257,6 +391,20 @@ namespace CursorHunter.App
             {
                 _progressionInfoButton.gameObject.SetActive(_traitConnectionEnabled);
             }
+        }
+
+        private static string GetLocalizedCurrencyName(string currencyId)
+        {
+            return currencyId switch
+            {
+                "gem.garnet" => "가넷",
+                "gem.topaz" => "토파즈",
+                "gem.amethyst" => "자수정",
+                "gem.sapphire" => "사파이어",
+                "gem.diamond" => "다이아몬드",
+                "gem.dragon" => "드래곤 스톤",
+                _ => "젬스톤"
+            };
         }
 
         /// <summary>
