@@ -16,6 +16,12 @@ namespace CursorHunter.Combat
         [SerializeField] private Camera worldCamera;
         [SerializeField, Tooltip("Shared combat root used by every monster species.")]
         private GameObject monsterRootPrefab;
+        [SerializeField] private GameObject bossRootPrefab;
+        private GameObject _runRootPrefab;
+        private bool _bossRun;
+        private MonsterCombatTarget _bossDeathVisual;
+        public MonsterCombatTarget BossTarget => _bossRun && _spawnedTargets.Count > 0 ? _spawnedTargets[0] : null;
+        public bool IsBossDeathPlaying => _bossDeathVisual != null && _bossDeathVisual.gameObject.activeInHierarchy;
         [SerializeField] private float spawnPlaneZ;
         [SerializeField, Min(0f)] private float horizontalPadding = 0.02f;
         [SerializeField, Min(0f)] private float bottomPadding = 0.09f;
@@ -114,6 +120,7 @@ namespace CursorHunter.Combat
                 return;
             }
 
+            if (_bossRun) return; // One boss per attempt, never respawn it.
             float elapsedSeconds = combatRunController.ElapsedSeconds;
             // Bounded work: at most one spawn opportunity per species per frame.
             for (int i = 0; i < _entries.Count; i++)
@@ -163,6 +170,11 @@ namespace CursorHunter.Combat
                     "RunRequest or SpawnPlan is invalid.");
             }
 
+            _bossRun = request.Mode == RunMode.Boss;
+            _runRootPrefab = _bossRun && bossRootPrefab != null ? bossRootPrefab : monsterRootPrefab;
+            if (_bossRun && (spawnPlan.Entries.Count != 1 || spawnPlan.Entries[0].Snapshot.PackSize != 1 ||
+                spawnPlan.Entries[0].Snapshot.MonsterId != request.BossId))
+                return new SpawnStartResult(SpawnStartStatus.InvalidRequest, "Boss runs require exactly one matching boss.");
             if (!HasValidMonsterRootPrefab(out string rootError))
             {
                 return new SpawnStartResult(
@@ -197,6 +209,7 @@ namespace CursorHunter.Combat
                     "MonsterSpawner requires a CombatRunController.");
             }
 
+            ClearBossDeathVisual();
             _runId = request.RunId;
             globalAliveLimit = spawnPlan.GlobalAliveLimit;
             _entries = spawnPlan.Entries;
@@ -290,6 +303,14 @@ namespace CursorHunter.Combat
             }
             if (!TryValidatePlan(plan, enabledMonsterIds, out enabledSpecies, out error))
                 return false;
+            if (_bossRun && (plan.Entries.Count != 1 || plan.GlobalAliveLimit != 1 ||
+                plan.Entries[0].Snapshot.MonsterId != _entries[0].Snapshot.MonsterId ||
+                plan.Entries[0].Snapshot.PackSize != 1 || plan.Entries[0].Snapshot.AliveLimit != 1 ||
+                !enabledSpecies[0]))
+            {
+                error = "보스 전투는 현재 보스 한 마리를 유지해야 합니다.";
+                return false;
+            }
 
             candidateIndices = new Dictionary<string, int>(System.StringComparer.Ordinal);
             bounds = new Bounds[plan.Entries.Count];
@@ -372,13 +393,13 @@ namespace CursorHunter.Combat
         private bool HasValidMonsterRootPrefab(out string error)
         {
             error = string.Empty;
-            if (monsterRootPrefab == null)
+            if ((_runRootPrefab != null ? _runRootPrefab : monsterRootPrefab) == null)
             {
                 error = "MonsterSpawner requires the shared MonsterRoot prefab.";
                 return false;
             }
 
-            Transform root = monsterRootPrefab.transform;
+            Transform root = (_runRootPrefab != null ? _runRootPrefab : monsterRootPrefab).transform;
             Transform hitArea = root.Find("HitArea");
             Transform healthBarAnchor = root.Find("HealthBarAnchor");
             if (root.GetComponent<MonsterCombatTarget>() == null ||
@@ -398,9 +419,12 @@ namespace CursorHunter.Combat
             return true;
         }
 
-        public void StopRun()
+        public void StopRun() => StopRun(false);
+
+        public void StopRun(bool finishBossDeathAnimation)
         {
             _isSpawning = false;
+            ClearBossDeathVisual();
 
             for (int index = _spawnedTargets.Count - 1; index >= 0; index--)
             {
@@ -410,6 +434,11 @@ namespace CursorHunter.Combat
                     continue;
                 }
 
+                if (finishBossDeathAnimation && _bossRun && target.TryContinueDeathAfterRun(_runId))
+                {
+                    _bossDeathVisual = target;
+                    continue;
+                }
                 target.Unregister();
                 Destroy(target.gameObject);
             }
@@ -421,6 +450,14 @@ namespace CursorHunter.Combat
             _nextSpawnTimes = null;
             _enabledSpecies = null;
             _currentSpawnPlan = null;
+        }
+
+        private void ClearBossDeathVisual()
+        {
+            if (_bossDeathVisual == null) return;
+            _bossDeathVisual.Unregister();
+            Destroy(_bossDeathVisual.gameObject);
+            _bossDeathVisual = null;
         }
 
         private bool SpawnPack(out SpawnStartStatus failureStatus)
@@ -552,7 +589,7 @@ namespace CursorHunter.Combat
         {
             instance = null;
 
-            if (monsterRootPrefab == null || _spawnVisualPrefab == null)
+            if (_runRootPrefab == null || _spawnVisualPrefab == null)
             {
                 LogSpawnFailure(
                     "MonsterSpawner requires both the shared MonsterRoot and a species visual prefab.");
@@ -562,7 +599,7 @@ namespace CursorHunter.Combat
             try
             {
                 Transform cloneTransform = UnityEngine.Object.Instantiate(
-                    monsterRootPrefab.transform,
+                    _runRootPrefab.transform,
                     spawnPosition,
                     Quaternion.identity,
                     spawnedEnemyRoot);

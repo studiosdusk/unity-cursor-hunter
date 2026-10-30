@@ -50,7 +50,9 @@
 | ui.trait.node | Progression | 런타임 4면 선 + 평면 Image (`TraitScreenController.cs`) |
 | ui.trait.drag-cursor | Progression | [UI_Common_Hand_01.png](../../Assets/DownLoadAssets/IconPack/2D%20Minimal-IconPack/Icons/128/UI_Common_Hand_01.png) — 드래그 중 손 모양 커서 |
 | ui.trait.tabs | Progression | [TabMenu_Top_White.prefab](../../Assets/DownLoadAssets/GUI-CasualFantasy/Prefabs/Prefabs_Component_UI_Etc/TabMenu_Top_White.prefab) |
-| ui.boss.hp | Combat | [StatusBar_White.prefab](../../Assets/DownLoadAssets/GUI-CasualFantasy/Prefabs/Prefabs_Component_UI_Etc/StatusBar_White.prefab) |
+| ui.boss.hp | App | 사용자가 Main에 배치한 [BossSlider.prefab](../../Assets/DownLoadAssets/Casual_GUI/GUI%20Pro-SimpleCasual/Prefabs/BossSlider.prefab). `BossHealthPresenter`가 결과창 기준의 굵은 한글 제목·Rubik 숫자·전용 SDF 테두리를 적용한다. 바 배치와 공급사 원본은 유지하고 두 텍스트의 가로 영역만 런타임에서 확장한다. |
+| ui.font.numeric | Data | [Rubik-SemiBold SDF.asset](../../Assets/DownLoadAssets/Casual_GUI/GUI%20Pro-SimpleCasual/ResourcesData/Fonts/Rubik-SemiBold%20SDF.asset). 기존 결과창의 숫자 글꼴을 `TypographySettings.numericFont` 기본값으로 지정하고 BossSlider 체력 숫자에 사용한다. 한글 제목은 `sourceFont`/`localeFonts`와 Bold를 사용한다. |
+| boss.shared-root | Combat | [BossRoot.prefab](../../Assets/CursorHunter/Combat/Prefabs/Monsters/BossRoot.prefab). 공통 전투 판정·행동을 사용하고 BossDefinition의 외형을 합성. |
 | field.normal | Combat | [Map_3_Jungle Age.prefab](../../Assets/DownLoadAssets/Map/2D%20Maps%20-%20Age%20Battle%20Stages/Prefabs/Landscape/Map/Map_3_Jungle%20Age.prefab) |
 | field.boss | Combat | [Map_13_Medieval Age.prefab](../../Assets/DownLoadAssets/Map/2D%20Maps%20-%20Age%20Battle%20Stages/Prefabs/Landscape/Map/Map_13_Medieval%20Age.prefab) |
 | monster.shared-root | Combat | [MonsterRoot.prefab](../../Assets/CursorHunter/Combat/Prefabs/Monsters/MonsterRoot.prefab) |
@@ -148,3 +150,25 @@ PDF가 아닌 이 문서에 유지한다.
 | 눈요정 (monster.06) | 사파이어 |
 | 골렘 (monster.08) | 다이아몬드 |
 | 봉오리 (monster.09) | 드래곤 젬 |
+
+## 보스 6~20단계 전용 외형 (2026-10-30)
+
+일반 몬스터 10종의 원본 프리팹과 겹치지 않는 15종이다. 전용 Variant는 `Assets/CursorHunter/Combat/Prefabs/Monsters/BossVisuals`에 있으며 원본은 `Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/Prefabs` 아래에 있다. 특수 능력 없이 기본 이동과 피격·사망만 사용한다. 반복 사망 클립 13종은 `BossVisuals/Animations`의 프로젝트 소유 복사본과 Override Controller로 교체했다.
+
+| 단계 | 이름 | 전용 프리팹 | 원본 |
+|---|---|---|---|
+| 6 | 촛불정령 | `Boss06_Walker_Candle.prefab` | `Walker/Walker_Candle.prefab` |
+| 7 | 폭탄꽃 | `Boss07_Bud_Bomb.prefab` | `Bud/Bud_Bomb.prefab` |
+| 8 | 가시선인장 | `Boss08_Cactus_Green.prefab` | `Cactus/Cactus_Green.prefab` |
+| 9 | 일개미 | `Boss09_Ant_Worker.prefab` | `Ant/Ant_Worker.prefab` |
+| 10 | 사마귀 | `Boss10_Mantis_Green.prefab` | `Mantis/Mantis_Green.prefab` |
+| 11 | 식충꽃 | `Boss11_Plant_Nepenthes.prefab` | `Plant/Plant_Nepenthes.prefab` |
+| 12 | 왕눈파리 | `Boss12_Fly_Bigeye.prefab` | `Fly/Fly_Bigeye.prefab` |
+| 13 | 기계잠자리 | `Boss13_Dragonfly_Bot.prefab` | `Dragonfly/Dragonfly_Bot.prefab` |
+| 14 | 악마벌 | `Boss14_Bee_Devil.prefab` | `Bee/Bee_Devil.prefab` |
+| 15 | 맹독거미 | `Boss15_Spider_Venom.prefab` | `Spider/Spider_Venom.prefab` |
+| 16 | 돌전갈 | `Boss16_Scorpion_Stone.prefab` | `Scorpion/Scorpion_Stone.prefab` |
+| 17 | 나무골렘 | `Boss17_Golem_Tree.prefab` | `Golem/Golem_Tree.prefab` |
+| 18 | 해적유령 | `Boss18_Ghost_Pirate.prefab` | `Ghost/Ghost_Pirate.prefab` |
+| 19 | 해골전사 | `Boss19_Skeleton_Warrior.prefab` | `Skeleton/Skeleton_Warrior.prefab` |
+| 20 | 흡혈귀 | `Boss20_Alien_Vampire.prefab` | `Alien/Alien_Vampire.prefab` |

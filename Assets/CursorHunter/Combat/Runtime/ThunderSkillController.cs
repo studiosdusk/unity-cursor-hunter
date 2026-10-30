@@ -126,11 +126,15 @@ namespace CursorHunter.Combat
                     _active[i].SetVisualPaused(false);
             }
 
+            RunId runId = _runId;
             float now = _combat.ElapsedSeconds;
             for (int i = _active.Count - 1; i >= 0; i--)
             {
                 ThunderEffect effect = _active[i];
-                if (effect != null && effect.Tick(now)) continue;
+                bool alive = effect != null && effect.Tick(now);
+                // A hit can synchronously finish the run and clear this list.
+                if (!IsCurrentRun(runId)) return;
+                if (alive) continue;
                 _active.RemoveAt(i);
                 if (effect != null)
                 {

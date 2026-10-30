@@ -61,7 +61,9 @@ namespace CursorHunter.App
 
         public bool IsVisible => overlay != null && overlay.activeSelf;
         public bool IsReady => _phase == Phase.Ready;
-        private enum Phase { Hidden, TimeOut, Dismiss, Rewards, Buttons, Ready }
+        private bool IsBossPresentationRunning =>
+            collection != null && collection.IsFinishingCollection || huntManager != null && huntManager.IsBossDeathPlaying;
+        private enum Phase { Hidden, BossLoot, TimeOut, Dismiss, Rewards, Buttons, Ready }
         private Phase _phase;
         private float _clock;
         private RunId _runId;
@@ -118,10 +120,15 @@ namespace CursorHunter.App
             _phase = Phase.TimeOut;
             overlay.SetActive(true);
             timeOutPanel.SetActive(true);
-            timeOutTitle.text = result.EndReason == RunEndReason.TimeExpired ? "TIME OUT!" : "HUNT OVER";
-            title.text = "전투 종료";
+            bool boss = result.Mode == RunMode.Boss;
+            timeOutTitle.text = boss ? (result.BossDefeated ? "BOSS CLEAR!" : "BOSS FAILED") :
+                result.EndReason == RunEndReason.TimeExpired ? "TIME OUT!" : "HUNT OVER";
+            title.text = boss ? $"보스 {result.BossStage}단계 · " + (result.BossDefeated ? "토벌 성공" : "토벌 실패") : "전투 종료";
             subtitle.gameObject.SetActive(result.SettlementPolicy == RunSettlementPolicy.Discard);
-            subtitle.text = "테스트 전투 / 보상 지급 없음";
+            subtitle.text = boss && !result.BossDefeated ? "시간 안에 토벌하지 못했습니다. 강화 후 다시 도전하세요." : "테스트 전투 / 보상 지급 없음";
+            retryButton.GetComponentInChildren<TMP_Text>(true).text = boss && result.BossDefeated
+                ? result.BossStage < 20 ? "다음 단계 도전" : "일반 전투" : "다시 도전";
+            upgradeButton.GetComponentInChildren<TMP_Text>(true).text = "업그레이드";
             hint.text = "클릭하면 바로 보기";
             hint.gameObject.SetActive(true);
             _visibleRewardCount = 0;
@@ -144,6 +151,11 @@ namespace CursorHunter.App
             damage.text = result.EffectiveDamage.ToString("N0", CultureInfo.InvariantCulture);
             FitLayout();
             RenderTimeOut(0f);
+            if (result.BossDefeated && IsBossPresentationRunning)
+            {
+                _phase = Phase.BossLoot;
+                overlay.SetActive(false); // Keep both the death animation and the loot burst visible.
+            }
         }
 
         public void Hide()
@@ -176,6 +188,14 @@ namespace CursorHunter.App
             _clock += Time.unscaledDeltaTime;
             switch (_phase)
             {
+                case Phase.BossLoot:
+                    if (!IsBossPresentationRunning)
+                    {
+                        overlay.SetActive(true);
+                        Next(Phase.TimeOut);
+                        RenderTimeOut(0f);
+                    }
+                    break;
                 case Phase.TimeOut:
                     RenderTimeOut(_clock / Mathf.Max(0.05f, popupSeconds));
                     if (_clock >= popupSeconds + holdSeconds &&
@@ -264,7 +284,8 @@ namespace CursorHunter.App
             if (!IsReady || _navigating || huntManager == null) return;
             _navigating = true;
             actions.interactable = false;
-            huntManager.ReturnToMainMenu();
+            huntManager.OpenUpgrades();
+            if (IsVisible) RestoreActionsAfterRejectedNavigation();
         }
 
         private void Retry()
@@ -272,9 +293,17 @@ namespace CursorHunter.App
             if (!IsReady || _navigating || huntManager == null) return;
             _navigating = true;
             actions.interactable = false;
-            huntManager.ReplayLastRun();
+            huntManager.ContinueFromResult();
             // A rejected start keeps the result available instead of stranding the player.
-            if (IsVisible) { _navigating = false; actions.interactable = true; }
+            if (IsVisible) RestoreActionsAfterRejectedNavigation();
+        }
+
+        private void RestoreActionsAfterRejectedNavigation()
+        {
+            _navigating = false;
+            actions.interactable = true;
+            subtitle.gameObject.SetActive(true);
+            subtitle.text = "진행을 완료하지 못했습니다. 다시 눌러 재시도하세요.";
         }
 
         private void FitLayout()

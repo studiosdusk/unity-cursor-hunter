@@ -1,0 +1,13 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!221 &22100000
+AnimatorOverrideController:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Dragonfly_DeathOnce
+  m_Controller: {fileID: 9100000, guid: 9e109a9ad8f2a514db7061a54e206cce, type: 2}
+  m_Clips:
+  - m_OriginalClip: {fileID: 7400000, guid: 8a49fc31a9408304b869a664fad4f474, type: 2}
+    m_OverrideClip: {fileID: 7400000, guid: a2b75ab8d86334e22a19ff0c56747f5d, type: 2}

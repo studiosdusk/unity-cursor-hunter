@@ -33,6 +33,7 @@ namespace CursorHunter.Combat.Tests
             var combat = Object.FindFirstObjectByType<CombatRunController>();
             long sourceAttack = combat.PlayerCombatStatsRuntime.Defaults.AttackPower;
             CombatBalanceSettings settings = hunt.CaptureCombatBalanceSettings();
+            settings.UsePlayerProgression = false;
             settings.AttackPower = sourceAttack == 77L ? 78L : 77L;
             foreach (SkillBalanceSettings skill in settings.Skills) skill.Enabled = false;
             Assert.That(hunt.TrySetCombatBalanceSettings(settings, out string error), Is.True, error);
@@ -79,6 +80,7 @@ namespace CursorHunter.Combat.Tests
             var combat = Object.FindFirstObjectByType<CombatRunController>();
             Assert.That(hunt, Is.Not.Null);
             CombatBalanceSettings settings = hunt.CaptureCombatBalanceSettings();
+            settings.UsePlayerProgression = false;
             settings.AttackPower = 20L;
             settings.CriticalChancePercent = 0f;
             settings.DurationSeconds = 30f;

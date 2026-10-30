@@ -198,7 +198,7 @@ namespace CursorHunter.Contracts
         public float criticalDamageMultiplier = 2f;
         public int globalAliveLimit = 80;
         public int perMonsterAliveLimit = 80;
-        public float bossFieldDurationSeconds = 60f;
+        public float bossFieldDurationSeconds = 30f;
     }
 
     [Serializable]

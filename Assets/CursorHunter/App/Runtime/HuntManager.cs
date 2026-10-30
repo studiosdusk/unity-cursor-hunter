@@ -17,7 +17,7 @@ namespace CursorHunter.App
     [DisallowMultipleComponent]
     public sealed partial class HuntManager : MonoBehaviour
     {
-        public const float BossFieldDurationSeconds = 60f;
+        public const float BossFieldDurationSeconds = 30f;
 
         private const string PrototypeSlimeResourcePath =
             "MonsterDefinitions/SlimeDefinition";
@@ -156,7 +156,13 @@ namespace CursorHunter.App
         /// </summary>
         public void BeginStageRun(CombatStageDefinition stage)
         {
+            BeginRun(stage, null);
+        }
+
+        private void BeginRun(CombatStageDefinition stage, BossDefinition boss)
+        {
             ResolveReferences();
+            if (!TrySavePendingBossReward()) return;
             EnsureRunCoordinator();
             SubscribeToCoordinator();
 
@@ -179,9 +185,9 @@ namespace CursorHunter.App
                 combatRunController.PlayerCombatStatsRuntime;
             _runUsesTraitScreen = false;
 #if UNITY_EDITOR
-            if (_combatBalanceSettings != null && !connectTraitScreenToCombat)
+            if (_combatBalanceSettings != null)
             {
-                BeginBalanceRun();
+                BeginBalanceRun(boss);
                 return;
             }
 #endif
@@ -274,17 +280,23 @@ namespace CursorHunter.App
                 ? default
                 : RelicCombatModifiers.From(progressionSnapshot.Relics);
             float runDurationSeconds = GetRunDuration(
-                RunMode.NormalField,
+                boss == null ? RunMode.NormalField : RunMode.Boss,
                 progressionSnapshot,
                 durationSeconds,
                 relicModifiers);
             schemaVersion = Mathf.Max(1, schemaVersion);
             balanceVersion = Mathf.Max(1, balanceVersion);
 
-            if (!TryCreateSpawnPlan(
+            SpawnPlan spawnPlan;
+            if (boss != null)
+            {
+                spawnPlan = new SpawnPlan(new[] { new SpawnPlanEntry(
+                    boss.CreateSnapshot(), boss.VisualPrefab) }, 1);
+            }
+            else if (!TryCreateSpawnPlan(
                 progressionSnapshot,
                 stage,
-                out SpawnPlan spawnPlan,
+                out spawnPlan,
                 out SpawnStartResult spawnPlanStartResult))
             {
                 Debug.LogError(
@@ -298,10 +310,12 @@ namespace CursorHunter.App
                 RunId.Create(),
                 schemaVersion,
                 balanceVersion,
-                RunMode.NormalField,
-                string.Empty,
+                boss == null ? RunMode.NormalField : RunMode.Boss,
+                boss == null ? string.Empty : boss.BossId,
                 CreateRunSeed(),
-                runDurationSeconds);
+                runDurationSeconds,
+                boss == null ? 0 : boss.Stage,
+                boss == null ? null : boss.CreateClearRewards());
 
             string failureReason;
             bool started = connectTraitScreenToCombat
@@ -333,6 +347,9 @@ namespace CursorHunter.App
 
             _runUsesTraitScreen = connectTraitScreenToCombat;
             _lastStartedStage = stage;
+            _lastRunWasBoss = boss != null;
+            _lastBossStage = boss == null ? 0 : boss.Stage;
+            _lastBossSucceeded = false;
             // Keep the exact progression copy used by Combat available to
             // the Field HUD's read-only summary. The UI never re-reads live
             // trait dictionaries while a run is active.
@@ -359,6 +376,11 @@ namespace CursorHunter.App
             {
                 runHud.Initialize();
                 runHud.ShowRunning(combatRunController, monsterSpawner);
+            }
+            if (bossHealth != null)
+            {
+                if (boss != null) bossHealth.Show(combatRunController, monsterSpawner.BossTarget, boss);
+                else bossHealth.Hide();
             }
         }
 
@@ -391,8 +413,7 @@ namespace CursorHunter.App
         /// <summary>
         /// Resolves the duration at the App boundary. Normal fields use the
         /// captured run information, capped at 30 seconds. Trait duration
-        /// bonuses enter that information only when connected. Boss duration comes from JSON rules
-        /// (60 seconds by default); legacy callers keep the 60-second fallback.
+        /// bonuses enter that information only when connected. Each boss attempt lasts 30 seconds.
         /// </summary>
         public static float GetRunDuration(
             RunMode mode,
@@ -402,7 +423,7 @@ namespace CursorHunter.App
         {
             if (mode == RunMode.Boss)
             {
-                return progressionSnapshot == null ? BossFieldDurationSeconds : progressionSnapshot.BossFieldDurationSeconds;
+                return BossFieldDurationSeconds;
             }
 
             if (progressionSnapshot != null)
@@ -444,6 +465,7 @@ namespace CursorHunter.App
         /// </summary>
         public void ResetPrototypeRun()
         {
+            bossHealth?.Hide();
             if (_runCoordinator != null && _runCoordinator.IsActive)
             {
                 _runCoordinator.Abort(
@@ -494,7 +516,8 @@ namespace CursorHunter.App
         /// <summary>Reuses the last field selection with a fresh RunId and current progression snapshot.</summary>
         public void ReplayLastRun()
         {
-            BeginStageRun(_lastStartedStage);
+            if (_lastRunWasBoss) BeginBossStage(_lastBossStage);
+            else BeginStageRun(_lastStartedStage);
         }
 
         private void Update()
@@ -547,6 +570,13 @@ namespace CursorHunter.App
         private void HandleRunCompleted(RunResult result)
         {
             SettleRunRewards(result);
+            _lastBossSucceeded = result.BossDefeated;
+            if (result.BossDefeated
+#if UNITY_EDITOR
+                && !IsBalanceResult(result)
+#endif
+                ) _sessionHighestBossStage = Math.Max(_sessionHighestBossStage, result.BossStage);
+            bossHealth?.Hide();
 
             if (cursorController != null)
             {
@@ -565,6 +595,8 @@ namespace CursorHunter.App
         private void HandleRunAborted(RunResult result)
         {
             SettleRunRewards(result);
+            _lastBossSucceeded = false;
+            bossHealth?.Hide();
 
             if (cursorController != null)
             {
@@ -572,7 +604,8 @@ namespace CursorHunter.App
             }
 
             if (runHud != null &&
-                result.SettlementPolicy == RunSettlementPolicy.Eligible)
+                (result.SettlementPolicy == RunSettlementPolicy.Eligible ||
+                 result.Mode == RunMode.Boss && result.EndReason == RunEndReason.UserExit))
             {
                 runHud.ShowResult(result);
             }
@@ -589,19 +622,23 @@ namespace CursorHunter.App
 #endif
             if (result.SettlementPolicy != RunSettlementPolicy.Eligible ||
                 result.Rewards == null ||
-                result.Rewards.Count == 0 ||
+                (result.Rewards.Count == 0 && !result.BossDefeated) ||
                 progressionController == null ||
                 _settledRunIds.Contains(result.RunId))
             {
                 return;
             }
 
-            if (progressionController.GrantResourceRewards(result.Rewards))
+            if (result.BossDefeated
+                ? progressionController.GrantBossClear(result)
+                : progressionController.GrantResourceRewards(result.Rewards))
             {
                 _settledRunIds.Add(result.RunId);
+                if (result.BossDefeated) _pendingBossSettlement = default;
             }
             else
             {
+                if (result.BossDefeated) _pendingBossSettlement = result;
                 Debug.LogWarning(
                     $"Run '{result.RunId}' produced rewards, but progression settlement could not be saved.",
                     this);

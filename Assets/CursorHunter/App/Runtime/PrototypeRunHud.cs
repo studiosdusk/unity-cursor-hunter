@@ -174,7 +174,8 @@ namespace CursorHunter.App
             if (battleResult != null && (!_acceptResult || result.RunId != _activeRunId)) return;
             _acceptResult = false;
             _showingRun = false;
-            ShowRemainingTime(0f);
+            ShowRemainingTime(result.BossDefeated
+                ? Mathf.Max(0f, HuntManager.BossFieldDurationSeconds - result.ElapsedSeconds) : 0f);
             if ((battleResult == null && _resultPanel == null) || (_traitConnectionEnabled && _progressionInfoButton == null))
             {
                 Initialize();

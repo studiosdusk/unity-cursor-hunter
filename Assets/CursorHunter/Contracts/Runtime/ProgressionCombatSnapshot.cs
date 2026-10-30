@@ -321,7 +321,7 @@ namespace CursorHunter.Contracts
             string sourceJson = null,
             int globalAliveLimit = 80,
             int perMonsterAliveLimit = 80,
-            float bossFieldDurationSeconds = 60f,
+            float bossFieldDurationSeconds = 30f,
             CursorCombatStatBonusesSnapshot cursorStatBonuses = default,
             RelicCombatSnapshot[] relics = null,
             RelicDropRulesCombatSnapshot relicDropRules = default)

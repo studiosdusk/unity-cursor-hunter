@@ -47,6 +47,7 @@ namespace CursorHunter.Combat.Tests
             typeof(HuntManager).GetField("connectTraitScreenToCombat",
                 BindingFlags.Instance | BindingFlags.NonPublic).SetValue(_hunt, false);
             CombatBalanceSettings settings = _hunt.CaptureCombatBalanceSettings();
+            settings.UsePlayerProgression = false;
             settings.AttackPower = 1L;
             settings.CriticalChancePercent = 0f;
             settings.DurationSeconds = 30f;
@@ -129,6 +130,7 @@ namespace CursorHunter.Combat.Tests
             typeof(HuntManager).GetField("connectTraitScreenToCombat",
                 BindingFlags.Instance | BindingFlags.NonPublic).SetValue(_hunt, false);
             CombatBalanceSettings settings = _hunt.CaptureCombatBalanceSettings();
+            settings.UsePlayerProgression = false;
             settings.DurationSeconds = 15f;
             foreach (SkillBalanceSettings skill in settings.Skills) skill.Enabled = false;
             Assert.That(_hunt.TrySetCombatBalanceSettings(settings, out string error), Is.True, error);

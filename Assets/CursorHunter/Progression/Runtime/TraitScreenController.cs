@@ -590,6 +590,8 @@ namespace CursorHunter.Progression
             }
 
             EnsureGemstoneBalanceCapacity();
+            long previousGarnet = _garnetBalance;
+            long[] previousBalances = (long[])_gemstoneBalances.Clone();
             for (int i = 0; i < rewards.Count; i++)
             {
                 ResourceRewardSnapshot reward = rewards[i];
@@ -621,8 +623,49 @@ namespace CursorHunter.Progression
                     reward.Amount);
             }
 
+            bool saved = SaveProgressionState();
+            if (!saved)
+            {
+                _garnetBalance = previousGarnet;
+                _gemstoneBalances = previousBalances;
+            }
             RefreshAll();
-            return SaveProgressionState();
+            return saved;
+        }
+
+        private int _highestBossStageCleared;
+        private readonly HashSet<string> _settledBossRunIds = new HashSet<string>(StringComparer.Ordinal);
+        public int HighestBossStageCleared
+        {
+            get { EnsureProgressionState(); return _highestBossStageCleared; }
+        }
+
+        /// <summary>Resets only boss stage progress, preserving purchases, rewards, and paid receipts.</summary>
+        public bool TryResetBossProgress()
+        {
+            EnsureProgressionState();
+            int previousStage = _highestBossStageCleared;
+            _highestBossStageCleared = 0;
+            if (SaveProgressionState()) return true;
+            _highestBossStageCleared = previousStage;
+            return false;
+        }
+
+        /// <summary>Save rewards, stage progress, and the receipt together. A replayed result is a no-op.</summary>
+        public bool GrantBossClear(RunResult result)
+        {
+            EnsureProgressionState();
+            if (!result.BossDefeated || result.SettlementPolicy != RunSettlementPolicy.Eligible ||
+                !result.RunId.IsValid || result.BossStage < 1 || result.BossStage > 20 ||
+                result.BossStage > _highestBossStageCleared + 1) return false;
+            if (_settledBossRunIds.Contains(result.RunId.Value)) return true;
+            int previousStage = _highestBossStageCleared;
+            _highestBossStageCleared = Math.Max(previousStage, result.BossStage);
+            _settledBossRunIds.Add(result.RunId.Value);
+            if (GrantResourceRewards(result.Rewards)) return true;
+            _highestBossStageCleared = previousStage;
+            _settledBossRunIds.Remove(result.RunId.Value);
+            return false;
         }
 
 
@@ -752,6 +795,8 @@ namespace CursorHunter.Progression
 
         private void ResolveCatalog()
         {
+            _highestBossStageCleared = 0;
+            _settledBossRunIds.Clear();
             _document = GameDataDocument.Load();
             // Data-file language does not select the player's UI locale.
             startingGarnet = _document.information.gemstones[0].amount;
@@ -783,6 +828,9 @@ namespace CursorHunter.Progression
             }
 
             _garnetBalance = Math.Max(0L, data.garnetBalance);
+            _highestBossStageCleared = data.highestBossStageCleared;
+            _settledBossRunIds.Clear();
+            foreach (string id in data.settledBossRunIds) _settledBossRunIds.Add(id);
             EnsureGemstoneBalanceCapacity();
             if (data.gemstoneBalances != null)
             {
@@ -865,7 +913,9 @@ namespace CursorHunter.Progression
                 _gemstoneBalances,
                 _purchased,
                 _spentByNode,
-                _spentCurrencyByNode);
+                _spentCurrencyByNode,
+                _highestBossStageCleared,
+                _settledBossRunIds);
             if (!saved)
             {
                 Debug.LogWarning(

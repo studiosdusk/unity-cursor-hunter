@@ -72,6 +72,8 @@ namespace CursorHunter.Contracts
             SchemaVersion = request.SchemaVersion;
             BalanceVersion = request.BalanceVersion;
             Mode = request.Mode;
+            BossId = request.BossId;
+            BossStage = request.BossStage;
             EndReason = endReason;
             SettlementPolicy = settlementPolicy;
             ElapsedSeconds = elapsedSeconds;
@@ -87,6 +89,9 @@ namespace CursorHunter.Contracts
         public int SchemaVersion { get; }
         public int BalanceVersion { get; }
         public RunMode Mode { get; }
+        public string BossId { get; }
+        public int BossStage { get; }
+        public bool BossDefeated => Mode == RunMode.Boss && EndReason == RunEndReason.BossDefeated;
         public RunEndReason EndReason { get; }
         public RunSettlementPolicy SettlementPolicy { get; }
         public float ElapsedSeconds { get; }

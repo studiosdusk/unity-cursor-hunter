@@ -6,10 +6,12 @@ using UnityEngine;
 
 namespace CursorHunter.App
 {
-    /// <summary>Transient final values for the planner window, never player progression.</summary>
+    /// <summary>Transient enemy values and an optional manual player override; never saved as progression.</summary>
     [Serializable]
     public sealed class CombatBalanceSettings
     {
+        // Enemy edits must not replace purchased player stats or skill unlocks by default.
+        public bool UsePlayerProgression = true;
         public long AttackPower = 10;
         public float AttackRadiusWorldUnits = GameInformation.BaseAttackRadiusWorldUnits;
         public float AttackCooldownSeconds = 0.8f;
@@ -22,6 +24,7 @@ namespace CursorHunter.App
         public int PerMonsterAliveLimit = 80;
         public List<SkillBalanceSettings> Skills = new List<SkillBalanceSettings>();
         public List<MonsterBalanceSettings> Monsters = new List<MonsterBalanceSettings>();
+        public List<BossBalanceSettings> Bosses = new List<BossBalanceSettings>();
 
         public CombatBalanceSettings Clone() => JsonUtility.FromJson<CombatBalanceSettings>(
             JsonUtility.ToJson(this));

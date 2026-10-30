@@ -27,6 +27,8 @@ namespace CursorHunter.Progression
             public List<string> purchasedNodeIds = new List<string>();
             public List<int> spentCosts = new List<int>();
             public List<string> spentCurrencyIds = new List<string>();
+            public int highestBossStageCleared;
+            public List<string> settledBossRunIds = new List<string>();
         }
 
         public static bool TryLoad(out SaveData data)
@@ -58,6 +60,8 @@ namespace CursorHunter.Progression
                 loaded.spentCosts = loaded.spentCosts ?? new List<int>();
                 loaded.spentCurrencyIds = loaded.spentCurrencyIds ??
                     new List<string>();
+                loaded.highestBossStageCleared = Math.Max(0, Math.Min(20, loaded.highestBossStageCleared));
+                loaded.settledBossRunIds = loaded.settledBossRunIds ?? new List<string>();
                 data = loaded;
                 return true;
             }
@@ -73,7 +77,9 @@ namespace CursorHunter.Progression
             IReadOnlyList<long> gemstoneBalances,
             IEnumerable<string> purchasedNodeIds,
             IReadOnlyDictionary<string, int> spentCosts,
-            IReadOnlyDictionary<string, string> spentCurrencyIds)
+            IReadOnlyDictionary<string, string> spentCurrencyIds,
+            int highestBossStageCleared = 0,
+            IEnumerable<string> settledBossRunIds = null)
         {
             SaveData data = new SaveData
             {
@@ -82,7 +88,9 @@ namespace CursorHunter.Progression
                 gemstoneBalances = CopyBalances(gemstoneBalances),
                 purchasedNodeIds = CopyIds(purchasedNodeIds),
                 spentCosts = new List<int>(),
-                spentCurrencyIds = new List<string>()
+                spentCurrencyIds = new List<string>(),
+                highestBossStageCleared = Math.Max(0, Math.Min(20, highestBossStageCleared)),
+                settledBossRunIds = CopyIds(settledBossRunIds)
             };
             // Keep both lists aligned with purchasedNodeIds so the DTO can be
             // restored without serializing dictionaries or relying on their

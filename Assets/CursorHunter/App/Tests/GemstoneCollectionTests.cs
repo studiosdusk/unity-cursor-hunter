@@ -215,6 +215,34 @@ namespace CursorHunter.App.Tests
             Assert.That(_bindings[1].amountText.text, Is.EqualTo("9223372036854775807"));
             Assert.That((_controller.EmittedMedium,_controller.EmittedSmall), Is.EqualTo((1L,2L)));
         }
+        [TestCase(RunSettlementPolicy.Eligible)]
+        [TestCase(RunSettlementPolicy.Discard)]
+        public void BossBurstGroupsHugeRewardsIntoBoundedSimultaneousFlightsWithoutLosingLongPrecision(RunSettlementPolicy policy)
+        {
+            RunId id = _combat.CurrentRunId;
+            _combat.TryCompleteRun(RunEndReason.TimeExpired, RunSettlementPolicy.Eligible, out _);
+            var request = new RunRequest(id, 4, 1, RunMode.Boss, "boss.20", 1, 30, 20);
+            var result = new RunResult(request, RunEndReason.BossDefeated, policy,
+                12, 1, long.MaxValue, 1, new[] {
+                    new ResourceRewardSnapshot(Ids[0], long.MaxValue),
+                    new ResourceRewardSnapshot(Ids[1], 999999999999L),
+                    new ResourceRewardSnapshot(Ids[2], 123456),
+                    new ResourceRewardSnapshot(Ids[3], 98765),
+                    new ResourceRewardSnapshot(Ids[4], 4321),
+                    new ResourceRewardSnapshot(Ids[5], 789) });
+            _controller.CompleteRun(result);
+            Assert.That(_controller.ActiveCount, Is.EqualTo(16));
+            _controller.CompleteRun(result);
+            Assert.That(_controller.ActiveCount, Is.EqualTo(16), "Duplicate completion cannot launch another burst.");
+            Advance(3);
+            Assert.That(_controller.Shown(Ids[0]), Is.EqualTo(long.MaxValue));
+            Assert.That(_controller.Shown(Ids[1]), Is.EqualTo(999999999999L));
+            foreach (ResourceRewardSnapshot reward in result.Rewards)
+                Assert.That(_controller.Shown(reward.CurrencyId), Is.EqualTo(reward.Amount));
+            Assert.That(_controller.ActiveCount, Is.Zero);
+            Assert.That(_controller.IsFinishing, Is.False);
+        }
+
         private sealed class Target : ICombatTarget, IHitEffectAnchor
         {
             public Target(RunId run,long garnet,string bonus,long amount) { RunId=run;GarnetReward=garnet;BonusDropCurrencyId=bonus;BonusDropAmount=amount; }

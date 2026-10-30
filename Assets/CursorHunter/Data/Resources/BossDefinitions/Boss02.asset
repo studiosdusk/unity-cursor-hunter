@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 94bd0af1989b4737aa5b89f81544bb59, type: 3}
+  m_Name: Boss02
+  m_EditorClassIdentifier: CursorHunter.Data::CursorHunter.Data.BossDefinition
+  stage: 2
+  bossId: boss.02
+  displayName: 독버섯
+  visualPrefab: {fileID: 7181800864280875092, guid: 5199f7f24931ec249be66cc4e940a24d, type: 3}
+  maxHealth: 1088
+  moveSpeed: 1.5
+  visualScale: 2.0
+  hitArea: {x: 1.8, y: 2.1}
+  movementMode: 0
+  specialAbility: 0
+  abilityInterval: 4.0
+  abilityDuration: 1
+  abilityStrength: 0.5
+  clearRewards:
+  - currencyId: gem.garnet
+    amount: 1300
+  - currencyId: gem.topaz
+    amount: 455
+  - currencyId: gem.amethyst
+    amount: 195
