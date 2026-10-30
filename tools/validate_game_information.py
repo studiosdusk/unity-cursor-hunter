@@ -60,11 +60,47 @@ def main():
     check(all(finite_positive(v) and v >= .05 for v in data["attackCooldownSeconds"]), "Invalid cooldown")
     check(all(data["attackCooldownSeconds"][i] > data["attackCooldownSeconds"][i+1] for i in range(4)), "Cooldown upgrades must decrease")
     known_currencies = {"gem.garnet"}
-    death_variants = {
-        2: "Bat", 5: "Scorpion", 6: "Fairy", 7: "Spider",
-        8: "Golem", 9: "Bud", 10: "Skeleton",
-    }
+    override_controllers = {}
+    animation_clips = {}
+    for path in ROOT.rglob("*.overrideController"):
+        meta = Path(str(path) + ".meta")
+        if meta.exists():
+            match = re.search(r"^guid: ([0-9a-f]+)$", meta.read_text(), re.MULTILINE)
+            if match:
+                override_controllers[match[1]] = path
+    for path in ROOT.rglob("*.anim"):
+        meta = Path(str(path) + ".meta")
+        if meta.exists():
+            match = re.search(r"^guid: ([0-9a-f]+)$", meta.read_text(), re.MULTILINE)
+            if match:
+                animation_clips[match[1]] = path
     ids = set()
+    main_scene_path = BASE / "App/Scenes/Main.unity"
+    main_scene_text = main_scene_path.read_text()
+    icon_block = re.search(r"(?m)^  monsterIcons:\n((?:  - .*\n)+)", main_scene_text)
+    scene_monster_icon_guids = (
+        re.findall(r"guid: ([0-9a-f]{32})", icon_block[1]) if icon_block else []
+    )
+    check(len(scene_monster_icon_guids) == 10, "Main scene must map all ten monster icons")
+
+    def get_body_sprite_guid(prefab_path):
+        prefab_text = prefab_path.read_text()
+        documents = re.split(r"(?=^--- !u!)", prefab_text, flags=re.MULTILINE)
+        game_object_names = {}
+        for document in documents:
+            game_object = re.match(r"^--- !u!1 &(\d+)", document)
+            name = re.search(r"(?m)^  m_Name: (.+)$", document)
+            if game_object and name:
+                game_object_names[game_object[1]] = name[1]
+        for document in documents:
+            renderer = re.match(r"^--- !u!212 &", document)
+            game_object = re.search(r"(?m)^  m_GameObject: \{fileID: (\d+)\}", document)
+            sprite = re.search(r"(?m)^  m_Sprite: \{fileID: \d+, guid: ([0-9a-f]{32}), type: 3\}", document)
+            if (renderer and game_object and sprite and
+                    game_object_names.get(game_object[1], "").startswith("Body")):
+                return sprite[1]
+        return None
+
     for index, monster in enumerate(data["monsters"], 1):
         expected_id = f"monster.{index:02}"
         check(monster["id"] == expected_id and expected_id not in ids, "Monster ID/order mismatch")
@@ -85,25 +121,38 @@ def main():
                 check(source.exists(), f"Missing prefab path: {source}")
                 if source.exists():
                     source_guid = re.search(r"^guid: ([0-9a-f]+)$", Path(str(source) + ".meta").read_text(), re.MULTILINE)[1]
-                    if index in death_variants:
-                        species = death_variants[index]
-                        variant = BASE / "Combat/Prefabs/Monsters/Visuals" / (source.stem + "_Combat.prefab")
-                        controller = variant.with_name(species + "_DeathOnce.overrideController")
-                        clip = BASE / "Combat/Art/MonsterDeath" / species / "Dead.anim"
-                        for asset in (variant, controller, clip):
-                            check(asset.exists(), f"Missing death asset: {asset}")
-                        if all(asset.exists() for asset in (variant, controller, clip)):
-                            variant_guid = re.search(r"^guid: ([0-9a-f]+)$", Path(str(variant) + ".meta").read_text(), re.MULTILINE)[1]
-                            controller_guid = re.search(r"^guid: ([0-9a-f]+)$", Path(str(controller) + ".meta").read_text(), re.MULTILINE)[1]
-                            clip_guid = re.search(r"^guid: ([0-9a-f]+)$", Path(str(clip) + ".meta").read_text(), re.MULTILINE)[1]
-                            check(match[2] == variant_guid, f"Death variant GUID mismatch: {expected_id}")
-                            check(f"m_SourcePrefab: {{fileID: 100100000, guid: {source_guid}, type: 3}}" in variant.read_text(),
-                                  f"Death variant source mismatch: {expected_id}")
-                            check(f"objectReference: {{fileID: 22100000, guid: {controller_guid}, type: 2}}" in variant.read_text(),
-                                  f"Death controller missing from variant: {expected_id}")
-                            check(f"m_OverrideClip: {{fileID: 7400000, guid: {clip_guid}, type: 2}}" in controller.read_text(),
-                                  f"Nonlooping death clip missing from controller: {expected_id}")
-                            check("m_LoopTime: 0" in clip.read_text(), f"Death clip still loops: {expected_id}")
+                    if index <= len(scene_monster_icon_guids):
+                        sprite_dir = ROOT / "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites" / monster["prefabKey"]
+                        sprite = next((candidate for candidate in (sprite_dir / "Body.png", sprite_dir / "Body_Fire.png") if candidate.exists()), None)
+                        check(sprite is not None, f"Missing body icon source: {expected_id}")
+                        if sprite is not None:
+                            sprite_guid = re.search(r"^guid: ([0-9a-f]+)$", Path(str(sprite) + ".meta").read_text(), re.MULTILINE)[1]
+                            check(scene_monster_icon_guids[index - 1] == sprite_guid,
+                                  f"Trait icon does not match the combat monster body: {expected_id}")
+                            check(get_body_sprite_guid(source) == sprite_guid,
+                                  f"Combat prefab body does not match its selected icon source: {expected_id}")
+                    variant = BASE / "Combat/Prefabs/Monsters/Visuals" / (source.stem + "_Combat.prefab")
+                    if variant.exists():
+                        variant_guid = re.search(r"^guid: ([0-9a-f]+)$", Path(str(variant) + ".meta").read_text(), re.MULTILINE)[1]
+                        check(match[2] == variant_guid, f"Combat visual variant GUID mismatch: {expected_id}")
+                        variant_text = variant.read_text()
+                        check(f"m_SourcePrefab: {{fileID: 100100000, guid: {source_guid}, type: 3}}" in variant_text,
+                              f"Combat visual source mismatch: {expected_id}")
+                        controller_match = re.search(
+                            r"propertyPath: m_Controller[\s\S]*?objectReference: \{fileID: 22100000, guid: ([0-9a-f]+), type: 2\}",
+                            variant_text)
+                        if controller_match:
+                            controller = override_controllers.get(controller_match[1])
+                            check(controller is not None, f"Missing death override controller asset: {expected_id}")
+                            if controller is not None:
+                                clip_match = re.search(
+                                    r"m_OverrideClip: \{fileID: 7400000, guid: ([0-9a-f]+), type: 2\}",
+                                    controller.read_text())
+                                clip = animation_clips.get(clip_match[1]) if clip_match else None
+                                check(clip is not None, f"Death override clip is missing: {expected_id}")
+                                if clip is not None:
+                                    check("m_LoopTime: 0" in clip.read_text(),
+                                          f"Death override clip still loops: {expected_id}")
                     else:
                         check(match[2] == source_guid, f"Prefab GUID mismatch: {expected_id}")
                         check(f"--- !u!1 &{match[1]}\n" in source.read_text(), f"Prefab root fileID missing: {expected_id}")

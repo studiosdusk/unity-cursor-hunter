@@ -1060,7 +1060,6 @@
 - 공용 `TutorialPopupLayout`으로 메인 메뉴·특성 안내를 강조 대상 바로 위에 붙인다. 상단 공간이 부족하면 대상 좌측 상단에 배치한다. 메인 안내의 단계 라벨 음수 폭을 수정하고 공용 한글 폰트와 명시적 줄바꿈을 사용한다.
 - 격리 Unity 6000.3.13f1에서 컴파일과 Trait 입력/온보딩 PlayMode 3개가 통과했다. 최종 배치 검사는 1920×1080·1280×720·1280×960에서 메인 Trait·메인 Field·특성 시작점의 총 9개 화면을 다시 렌더링해 통과했다. 대상 위/좌측 상단 배치, 화면 경계, 대상과의 비겹침, 글자 잘림 없음, 회색 오버레이를 통한 대상 클릭 판정을 확인했다. 렌더 이미지를 직접 확인했으며 일반 hover·우클릭 입력 회귀도 통과했다.
 
-
 ### 2026-10-30 · App/Progression — 전체 Unity 통합 검증
 
 - 격리 프로젝트에서 신규 온보딩 → 첫 전투 → 가넷 정산 → 생산량 강화 → 다음 전투, 기존 저장 호환, 보스별 스킬 노출, 몬스터 특수 행동, 유물 20종 UI/전투 스냅샷을 검증했다. 실제 작업 폴더 편집기에서 최신 코드 Play와 Trait 클릭도 확인했다.
@@ -1068,3 +1067,51 @@
 - 시작점의 중복 CORE 표기와 TMP 줄바꿈 경고를 정리하고, 화면 컨트롤러 중단/재개에 맞춰 BGM을 정리했다. 기존 버튼 클릭·몬스터 피격음은 유지했다.
 - 오래된 데이터/마이그레이션/수동 스테이지 테스트를 갱신했다. 검증 수치·화면·범위·실행 환경은 [QA 기록](../qa/2026-10-30-playtest.md)을 참조한다.
 - Main의 실제 보스전 흐름과 처치 유물 드롭/소유 저장은 미구현이다. 완료된 기능과 구분해 plans.md/checkList.md에 미결 항목만 유지했다.
+
+### 2026-10-30 · Combat/App/Progression — 유물 처치 드롭과 영구 보유 저장
+
+- 기획된 고정 확률 규칙을 `CombatRunController`에 연결했다. 일반 필드 일반 몬스터 처치에서 해당 종의 미보유 유물 확률 합으로 먼저 드롭 여부를 굴리고, 성공하면 각 유물의 고정 확률 비중으로 하나만 고른다. 런에서 이미 획득한 유물은 다음 처치 후보에서 빠지며 남은 유물의 기본 개별 확률은 올라가지 않는다. 난수열을 전투 치명타/젬 보너스 판정과 분리했다.
+- 유물 ID를 불변 `RunResult.RelicAwards`에 복사한다. App은 기존 RunId 중복 정산 방지와 적격 런 정책을 유지하면서 화폐와 유물을 한 번의 Progression 저장 호출로 정산한다. 획득 상태는 다음 전투 스냅샷의 `owned`와 효과 계산에 반영한다.
+- PlayerPrefs 진행도 저장을 version 6으로 올리고 소유 ID 목록을 추가했다. v5 이하의 첫 v6 저장 직전에 원문을 `.before-v6` 키에 보존하며, 기존 잔액·구매·보스 단계 저장은 유지한다. 테스트 도구의 개별 유물 획득/회수도 같은 소유 목록에 저장된다.
+- 현재 성장 데이터는 22분류/103노드다. 89노드에 고정된 오래된 Editor/Python 계약 테스트와 현재 상태 문서 수치를 103으로 갱신했다. `validate_game_information.py`, `validate_bilingual_game_data.py`, `validate_collaboration.py`, `test_combat_information_v4.py`, `test_korean_game_data_reference.py`, `git diff --check`가 통과했다. Unity import·컴파일·실제 드롭/정산/재실행은 수행하지 않아 수동 회귀로 남긴다.
+
+### 2026-10-30 · App/Tests — 장기 가속 벤치마크 자동 실행 차단
+
+- 4배속 Main 샘플이 `[Explicit]` 없이 일반 PlayMode `Run All`에 포함될 수 있어, 두 장기 캠페인 측정 모두 명시 실행 전용으로 분리했다. 일반 런타임에는 시간 배속을 설정하지 않는다.
+- 저장 version 6으로 올린 뒤 장기 테스트가 `.before-v6`를 보존/복원하지 않던 구간을 보완했다. 테스트 setup/teardown은 프로필, `.before-v5`, `.before-v6` 키를 모두 동일하게 복원한다.
+- Unity Test Runner는 다시 실행하지 않았다. Unity에서 `Run All`이 장기 가속 사례를 제외하고 저장 키를 보존하는지 검수가 남아 있다.
+
+### 2026-10-30 · Progression — 상위 젬스톤 교환 가능 조건 정리
+
+- 재화 교환 버튼이 다음 등급 젬을 공급하는 몬스터가 해금된 경우에만 나타나거나 실행되던 조건을 제거했다. 보유 젬 100개로 정의된 바로 다음 등급 젬 1개를 만들 수 있으며, 젬 잔액이 생기면 해당 행이 표시된다. 교환만으로 몬스터나 연구의 해금 조건은 바뀌지 않는다.
+- `plans.md`와 `checkList.md`에 신규 저장 온보딩의 메인 Trait 진입 단계, 잠긴 등급 젬 교환 규칙, 비전투 BGM과 기존 클릭 효과음 유지 결정을 반영했다. `contracts.md`의 스킬 해금/강화 상태를 현재 데이터에 맞춰 갱신했다.
+- 게임 정보·한/영 데이터·협업 규칙 validator, 전투 계약 Python 테스트 8개, 한국어 데이터 Python 테스트 4개 및 `git diff --check`가 통과했다. Unity에서 방금 수정한 코드의 재컴파일과 전환/롱클릭 UI는 아직 확인되지 않았다.
+
+### 2026-10-30 · 통합 — Unity Roslyn 격리 컴파일
+
+- Unity Editor가 열려 있는 프로젝트의 Library/ScriptAssemblies는 작업 소스보다 오래된 것으로 확인했다. `dotnet`은 설치되어 있지 않아 Unity 6000.3.13f1에 포함된 Mono/Roslyn과 현 프로젝트의 Bee 응답 파일을 사용했다.
+- Contracts → Data/Combat → Progression → App → Editor/테스트 순서로 현재 C# 소스를 `/private/tmp`의 별도 출력 경로에 컴파일했다. 런타임·Editor·EditMode/PlayMode 테스트 어셈블리 11개가 모두 통과했다. 저장된 Unity Bee 산출물은 덮어쓰지 않았다.
+- 이 절차는 C# 의미 컴파일만 검증한다. AssetDatabase import, Unity 도메인 재로드, 테스트 실행, Play, 씬 시각/입력 및 청취 검증은 포함하지 않는다. 격리 출력물은 컴파일 확인 뒤 삭제했다.
+
+### 2026-10-30 · ui-v7-progress — 현재 몬스터/게임 데이터 정적 검증
+
+- `python3 tools/validate_game_information.py`와 `python3 tools/validate_bilingual_game_data.py`가 통과했다. 현재 10종 몬스터의 순서·프리팹 ID·Main 씬 아이콘·전투 본체 스프라이트 GUID, 화폐 도달성, 스킬/유물 계약과 한/영 데이터 참조를 확인했다.
+- `python3 tools/test_combat_information_v4.py` 8개와 `python3 tools/test_korean_game_data_reference.py` 4개가 통과했고 `git diff --check`도 통과했다.
+- 이 정적 검증은 Unity AssetDatabase 임포트, 씬에 실제 생성된 몬스터의 시각 확인이나 오디오 청취를 대체하지 않는다. 해당 회귀는 checkList.md에 남긴다.
+
+### 2026-10-30 · ui-v7-progress — 펫 피해 연구의 실제 효과 보장
+
+- PetSkillController 기본 피해 0.5는 정수 피해로 반올림되어 1이다. 기존 첫 피해 연구 +0.5를 구매해도 반올림 결과가 1로 유지되어 실제 전투 효과가 없는 것을 발견했다.
+- 1단계와 2단계 펫 피해 연구를 각각 +1로 조정했다. 기본값 기준으로 실제 전투 피해가 1→2→3이 되며, `SkillRuntimeStatTests`에 기본 피해와 첫 피해 연구 결과를 비교하는 회귀 테스트를 추가했다.
+- 보드 구매 경로와 몬스터 체력 감소는 Unity에서 아직 재검증하지 않았다.
+
+### 2026-10-30 · ui-v7-progress — 펫 성장 수정 후 현재 소스 컴파일
+
+- 이전 Unity Bee 참조 어셈블리는 현재 테스트 소스와 API가 달라 단독 테스트 컴파일이 실패했다. Bee 출력물은 수정하지 않고 Unity 6000.3.13f1 Roslyn에서 현재 소스 의존 모듈을 순서대로 별도 컴파일한 뒤 참조해 다시 확인했다.
+- Contracts, Data, Combat, Progression, App, 두 Editor, EditMode 테스트 및 PlayMode 테스트 등 11개 어셈블리가 모두 통과했다. 새 펫 피해 회귀 테스트도 포함해 컴파일했다. `validate_game_information.py`, `validate_bilingual_game_data.py`, 펫 피해 1→2→3 정수 반올림 확인 및 `git diff --check`도 통과했다.
+- Unity Test Runner/Play는 실행하지 않았다. `/private/tmp`에 만든 두 격리 컴파일 출력 디렉터리는 삭제했다.
+
+### 2026-10-30 · ui-v7-progress — 스킬 효과음 채널 분리
+
+- 몬스터 피격/처치음과 스킬 발동음이 공유하던 10개 오디오 음성 풀을 분리했다. 7종 스킬별 전용 AudioSource를 우선순위 16으로 예약하고, 몬스터 피격/처치음은 우선순위 128인 12개 별도 풀을 사용한다. 몬스터 사운드가 밀집해도 스킬 효과음 채널을 점유하지 않는다.
+- 이 변경과 펫 피해 회귀 테스트를 포함한 현재 소스 11개 Unity Roslyn 어셈블리 컴파일 및 `git diff --check`가 통과했다. Unity Test Runner/Play와 실제 청취는 하지 않았다. 임시 컴파일 출력은 삭제했다.

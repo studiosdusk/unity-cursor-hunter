@@ -10,21 +10,24 @@ namespace CursorHunter.Combat
     internal static class CombatAudioFeedback
     {
         private const int SampleRate = 22050;
-        private const int PoolSize = 10;
+        private const int SkillVoiceCount = 7;
+        private const int ImpactVoiceCount = 12;
         private const int MonsterCount = 10;
         private const int FirstMonsterHitCue = 9;
         private const int FirstMonsterDeathCue = FirstMonsterHitCue + MonsterCount;
-        private static readonly AudioSource[] Sources = new AudioSource[PoolSize];
+        private const int FirstSkillCue = 2;
+        private static readonly AudioSource[] SkillSources = new AudioSource[SkillVoiceCount];
+        private static readonly AudioSource[] ImpactSources = new AudioSource[ImpactVoiceCount];
         private static AudioClip[] _clips;
         private static GameObject _root;
-        private static int _sourceIndex;
+        private static int _impactSourceIndex;
 
         public static void PlayMonsterHit(string monsterId) =>
-            Play(FirstMonsterHitCue + GetMonsterIndex(monsterId),
+            PlayImpact(FirstMonsterHitCue + GetMonsterIndex(monsterId),
                 0.22f, GetMonsterPitch(monsterId));
 
         public static void PlayMonsterDeath(string monsterId) =>
-            Play(FirstMonsterDeathCue + GetMonsterIndex(monsterId),
+            PlayImpact(FirstMonsterDeathCue + GetMonsterIndex(monsterId),
                 0.31f, GetMonsterPitch(monsterId) * 0.9f);
 
         public static void PlaySkill(string skillId)
@@ -43,11 +46,38 @@ namespace CursorHunter.Combat
 
             if (cue >= 0)
             {
-                Play(cue, cue == 4 ? 0.32f : 0.22f, 1f);
+                PlaySkillCue(cue, cue == 4 ? 0.39f : 0.22f, 1f);
             }
         }
 
-        private static void Play(int cue, float volume, float pitch)
+        private static void PlaySkillCue(int cue, float volume, float pitch)
+        {
+            if (!Application.isPlaying)
+            {
+                return;
+            }
+
+            EnsureInitialized();
+            int skillIndex = cue - FirstSkillCue;
+            if (_clips == null || cue < FirstSkillCue || cue >= FirstSkillCue + SkillVoiceCount ||
+                skillIndex < 0 || skillIndex >= SkillSources.Length || _clips[cue] == null)
+            {
+                return;
+            }
+
+            // Reserve one voice per skill so monster hit/death bursts cannot
+            // consume the channels needed to hear an ability activate.
+            AudioSource source = SkillSources[skillIndex];
+            if (source == null || source.isPlaying)
+            {
+                return;
+            }
+
+            source.pitch = Mathf.Clamp(pitch, 0.72f, 1.28f);
+            source.PlayOneShot(_clips[cue], volume);
+        }
+
+        private static void PlayImpact(int cue, float volume, float pitch)
         {
             if (!Application.isPlaying)
             {
@@ -60,16 +90,16 @@ namespace CursorHunter.Combat
                 return;
             }
 
-            for (int attempt = 0; attempt < Sources.Length; attempt++)
+            for (int attempt = 0; attempt < ImpactSources.Length; attempt++)
             {
-                int index = (_sourceIndex + attempt) % Sources.Length;
-                AudioSource source = Sources[index];
+                int index = (_impactSourceIndex + attempt) % ImpactSources.Length;
+                AudioSource source = ImpactSources[index];
                 if (source == null || source.isPlaying)
                 {
                     continue;
                 }
 
-                _sourceIndex = (index + 1) % Sources.Length;
+                _impactSourceIndex = (index + 1) % ImpactSources.Length;
                 source.pitch = Mathf.Clamp(pitch, 0.72f, 1.28f);
                 source.PlayOneShot(_clips[cue], volume);
                 return;
@@ -82,13 +112,13 @@ namespace CursorHunter.Combat
             {
                 _root = new GameObject("CursorHunter_CombatAudio");
                 UnityEngine.Object.DontDestroyOnLoad(_root);
-                for (int i = 0; i < Sources.Length; i++)
+                for (int i = 0; i < SkillSources.Length; i++)
                 {
-                    AudioSource source = _root.AddComponent<AudioSource>();
-                    source.playOnAwake = false;
-                    source.spatialBlend = 0f;
-                    source.volume = 1f;
-                    Sources[i] = source;
+                    SkillSources[i] = CreateSource("Skill_" + i, 16);
+                }
+                for (int i = 0; i < ImpactSources.Length; i++)
+                {
+                    ImpactSources[i] = CreateSource("Impact_" + i, 128);
                 }
             }
 
@@ -100,6 +130,18 @@ namespace CursorHunter.Combat
                     _clips[cue] = CreateCue(cue);
                 }
             }
+        }
+
+        private static AudioSource CreateSource(string name, int priority)
+        {
+            var sourceObject = new GameObject(name);
+            sourceObject.transform.SetParent(_root.transform, false);
+            AudioSource source = sourceObject.AddComponent<AudioSource>();
+            source.playOnAwake = false;
+            source.spatialBlend = 0f;
+            source.volume = 1f;
+            source.priority = priority;
+            return source;
         }
 
         private static AudioClip CreateCue(int cue)
@@ -143,7 +185,7 @@ namespace CursorHunter.Combat
                 1 => 0.28f,
                 2 => 0.36f,
                 3 => 0.18f,
-                4 => 0.4f,
+                4 => 0.82f,
                 5 => 0.22f,
                 6 => 0.34f,
                 7 => 0.25f,
@@ -265,10 +307,17 @@ namespace CursorHunter.Combat
                 case 3: // Quick aimed shot and bright impact.
                     return (Mathf.Sin(2f * Mathf.PI * (360f - 180f * phase) * t) * 0.42f +
                             noise * 0.36f) * Mathf.Exp(-phase * 5f);
-                case 4: // Thunder crack with a low tail.
-                    return noise * Mathf.Exp(-phase * 10f) * 0.72f +
-                        Mathf.Sin(2f * Mathf.PI * (92f - 36f * phase) * t) *
-                        Mathf.Pow(1f - phase, 1.4f) * 0.48f;
+                case 4: // Sharp lightning crack over a longer, low thunder roll.
+                {
+                    float crack = noise * Mathf.Exp(-phase * 20f) * 0.72f;
+                    float body = Mathf.Sin(2f * Mathf.PI * (78f - 42f * phase) * t) *
+                        Mathf.Pow(1f - phase, 0.72f) * 0.52f;
+                    float rumble = Mathf.Sin(2f * Mathf.PI * (43f - 18f * phase) * t) *
+                        Mathf.Pow(1f - phase, 0.48f) * 0.32f;
+                    float mid = Mathf.Sin(2f * Mathf.PI * (164f - 96f * phase) * t) *
+                        Mathf.Pow(1f - phase, 1.1f) * 0.18f;
+                    return crack + body + rumble + mid;
+                }
                 case 5: // Brief flame whoosh.
                     return (noise * 0.55f + Mathf.Sin(2f * Mathf.PI * 190f * t) * 0.22f) *
                         Mathf.Sin(phase * Mathf.PI) * (0.45f + phase * 0.55f);

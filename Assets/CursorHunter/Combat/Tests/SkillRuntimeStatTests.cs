@@ -22,10 +22,10 @@ namespace CursorHunter.Combat.Tests
                     new SkillStatUpgrade("count", 2f),
                     new SkillStatUpgrade("cooldownSeconds", -2f),
                     new SkillStatUpgrade("damageMultiplier", 0.5f)
-                }), 10L, 16);
+                }), 16);
             Assert.That(tornado.Count, Is.EqualTo(3));
             Assert.That(tornado.CooldownSeconds, Is.EqualTo(6f));
-            Assert.That(tornado.Damage, Is.EqualTo(25L));
+            Assert.That(tornado.Damage, Is.EqualTo(3L));
             Assert.That(tornado.MoveSpeedWorldUnitsPerSecond, Is.EqualTo(4f));
 
             var headshotBase = new HeadshotBaseStat
@@ -39,9 +39,9 @@ namespace CursorHunter.Combat.Tests
                 {
                     new SkillStatUpgrade("splashDamageMultiplier", 1f),
                     new SkillStatUpgrade("bossDamageMultiplier", 2f)
-                }), 10L);
-            Assert.That(headshot.SplashDamage, Is.EqualTo(30L));
-            Assert.That(headshot.BossDamage, Is.EqualTo(120L));
+                }));
+            Assert.That(headshot.SplashDamage, Is.EqualTo(3L));
+            Assert.That(headshot.BossDamage, Is.EqualTo(36L));
 
             var thunderBase = new ThunderBaseStat
             {
@@ -54,9 +54,9 @@ namespace CursorHunter.Combat.Tests
                 {
                     new SkillStatUpgrade("cooldownSeconds", -0.5f),
                     new SkillStatUpgrade("damageMultiplier", 1f)
-                }), 10L);
+                }));
             Assert.That(thunder.CooldownSeconds, Is.EqualTo(1.5f));
-            Assert.That(thunder.Damage, Is.EqualTo(50L));
+            Assert.That(thunder.Damage, Is.EqualTo(5L));
 
             var flameBase = new FlameExhaustBaseStat
             {
@@ -69,9 +69,9 @@ namespace CursorHunter.Combat.Tests
                 new SkillCombatSnapshot("skill.flame_exhaust", true, new[]
                 {
                     new SkillStatUpgrade("cooldownSeconds", -0.5f)
-                }), 10L);
+                }));
             Assert.That(flame.CooldownSeconds, Is.EqualTo(1.5f));
-            Assert.That(flame.Damage, Is.EqualTo(15L));
+            Assert.That(flame.Damage, Is.EqualTo(2L));
             Assert.That(flame.ProjectileDurationSeconds, Is.EqualTo(1f));
         }
 
@@ -109,10 +109,10 @@ namespace CursorHunter.Combat.Tests
                     new SkillStatUpgrade("damageMultiplier", 0.5f)
                 });
             Assert.That(snapshot.IsValid, Is.True);
-            var runtime = new MagicBallRuntimeStat(basis, snapshot, 10L);
+            var runtime = new MagicBallRuntimeStat(basis, snapshot);
             Assert.That(runtime.MoveSpeedWorldUnitsPerSecond, Is.EqualTo(9f));
             Assert.That(runtime.SizeMultiplier, Is.EqualTo(1.25f));
-            Assert.That(runtime.Damage, Is.EqualTo(15L));
+            Assert.That(runtime.Damage, Is.EqualTo(2L));
             Assert.That(runtime.SameTargetHitCooldownSeconds, Is.EqualTo(0.5f));
             Assert.That(new SkillCombatSnapshot("skill.magic_ball", true,
                 new[] { new SkillStatUpgrade("cooldownSeconds", -1f) }).IsValid,
@@ -138,10 +138,10 @@ namespace CursorHunter.Combat.Tests
                     new SkillStatUpgrade("damageMultiplier", 0.5f)
                 });
             Assert.That(snapshot.IsValid, Is.True);
-            var runtime = new LaserRuntimeStat(basis, snapshot, 10L);
+            var runtime = new LaserRuntimeStat(basis, snapshot);
             Assert.That(runtime.CooldownSeconds, Is.EqualTo(4f));
             Assert.That(runtime.SizeMultiplier, Is.EqualTo(1.5f));
-            Assert.That(runtime.Damage, Is.EqualTo(25L));
+            Assert.That(runtime.Damage, Is.EqualTo(3L));
             Assert.That(new SkillCombatSnapshot("skill.laser", true,
                 new[] { new SkillStatUpgrade("effectDurationSeconds", 1f) }).IsValid,
                 Is.False);
@@ -168,8 +168,8 @@ namespace CursorHunter.Combat.Tests
                     new SkillStatUpgrade("attackRangeWorldUnits", 0.5f)
                 });
             Assert.That(snapshot.IsValid, Is.True);
-            var runtime = new PetRuntimeStat(basis, snapshot, 10L);
-            Assert.That(runtime.Damage, Is.EqualTo(8L));
+            var runtime = new PetRuntimeStat(basis, snapshot);
+            Assert.That(runtime.Damage, Is.EqualTo(1L));
             Assert.That(runtime.AttackIntervalSeconds, Is.EqualTo(0.9f).Within(0.001f));
             Assert.That(runtime.MoveSpeedWorldUnitsPerSecond, Is.EqualTo(6f));
             Assert.That(runtime.DetectionRadiusWorldUnits, Is.EqualTo(9f));
@@ -177,6 +177,27 @@ namespace CursorHunter.Combat.Tests
             Assert.That(new SkillCombatSnapshot(PetSkillController.SkillId,
                 true, new[] { new SkillStatUpgrade("cooldownSeconds", -0.1f) })
                 .IsValid, Is.False);
+        }
+
+        [Test]
+        public void PetDamageResearchIncreasesTheActualIntegerDamage()
+        {
+            var basis = new PetBaseStat
+            {
+                DamageMultiplier = 0.5f,
+                AttackIntervalSeconds = 1.2f,
+                MoveSpeedWorldUnitsPerSecond = 4f,
+                DetectionRadiusWorldUnits = 8f,
+                AttackRangeWorldUnits = 1.5f
+            };
+            var baseline = new PetRuntimeStat(basis,
+                new SkillCombatSnapshot(PetSkillController.SkillId, true));
+            var upgraded = new PetRuntimeStat(basis,
+                new SkillCombatSnapshot(PetSkillController.SkillId, true,
+                    new[] { new SkillStatUpgrade("damage", 1f) }));
+
+            Assert.That(baseline.Damage, Is.EqualTo(1L));
+            Assert.That(upgraded.Damage, Is.EqualTo(2L));
         }
     }
 }

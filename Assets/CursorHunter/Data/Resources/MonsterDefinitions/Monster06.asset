@@ -14,10 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: CursorHunter.Data::CursorHunter.Data.MonsterDefinition
   monsterId: monster.06
   displayName: 눈요정
-  prefabKey: Fairy/Fairy_Snow
-  visualPrefab: {fileID: 7769163388410658323, guid: 6b3d913f0654749b0a6e53692ec8044a, type: 3}
+  prefabKey: Cactus/Cactus_Snow
+  visualPrefab: {fileID: 1309635972893272894, guid: 8e35244d7f64461daee3c604a24c0b9c, type: 3}
   baseStats:
-    maxHealth: 90
+    maxHealth: 60
     spawnIntervalSeconds: 1.65
     packSize: 1
     moveSpeed: 0.45

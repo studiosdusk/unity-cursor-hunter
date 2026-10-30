@@ -25,7 +25,7 @@ namespace CursorHunter.Combat
         public void PlayCast(float volume)
         {
             _cast.Stop();
-            _cast.volume = Mathf.Clamp01(volume);
+            _cast.volume = Mathf.Clamp01(volume) * 0.32f;
             _cast.Play();
         }
 
@@ -34,10 +34,10 @@ namespace CursorHunter.Combat
             if (_paused || _wind == null) return;
             // Several tornadoes share a bounded bed instead of stacking full-volume loops.
             float target = activeCount > 0
-                ? Mathf.Clamp01(volume) * Mathf.Min(1.25f, 1f + (activeCount - 1) * 0.06f)
+                ? Mathf.Clamp01(volume) * 0.24f * Mathf.Min(1.12f, 1f + (activeCount - 1) * 0.04f)
                 : 0f;
             if (activeCount > 0 && !_wind.isPlaying) _wind.Play();
-            _wind.volume = Mathf.MoveTowards(_wind.volume, target, Mathf.Max(0f, deltaTime) * 1.25f);
+            _wind.volume = Mathf.MoveTowards(_wind.volume, target, Mathf.Max(0f, deltaTime) * 0.68f);
             if (activeCount == 0 && _wind.volume <= 0.001f) _wind.Stop();
         }
 

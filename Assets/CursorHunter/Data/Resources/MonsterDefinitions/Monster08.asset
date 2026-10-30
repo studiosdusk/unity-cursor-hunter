@@ -14,10 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: CursorHunter.Data::CursorHunter.Data.MonsterDefinition
   monsterId: monster.08
   displayName: 골렘
-  prefabKey: Golem/Golem_Iron
-  visualPrefab: {fileID: 1262332049845763274, guid: cbdaa21cc641e4c6284c48dbb9017356, type: 3}
+  prefabKey: Scorpion/Scorpion_Stone
+  visualPrefab: {fileID: 4541547858502866488, guid: dc35bdf8047c478787d9122e891c5893, type: 3}
   baseStats:
-    maxHealth: 150
+    maxHealth: 125
     spawnIntervalSeconds: 1.95
     packSize: 1
     moveSpeed: 0.45

@@ -194,7 +194,8 @@ namespace CursorHunter.Data
                     return node.operation == "add" &&
                         node.id.StartsWith(category.id + ".", StringComparison.Ordinal) &&
                         SkillStatUpgrade.IsAllowed(category.id, node.statId) &&
-                        (node.statId != "count" || node.value == Math.Floor(node.value));
+                        ((node.statId != "count" && node.statId != "simultaneousHits") ||
+                         node.value == Math.Floor(node.value));
                 case "monsters":
                     return (node.id == category.id && node.operation == "enable") ||
                         (node.id.StartsWith(category.id + ".production.", StringComparison.Ordinal) && node.operation == "set" &&

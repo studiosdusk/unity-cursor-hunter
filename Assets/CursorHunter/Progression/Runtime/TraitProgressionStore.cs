@@ -14,8 +14,8 @@ namespace CursorHunter.Progression
     public static class TraitProgressionStore
     {
         private const string SaveKey = "cursor_hunter.progression.v1";
-        private const int CurrentVersion = 5;
-        private const string LegacyBackupKey = SaveKey + ".before-v5";
+        private const int CurrentVersion = 6;
+        private const string LegacyBackupKey = SaveKey + ".before-v6";
         private const string StarterTutorialKey = SaveKey + ".starter-tutorial-complete";
         private const string StarterTutorialStartedKey = SaveKey + ".starter-tutorial-started";
 
@@ -56,6 +56,7 @@ namespace CursorHunter.Progression
             public long garnetBalance;
             public List<long> gemstoneBalances = new List<long>();
             public List<string> purchasedNodeIds = new List<string>();
+            public List<string> ownedRelicIds = new List<string>();
             public List<int> spentCosts = new List<int>();
             public List<string> spentCurrencyIds = new List<string>();
             public int unlockedBossTier;
@@ -87,6 +88,8 @@ namespace CursorHunter.Progression
                     new List<long>();
                 loaded.purchasedNodeIds = loaded.purchasedNodeIds ??
                     new List<string>();
+                loaded.ownedRelicIds = loaded.ownedRelicIds ??
+                    new List<string>();
                 loaded.spentCosts = loaded.spentCosts ?? new List<int>();
                 loaded.spentCurrencyIds = loaded.spentCurrencyIds ??
                     new List<string>();
@@ -106,7 +109,8 @@ namespace CursorHunter.Progression
             IEnumerable<string> purchasedNodeIds,
             IReadOnlyDictionary<string, int> spentCosts,
             IReadOnlyDictionary<string, string> spentCurrencyIds,
-            int unlockedBossTier = 0)
+            int unlockedBossTier = 0,
+            IEnumerable<string> ownedRelicIds = null)
         {
             SaveData data = new SaveData
             {
@@ -114,6 +118,7 @@ namespace CursorHunter.Progression
                 garnetBalance = Math.Max(0L, garnetBalance),
                 gemstoneBalances = CopyBalances(gemstoneBalances),
                 purchasedNodeIds = CopyIds(purchasedNodeIds),
+                ownedRelicIds = CopyIds(ownedRelicIds),
                 spentCosts = new List<int>(),
                 spentCurrencyIds = new List<string>(),
                 unlockedBossTier = Math.Max(0, Math.Min(5, unlockedBossTier))
@@ -143,7 +148,7 @@ namespace CursorHunter.Progression
                     return false;
                 }
 
-                // Preserve the exact old save (including retired data) before the first v5 write.
+                // Preserve the exact old save (including retired data) before the first v6 write.
                 // Unknown/corrupt versions must not be silently overwritten.
                 if (PlayerPrefs.HasKey(SaveKey))
                 {

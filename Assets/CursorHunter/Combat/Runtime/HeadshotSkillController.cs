@@ -83,8 +83,7 @@ namespace CursorHunter.Combat
             _runId = runId;
             _random = new SeededRandom(seed ^ 0x4845414453484F54UL);
             if (_balance != null) skill = default;
-            _runtime = new HeadshotRuntimeStat(BalanceBasis, skill,
-                combat.CombatSnapshot.AttackPower);
+            _runtime = new HeadshotRuntimeStat(BalanceBasis, skill);
             _hasCast = false;
             _nextCastAt = combat.ElapsedSeconds + _runtime.FirstCastDelaySeconds;
             _configured = true;
@@ -163,7 +162,7 @@ namespace CursorHunter.Combat
             next.Activate(this, _runId, target, now,
                 _runtime.ExplosionDelaySeconds,
                 _runtime.EffectDurationSeconds,
-                _combat.AreaSkillRadiusMultiplier);
+                _runtime.RadiusMultiplier * _combat.AreaSkillRadiusMultiplier);
             _active.Add(next);
             _nextCastAt = now + _combat.ResolveAutoSkillCooldown(
                 _runtime.CooldownSeconds);
@@ -276,8 +275,7 @@ namespace CursorHunter.Combat
 
             HeadshotRuntimeStat previous = _runtime;
             _balance = next;
-            _runtime = new HeadshotRuntimeStat(BalanceBasis, default,
-                combat.CombatSnapshot.AttackPower);
+            _runtime = new HeadshotRuntimeStat(BalanceBasis, default);
             float now = combat.ElapsedSeconds;
             _nextCastAt = SkillBalanceMath.Retime(_nextCastAt, now,
                 _hasCast ? previous.CooldownSeconds : previous.FirstCastDelaySeconds,

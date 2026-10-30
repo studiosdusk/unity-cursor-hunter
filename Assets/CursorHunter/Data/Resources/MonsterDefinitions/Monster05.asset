@@ -14,10 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: CursorHunter.Data::CursorHunter.Data.MonsterDefinition
   monsterId: monster.05
   displayName: 갑옷병사
-  prefabKey: Scorpion/Scorpion_Purple
-  visualPrefab: {fileID: 561586964182505770, guid: 7a8d59dbeae2e4c37b145007772eaac7, type: 3}
+  prefabKey: Golem/Golem_Iron
+  visualPrefab: {fileID: 1262332049845763274, guid: cbdaa21cc641e4c6284c48dbb9017356, type: 3}
   baseStats:
-    maxHealth: 72
+    maxHealth: 48
     spawnIntervalSeconds: 1.5
     packSize: 1
     moveSpeed: 0.45

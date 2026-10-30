@@ -122,7 +122,7 @@ namespace CursorHunter.Combat
             _random = new SeededRandom(seed ^ 0x70524E41444FUL);
             if (_balance != null) skill = default;
             _runtime = new TornadoRuntimeStat(BalanceBasis, skill,
-                combat.CombatSnapshot.AttackPower, maximumPooledObjects);
+                maximumPooledObjects);
             if (_runtime.Count < SkillStatMath.AddCount(BalanceBasis.Count,
                     skill, "count"))
                 Debug.LogWarning("Tornado count exceeds the pool limit; increase Maximum Pooled Objects.", this);
@@ -225,7 +225,7 @@ namespace CursorHunter.Combat
                     _runtime.StopChanceOnDirectionChange,
                     _runtime.StopDurationSeconds,
                     _runtime.ShrinkOutSeconds, _runtime.Damage,
-                    _combat.AreaSkillRadiusMultiplier);
+                    _runtime.RadiusMultiplier * _combat.AreaSkillRadiusMultiplier);
                 _active.Add(instance);
             }
         }
@@ -353,7 +353,7 @@ namespace CursorHunter.Combat
             TornadoRuntimeStat previous = _runtime;
             _balance = next;
             _runtime = new TornadoRuntimeStat(BalanceBasis, default,
-                combat.CombatSnapshot.AttackPower, maximumPooledObjects);
+                maximumPooledObjects);
             float now = combat.ElapsedSeconds;
             _nextCastAt = SkillBalanceMath.Retime(_nextCastAt, now,
                 _hasCast ? previous.CooldownSeconds : previous.FirstCastDelaySeconds,

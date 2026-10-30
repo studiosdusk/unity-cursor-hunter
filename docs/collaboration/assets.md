@@ -42,10 +42,11 @@
 App 화면 전환에서 자동 재생/페이드 정지한다. Combat 화면에서는 재생하지 않는다.
 
 원본 Assets/DownLoadAssets는 기본적으로 보존한다. 각 모듈 소유 폴더에 Variant 또는 시각 래퍼를 만든다. GUID는 원본 추적용이며 런타임 로더 구현이 아니다.
-2026-10-16 전투의 박쥐·전갈·눈요정·거미·골렘·봉오리·해골군주는
-`Combat/Art/MonsterDeath`의 반복하지 않는 Dead 클립을 사용한다. 각 종의
-`Combat/Prefabs/Monsters/Visuals` 프리팹 Variant가 Animator Override Controller로
-해당 클립만 교체하며, MonsterDefinition은 이 Variant를 참조한다.
+2026-10-30 전투 몬스터의 `MonsterDefinition.visualPrefab`과 특성 화면의
+`monsterIcons`는 같은 종의 아트 원본을 사용한다. 전투 시각 Variant가 있는 종은
+`Combat/Prefabs/Monsters/Visuals`에서 원본 프리팹을 감싼다. 일부 Variant는
+Dead 클립을 Override하고, 나머지는 원본 Animator를 사용한다.
+여왕벌은 Fly/Bat 계열에서 Bee_Honey로 수정해 이름과 외형을 일치시켰다.
 2026-10-05 사용자 요청에 따라 예외적으로 `EnemyMonster 2/Animations`의 17종 Animator Controller에 Walker와 같은 전이·파라미터를 직접 적용했다. 각 종의 클립, 컨트롤러 GUID, 50개 프리팹 연결은 유지한다.
 아래 링크의 에셋을 Unity에서 선택한 뒤 스프라이트 모드, pivot, 픽셀 크기, sorting, URP 머티리얼, emission/loop/stop을 점검한다.
 
