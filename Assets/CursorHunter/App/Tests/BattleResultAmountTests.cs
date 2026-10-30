@@ -55,7 +55,7 @@ namespace CursorHunter.App.Tests
                 awards);
 
             awards[0] = "relic.blue_potion";
-            Assert.That(result.RelicAwards, Has.Count.EqualTo(1));
+            Assert.That(result.RelicAwards.Count, Is.EqualTo(1));
             Assert.That(result.RelicAwards[0], Is.EqualTo("relic.red_potion"));
         }
     }

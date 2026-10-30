@@ -12685,6 +12685,7 @@ MonoBehaviour:
   checkIcon: {fileID: 21300000, guid: 67d74fe0bc2ff4f04bb9d4f9e1d63c02, type: 3}
   backIcon: {fileID: 21300000, guid: fda9564e96d404ec384b9e32872d049a, type: 3}
   backButtonSprite: {fileID: 21300000, guid: 50a77b18a26f24b29891dc0d7bcea91a, type: 3}
+  backButtonPrefab: {fileID: 5752868007636506729, guid: bb06557e467f04573afc67eeb98673da, type: 3}
   gemstoneExchangeIcon: {fileID: 21300000, guid: fef0df8ebb5b64808b21515b1915f55a, type: 3}
   attackIcon: {fileID: 21300000, guid: 12c58e25a645d4bf9808e3e5b47cd280, type: 3}
   radiusIcon: {fileID: 21300000, guid: 8725c96846cc04e13b9bd0282edb30dd, type: 3}
@@ -12727,83 +12728,103 @@ MonoBehaviour:
   - {fileID: 21300000, guid: e3db040c4cdb5234bbbea8c36b533fe2, type: 3}
   uiFont: {fileID: 12800000, guid: 76d037539f56c45a1ba293f2dff49672, type: 3}
   relicEntries:
-  - title: "\uBE68\uAC04 \uD3EC\uC158"
+  - id: relic.red_potion
+    title: "\uBE68\uAC04 \uD3EC\uC158"
     icon: {fileID: 21300000, guid: 202231647a7ed4f18933e1eafd9835fb, type: 3}
     description: 
     isObtained: 0
-  - title: "\uD30C\uB780 \uD3EC\uC158"
+  - id: relic.blue_potion
+    title: "\uD30C\uB780 \uD3EC\uC158"
     icon: {fileID: 21300000, guid: d3ad47b65a3144ea593c0c93a2641474, type: 3}
     description: 
     isObtained: 0
-  - title: "\uBAAC\uC2A4\uD130 \uACE0\uAE30"
+  - id: relic.monster_meat
+    title: "\uBAAC\uC2A4\uD130 \uACE0\uAE30"
     icon: {fileID: 21300000, guid: d2d8706278c414fb0b8ddf59d6470318, type: 3}
     description: 
     isObtained: 0
-  - title: "\uB3C4\uC801 \uC2E0\uBC1C"
+  - id: relic.thief_shoes
+    title: "\uB3C4\uC801 \uC2E0\uBC1C"
     icon: {fileID: 21300000, guid: 689aab790dfd640a78c6b3890daa0b71, type: 3}
     description: 
     isObtained: 0
-  - title: "\uAD81\uC218\uC758 \uD65C"
+  - id: relic.archers_bow
+    title: "\uAD81\uC218\uC758 \uD65C"
     icon: {fileID: 21300000, guid: 84e3504adeb474cd78690f0e7ce48a69, type: 3}
     description: 
     isObtained: 0
-  - title: "\uC804\uC0AC\uC758 \uAC11\uC637"
+  - id: relic.warrior_armor
+    title: "\uC804\uC0AC\uC758 \uAC11\uC637"
     icon: {fileID: 21300000, guid: db45e68c10e784423a0a4aa24c8ba033, type: 3}
     description: 
     isObtained: 0
-  - title: "\uB9C8\uBC95\uC0AC\uC758 \uBAA8\uC790"
+  - id: relic.wizards_hat
+    title: "\uB9C8\uBC95\uC0AC\uC758 \uBAA8\uC790"
     icon: {fileID: 21300000, guid: 38a8311eeb6114df7a9bd458e196e082, type: 3}
     description: 
     isObtained: 0
-  - title: "\uC6A9\uB9F9\uC758 \uBC18\uC9C0"
+  - id: relic.valor_ring
+    title: "\uC6A9\uB9F9\uC758 \uBC18\uC9C0"
     icon: {fileID: 21300000, guid: 310b8e87e0f624fa587ef446b1885df4, type: 3}
     description: 
     isObtained: 0
-  - title: "\uD589\uC6B4\uC758 \uC8FC\uC0AC\uC704"
+  - id: relic.lucky_dice
+    title: "\uD589\uC6B4\uC758 \uC8FC\uC0AC\uC704"
     icon: {fileID: 21300000, guid: f3974630efb91453bb0b049b3bd8bc6f, type: 3}
     description: 
     isObtained: 0
-  - title: "\uD06C\uB77C\uCF04\uC758 \uB208"
+  - id: relic.kraken_eye
+    title: "\uD06C\uB77C\uCF04\uC758 \uB208"
     icon: {fileID: 21300000, guid: e8a913573801943d2b2ff4b562c83f92, type: 3}
     description: 
     isObtained: 0
-  - title: "\uB124\uC78E\uD074\uB85C\uBC84"
+  - id: relic.four_leaf_clover
+    title: "\uB124\uC78E\uD074\uB85C\uBC84"
     icon: {fileID: 21300000, guid: 27109c2994c094997b78d1cebc5b277a, type: 3}
     description: 
     isObtained: 0
-  - title: "\uACE0\uB300\uC758 \uC11C"
+  - id: relic.ancient_book
+    title: "\uACE0\uB300\uC758 \uC11C"
     icon: {fileID: 21300000, guid: 562186b060ba241378d482c1154a84e7, type: 3}
     description: 
     isObtained: 0
-  - title: "\uBAA8\uD5D8\uAC00\uC758 \uAC00\uBC29"
+  - id: relic.adventurers_bag
+    title: "\uBAA8\uD5D8\uAC00\uC758 \uAC00\uBC29"
     icon: {fileID: 21300000, guid: 88d80ec7bf9ed49e18c3e3612ffcbcd1, type: 3}
     description: 
     isObtained: 0
-  - title: "\uB098\uCE68\uBC18"
+  - id: relic.compass
+    title: "\uB098\uCE68\uBC18"
     icon: {fileID: 21300000, guid: af47147931c3147a6b130388045bcc5a, type: 3}
     description: 
     isObtained: 0
-  - title: "\uD655\uC131\uAE30"
+  - id: relic.megaphone
+    title: "\uD655\uC131\uAE30"
     icon: {fileID: 21300000, guid: 5fb5c6b85663f44e2abe89863eb73bd6, type: 3}
     description: 
     isObtained: 0
-  - title: "\uB9DD\uC6D0\uACBD"
+  - id: relic.telescope
+    title: "\uB9DD\uC6D0\uACBD"
     icon: {fileID: 21300000, guid: ae1ab6a3c2fd44399a945a071c1d0e8f, type: 3}
     description: 
     isObtained: 0
-  - title: "\uC9F1\uB3CC"
+  - id: relic.stone
+    title: "\uC9F1\uB3CC"
     icon: {fileID: 21300000, guid: f65cb867da27e48cda237c149b44b8b6, type: 3}
     description: 
     isObtained: 0
-  - title: "\uBB34\uC9C0\uAC1C \uAE43\uD138"
+  - id: relic.rainbow_feather
+    title: "\uBB34\uC9C0\uAC1C \uAE43\uD138"
     icon: {fileID: 21300000, guid: 894abf050c0dc41b6bab39641a001dff, type: 3}
     description: 
     isObtained: 0
-  - title: "\uC2EC\uD310\uC758 \uC800\uC6B8"
+  - id: relic.scales_of_judgment
+    title: "\uC2EC\uD310\uC758 \uC800\uC6B8"
     icon: {fileID: 21300000, guid: 0f7806085e32347f39a2f408199654df, type: 3}
     description: 
     isObtained: 0
-  - title: "\uBCF4\uBB3C\uC0C1\uC790"
+  - id: relic.treasure_chest
+    title: "\uBCF4\uBB3C\uC0C1\uC790"
     icon: {fileID: 21300000, guid: 63b367dbaca5c43d6bd8977f915e4b8c, type: 3}
     description: 
     isObtained: 0

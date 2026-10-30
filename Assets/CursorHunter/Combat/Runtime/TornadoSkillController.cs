@@ -41,6 +41,7 @@ namespace CursorHunter.Combat
             Count = 1,
             DurationSeconds = 5f,
             DamageMultiplier = 2f,
+            RadiusMultiplier = 1f,
             CooldownSeconds = 8f,
             FirstCastDelaySeconds = 1f,
             HitIntervalSeconds = 0.5f,

@@ -64,6 +64,10 @@ namespace CursorHunter.App
 
 #if UNITY_EDITOR
         private void OnApplicationPause(bool paused) => _editorApplicationPaused = paused;
+
+        private static bool IsEditorPlaytimePaused(
+            bool applicationPaused, bool applicationFocused, float timeScale, bool combatPaused) =>
+            applicationPaused || !applicationFocused || timeScale <= 0.001f || combatPaused;
 #endif
 
         private void Update()
@@ -153,8 +157,11 @@ namespace CursorHunter.App
                 _editorStageElapsed = 0d;
             }
 
-            bool paused = _editorApplicationPaused || !Application.isFocused ||
-                Time.timeScale <= 0.001f || (_observedCombat != null && _observedCombat.IsPaused);
+            bool paused = IsEditorPlaytimePaused(
+                _editorApplicationPaused,
+                Application.isFocused,
+                Time.timeScale,
+                _observedCombat != null && _observedCombat.IsPaused);
             if (!paused)
             {
                 double delta = Math.Max(0d, Time.unscaledDeltaTime);
