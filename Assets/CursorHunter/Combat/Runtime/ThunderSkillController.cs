@@ -42,6 +42,8 @@ namespace CursorHunter.Combat
 
         private readonly List<MonsterCombatTarget> _eligibleTargets =
             new List<MonsterCombatTarget>(80);
+        private readonly HashSet<MonsterCombatTarget> _uniqueSplashTargets =
+            new HashSet<MonsterCombatTarget>();
         private readonly List<ThunderEffect> _active = new List<ThunderEffect>(2);
         private readonly Stack<ThunderEffect> _free = new Stack<ThunderEffect>(2);
 
@@ -78,8 +80,7 @@ namespace CursorHunter.Combat
             _runId = runId;
             _random = new SeededRandom(seed ^ 0x5448554E444552UL);
             if (_balance != null) skill = default;
-            _runtime = new ThunderRuntimeStat(BalanceBasis, skill,
-                combat.CombatSnapshot.AttackPower);
+            _runtime = new ThunderRuntimeStat(BalanceBasis, skill);
             _hasCast = false;
             _nextCastAt = combat.ElapsedSeconds + _runtime.FirstCastDelaySeconds;
             _configured = true;
@@ -177,6 +178,27 @@ namespace CursorHunter.Combat
                 return;
 
             _combat.TryApplySkillDamage(runId, target, _runtime.Damage);
+            if (_runtime.RadiusWorldUnits <= 0f || !IsCurrentRun(runId)) return;
+
+            Vector2 center = target.transform.position;
+            float radiusSquared = _runtime.RadiusWorldUnits * _runtime.RadiusWorldUnits;
+            MonsterCombatTarget.CollectActiveForRun(_runId, _eligibleTargets);
+            _uniqueSplashTargets.Clear();
+            for (int index = 0; index < _eligibleTargets.Count; index++)
+            {
+                MonsterCombatTarget candidate = _eligibleTargets[index];
+                if (candidate == null || candidate == target || !candidate.IsVulnerable)
+                    continue;
+                Vector2 hitPoint = candidate.GetClosestHitPoint(center);
+                if ((hitPoint - center).sqrMagnitude <= radiusSquared)
+                    _uniqueSplashTargets.Add(candidate);
+            }
+
+            foreach (MonsterCombatTarget candidate in _uniqueSplashTargets)
+            {
+                if (!IsCurrentRun(runId)) break;
+                _combat.TryApplySkillDamage(runId, candidate, _runtime.Damage);
+            }
         }
 
         private ThunderBaseStat BalanceBasis => _balance == null ? baseStat :
@@ -238,8 +260,7 @@ namespace CursorHunter.Combat
 
             ThunderRuntimeStat previous = _runtime;
             _balance = next;
-            _runtime = new ThunderRuntimeStat(BalanceBasis, default,
-                combat.CombatSnapshot.AttackPower);
+            _runtime = new ThunderRuntimeStat(BalanceBasis, default);
             float now = combat.ElapsedSeconds;
             _nextCastAt = SkillBalanceMath.Retime(_nextCastAt, now,
                 _hasCast ? previous.CooldownSeconds : previous.FirstCastDelaySeconds,

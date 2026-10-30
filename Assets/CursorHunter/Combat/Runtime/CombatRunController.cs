@@ -33,6 +33,9 @@ namespace CursorHunter.Combat
             new Dictionary<string, long>(StringComparer.Ordinal);
         private readonly Dictionary<string, double> _fractionalRewardRemainders =
             new Dictionary<string, double>(StringComparer.Ordinal);
+        private readonly List<string> _relicAwards = new List<string>(20);
+        private readonly HashSet<string> _relicAwardIds =
+            new HashSet<string>(StringComparer.Ordinal);
 
         private RunRequest _runRequest;
         private readonly List<IRunSkillController> _skillControllers =
@@ -45,6 +48,7 @@ namespace CursorHunter.Combat
         private RelicDropRulesCombatSnapshot _relicDropRules;
         private RelicCombatModifiers _relicModifiers;
         private SeededRandom _random;
+        private SeededRandom _relicRandom;
         private float _elapsedSeconds;
         private float _durationSeconds;
         private Vector2 _previousAttackCenter;
@@ -229,6 +233,7 @@ namespace CursorHunter.Combat
             _durationSeconds = request.DurationSeconds;
             StopAllSkills();
             _random = new SeededRandom(request.Seed ^ 0xC17C17UL);
+            _relicRandom = new SeededRandom(request.Seed ^ 0xA71FAC73UL);
             _elapsedSeconds = 0f;
             _lastBasicHitAt.Clear();
             ResetAttackPath();
@@ -237,6 +242,8 @@ namespace CursorHunter.Combat
             _effectiveDamage = 0;
             _resourceRewards.Clear();
             _fractionalRewardRemainders.Clear();
+            _relicAwards.Clear();
+            _relicAwardIds.Clear();
             _relicSnapshots = Array.Empty<RelicCombatSnapshot>();
             _relicSnapshotView = Array.AsReadOnly(_relicSnapshots);
             _relicDropRules = default;
@@ -640,12 +647,18 @@ namespace CursorHunter.Combat
 
             var copied = new RelicCombatSnapshot[count];
             var seenIds = new HashSet<string>(StringComparer.Ordinal);
+            var chanceTotals = new Dictionary<string, float>(StringComparer.Ordinal);
             for (int i = 0; i < count; i++)
             {
                 RelicCombatSnapshot relic = relics[i];
                 if (!relic.IsValid || !seenIds.Add(relic.RelicId))
                     return false;
                 copied[i] = relic;
+                chanceTotals.TryGetValue(relic.SourceMonsterId, out float currentChance);
+                float nextChance = currentChance + relic.DropChancePercent;
+                if (nextChance > 100f)
+                    return false;
+                chanceTotals[relic.SourceMonsterId] = nextChance;
             }
 
             _relicSnapshots = copied;
@@ -804,7 +817,8 @@ namespace CursorHunter.Combat
                 _defeatedCount,
                 _garnetEarned,
                 _effectiveDamage,
-                CreateResourceRewards());
+                CreateResourceRewards(),
+                _relicAwards);
         }
 
         private bool ApplyBundle(ICombatTarget target, long skillDamage = 0L,
@@ -955,10 +969,19 @@ namespace CursorHunter.Combat
                 return true;
             }
 
+            string relicAwardId = normalMonsterKill && target is MonsterCombatTarget
+                ? RollRelicDrop(((MonsterCombatTarget)target).MonsterId)
+                : null;
+
             _defeatedCount++;
             _garnetEarned = nextGarnetEarned;
             TryRecordReward("gem.garnet", garnetReward);
             TryRecordReward(bonusId, bonusAmount);
+            if (!string.IsNullOrEmpty(relicAwardId))
+            {
+                _relicAwardIds.Add(relicAwardId);
+                _relicAwards.Add(relicAwardId);
+            }
             if (garnetReward > 0L || bonusAmount > 0L)
             {
                 try
@@ -974,6 +997,54 @@ namespace CursorHunter.Combat
                 }
             }
             return true;
+        }
+
+        private string RollRelicDrop(string sourceMonsterId)
+        {
+            if (string.IsNullOrEmpty(sourceMonsterId) || _relicRandom == null ||
+                !_relicDropRules.IsValid || _relicDropRules.MaxPerKill != 1 ||
+                _relicDropRules.CandidatePolicy != "unownedOnly" ||
+                _relicDropRules.Resolution != "sumFixedChanceThenWeightedPick")
+            {
+                return null;
+            }
+
+            float totalChance = 0f;
+            for (int i = 0; i < _relicSnapshots.Length; i++)
+            {
+                RelicCombatSnapshot relic = _relicSnapshots[i];
+                if (relic.Owned || _relicAwardIds.Contains(relic.RelicId) ||
+                    relic.SourceMonsterId != sourceMonsterId)
+                {
+                    continue;
+                }
+
+                totalChance += relic.DropChancePercent;
+            }
+
+            if (totalChance <= 0f || _relicRandom.NextFloat(0f, 100f) >= totalChance)
+                return null;
+
+            float selection = _relicRandom.NextFloat(0f, totalChance);
+            float cumulativeChance = 0f;
+            string lastCandidateId = null;
+            for (int i = 0; i < _relicSnapshots.Length; i++)
+            {
+                RelicCombatSnapshot relic = _relicSnapshots[i];
+                if (relic.Owned || _relicAwardIds.Contains(relic.RelicId) ||
+                    relic.SourceMonsterId != sourceMonsterId)
+                {
+                    continue;
+                }
+
+                cumulativeChance += relic.DropChancePercent;
+                lastCandidateId = relic.RelicId;
+                if (selection < cumulativeChance)
+                    return relic.RelicId;
+            }
+
+            // Protect against floating-point rounding at the upper boundary.
+            return lastCandidateId;
         }
 
         private bool RollCriticalHit()

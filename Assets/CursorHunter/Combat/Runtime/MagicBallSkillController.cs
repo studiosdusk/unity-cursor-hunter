@@ -109,8 +109,7 @@ namespace CursorHunter.Combat
             _runId = runId;
             _random = new SeededRandom(seed ^ 0x4D4147494342414CUL);
             if (_balance != null) skill = default;
-            _runtime = new MagicBallRuntimeStat(BalanceBasis, skill,
-                combat.CombatSnapshot.AttackPower);
+            _runtime = new MagicBallRuntimeStat(BalanceBasis, skill);
             _castAt = combat.ElapsedSeconds + _runtime.FirstCastDelaySeconds;
             _enemyFilter = new ContactFilter2D
             {
@@ -255,8 +254,7 @@ namespace CursorHunter.Combat
 
             MagicBallRuntimeStat previous = _runtime;
             _balance = next;
-            _runtime = new MagicBallRuntimeStat(BalanceBasis, default,
-                combat.CombatSnapshot.AttackPower);
+            _runtime = new MagicBallRuntimeStat(BalanceBasis, default);
             float now = combat.ElapsedSeconds;
             if (!BallIsActive)
                 _castAt = SkillBalanceMath.Retime(_castAt, now,

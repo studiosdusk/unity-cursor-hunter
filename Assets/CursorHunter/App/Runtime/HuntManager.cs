@@ -633,15 +633,16 @@ namespace CursorHunter.App
             if (IsBalanceResult(result)) return;
 #endif
             if (result.SettlementPolicy != RunSettlementPolicy.Eligible ||
-                result.Rewards == null ||
-                result.Rewards.Count == 0 ||
+                ((result.Rewards == null || result.Rewards.Count == 0) &&
+                 (result.RelicAwards == null || result.RelicAwards.Count == 0)) ||
                 progressionController == null ||
                 _settledRunIds.Contains(result.RunId))
             {
                 return;
             }
 
-            if (progressionController.GrantResourceRewards(result.Rewards))
+            if (progressionController.GrantRunRewards(
+                    result.Rewards, result.RelicAwards))
             {
                 _settledRunIds.Add(result.RunId);
             }

@@ -41,6 +41,7 @@ namespace CursorHunter.Combat
         [Header("Base balance")]
         [SerializeField] private PetBaseStat baseStat = new PetBaseStat
         {
+            SimultaneousHits = 1,
             DamageMultiplier = 0.5f,
             AttackIntervalSeconds = 1.2f,
             MoveSpeedWorldUnitsPerSecond = 4f,
@@ -57,6 +58,8 @@ namespace CursorHunter.Combat
 
         private readonly List<MonsterCombatTarget> _eligibleTargets =
             new List<MonsterCombatTarget>(80);
+        private readonly List<MonsterCombatTarget> _attackTargets =
+            new List<MonsterCombatTarget>(8);
         private readonly List<ImpactEffect> _activeEffects =
             new List<ImpactEffect>(4);
         private readonly Stack<ImpactEffect> _freeEffects =
@@ -128,7 +131,6 @@ namespace CursorHunter.Combat
             _runId = runId;
             if (_balance != null) skill = default;
             _runtime = new PetRuntimeStat(BalanceBasis, skill,
-                combat.CombatSnapshot.AttackPower,
                 combat.RelicModifiers);
             _animation = petRoot.GetComponent<SkeletonAnimation>();
             ConfigureVisualSorting();
@@ -372,8 +374,42 @@ namespace CursorHunter.Combat
 
             Vector3 effectPosition = _target.TryGetHitEffectBounds(out Bounds bounds)
                 ? bounds.center : (Vector3)nearestPoint;
-            if (_combat.TryApplyPetDamage(_runId, _target, _runtime.Damage))
-                PlayImpactEffect(effectPosition, now);
+            _attackTargets.Clear();
+            _attackTargets.Add(_target);
+            MonsterCombatTarget.CollectActiveForRun(_runId, _eligibleTargets);
+            float rangeSquared = _runtime.AttackRangeWorldUnits *
+                _runtime.AttackRangeWorldUnits;
+            while (_attackTargets.Count < _runtime.SimultaneousHits)
+            {
+                MonsterCombatTarget nearest = null;
+                float nearestDistanceSquared = rangeSquared;
+                for (int index = 0; index < _eligibleTargets.Count; index++)
+                {
+                    MonsterCombatTarget candidate = _eligibleTargets[index];
+                    if (!IsValidTarget(candidate) || _attackTargets.Contains(candidate))
+                        continue;
+                    Vector2 point = candidate.GetClosestHitPoint(petPosition);
+                    float distanceSquared = (point - petPosition).sqrMagnitude;
+                    if (distanceSquared > nearestDistanceSquared) continue;
+                    nearestDistanceSquared = distanceSquared;
+                    nearest = candidate;
+                }
+
+                if (nearest == null) break;
+                _attackTargets.Add(nearest);
+            }
+
+            for (int index = 0; index < _attackTargets.Count; index++)
+            {
+                MonsterCombatTarget candidate = _attackTargets[index];
+                if (!IsValidTarget(candidate)) continue;
+                Vector3 candidateEffectPosition = candidate.TryGetHitEffectBounds(
+                    out Bounds candidateBounds)
+                    ? candidateBounds.center
+                    : (Vector3)candidate.GetClosestHitPoint(petPosition);
+                if (_combat.TryApplyPetDamage(_runId, candidate, _runtime.Damage))
+                    PlayImpactEffect(index == 0 ? effectPosition : candidateEffectPosition, now);
+            }
         }
 
         private TrackEntry PlayAnimation(string name, bool loop)
@@ -463,7 +499,6 @@ namespace CursorHunter.Combat
             PetRuntimeStat previous = _runtime;
             _balance = next;
             _runtime = new PetRuntimeStat(BalanceBasis, default,
-                combat.CombatSnapshot.AttackPower,
                 combat.RelicModifiers);
             float now = combat.ElapsedSeconds;
             _nextAttackAt = SkillBalanceMath.Retime(_nextAttackAt, now,

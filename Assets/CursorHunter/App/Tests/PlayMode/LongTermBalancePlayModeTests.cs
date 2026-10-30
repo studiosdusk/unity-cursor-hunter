@@ -37,7 +37,8 @@ namespace CursorHunter.App.Tests
             _timeScale = Time.timeScale;
             _listenerVolume = AudioListener.volume;
             AudioListener.volume = 0f;
-            foreach (string key in new[] { ProfileKey, ProfileKey + ".before-v5" })
+            foreach (string key in new[]
+                { ProfileKey, ProfileKey + ".before-v5", ProfileKey + ".before-v6" })
             {
                 _savedStrings[key] = PlayerPrefs.HasKey(key) ? PlayerPrefs.GetString(key) : null;
                 PlayerPrefs.DeleteKey(key);
@@ -85,6 +86,7 @@ namespace CursorHunter.App.Tests
         }
 
         [UnityTest]
+        [Explicit("Manual accelerated Main-scene combat sample; excluded from Run All.")]
         public IEnumerator MainSceneMeasuresTierByTierKillsAndGemIncomeUnderAnActiveCursorSweep()
         {
             const float acceleratedTimeScale = 4f;

@@ -67,7 +67,8 @@ namespace CursorHunter.Contracts
         public bool IsValidFor(string skillId)
         {
             return !float.IsNaN(Delta) && !float.IsInfinity(Delta) &&
-                (StatId != "count" || Delta == (float)Math.Floor(Delta)) &&
+                ((StatId != "count" && StatId != "simultaneousHits") ||
+                 Delta == (float)Math.Floor(Delta)) &&
                 IsAllowed(skillId, StatId);
         }
 
@@ -87,29 +88,34 @@ namespace CursorHunter.Contracts
             switch (skillId)
             {
                 case "skill.tornado":
-                    return statId == "count" || statId == "durationSeconds" ||
+                    return statId == "damage" || statId == "radius" ||
+                        statId == "count" || statId == "durationSeconds" ||
                         statId == "damageMultiplier" || statId == "firstCastDelaySeconds" ||
                         statId == "hitIntervalSeconds" || statId == "moveSpeedWorldUnitsPerSecond" ||
                         statId == "directionChangeSeconds" || statId == "stopChanceOnDirectionChange" ||
                         statId == "stopDurationSeconds" || statId == "shrinkOutSeconds";
                 case "skill.headshot":
-                    return statId == "firstCastDelaySeconds" ||
+                    return statId == "damage" || statId == "radius" ||
+                        statId == "firstCastDelaySeconds" ||
                         statId == "explosionDelaySeconds" || statId == "effectDurationSeconds" ||
                         statId == "splashDamageMultiplier" || statId == "bossDamageMultiplier";
                 case "skill.thunder":
-                    return statId == "firstCastDelaySeconds" ||
+                    return statId == "damage" || statId == "radius" ||
+                        statId == "firstCastDelaySeconds" ||
                         statId == "impactDelaySeconds" || statId == "effectDurationSeconds" ||
                         statId == "damageMultiplier";
                 case "skill.flame_exhaust":
-                    // The established upgrade direction is cooldown only.
-                    return false;
+                    return statId == "damage" || statId == "radius";
                 case "skill.magic_ball":
-                    return statId == "moveSpeedWorldUnitsPerSecond" ||
+                    return statId == "damage" || statId == "radius" ||
+                        statId == "moveSpeedWorldUnitsPerSecond" ||
                         statId == "sizeMultiplier" || statId == "damageMultiplier";
                 case "skill.laser":
-                    return statId == "sizeMultiplier" || statId == "damageMultiplier";
+                    return statId == "damage" || statId == "radius" ||
+                        statId == "sizeMultiplier" || statId == "damageMultiplier";
                 case "skill.pet_baby_dragon":
-                    return statId == "damageMultiplier" ||
+                    return statId == "damage" || statId == "simultaneousHits" ||
+                        statId == "damageMultiplier" ||
                         statId == "attackIntervalSeconds" ||
                         statId == "moveSpeedWorldUnitsPerSecond" ||
                         statId == "detectionRadiusWorldUnits" ||

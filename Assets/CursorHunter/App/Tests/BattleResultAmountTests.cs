@@ -38,5 +38,25 @@ namespace CursorHunter.App.Tests
             var legacy = new RunResult(request, RunEndReason.TimeExpired, RunSettlementPolicy.Eligible, 15, 2, 43, 100);
             Assert.That(BattleResultPresentation.GetEarned(legacy, "gem.garnet"), Is.EqualTo(43));
         }
+
+        [Test]
+        public void RunResultCopiesRelicAwardsAsImmutableRunOutput()
+        {
+            string[] awards = { "relic.red_potion" };
+            var result = new RunResult(
+                new RunRequest("relic-award-test", 15),
+                RunEndReason.TimeExpired,
+                RunSettlementPolicy.Eligible,
+                15,
+                1,
+                5,
+                5,
+                null,
+                awards);
+
+            awards[0] = "relic.blue_potion";
+            Assert.That(result.RelicAwards, Has.Count.EqualTo(1));
+            Assert.That(result.RelicAwards[0], Is.EqualTo("relic.red_potion"));
+        }
     }
 }

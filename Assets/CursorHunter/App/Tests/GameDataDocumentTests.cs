@@ -24,7 +24,7 @@ namespace CursorHunter.App.Tests
             Assert.That(document.progression.categories.Length, Is.EqualTo(22));
             int count = 0;
             foreach (var category in document.progression.categories) count += category.nodes.Length;
-            Assert.That(count, Is.EqualTo(89));
+            Assert.That(count, Is.EqualTo(103));
             document.locale = "ko";
             Assert.That(document.TryValidate(out _), Is.False);
             Assert.That(GameDataDocument.TryParse("{\"문서안내\":{}}", "{}", out _, out _), Is.False);

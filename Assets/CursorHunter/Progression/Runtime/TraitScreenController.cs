@@ -28,10 +28,12 @@ namespace CursorHunter.Progression
         [SerializeField] private long[] startingGemstoneBalances =
             new long[] { 125L, 0L, 0L, 0L, 0L, 0L };
         [SerializeField, Range(0, 5)] private int unlockedBossTier;
+        public int CurrentBossUnlockTier => Mathf.Clamp(unlockedBossTier, 0, 5);
         [SerializeField] private bool loadSavedProgress = true;
         [SerializeField] private bool testModeUnlockAll = false;
         [SerializeField] private bool testModeFreeUpgrades = false;
         [SerializeField] private UnityEvent backRequested = new UnityEvent();
+        [SerializeField] private UnityEvent combatRequested = new UnityEvent();
 
         [Header("Casual Fantasy sprites")]
         [SerializeField] private Sprite panelSprite;
@@ -48,6 +50,8 @@ namespace CursorHunter.Progression
         [SerializeField] private Sprite lockIcon;
         [SerializeField] private Sprite checkIcon;
         [SerializeField] private Sprite backIcon;
+        [SerializeField] private Sprite backButtonSprite;
+        [SerializeField] private Sprite gemstoneExchangeIcon;
         [SerializeField] private Sprite attackIcon;
         [SerializeField] private Sprite radiusIcon;
         [SerializeField, FormerlySerializedAs("clickIcon")] private Sprite attackIntervalIcon;
@@ -122,14 +126,12 @@ namespace CursorHunter.Progression
         private RectTransform _nodeContent;
         private RectTransform _nodeViewport;
         private TextMeshProUGUI _screenTitle;
-        private TextMeshProUGUI _screenSubtitle;
         private Button _researchCategoryButton;
         private Button _relicCategoryButton;
         private Button _relicTestModeButton;
         private TextMeshProUGUI _relicTestModeLabel;
         private RectTransform _gemstoneList;
         private RectTransform _gemstonePanel;
-        private TextMeshProUGUI _gemstoneUnlockMessage;
         private RectTransform _combatStatsPanel;
         private readonly List<TextMeshProUGUI> _combatStatValues =
             new List<TextMeshProUGUI>();
@@ -208,7 +210,11 @@ namespace CursorHunter.Progression
         private RectTransform _starterTutorialTarget;
         private readonly Vector3[] _starterTutorialWorldCorners = new Vector3[4];
         private readonly Vector2[] _starterTutorialLocalCorners = new Vector2[4];
-        private RectTransform _gemstoneExchangePanel;
+        private readonly Dictionary<int, TextMeshProUGUI> _gemstoneBalanceLabels =
+            new Dictionary<int, TextMeshProUGUI>();
+        private Coroutine _gemstoneExchangeRepeat;
+        private bool _gemstoneExchangePointerHeld;
+        private bool _gemstoneExchangeChanged;
         private Texture2D _traitBackdropTexture;
         private Sprite _traitBackdropSprite;
         private Coroutine _fitGraphRoutine;
@@ -482,6 +488,7 @@ namespace CursorHunter.Progression
 
         private void OnDisable()
         {
+            FinishGemstoneExchangeHold(false);
             if (_fitGraphRoutine != null)
             {
                 StopCoroutine(_fitGraphRoutine);
@@ -1183,13 +1190,63 @@ namespace CursorHunter.Progression
         /// </summary>
         public bool GrantResourceRewards(IReadOnlyList<ResourceRewardSnapshot> rewards)
         {
-            if (rewards == null)
+            return GrantRunRewards(rewards, null);
+        }
+
+        /// <summary>
+        /// Applies currency and relic awards from one run before writing the
+        /// profile once, so newly found relics are available on the next run.
+        /// </summary>
+        public bool GrantRunRewards(
+            IReadOnlyList<ResourceRewardSnapshot> rewards,
+            IReadOnlyList<string> relicAwards)
+        {
+            EnsureProgressionState();
+            EnsureRelicEntries();
+
+            var relicIndexes = new List<int>();
+            if (relicAwards != null && relicAwards.Count > 0)
             {
-                return true;
+                RelicInformation[] definitions = _document == null ||
+                    _document.information == null
+                    ? null
+                    : _document.information.relics;
+                if (definitions == null)
+                    return false;
+
+                var seenAwards = new HashSet<string>(StringComparer.Ordinal);
+                for (int awardIndex = 0; awardIndex < relicAwards.Count; awardIndex++)
+                {
+                    string relicId = relicAwards[awardIndex];
+                    if (string.IsNullOrWhiteSpace(relicId) || !seenAwards.Add(relicId))
+                        return false;
+
+                    int definitionIndex = -1;
+                    for (int i = 0; i < definitions.Length; i++)
+                    {
+                        if (definitions[i] != null && definitions[i].id == relicId)
+                        {
+                            definitionIndex = i;
+                            break;
+                        }
+                    }
+
+                    if (definitionIndex < 0 || definitionIndex >= relicEntries.Count ||
+                        relicEntries[definitionIndex] == null)
+                    {
+                        return false;
+                    }
+
+                    if (!relicEntries[definitionIndex].IsObtained)
+                        relicIndexes.Add(definitionIndex);
+                }
             }
 
             EnsureGemstoneBalanceCapacity();
-            for (int i = 0; i < rewards.Count; i++)
+            long previousGarnet = _garnetBalance;
+            long[] previousGemstoneBalances = (long[])_gemstoneBalances.Clone();
+            int previousPendingRevealIndex = _pendingRelicRevealIndex;
+            for (int i = 0; rewards != null && i < rewards.Count; i++)
             {
                 ResourceRewardSnapshot reward = rewards[i];
                 if (!reward.IsValid)
@@ -1220,8 +1277,53 @@ namespace CursorHunter.Progression
                     reward.Amount);
             }
 
+            for (int i = 0; i < relicIndexes.Count; i++)
+            {
+                int relicIndex = relicIndexes[i];
+                relicEntries[relicIndex].SetObtained(true);
+                if (_pendingRelicRevealIndex < 0)
+                    _pendingRelicRevealIndex = relicIndex;
+            }
+
             RefreshAll();
-            return SaveProgressionState();
+            if (SaveProgressionState())
+                return true;
+
+            _garnetBalance = previousGarnet;
+            _gemstoneBalances = previousGemstoneBalances;
+            for (int i = 0; i < relicIndexes.Count; i++)
+                relicEntries[relicIndexes[i]].SetObtained(false);
+            _pendingRelicRevealIndex = previousPendingRevealIndex;
+            RefreshAll();
+            return false;
+        }
+
+        private void RestoreOwnedRelics(IReadOnlyList<string> ownedRelicIds)
+        {
+            EnsureRelicEntries();
+            var owned = new HashSet<string>(StringComparer.Ordinal);
+            if (ownedRelicIds != null)
+            {
+                for (int i = 0; i < ownedRelicIds.Count; i++)
+                {
+                    if (!string.IsNullOrWhiteSpace(ownedRelicIds[i]))
+                        owned.Add(ownedRelicIds[i]);
+                }
+            }
+
+            RelicInformation[] definitions = _document == null ||
+                _document.information == null
+                ? null
+                : _document.information.relics;
+            for (int i = 0; i < relicEntries.Count; i++)
+            {
+                string id = definitions != null && i < definitions.Length &&
+                    definitions[i] != null
+                    ? definitions[i].id
+                    : string.Empty;
+                if (relicEntries[i] != null)
+                    relicEntries[i].SetObtained(!string.IsNullOrEmpty(id) && owned.Contains(id));
+            }
         }
 
 
@@ -1349,6 +1451,11 @@ namespace CursorHunter.Progression
             backRequested?.Invoke();
         }
 
+        public void RequestCombat()
+        {
+            combatRequested?.Invoke();
+        }
+
         private void ResolveCatalog()
         {
             _document = GameDataDocument.Load();
@@ -1371,6 +1478,11 @@ namespace CursorHunter.Progression
             _purchased.Clear();
             _spentByNode.Clear();
             _spentCurrencyByNode.Clear();
+            EnsureRelicEntries();
+            for (int i = 0; i < relicEntries.Count; i++)
+                if (relicEntries[i] != null)
+                    relicEntries[i].SetObtained(false);
+            _pendingRelicRevealIndex = -1;
         }
 
         private void LoadSavedProgress()
@@ -1381,6 +1493,7 @@ namespace CursorHunter.Progression
                 return;
             }
 
+            RestoreOwnedRelics(data.ownedRelicIds);
             _garnetBalance = Math.Max(0L, data.garnetBalance);
             EnsureGemstoneBalanceCapacity();
             if (data.gemstoneBalances != null)
@@ -1468,7 +1581,8 @@ namespace CursorHunter.Progression
                 _purchased,
                 _spentByNode,
                 _spentCurrencyByNode,
-                unlockedBossTier);
+                unlockedBossTier,
+                GetOwnedRelicIds());
             if (!saved)
             {
                 Debug.LogWarning(
@@ -1671,24 +1785,6 @@ namespace CursorHunter.Progression
                 TextAnchor.MiddleLeft,
                 inkColor,
                 true);
-            RectTransform subtitle = CreateRect(
-                "BoardGuide",
-                _runtimeRoot,
-                new Vector2(0f, 1f),
-                new Vector2(0f, 1f),
-                new Vector2(44f, -140f),
-                new Vector2(560f, 22f),
-                new Vector2(0f, 1f));
-            int nodeCount = CollectBoardEntries().Count;
-            _screenSubtitle = CreateText(
-                subtitle,
-                nodeCount.ToString("N0", CultureInfo.InvariantCulture) +
-                    "개 연구 · 휠 확대/축소 · 드래그 이동 · 노드 클릭 후 해금/강화",
-                13,
-                TextAnchor.MiddleLeft,
-                mutedInkColor,
-                false);
-
             CreateBoardLegend(_runtimeRoot);
             BuildTopCategoryTabs(_runtimeRoot);
             BuildTestTools(_runtimeRoot);
@@ -2425,6 +2521,8 @@ namespace CursorHunter.Progression
                 BuildNodes(false);
             }
 
+            SaveProgressionState();
+
             SetTestStatus(obtained
                 ? "유물 " + (index + 1).ToString("00", CultureInfo.InvariantCulture) +
                     " 획득 상태를 설정했습니다."
@@ -2750,31 +2848,6 @@ namespace CursorHunter.Progression
             listLayout.childForceExpandWidth = true;
             listLayout.childForceExpandHeight = false;
 
-            RectTransform unlockMessage = CreateRect(
-                "GemstoneUnlockMessage",
-                panel,
-                new Vector2(0f, 0f),
-                new Vector2(1f, 0f),
-                new Vector2(0f, 10f),
-                new Vector2(-32f, 24f),
-                new Vector2(0.5f, 0f));
-            _gemstoneUnlockMessage = CreateText(
-                unlockMessage,
-                "",
-                11,
-                TextAnchor.MiddleLeft,
-                mutedInkColor,
-                false);
-
-            _gemstoneExchangePanel = CreateRect(
-                "GemstoneExchange",
-                panel,
-                new Vector2(0f, 1f),
-                new Vector2(1f, 1f),
-                new Vector2(0f, -44f),
-                new Vector2(-20f, 0f),
-                new Vector2(0.5f, 1f));
-
             RefreshGemstonePanel();
         }
 
@@ -2808,7 +2881,7 @@ namespace CursorHunter.Progression
 
             string[] labels =
             {
-                "공격력", "공격 반경", "공격 간격", "치명타 확률", "보스 피해 배수", "일반 필드 시간"
+                "공격력", "공격 범위", "공격 간격", "치명타 확률", "보스 피해 배수", "일반 필드 시간"
             };
             Sprite[] icons =
             {
@@ -2901,7 +2974,7 @@ namespace CursorHunter.Progression
             _combatStatValues[0].text = information.stats.attackPower.ToString(
                 "N0", CultureInfo.InvariantCulture);
             _combatStatValues[1].text = FormatCompactNumber(
-                information.stats.attackRadiusWorldUnits) + "u";
+                information.stats.attackRadiusWorldUnits);
             _combatStatValues[2].text = FormatCompactNumber(
                 information.stats.attackCooldownSeconds) + "초";
             _combatStatValues[3].text = FormatCompactNumber(
@@ -2921,6 +2994,7 @@ namespace CursorHunter.Progression
 
             DestroyChildren(_gemstoneList);
             _garnetValue = null;
+            _gemstoneBalanceLabels.Clear();
 
             IReadOnlyList<TraitGemstoneDefinition> definitions =
                 _activeCatalog == null ? null : _activeCatalog.Gemstones;
@@ -2957,30 +3031,13 @@ namespace CursorHunter.Progression
                     false);
             }
 
-            if (_gemstoneUnlockMessage != null)
-            {
-                _gemstoneUnlockMessage.text = "연구에 사용할 수 있는 재화";
-            }
-
             if (_gemstonePanel != null)
             {
                 float listHeight = Mathf.Max(38f, visibleCount * 38f);
                 _gemstoneList.sizeDelta = new Vector2(_gemstoneList.sizeDelta.x, listHeight);
-                int exchangeCount = BuildGemstoneExchangeRows();
-                float exchangeHeight = exchangeCount > 0
-                    ? 26f + exchangeCount * 30f
-                    : 0f;
-                _gemstoneExchangePanel.anchoredPosition =
-                    new Vector2(0f, -48f - listHeight - 8f);
-                _gemstoneExchangePanel.sizeDelta = new Vector2(
-                    _gemstoneExchangePanel.sizeDelta.x,
-                    exchangeHeight);
-                _gemstoneExchangePanel.gameObject.SetActive(exchangeCount > 0);
-                _gemstoneUnlockMessage.rectTransform.anchoredPosition =
-                    new Vector2(0f, 8f);
                 Vector2 panelSize = _gemstonePanel.sizeDelta;
                 panelSize.y = Mathf.Clamp(
-                    80f + listHeight + exchangeHeight,
+                    80f + listHeight,
                     148f,
                     560f);
                 _gemstonePanel.sizeDelta = panelSize;
@@ -2990,103 +3047,109 @@ namespace CursorHunter.Progression
             LayoutRebuilder.ForceRebuildLayoutImmediate(_gemstoneList);
         }
 
-        private int BuildGemstoneExchangeRows()
+        internal void BeginGemstoneExchangeHold(int sourceIndex, int destinationIndex)
         {
-            if (_gemstoneExchangePanel == null)
+            StopGemstoneExchangeRepeat();
+            _gemstoneExchangePointerHeld = true;
+            _gemstoneExchangeChanged = false;
+            if (!TryExchangeGemstoneOnce(sourceIndex, destinationIndex))
             {
-                return 0;
+                _gemstoneExchangePointerHeld = false;
+                return;
             }
 
-            DestroyChildren(_gemstoneExchangePanel);
-            IReadOnlyList<TraitGemstoneDefinition> gemstones =
-                _activeCatalog == null ? null : _activeCatalog.Gemstones;
-            if (gemstones == null || gemstones.Count < 2)
-            {
-                return 0;
-            }
-
-            int rowCount = 0;
-            for (int destinationIndex = 1;
-                destinationIndex < gemstones.Count;
-                destinationIndex++)
-            {
-                TraitGemstoneDefinition destination = gemstones[destinationIndex];
-                TraitGemstoneDefinition source = gemstones[destinationIndex - 1];
-                if (destination == null || source == null ||
-                    !IsGemstoneAvailable(destination))
-                {
-                    continue;
-                }
-
-                if (rowCount == 0)
-                {
-                    CreateText(
-                        CreateRect(
-                            "ExchangeHeading",
-                            _gemstoneExchangePanel,
-                            new Vector2(0f, 1f),
-                            new Vector2(1f, 1f),
-                            new Vector2(0f, -1f),
-                            new Vector2(-4f, 22f),
-                            new Vector2(0.5f, 1f)),
-                        "재화 교환 · 100 : 1",
-                        12,
-                        TextAnchor.MiddleLeft,
-                        mutedInkColor,
-                        true);
-                }
-
-                int fromIndex = destinationIndex - 1;
-                int toIndex = destinationIndex;
-                string label = GetGemstoneLocalizedName(source.Id, source.Title) +
-                    " 100  →  " + GetGemstoneLocalizedName(destination.Id, destination.Title) +
-                    " 1";
-                Button exchange = CreateButton(
-                    "Exchange_" + fromIndex.ToString(CultureInfo.InvariantCulture),
-                    _gemstoneExchangePanel,
-                    new Vector2(0f, 1f),
-                    new Vector2(1f, 1f),
-                    new Vector2(0f, -25f - rowCount * 30f),
-                    new Vector2(-4f, 27f),
-                    panelSprite,
-                    new Color(0.08f, 0.16f, 0.25f, 0.95f),
-                    label,
-                    12,
-                    inkColor);
-                exchange.onClick.AddListener(() => ExchangeGemstones(fromIndex, toIndex));
-                rowCount++;
-            }
-
-            return rowCount;
+            _gemstoneExchangeRepeat = StartCoroutine(
+                RepeatGemstoneExchangeAfterDelay(sourceIndex, destinationIndex));
         }
 
-        private void ExchangeGemstones(int sourceIndex, int destinationIndex)
+        internal void EndGemstoneExchangeHold()
         {
-            if (sourceIndex < 0 || destinationIndex != sourceIndex + 1 ||
-                !IsGemstoneAvailable(destinationIndex))
+            FinishGemstoneExchangeHold(true);
+        }
+
+        private void FinishGemstoneExchangeHold(bool refreshUi)
+        {
+            _gemstoneExchangePointerHeld = false;
+            StopGemstoneExchangeRepeat();
+            if (!_gemstoneExchangeChanged)
             {
                 return;
             }
 
-            const long sourceCost = 100L;
-            long currentSource = GetGemstoneBalance(sourceIndex);
-            if (currentSource < sourceCost)
-            {
-                SetTestStatus("교환할 젬스톤이 부족합니다.");
-                return;
-            }
-
-            SetGemstoneBalance(sourceIndex, currentSource - sourceCost);
-            SetGemstoneBalance(
-                destinationIndex,
-                AddSaturating(GetGemstoneBalance(destinationIndex), 1L));
+            _gemstoneExchangeChanged = false;
             SaveProgressionState();
+            if (!refreshUi)
+            {
+                return;
+            }
+
             BuildNodes(false);
             RefreshSummary();
             RefreshGemstonePanel();
             RefreshCombatStatsPanel();
             UpdateHeaderForActiveView();
-            SetTestStatus("젬스톤을 상위 단계로 교환했습니다.");
+            SetTestStatus("상위 젬스톤으로 교환했습니다.");
+        }
+
+        private IEnumerator RepeatGemstoneExchangeAfterDelay(
+            int sourceIndex,
+            int destinationIndex)
+        {
+            yield return new WaitForSecondsRealtime(0.32f);
+            while (_gemstoneExchangePointerHeld)
+            {
+                if (!TryExchangeGemstoneOnce(sourceIndex, destinationIndex))
+                {
+                    _gemstoneExchangePointerHeld = false;
+                    break;
+                }
+                yield return new WaitForSecondsRealtime(0.09f);
+            }
+            _gemstoneExchangeRepeat = null;
+        }
+
+        private bool TryExchangeGemstoneOnce(int sourceIndex, int destinationIndex)
+        {
+            IReadOnlyList<TraitGemstoneDefinition> gemstones =
+                _activeCatalog == null ? null : _activeCatalog.Gemstones;
+            if (gemstones == null || sourceIndex < 0 ||
+                sourceIndex + 1 >= gemstones.Count ||
+                destinationIndex != sourceIndex + 1 ||
+                gemstones[sourceIndex] == null || gemstones[destinationIndex] == null ||
+                GetGemstoneBalance(sourceIndex) < 100L ||
+                GetGemstoneBalance(destinationIndex) == long.MaxValue)
+            {
+                return false;
+            }
+
+            SetGemstoneBalance(sourceIndex, GetGemstoneBalance(sourceIndex) - 100L);
+            SetGemstoneBalance(
+                destinationIndex,
+                AddSaturating(GetGemstoneBalance(destinationIndex), 1L));
+            UpdateGemstoneBalanceLabel(sourceIndex);
+            UpdateGemstoneBalanceLabel(destinationIndex);
+            _gemstoneExchangeChanged = true;
+            return true;
+        }
+
+        private void StopGemstoneExchangeRepeat()
+        {
+            if (_gemstoneExchangeRepeat == null)
+            {
+                return;
+            }
+
+            StopCoroutine(_gemstoneExchangeRepeat);
+            _gemstoneExchangeRepeat = null;
+        }
+
+        private void UpdateGemstoneBalanceLabel(int index)
+        {
+            if (_gemstoneBalanceLabels.TryGetValue(index, out TextMeshProUGUI label) &&
+                label != null)
+            {
+                label.text = GetGemstoneBalance(index).ToString("N0", CultureInfo.InvariantCulture);
+            }
         }
 
         private void SetGemstoneBalance(int index, long amount)
@@ -3160,15 +3223,58 @@ namespace CursorHunter.Progression
 
             long balance = GetGemstoneBalance(gemstoneIndex);
             TextMeshProUGUI value = CreateText(
-                CreateRect("Value", row, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-16f, 0f), new Vector2(72f, 30f), new Vector2(1f, 0.5f)),
-                balance.ToString(),
+                CreateRect("Value", row, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-70f, 0f), new Vector2(60f, 30f), new Vector2(1f, 0.5f)),
+                balance.ToString("N0", CultureInfo.InvariantCulture),
                 15,
                 TextAnchor.MiddleRight,
                 inkColor,
                 true);
+            _gemstoneBalanceLabels[gemstoneIndex] = value;
             if (gemstoneIndex == 0)
             {
                 _garnetValue = value;
+            }
+
+            IReadOnlyList<TraitGemstoneDefinition> gemstones =
+                _activeCatalog == null ? null : _activeCatalog.Gemstones;
+            int destinationIndex = gemstoneIndex + 1;
+            if (gemstones != null && destinationIndex < gemstones.Count &&
+                gemstones[destinationIndex] != null)
+            {
+                RectTransform exchangeRect = CreateRect(
+                    "ExchangeToNextTier",
+                    row,
+                    new Vector2(1f, 0.5f),
+                    new Vector2(1f, 0.5f),
+                    new Vector2(-18f, 0f),
+                    new Vector2(30f, 30f),
+                    new Vector2(0.5f, 0.5f));
+                Image exchangeImage = exchangeRect.gameObject.AddComponent<Image>();
+                exchangeImage.sprite = gemstoneExchangeIcon;
+                exchangeImage.preserveAspect = true;
+                exchangeImage.raycastTarget = true;
+                exchangeImage.color = balance >= 100L
+                    ? Color.white
+                    : new Color(0.53f, 0.59f, 0.66f, 0.62f);
+
+                Button exchangeButton = exchangeRect.gameObject.AddComponent<Button>();
+                exchangeButton.targetGraphic = exchangeImage;
+                exchangeButton.interactable = balance >= 100L;
+                exchangeButton.transition = Selectable.Transition.ColorTint;
+                exchangeButton.colors = new ColorBlock
+                {
+                    normalColor = exchangeImage.color,
+                    highlightedColor = Color.white,
+                    pressedColor = new Color(0.76f, 0.9f, 1f, 1f),
+                    selectedColor = Color.white,
+                    disabledColor = new Color(0.4f, 0.44f, 0.5f, 0.45f),
+                    colorMultiplier = 1f,
+                    fadeDuration = 0.08f
+                };
+                exchangeButton.gameObject.AddComponent<TraitUiButtonFeedback>()
+                    .SetScaleFeedback(1.12f, 0.88f, 0.1f);
+                exchangeButton.gameObject.AddComponent<TraitGemstoneExchangeHoldInput>()
+                    .Bind(this, gemstoneIndex, destinationIndex);
             }
 
         }
@@ -3307,7 +3413,7 @@ namespace CursorHunter.Progression
                 new Color(0.015f, 0.045f, 0.12f, 0.88f),
                 new Vector2(1f, 1f));
 
-            string[] labels = { "공격력", "공격 반경", "공격 간격", "치명타", "보스 피해 배수" };
+            string[] labels = { "공격력", "공격 범위", "공격 간격", "치명타", "보스 피해 배수" };
             for (int i = 0; i < labels.Length; i++)
             {
                 RectTransform card = CreateRect(
@@ -3505,7 +3611,10 @@ namespace CursorHunter.Progression
                 false);
 
             _selectedDescription.textWrappingMode = TextWrappingModes.Normal;
-            _selectedDescription.overflowMode = TextOverflowModes.Ellipsis;
+            _selectedDescription.enableAutoSizing = true;
+            _selectedDescription.fontSizeMin = 12f;
+            _selectedDescription.fontSizeMax = 16f;
+            _selectedDescription.overflowMode = TextOverflowModes.Overflow;
 
             _selectedCost = CreateText(
                 CreateRect("SelectedCost", panel, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0f, 120f), new Vector2(-36f, 32f), new Vector2(0.5f, 0f)),
@@ -3573,15 +3682,45 @@ namespace CursorHunter.Progression
                 _runtimeRoot,
                 new Vector2(0f, 0f),
                 new Vector2(0f, 0f),
-                new Vector2(24f, 18f),
-                new Vector2(148f, 44f),
-                null,
-                new Color(0.04f, 0.12f, 0.24f, 0.96f),
-                "뒤로",
+                new Vector2(0f, 10f),
+                new Vector2(169f, 112f),
+                backButtonSprite,
+                Color.white,
+                string.Empty,
                 17,
                 inkColor);
-            AddButtonIcon(back.transform as RectTransform, backIcon, new Vector2(28f, 0f));
+            RectTransform backRect = back.transform as RectTransform;
+            if (backRect != null)
+            {
+                backRect.pivot = Vector2.zero;
+                backRect.anchoredPosition = new Vector2(0f, 10f);
+                RectTransform iconRect = CreateImageRect(
+                    "Icon",
+                    backRect,
+                    new Vector2(0.5f, 0.5f),
+                    new Vector2(0.5f, 0.5f),
+                    new Vector2(1.9f, -2.2f),
+                    new Vector2(74f, 67f),
+                    backIcon,
+                    Color.white,
+                    new Vector2(0.5f, 0.5f));
+                iconRect.GetComponent<Image>().preserveAspect = true;
+            }
             back.onClick.AddListener(RequestBack);
+
+            Button combat = CreateButton(
+                "EnterCombatButton",
+                _runtimeRoot,
+                new Vector2(0.5f, 0f),
+                new Vector2(0.5f, 0f),
+                new Vector2(0f, 18f),
+                new Vector2(184f, 48f),
+                tabFocusSprite != null ? tabFocusSprite : panelSprite,
+                new Color(0.88f, 0.39f, 0.08f, 1f),
+                "전투 시작",
+                18,
+                inkColor);
+            combat.onClick.AddListener(RequestCombat);
 
             Button reset = CreateButton(
                 "ResetButton",
@@ -3702,7 +3841,7 @@ namespace CursorHunter.Progression
                     new Vector2(0f, 1f),
                     new Vector2(1f, 1f),
                     new Vector2(0f, -126f),
-                    new Vector2(-36f, 118f),
+                    new Vector2(-36f, 96f),
                     new Vector2(0.5f, 1f)),
                 "상세 설명",
                 16,
@@ -3710,7 +3849,10 @@ namespace CursorHunter.Progression
                 new Color(0.91f, 0.95f, 1f, 1f),
                 false);
             _tooltipDescription.textWrappingMode = TextWrappingModes.Normal;
-            _tooltipDescription.overflowMode = TextOverflowModes.Ellipsis;
+            _tooltipDescription.enableAutoSizing = true;
+            _tooltipDescription.fontSizeMin = 13f;
+            _tooltipDescription.fontSizeMax = 16f;
+            _tooltipDescription.overflowMode = TextOverflowModes.Overflow;
 
             CreateImageRect(
                 "TooltipSeparator",
@@ -3722,6 +3864,16 @@ namespace CursorHunter.Progression
                 null,
                 new Color(0.44f, 0.60f, 0.80f, 0.30f),
                 new Vector2(0.5f, 0f));
+            CreateImageRect(
+                "TooltipCostBand",
+                _tooltipRoot,
+                new Vector2(0f, 0f),
+                new Vector2(1f, 0f),
+                new Vector2(0f, 104f),
+                new Vector2(-28f, 42f),
+                panelSprite,
+                new Color(0.28f, 0.19f, 0.06f, 0.58f),
+                new Vector2(0.5f, 0f));
             _tooltipCost = CreateText(
                 CreateRect(
                     "TooltipCost",
@@ -3729,20 +3881,23 @@ namespace CursorHunter.Progression
                     new Vector2(0f, 0f),
                     new Vector2(1f, 0f),
                     new Vector2(10f, 111f),
-                    new Vector2(-62f, 28f),
+                    new Vector2(-64f, 30f),
                     new Vector2(0.5f, 0f)),
                 "비용",
-                15,
+                17,
                 TextAnchor.MiddleLeft,
                 inkColor,
                 true);
+            _tooltipCost.enableAutoSizing = true;
+            _tooltipCost.fontSizeMin = 14f;
+            _tooltipCost.fontSizeMax = 17f;
             RectTransform currencyIconRect = CreateImageRect(
                 "TooltipCurrencyIcon",
                 _tooltipRoot,
                 new Vector2(0f, 0f),
                 new Vector2(0f, 0f),
-                new Vector2(22f, 125f),
-                new Vector2(22f, 22f),
+                new Vector2(28f, 125f),
+                new Vector2(28f, 28f),
                 null,
                 Color.white,
                 new Vector2(0.5f, 0.5f));
@@ -3986,7 +4141,7 @@ namespace CursorHunter.Progression
 
             CreateSummarySection(_summaryOverlayContent, "플레이어 스탯", GetTabAccent(TraitTab.Stat));
             AddLocalizedInfo("공격력", "attackPower", information.stats.attackPower);
-            AddLocalizedInfo("공격 반경", "attackRadiusWorldUnits", information.stats.attackRadiusWorldUnits);
+            AddLocalizedInfo("공격 범위", "attackRadiusWorldUnits", information.stats.attackRadiusWorldUnits);
             AddLocalizedInfo("공격 간격", "attackCooldownSeconds", information.stats.attackCooldownSeconds);
             AddLocalizedInfo("치명타 확률", "criticalChancePercent", information.stats.criticalChancePercent);
             AddLocalizedInfo("보스 피해 배율", "bossDamageMultiplier", information.stats.bossDamageMultiplier);
@@ -4025,7 +4180,7 @@ namespace CursorHunter.Progression
                 AddLocalizedInfo("체력", "hitPoints", monster.hitPoints);
                 AddLocalizedInfo("생성 간격(초)", "spawnIntervalSeconds", monster.spawnIntervalSeconds);
                 AddLocalizedInfo("처치 가넷 보상", "garnetReward", monster.garnetReward);
-                AddLocalizedInfo("추가 젬스톤", "gemstoneId", GetGemstoneLocalizedName(monster.gemstoneId, monster.gemstoneId));
+                AddLocalizedInfo("드롭 재화", "gemstoneId", GetGemstoneLocalizedName(monster.gemstoneId, monster.gemstoneId));
                 AddLocalizedInfo("드롭 수량", "gemstoneAmount", monster.gemstoneAmount);
                 AddLocalizedInfo("드롭 확률(%)", "gemstoneChancePercent", monster.gemstoneChancePercent);
                 AddLocalizedInfo(
@@ -4486,24 +4641,6 @@ namespace CursorHunter.Progression
                 _screenTitle.text = _showRelicCollection ? "유물 보관소" : "특성";
             }
 
-            if (_screenSubtitle != null)
-            {
-                bool corePurchased = IsPurchased(FindNode(ResearchCoreNodeId));
-                bool stumpPurchased = IsPurchased(FindNode("monster.01"));
-                bool onboardingActive = !_showRelicCollection &&
-                    (!corePurchased || !stumpPurchased);
-                _screenSubtitle.text = _showRelicCollection
-                    ? "유물 20칸 · 획득 전에는 정보가 공개되지 않습니다"
-                    : onboardingActive
-                        ? !corePurchased
-                            ? "첫 단계 · 중앙 시작점을 눌러 스탯 연구를 시작하세요"
-                            : "다음 단계 · 그루터기를 해금해야 첫 전투를 시작할 수 있습니다"
-                        : CollectBoardEntries().Count.ToString("N0", CultureInfo.InvariantCulture) +
-                            "개 연구 · 휠 확대/축소 · 드래그 이동 · 노드 클릭 후 해금/강화";
-                _screenSubtitle.color = onboardingActive
-                    ? new Color(1f, 0.82f, 0.43f, 1f)
-                    : mutedInkColor;
-            }
         }
 
         private void SetCollectionChromeVisible(bool visible)
@@ -6115,30 +6252,9 @@ namespace CursorHunter.Progression
             }
 
             TraitNodeDefinition node = entry.Node;
-            int stage;
-            if (entry.Tab == TraitTab.Stat)
-            {
-                int rank = GetTrailingRank(node.Id);
-                stage = rank > 0 ? rank : node.RequiredBossTier + 1;
-            }
-            else
-            {
-                string prefix = entry.Tab == TraitTab.Skill ? "skill." : "monster.";
-                if (IsRootEntityNode(node.Id, prefix))
-                {
-                    stage = node.RequiredBossTier + 1;
-                }
-                else
-                {
-                    TraitNodeDefinition root = FindNode(GetEntityRootId(node.Id, prefix));
-                    int bossTier = root == null
-                        ? node.RequiredBossTier
-                        : Mathf.Max(node.RequiredBossTier, root.RequiredBossTier);
-                    stage = bossTier + 2;
-                }
-            }
-
-            return GetRankFrameColor(stage);
+            return IsUpgradeResearchNode(node)
+                ? GetUpgradeRankFrameColor(node)
+                : GetRankFrameColor(node.RequiredBossTier + 1);
         }
 
         private Button CreateBoardNode(BoardNodeEntry entry, NodePurchaseState state)
@@ -6146,6 +6262,7 @@ namespace CursorHunter.Progression
             Color rankColor = GetBoardNodeRankColor(entry);
             bool purchased = state == NodePurchaseState.Purchased;
             bool available = state == NodePurchaseState.Available;
+            bool finalUpgrade = purchased && IsFinalUpgradeNode(entry.Node);
             bool isCore = string.Equals(
                 entry.Node.Id,
                 "stat.attack.01",
@@ -6173,8 +6290,9 @@ namespace CursorHunter.Progression
             CreateSquareNodeFrame(
                 buttonRect,
                 new Color(rankColor.r, rankColor.g, rankColor.b, 0.20f),
-                isCore ? 11f : 9f);
-            CreateSquareNodeFrame(buttonRect, rankColor, isCore ? 5f : 4.5f);
+                isCore ? 11f : 9f,
+                finalUpgrade);
+            CreateSquareNodeFrame(buttonRect, rankColor, isCore ? 5f : 4.5f, finalUpgrade);
             RectTransform selectionFrame = CreateSquareNodeSelectionFrame(buttonRect);
             selectionFrame.gameObject.SetActive(
                 string.Equals(entry.Node.Id, _selectedNodeId, StringComparison.Ordinal));
@@ -6206,17 +6324,32 @@ namespace CursorHunter.Progression
                 CreateAffordableNodeBadge(buttonRect, compactTreeNode: false);
             }
 
-            string marker = isCore
-                    ? string.Empty
-                    : entry.Tab == TraitTab.Monster
-                        ? "M"
-                        : entry.Category != null &&
-                            (entry.Category.Id == "skill.cursorAura" ||
-                             entry.Category.Id == "skill.pet_baby_dragon")
-                            ? "PET"
-                            : entry.Tab == TraitTab.Skill
-                                ? "SK"
-                                : GetNodeRankLabel(entry.Node);
+            string marker = string.Empty;
+            if (!isCore)
+            {
+                if (finalUpgrade)
+                {
+                    marker = "최종";
+                }
+                else if (entry.Tab == TraitTab.Monster)
+                {
+                    marker = "M";
+                }
+                else if (entry.Category != null &&
+                         (entry.Category.Id == "skill.cursorAura" ||
+                          entry.Category.Id == "skill.pet_baby_dragon"))
+                {
+                    marker = "PET";
+                }
+                else if (entry.Tab == TraitTab.Skill)
+                {
+                    marker = "SK";
+                }
+                else
+                {
+                    marker = GetNodeRankLabel(entry.Node);
+                }
+            }
             if (!string.IsNullOrEmpty(marker))
             {
                 CreateText(
@@ -6910,7 +7043,7 @@ namespace CursorHunter.Progression
             Vector2 contentPoint =
                 (viewportPoint - _nodeContent.anchoredPosition) / previousZoom;
             float nextZoom = Mathf.Clamp(
-                previousZoom * Mathf.Pow(1.12f, wheelDelta),
+                previousZoom * Mathf.Pow(1.055f, wheelDelta),
                 MinimumGraphZoom,
                 MaximumGraphZoom);
             _nodeContent.localScale = Vector3.one * nextZoom;
@@ -6941,7 +7074,7 @@ namespace CursorHunter.Progression
             switch (category.Id)
             {
                 case "stat.attack": return LocalizationCatalog.Get("ui.attack", "공격력");
-                case "stat.radius": return LocalizationCatalog.Get("ui.radius", "공격 반경");
+                case "stat.radius": return LocalizationCatalog.Get("ui.radius", "공격 범위");
                 case "stat.cooldown": return LocalizationCatalog.Get("ui.cooldown", "공격 간격");
                 case "stat.critical": return LocalizationCatalog.Get("ui.critical", "치명타");
                 case "stat.boss": return LocalizationCatalog.Get("ui.boss", "보스 피해 배수");
@@ -7053,16 +7186,12 @@ namespace CursorHunter.Progression
             // sample frame sprites contain an opaque rounded centre; using
             // bars keeps the icon free of a second card and makes every node
             // a true square at any canvas scale.
+            bool finalUpgrade = purchased && IsFinalUpgradeNode(node);
             CreateSquareNodeFrame(
                 button.transform as RectTransform,
-                GetNodeFrameColor(
-                    _activeTab,
-                    node,
-                    category,
-                    purchased,
-                    locked,
-                    available),
-                3.5f);
+                GetNodeFrameColor(node, _activeTab),
+                3.5f,
+                finalUpgrade);
 
             bool compactTreeNode = _activeTab == TraitTab.Stat;
             RectTransform buttonRect = button.transform as RectTransform;
@@ -7108,7 +7237,7 @@ namespace CursorHunter.Progression
 
             if (compactTreeNode)
             {
-                string rank = GetNodeRankLabel(node);
+                string rank = finalUpgrade ? "최종" : GetNodeRankLabel(node);
                 CreateText(
                     CreateRect(
                         "Rank",
@@ -7128,14 +7257,14 @@ namespace CursorHunter.Progression
             {
                 CreateText(
                     CreateRect("Title", buttonRect, Vector2.zero, Vector2.one, new Vector2(0f, -4f), new Vector2(-12f, -56f), new Vector2(0.5f, 0.5f)),
-                    node.Title,
+                    GetLocalizedNodeTitle(node),
                     11,
                     TextAnchor.MiddleCenter,
                     locked ? new Color(0.63f, 0.72f, 0.84f, 1f) : inkColor,
                     true);
                 CreateText(
                     CreateRect("Value", buttonRect, Vector2.zero, Vector2.one, new Vector2(0f, -29f), new Vector2(-12f, -77f), new Vector2(0.5f, 0.5f)),
-                    node.ValueLabel,
+                    GetLocalizedNodeValueLabel(node),
                     11,
                     TextAnchor.MiddleCenter,
                     locked ? new Color(0.50f, 0.62f, 0.76f, 1f) : category.Accent,
@@ -7193,7 +7322,7 @@ namespace CursorHunter.Progression
                 nodeRect,
                 new Vector2(0f, 1f),
                 new Vector2(0f, 1f),
-                new Vector2(compactTreeNode ? 36f : 12f, -12f),
+                new Vector2(-3f, 3f),
                 new Vector2(compactTreeNode ? 20f : 22f, compactTreeNode ? 20f : 22f),
                 affordableNodeBadgeSprite,
                 Color.white,
@@ -7222,7 +7351,8 @@ namespace CursorHunter.Progression
         private void CreateSquareNodeFrame(
             RectTransform parent,
             Color color,
-            float thickness)
+            float thickness,
+            bool rainbow = false)
         {
             if (parent == null)
             {
@@ -7230,6 +7360,10 @@ namespace CursorHunter.Progression
             }
 
             float safeThickness = Mathf.Max(1f, thickness);
+            Color topColor = rainbow ? WithAlpha(new Color(1f, 0.25f, 0.36f, 1f), color.a) : color;
+            Color rightColor = rainbow ? WithAlpha(new Color(1f, 0.75f, 0.20f, 1f), color.a) : color;
+            Color bottomColor = rainbow ? WithAlpha(new Color(0.20f, 0.82f, 1f, 1f), color.a) : color;
+            Color leftColor = rainbow ? WithAlpha(new Color(0.70f, 0.40f, 1f, 1f), color.a) : color;
             CreateImageRect(
                 "FrameTop",
                 parent,
@@ -7238,7 +7372,7 @@ namespace CursorHunter.Progression
                 new Vector2(0f, -safeThickness * 0.5f),
                 new Vector2(0f, safeThickness),
                 null,
-                color,
+                topColor,
                 new Vector2(0.5f, 0.5f));
             CreateImageRect(
                 "FrameBottom",
@@ -7248,7 +7382,7 @@ namespace CursorHunter.Progression
                 new Vector2(0f, safeThickness * 0.5f),
                 new Vector2(0f, safeThickness),
                 null,
-                color,
+                bottomColor,
                 new Vector2(0.5f, 0.5f));
             CreateImageRect(
                 "FrameLeft",
@@ -7258,7 +7392,7 @@ namespace CursorHunter.Progression
                 new Vector2(safeThickness * 0.5f, 0f),
                 new Vector2(safeThickness, 0f),
                 null,
-                color,
+                leftColor,
                 new Vector2(0.5f, 0.5f));
             CreateImageRect(
                 "FrameRight",
@@ -7268,8 +7402,70 @@ namespace CursorHunter.Progression
                 new Vector2(-safeThickness * 0.5f, 0f),
                 new Vector2(safeThickness, 0f),
                 null,
-                color,
+                rightColor,
                 new Vector2(0.5f, 0.5f));
+        }
+
+        private static Color WithAlpha(Color color, float alpha)
+        {
+            color.a = alpha;
+            return color;
+        }
+
+        private bool IsUpgradeResearchNode(TraitNodeDefinition node)
+        {
+            if (node == null || string.IsNullOrEmpty(node.Id)) return false;
+            string id = node.Id;
+            if (id.StartsWith("stat.", StringComparison.Ordinal))
+                return GetTrailingRank(id) > 1;
+            return id.IndexOf(".damage.", StringComparison.Ordinal) >= 0 ||
+                id.IndexOf(".radius.", StringComparison.Ordinal) >= 0 ||
+                id.IndexOf(".simultaneousHits.", StringComparison.Ordinal) >= 0 ||
+                id.IndexOf(".cooldown.", StringComparison.Ordinal) >= 0 ||
+                id.IndexOf(".production.", StringComparison.Ordinal) >= 0;
+        }
+
+        private int GetUpgradeSeriesMaxRank(TraitNodeDefinition node)
+        {
+            if (!IsUpgradeResearchNode(node)) return 0;
+            int separator = node.Id.LastIndexOf('.');
+            if (separator <= 0) return 0;
+            string seriesPrefix = node.Id.Substring(0, separator + 1);
+            int maxRank = 0;
+            foreach (TraitNodeDefinition candidate in EnumerateAllNodes())
+            {
+                if (candidate == null || string.IsNullOrEmpty(candidate.Id) ||
+                    !candidate.Id.StartsWith(seriesPrefix, StringComparison.Ordinal))
+                    continue;
+                maxRank = Mathf.Max(maxRank, GetTrailingRank(candidate.Id));
+            }
+            return maxRank;
+        }
+
+        private bool IsFinalUpgradeNode(TraitNodeDefinition node)
+        {
+            if (!IsUpgradeResearchNode(node)) return false;
+            int rank = GetTrailingRank(node.Id);
+            return rank > 0 && rank == GetUpgradeSeriesMaxRank(node);
+        }
+
+        private Color GetUpgradeRankFrameColor(TraitNodeDefinition node)
+        {
+            int rank = Mathf.Max(1, GetTrailingRank(node.Id));
+            int maxRank = Mathf.Max(rank, GetUpgradeSeriesMaxRank(node));
+            if (rank <= 5) return GetRankFrameColor(rank);
+            if (rank >= maxRank - 1)
+                return new Color(1f, 0.30f, 0.36f, 1f);
+
+            switch ((rank - 6) % 6)
+            {
+                case 0: return new Color(0.22f, 0.88f, 0.84f, 1f);
+                case 1: return new Color(0.38f, 0.86f, 0.34f, 1f);
+                case 2: return new Color(0.22f, 0.67f, 0.84f, 1f);
+                case 3: return new Color(1f, 0.61f, 0.22f, 1f);
+                case 4: return new Color(0.96f, 0.42f, 0.72f, 1f);
+                default: return new Color(0.65f, 0.48f, 1f, 1f);
+            }
         }
 
         private RectTransform CreateSquareNodeSelectionFrame(RectTransform parent)
@@ -7314,36 +7510,12 @@ namespace CursorHunter.Progression
                 : string.Empty;
         }
 
-        private static Color GetNodeFrameColor(
-            TraitTab tab,
-            TraitNodeDefinition node,
-            TraitCategoryDefinition category,
-            bool purchased,
-            bool locked,
-            bool available)
+        private Color GetNodeFrameColor(TraitNodeDefinition node, TraitTab tab)
         {
-            bool isMonsterProduction = tab == TraitTab.Monster &&
-                node != null &&
-                node.Id != null &&
-                node.Id.IndexOf(".production.", StringComparison.Ordinal) >= 0;
-            if (purchased)
-            {
-                return new Color(0.32f, 0.88f, 0.70f, 0.98f);
-            }
-
-            if (locked)
-            {
-                return new Color(0.64f, 0.32f, 0.57f, 0.94f);
-            }
-
-            if (available)
-            {
-                return isMonsterProduction
-                    ? new Color(1f, 0.64f, 0.25f, 0.98f)
-                    : new Color(1f, 0.76f, 0.35f, 0.98f);
-            }
-
-            return new Color(0.42f, 0.29f, 0.48f, 0.86f);
+            if (node == null) return GetCategoryAccent(tab);
+            return IsUpgradeResearchNode(node)
+                ? GetUpgradeRankFrameColor(node)
+                : GetRankFrameColor(node.RequiredBossTier + 1);
         }
 
         private void SelectNode(TraitNodeDefinition node)
@@ -7749,7 +7921,7 @@ namespace CursorHunter.Progression
             {
                 RectTransform costRect = _tooltipCost.rectTransform;
                 Vector2 costOffsetMin = costRect.offsetMin;
-                costOffsetMin.x = currencySprite == null ? 10f : 46f;
+                costOffsetMin.x = currencySprite == null ? 16f : 62f;
                 costRect.offsetMin = costOffsetMin;
             }
 
@@ -7956,6 +8128,10 @@ namespace CursorHunter.Progression
                 {
                     return "해금 완료 · 전투 출현 중";
                 }
+                if (IsFinalUpgradeNode(node))
+                {
+                    return "최종 강화 완료 · 효과 적용 중";
+                }
                 return node.StartsUnlocked
                     ? "기본 효과 적용 중"
                     : "강화 완료 · 효과 적용 중";
@@ -8002,10 +8178,26 @@ namespace CursorHunter.Progression
         private static string GetNodeTypeLabel(TraitNodeDefinition node, TraitTab tab)
         {
             if (node != null && node.Id != null &&
+                node.Id.StartsWith("monster.", StringComparison.Ordinal))
+            {
+                return node.Id.IndexOf(".production.", StringComparison.Ordinal) >= 0
+                    ? "몬스터 생산량 증가"
+                    : "몬스터 해금";
+            }
+
+            if (node != null && node.Id != null &&
                 (node.Id.StartsWith("skill.cursorAura", StringComparison.Ordinal) ||
                  node.Id.StartsWith("skill.pet_baby_dragon", StringComparison.Ordinal)))
             {
-                return "펫 동료";
+                return node.Id == "skill.pet_baby_dragon"
+                    ? "펫 동료"
+                    : "펫 동료 강화";
+            }
+            if (node != null && node.Id != null &&
+                node.Id.StartsWith("skill.", StringComparison.Ordinal) &&
+                node.Id != GetEntityRootId(node.Id, "skill."))
+            {
+                return "스킬 강화";
             }
             switch (tab)
             {
@@ -8582,7 +8774,7 @@ namespace CursorHunter.Progression
             if (_summaryValues.Count >= 5)
             {
                 _summaryValues[0].text = info.stats.attackPower.ToString();
-                _summaryValues[1].text = info.stats.attackRadiusWorldUnits.ToString("0.##") + "u";
+                _summaryValues[1].text = info.stats.attackRadiusWorldUnits.ToString("0.##");
                 _summaryValues[2].text = info.stats.attackCooldownSeconds.ToString("0.##") + "s";
                 _summaryValues[3].text = info.stats.criticalChancePercent.ToString("0.#") + "%";
                 _summaryValues[4].text = info.stats.bossDamageMultiplier.ToString("0.##") + "×";
@@ -8798,32 +8990,24 @@ namespace CursorHunter.Progression
 
             if (id.StartsWith("stat.", StringComparison.Ordinal))
             {
-                if (id.EndsWith(".01", StringComparison.Ordinal) &&
-                    (id.StartsWith("stat.attack.", StringComparison.Ordinal) ||
-                     id.StartsWith("stat.radius.", StringComparison.Ordinal) ||
-                     id.StartsWith("stat.cooldown.", StringComparison.Ordinal) ||
-                     id.StartsWith("stat.critical.", StringComparison.Ordinal)))
-                {
-                    return "플레이어 전투 기본값을 사용합니다.";
-                }
                 if (id.StartsWith("stat.fieldDuration.", StringComparison.Ordinal) &&
                     id.EndsWith(".01", StringComparison.Ordinal))
                 {
-                    return "일반 필드 시간의 기준값입니다.";
+                    return "일반 전투 제한 시간입니다.";
                 }
 
                 if (id.StartsWith("stat.attack.", StringComparison.Ordinal))
-                    return "몬스터를 한 번 공격할 때 주는 피해가 증가합니다. 일반 피해 숫자도 전투 화면에 표시됩니다.";
+                    return "기본 공격 피해가 증가합니다.";
                 if (id.StartsWith("stat.radius.", StringComparison.Ordinal))
-                    return "커서 공격 판정이 닿는 범위를 넓힙니다. 커서가 몬스터에 조금 빗나가도 공격하기 쉬워집니다.";
+                    return "기본 공격이 닿는 범위가 넓어집니다.";
                 if (id.StartsWith("stat.cooldown.", StringComparison.Ordinal))
-                    return "같은 몬스터를 연속 공격할 때 적용되는 대기 시간을 줄입니다. 다른 몬스터로 옮기면 새 대상을 바로 공격할 수 있어, 체력이 높은 적이나 보스에게 특히 유용합니다.";
+                    return "같은 대상을 다시 공격하는 간격이 짧아집니다.";
                 if (id.StartsWith("stat.critical.", StringComparison.Ordinal))
-                    return "공격이 치명타로 적중할 확률을 높입니다. 치명타 피해 배수는 전투 기본값을 따릅니다.";
+                    return "치명타가 발동할 확률이 높아집니다.";
                 if (id.StartsWith("stat.boss.", StringComparison.Ordinal))
-                    return "보스에게 주는 피해 배수를 높입니다. 일반 몬스터 피해에는 영향을 주지 않습니다.";
+                    return "보스에게 주는 피해가 증가합니다.";
                 if (id.StartsWith("stat.fieldDuration.", StringComparison.Ordinal))
-                    return "일반 필드 전투의 제한 시간을 늘립니다. 보스 전투 시간에는 영향을 주지 않습니다.";
+                    return "일반 필드 전투 시간이 늘어납니다.";
             }
 
             if (id.StartsWith("skill.", StringComparison.Ordinal))
@@ -8843,10 +9027,19 @@ namespace CursorHunter.Progression
                         default: return "배우면 다음 전투부터 자동으로 사용합니다.";
                     }
                 }
-                if (id.EndsWith(".damage", StringComparison.Ordinal))
-                    return "전투에서 이 스킬이 주는 피해량을 높입니다.";
-                if (id.EndsWith(".radius", StringComparison.Ordinal))
-                    return "이 스킬의 공격 범위와 적중 판정 범위를 넓힙니다.";
+                if (id.IndexOf(".damage.", StringComparison.Ordinal) >= 0 ||
+                    id.EndsWith(".damage", StringComparison.Ordinal))
+                {
+                    return string.Equals(skillId, "skill.pet_baby_dragon",
+                            StringComparison.Ordinal)
+                        ? "동료의 공격 피해를 높입니다. 플레이어 공격력과 별도로 적용됩니다."
+                        : "이 스킬의 피해를 높입니다. 플레이어 공격력과 별도로 적용됩니다.";
+                }
+                if (id.IndexOf(".radius.", StringComparison.Ordinal) >= 0 ||
+                    id.EndsWith(".radius", StringComparison.Ordinal))
+                    return "이 스킬의 공격 범위를 넓힙니다. 기본 공격 범위와 별도로 적용됩니다.";
+                if (id.IndexOf(".simultaneousHits.", StringComparison.Ordinal) >= 0)
+                    return "동료가 한 번의 공격으로 동시에 타격하는 몬스터 수를 늘립니다.";
                 if (id.EndsWith(".cooldown", StringComparison.Ordinal))
                     return "이 스킬을 다시 사용하는 데 필요한 대기 시간을 줄입니다.";
             }
@@ -8854,34 +9047,46 @@ namespace CursorHunter.Progression
             if (id.StartsWith("monster.", StringComparison.Ordinal))
             {
                 string monsterId = GetEntityRootId(id, "monster.");
-                if (string.Equals(id, monsterId, StringComparison.Ordinal))
+                bool isProduction = id.IndexOf(".production.", StringComparison.Ordinal) >= 0;
+                if (string.Equals(id, monsterId, StringComparison.Ordinal) || isProduction)
                 {
-                    string behaviorDescription;
-                    switch (monsterId)
+                    string behavior = GetMonsterTraitDescription(monsterId);
+                    string reward = BuildMonsterRewardSummary(monsterId);
+                    string production = string.Empty;
+                    if (isProduction)
                     {
-                        case "monster.01": behaviorDescription = "가장 먼저 만나는 기본 몬스터입니다. 특수 능력 없이 필드에 등장합니다."; break;
-                        case "monster.02": behaviorDescription = "작은 몸집으로 빠르게 이동하는 소형 몬스터입니다."; break;
-                        case "monster.03": behaviorDescription = "다른 몬스터보다 빠르게 플레이어 쪽으로 이동합니다."; break;
-                        case "monster.04": behaviorDescription = "주기적으로 모습을 감춰 잠시 공격을 피합니다."; break;
-                        case "monster.05": behaviorDescription = "간헐적으로 방패를 들어 받는 피해를 줄입니다."; break;
-                        case "monster.06": behaviorDescription = "순간이동으로 위치를 바꿔 공격을 피합니다."; break;
-                        case "monster.07": behaviorDescription = "체력이 높아 쓰러뜨리는 데 더 많은 공격이 필요합니다."; break;
-                        case "monster.08": behaviorDescription = "크기가 크고 피격 범위도 넓은 대형 몬스터입니다."; break;
-                        case "monster.09": behaviorDescription = "주변 몬스터의 체력을 회복시킵니다. 먼저 처치하면 전투가 수월해집니다."; break;
-                        case "monster.10": behaviorDescription = "쓰러진 주변 몬스터를 되살립니다. 발견하면 우선적으로 처치하세요."; break;
-                        default: behaviorDescription = "해금하면 필드 전투에 등장합니다."; break;
+                        int productionCount = GetMonsterProductionCount(node);
+                        production = productionCount > 0
+                            ? "한 번에 " + productionCount.ToString(CultureInfo.InvariantCulture) + "마리 등장"
+                            : "한 번에 등장하는 몬스터 수가 증가";
                     }
 
-                    string rewardDescription = BuildMonsterRewardSummary(monsterId);
-                    return string.IsNullOrEmpty(rewardDescription)
-                        ? behaviorDescription
-                        : behaviorDescription + "\n\n" + rewardDescription;
+                    string details = behavior;
+                    if (!string.IsNullOrEmpty(production)) details += "\n" + production;
+                    if (!string.IsNullOrEmpty(reward)) details += "\n\n" + reward;
+                    return details;
                 }
-                if (id.IndexOf(".production.", StringComparison.Ordinal) >= 0)
-                    return "한 번에 " + (node.ValueLabel ?? string.Empty) + "마리 생성.";
             }
 
             return "연구 효과를 적용합니다.";
+        }
+
+        private static string GetMonsterTraitDescription(string monsterId)
+        {
+            switch (monsterId)
+            {
+                case "monster.01": return "특수 능력이 없는 기본 몬스터입니다.";
+                case "monster.02": return "몸집이 작아 공격을 맞히기 어렵습니다.";
+                case "monster.03": return "빠르게 이동합니다.";
+                case "monster.04": return "주기적으로 모습을 감춰 공격을 피합니다.";
+                case "monster.05": return "간헐적으로 방패를 들어 피해를 줄입니다.";
+                case "monster.06": return "순간이동으로 위치를 바꿉니다.";
+                case "monster.07": return "높은 체력을 지녔습니다.";
+                case "monster.08": return "몸집이 크고 피격 범위가 넓습니다.";
+                case "monster.09": return "주변 몬스터의 체력을 회복시킵니다.";
+                case "monster.10": return "쓰러진 주변 몬스터를 되살립니다.";
+                default: return "해금하면 전투 필드에 등장합니다.";
+            }
         }
 
         private string BuildMonsterRewardSummary(string monsterId)
@@ -8902,25 +9107,21 @@ namespace CursorHunter.Progression
                     continue;
                 }
 
-                string reward = "체력 " + monster.hitPoints.ToString(
-                    "N0",
-                    CultureInfo.InvariantCulture) + " · 생성 간격 " +
-                    monster.spawnIntervalSeconds.ToString(
-                        "0.##",
-                        CultureInfo.InvariantCulture) + "초\n처치 보상 · 가넷 " +
-                    monster.garnetReward.ToString(
-                    "N0",
-                    CultureInfo.InvariantCulture) + "개";
+                string reward = "처치 보상\n가넷 " + monster.garnetReward.ToString(
+                    "N0", CultureInfo.InvariantCulture) + "개";
                 if (monster.gemstoneAmount > 0 &&
                     monster.gemstoneChancePercent > 0f)
                 {
-                    reward += "\n추가 젬스톤 · " + GetGemstoneLocalizedName(
+                    reward += " · " + GetGemstoneLocalizedName(
                         monster.gemstoneId,
                         monster.gemstoneId) + " " +
                         monster.gemstoneAmount.ToString("N0", CultureInfo.InvariantCulture) +
-                        "개 · " + monster.gemstoneChancePercent.ToString(
-                            "0.#",
-                            CultureInfo.InvariantCulture) + "% 확률";
+                        "개";
+                    if (monster.gemstoneChancePercent < 100f)
+                    {
+                        reward += " (" + monster.gemstoneChancePercent.ToString(
+                            "0.#", CultureInfo.InvariantCulture) + "% 확률)";
+                    }
                 }
 
                 return reward;
@@ -8940,7 +9141,7 @@ namespace CursorHunter.Progression
             if (id.StartsWith("stat.", StringComparison.Ordinal))
             {
                 string group = id.StartsWith("stat.attack.", StringComparison.Ordinal) ? "공격력" :
-                    id.StartsWith("stat.radius.", StringComparison.Ordinal) ? "공격 반경" :
+                    id.StartsWith("stat.radius.", StringComparison.Ordinal) ? "공격 범위" :
                     id.StartsWith("stat.cooldown.", StringComparison.Ordinal) ? "공격 간격" :
                     id.StartsWith("stat.critical.", StringComparison.Ordinal) ? "치명타 확률" :
                     id.StartsWith("stat.boss.", StringComparison.Ordinal) ? "보스 피해 배수" :
@@ -8954,8 +9155,15 @@ namespace CursorHunter.Progression
                 string skillId = GetEntityRootId(id, "skill.");
                 string skillName = GetLocalizedEntityName(skillId, node.Title);
                 if (string.Equals(id, skillId, StringComparison.Ordinal)) return skillName;
-                if (id.EndsWith(".damage", StringComparison.Ordinal)) return skillName + " · 피해 강화";
-                if (id.EndsWith(".radius", StringComparison.Ordinal)) return skillName + " · 범위 강화";
+                int rank = GetTrailingRank(id);
+                if (id.IndexOf(".damage.", StringComparison.Ordinal) >= 0 ||
+                    id.EndsWith(".damage", StringComparison.Ordinal))
+                    return skillName + " 피해 강화 " + rank;
+                if (id.IndexOf(".radius.", StringComparison.Ordinal) >= 0 ||
+                    id.EndsWith(".radius", StringComparison.Ordinal))
+                    return skillName + " 범위 강화 " + rank;
+                if (id.IndexOf(".simultaneousHits.", StringComparison.Ordinal) >= 0)
+                    return skillName + " 동시 타격 강화 " + rank;
                 if (id.EndsWith(".cooldown", StringComparison.Ordinal)) return skillName + " · 재사용 시간";
             }
 
@@ -8964,13 +9172,16 @@ namespace CursorHunter.Progression
                 string monsterId = GetEntityRootId(id, "monster.");
                 string monsterName = GetLocalizedEntityName(monsterId, node.Title);
                 if (string.Equals(id, monsterId, StringComparison.Ordinal)) return monsterName;
-                return monsterName + " · 생성 수 " + (node.ValueLabel ?? string.Empty) + "마리";
+                int productionCount = GetMonsterProductionCount(node);
+                return productionCount > 0
+                    ? monsterName + " · 생산량 " + productionCount.ToString(CultureInfo.InvariantCulture) + "마리"
+                    : monsterName + " · 생산량 증가";
             }
 
             return node.Title ?? node.Id;
         }
 
-        private static string GetLocalizedNodeValueLabel(TraitNodeDefinition node)
+        private string GetLocalizedNodeValueLabel(TraitNodeDefinition node)
         {
             if (node == null) return string.Empty;
             if (string.Equals(node.Id, ResearchCoreNodeId, StringComparison.Ordinal))
@@ -8981,7 +9192,50 @@ namespace CursorHunter.Progression
             if (value == "Component baseline" || value == "JSON baseline") return "기본값";
             if (value == "Unlock skill") return "스킬 해금";
             if (value == "Enable monster") return "몬스터 해금";
+            if (node.Id != null && node.Id.StartsWith("skill.", StringComparison.Ordinal))
+            {
+                UpgradeNodeData data = FindUpgradeNodeData(node.Id);
+                if (data != null)
+                {
+                    if (string.Equals(data.statId, "damage", StringComparison.Ordinal))
+                        return "피해 +" + FormatCompactNumber(data.value);
+                    if (string.Equals(data.statId, "radius", StringComparison.Ordinal))
+                        return "범위 +" + FormatCompactNumber(data.value * 100d) + "%";
+                    if (string.Equals(data.statId, "simultaneousHits", StringComparison.Ordinal))
+                        return "동시 타격 +" + FormatCompactNumber(data.value) + "마리";
+                }
+            }
+            if (node.Id != null && node.Id.IndexOf(".production.", StringComparison.Ordinal) >= 0)
+            {
+                int count = GetMonsterProductionCount(node);
+                return count > 0
+                    ? "한 번에 " + count.ToString(CultureInfo.InvariantCulture) + "마리"
+                    : "생산량 증가";
+            }
             return FormatCompactValueLabel(value);
+        }
+
+        private int GetMonsterProductionCount(TraitNodeDefinition node)
+        {
+            if (node == null || string.IsNullOrEmpty(node.Id)) return 0;
+            UpgradeNodeData data = FindUpgradeNodeData(node.Id);
+            if (data != null && data.value >= 1d && data.value <= int.MaxValue &&
+                Math.Abs(data.value - Math.Round(data.value)) < 0.0001d)
+            {
+                return (int)Math.Round(data.value);
+            }
+
+            string label = node.ValueLabel ?? string.Empty;
+            for (int index = 0; index < label.Length; index++)
+            {
+                if (!char.IsDigit(label[index])) continue;
+                int end = index;
+                while (end < label.Length && char.IsDigit(label[end])) end++;
+                return int.TryParse(label.Substring(index, end - index), NumberStyles.Integer,
+                    CultureInfo.InvariantCulture, out int count) ? count : 0;
+            }
+
+            return 0;
         }
 
         private string BuildNodeChangePreview(TraitNodeDefinition node)
@@ -9050,10 +9304,27 @@ namespace CursorHunter.Progression
                 else if (nodeData != null && nodeData.operation == "add" &&
                          !string.IsNullOrEmpty(nodeData.statId))
                 {
-                    beforeValue = "누적 증가량 " + FormatCompactNumber(
-                        GetSkillUpgradeDelta(beforeSkill, nodeData.statId));
-                    afterValue = "누적 증가량 " + FormatCompactNumber(
-                        GetSkillUpgradeDelta(afterSkill, nodeData.statId));
+                    float beforeDelta = GetSkillUpgradeDelta(beforeSkill, nodeData.statId);
+                    float afterDelta = GetSkillUpgradeDelta(afterSkill, nodeData.statId);
+                    switch (nodeData.statId)
+                    {
+                        case "damage":
+                            beforeValue = "추가 피해 +" + FormatCompactNumber(beforeDelta);
+                            afterValue = "추가 피해 +" + FormatCompactNumber(afterDelta);
+                            break;
+                        case "radius":
+                            beforeValue = "범위 증가 +" + FormatCompactNumber(beforeDelta * 100f) + "%";
+                            afterValue = "범위 증가 +" + FormatCompactNumber(afterDelta * 100f) + "%";
+                            break;
+                        case "simultaneousHits":
+                            beforeValue = "추가 타격 " + FormatCompactNumber(beforeDelta) + "마리";
+                            afterValue = "추가 타격 " + FormatCompactNumber(afterDelta) + "마리";
+                            break;
+                        default:
+                            beforeValue = "누적 증가량 " + FormatCompactNumber(beforeDelta);
+                            afterValue = "누적 증가량 " + FormatCompactNumber(afterDelta);
+                            break;
+                    }
                 }
                 else
                 {
@@ -9163,7 +9434,7 @@ namespace CursorHunter.Progression
             if (nodeId.StartsWith("stat.attack.", StringComparison.Ordinal))
                 return stats.attackPower.ToString("N0", CultureInfo.InvariantCulture) + " 공격력";
             if (nodeId.StartsWith("stat.radius.", StringComparison.Ordinal))
-                return "공격 반경 " + FormatCompactNumber(stats.attackRadiusWorldUnits) + "u";
+                return "공격 범위 " + FormatCompactNumber(stats.attackRadiusWorldUnits);
             if (nodeId.StartsWith("stat.cooldown.", StringComparison.Ordinal))
                 return "간격 " + FormatCompactNumber(stats.attackCooldownSeconds) + "초";
             if (nodeId.StartsWith("stat.critical.", StringComparison.Ordinal))
@@ -9197,7 +9468,12 @@ namespace CursorHunter.Progression
             }
 
             string prefix = numberStart == 1 ? value.Substring(0, 1) : string.Empty;
-            return prefix + FormatCompactNumber(number) + value.Substring(numberEnd);
+            string suffix = value.Substring(numberEnd);
+            if (string.Equals(suffix, "u", StringComparison.OrdinalIgnoreCase))
+            {
+                suffix = " 공격 범위";
+            }
+            return prefix + FormatCompactNumber(number) + suffix;
         }
 
         private static string FormatCompactNumber(double value)
@@ -9949,6 +10225,69 @@ namespace CursorHunter.Progression
             }
 
             return button;
+        }
+    }
+
+    /// <summary>Turns a gemstone row's exchange icon into a press-and-hold action.</summary>
+    public sealed class TraitGemstoneExchangeHoldInput : MonoBehaviour,
+        IPointerDownHandler,
+        IPointerUpHandler,
+        IPointerExitHandler
+    {
+        private TraitScreenController _owner;
+        private int _sourceIndex;
+        private int _destinationIndex;
+        private bool _holding;
+
+        public void Bind(
+            TraitScreenController owner,
+            int sourceIndex,
+            int destinationIndex)
+        {
+            _owner = owner;
+            _sourceIndex = sourceIndex;
+            _destinationIndex = destinationIndex;
+        }
+
+        public void OnPointerDown(PointerEventData eventData)
+        {
+            if (_owner == null || eventData == null ||
+                eventData.button != PointerEventData.InputButton.Left)
+            {
+                return;
+            }
+
+            _holding = true;
+            _owner.BeginGemstoneExchangeHold(_sourceIndex, _destinationIndex);
+        }
+
+        public void OnPointerUp(PointerEventData eventData)
+        {
+            EndHold();
+        }
+
+        public void OnPointerExit(PointerEventData eventData)
+        {
+            EndHold();
+        }
+
+        private void OnDisable()
+        {
+            EndHold();
+        }
+
+        private void EndHold()
+        {
+            if (!_holding)
+            {
+                return;
+            }
+
+            _holding = false;
+            if (_owner != null)
+            {
+                _owner.EndGemstoneExchangeHold();
+            }
         }
     }
 

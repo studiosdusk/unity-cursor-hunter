@@ -4821,7 +4821,7 @@ MonoBehaviour:
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
           m_IntArgument: 0
           m_FloatArgument: 0
-          m_StringArgument: 
+          m_StringArgument: ""
           m_BoolArgument: 1
         m_CallState: 2
 --- !u!1 &289074298
@@ -12655,6 +12655,21 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 1
         m_CallState: 2
+  combatRequested:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 2188000012}
+        m_TargetAssemblyTypeName: CursorHunter.App.HuntManager, CursorHunter.App
+        m_MethodName: BeginPrototypeRun
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: ""
+          m_BoolArgument: 0
+        m_CallState: 2
   panelSprite: {fileID: 21300000, guid: ad88fadd7bc384969bd45f53f0448093, type: 3}
   combatBackgroundSprite: {fileID: 21300000, guid: 2847dc0f67feb49b4959b999a9ea4129, type: 3}
   tabSprite: {fileID: 21300000, guid: ecf3e525de7a347879c0787e5d7f091d, type: 3}
@@ -12669,6 +12684,8 @@ MonoBehaviour:
   lockIcon: {fileID: 21300000, guid: 177c91d27d5534109a5f6b3bb3ccbb3b, type: 3}
   checkIcon: {fileID: 21300000, guid: 67d74fe0bc2ff4f04bb9d4f9e1d63c02, type: 3}
   backIcon: {fileID: 21300000, guid: fda9564e96d404ec384b9e32872d049a, type: 3}
+  backButtonSprite: {fileID: 21300000, guid: 50a77b18a26f24b29891dc0d7bcea91a, type: 3}
+  gemstoneExchangeIcon: {fileID: 21300000, guid: fef0df8ebb5b64808b21515b1915f55a, type: 3}
   attackIcon: {fileID: 21300000, guid: 12c58e25a645d4bf9808e3e5b47cd280, type: 3}
   radiusIcon: {fileID: 21300000, guid: 8725c96846cc04e13b9bd0282edb30dd, type: 3}
   attackIntervalIcon: {fileID: 21300000, guid: 2ec93f10f96b7458d9718d95c2487da8, type: 3}
@@ -12696,15 +12713,15 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 8725c96846cc04e13b9bd0282edb30dd, type: 3}
   monsterIcons:
   - {fileID: 21300000, guid: 81366e1f0ef95fb4ca021ff158c9bbd7, type: 3}
-  - {fileID: 21300000, guid: 46fa022d7d7f6e741ab54b2481f73084, type: 3}
+  - {fileID: 21300000, guid: c8edaa838a2f690478e6a94b72bf8edd, type: 3}
   - {fileID: 21300000, guid: 9731bdc77bdd099499cd873c1fb95277, type: 3}
-  - {fileID: 21300000, guid: 05f79d22c8aa05941922a68b388ed9cd, type: 3}
-  - {fileID: 21300000, guid: 7e2cacd5ae582be4b8a01ec0292d35b7, type: 3}
-  - {fileID: 21300000, guid: d8527bbb0c6fabd4fa5a81df3a311acc, type: 3}
-  - {fileID: 21300000, guid: 27c7f323c4c073a419bda2ab90cc40ea, type: 3}
+  - {fileID: 21300000, guid: fb2ef077ca7cff145b786fe98437bf42, type: 3}
   - {fileID: 21300000, guid: 58ecdefa4b1d13344a5d2d437e661188, type: 3}
+  - {fileID: 21300000, guid: 0760c09a431bc7243a8a3895187b7ea1, type: 3}
+  - {fileID: 21300000, guid: fce62f34b0be7a94295f5b4a12f24dca, type: 3}
+  - {fileID: 21300000, guid: 2fd0633512126e646a8fe810019b0737, type: 3}
   - {fileID: 21300000, guid: 6c63eea5ac3d47f41a4ada2581ce61f3, type: 3}
-  - {fileID: 21300000, guid: e8a4f1b855cceee4cb4ec88d35ca7636, type: 3}
+  - {fileID: 21300000, guid: 9ed7185891b014c4a8a16be35bb06d34, type: 3}
   affordableNodeBadgeSprite: {fileID: 21300000, guid: 01c94d2830b4d4e48bac276d763beee1, type: 3}
   petIcons:
   - {fileID: 21300000, guid: e3db040c4cdb5234bbbea8c36b533fe2, type: 3}
