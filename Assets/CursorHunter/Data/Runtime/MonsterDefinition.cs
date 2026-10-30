@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using CursorHunter.Contracts;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -238,6 +239,74 @@ namespace CursorHunter.Data
                 specialAbilityDurationSeconds,
                 specialAbilityRadius,
                 specialAbilityStrength);
+        }
+
+        /// <summary>
+        /// Builds the Korean trait summary from the exact combat snapshot so
+        /// tooltip wording cannot drift from the authored behavior profiles.
+        /// </summary>
+        public string BuildTraitDescription(SpawnSnapshot baseline)
+        {
+            SpawnSnapshot snapshot = CreateSnapshot(1);
+            switch (snapshot.SpecialAbility)
+            {
+                case MonsterSpecialAbility.Vanish:
+                    return FormatTraitValue(snapshot.SpecialAbilityIntervalSeconds) +
+                        "초마다 " + FormatTraitValue(snapshot.SpecialAbilityDurationSeconds) +
+                        "초 동안 모습을 감춰 공격을 피합니다.";
+                case MonsterSpecialAbility.Shield:
+                    return FormatTraitValue(snapshot.SpecialAbilityIntervalSeconds) +
+                        "초마다 " + FormatTraitValue(snapshot.SpecialAbilityDurationSeconds) +
+                        "초 동안 받는 피해가 " +
+                        Mathf.RoundToInt(snapshot.SpecialAbilityStrength * 100f) +
+                        "% 감소합니다.";
+                case MonsterSpecialAbility.Teleport:
+                    return FormatTraitValue(snapshot.SpecialAbilityIntervalSeconds) +
+                        "초마다 순간이동해 위치를 바꿉니다.";
+                case MonsterSpecialAbility.HealNearby:
+                    return FormatTraitValue(snapshot.SpecialAbilityIntervalSeconds) +
+                        "초마다 반경 " + FormatTraitValue(snapshot.SpecialAbilityRadius) +
+                        " 안의 아군 체력을 최대 체력의 " +
+                        Mathf.RoundToInt(snapshot.SpecialAbilityStrength * 100f) +
+                        "%만큼 회복합니다.";
+                case MonsterSpecialAbility.ReviveNearby:
+                    return FormatTraitValue(snapshot.SpecialAbilityIntervalSeconds) +
+                        "초마다 반경 " + FormatTraitValue(snapshot.SpecialAbilityRadius) +
+                        " 안의 쓰러진 몬스터를 최대 체력의 " +
+                        Mathf.RoundToInt(snapshot.SpecialAbilityStrength * 100f) +
+                        "%로 되살립니다.";
+            }
+
+            if (snapshot.VisualScale <= baseline.VisualScale * 0.8f ||
+                snapshot.HitAreaWidth <= baseline.HitAreaWidth * 0.8f ||
+                snapshot.HitAreaHeight <= baseline.HitAreaHeight * 0.8f)
+            {
+                return "몸집과 피격 범위가 작습니다.";
+            }
+
+            if (snapshot.VisualScale >= baseline.VisualScale * 1.2f ||
+                snapshot.HitAreaWidth >= baseline.HitAreaWidth * 1.2f ||
+                snapshot.HitAreaHeight >= baseline.HitAreaHeight * 1.2f)
+            {
+                return "몸집이 크고 피격 범위가 넓습니다.";
+            }
+
+            if (snapshot.MoveSpeed >= baseline.MoveSpeed * 1.2f)
+            {
+                return "빠르게 이동합니다.";
+            }
+
+            if (snapshot.MaxHealth >= baseline.MaxHealth * 1.5d)
+            {
+                return "체력이 높아 오래 버팁니다.";
+            }
+
+            return "특별한 능력 없이 기본 방식으로 움직입니다.";
+        }
+
+        private static string FormatTraitValue(float value)
+        {
+            return value.ToString("0.##", CultureInfo.InvariantCulture);
         }
 
         private void OnValidate()

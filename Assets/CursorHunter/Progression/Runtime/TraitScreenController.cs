@@ -119,6 +119,9 @@ namespace CursorHunter.Progression
             new Dictionary<string, int>(StringComparer.Ordinal);
         private readonly Dictionary<string, string> _spentCurrencyByNode =
             new Dictionary<string, string>(StringComparer.Ordinal);
+        private readonly Dictionary<string, MonsterDefinition> _monsterDefinitionsById =
+            new Dictionary<string, MonsterDefinition>(StringComparer.Ordinal);
+        private bool _monsterDefinitionsLoaded;
         private readonly Dictionary<string, Vector2> _boardPositionsByNodeId =
             new Dictionary<string, Vector2>(StringComparer.Ordinal);
         private readonly Dictionary<string, RectTransform> _boardNodeRectsById =
@@ -4375,7 +4378,7 @@ namespace CursorHunter.Progression
                 AddLocalizedInfo(
                     "실행 특성",
                     "specialAbility",
-                    GetMonsterBehaviorLabel(monster.id, monster.behaviorType));
+                    GetMonsterTraitDescription(monster.id));
             }
 
             CreateSummarySection(_summaryOverlayContent, "스킬 정보", GetTabAccent(TraitTab.Skill));
@@ -4507,30 +4510,34 @@ namespace CursorHunter.Progression
                 : GetLocalizedNodeTitle(node);
         }
 
-        private static string GetMonsterBehaviorLabel(
-            string monsterId,
-            MonsterBehaviorType behaviorType)
+        private string GetMonsterTraitDescription(string monsterId)
         {
-            switch (monsterId)
+            MonsterDefinition definition = FindMonsterDefinition(monsterId);
+            MonsterDefinition baselineDefinition = FindMonsterDefinition("monster.01");
+            if (definition == null || baselineDefinition == null)
+                return "몬스터 특성 정보가 준비되지 않았습니다.";
+
+            return definition.BuildTraitDescription(baselineDefinition.CreateSnapshot(1));
+        }
+
+        private MonsterDefinition FindMonsterDefinition(string monsterId)
+        {
+            if (string.IsNullOrEmpty(monsterId)) return null;
+            if (!_monsterDefinitionsLoaded)
             {
-                case "monster.01": return "기본 몬스터";
-                case "monster.02": return "소형 · 시각·피격 영역 0.62배";
-                case "monster.03": return "고속 · 이동 속도 1.8배";
-                case "monster.04": return "은신 · 4초마다 1.2초";
-                case "monster.05": return "방패 · 4.5초마다 1.7초, 피해 65% 감소";
-                case "monster.06": return "순간이동 · 3.5초마다";
-                case "monster.07": return "고체력 · 체력 2.5배";
-                case "monster.08": return "대형 · 시각 2배, 피격 영역 1.8배";
-                case "monster.09": return "회복 · 3.5초마다 반경 2.75, 아군 체력 20%";
-                case "monster.10": return "부활 · 4초마다 반경 3.5, 아군 체력 30%";
+                MonsterDefinition[] definitions = Resources.LoadAll<MonsterDefinition>("MonsterDefinitions");
+                for (int i = 0; i < definitions.Length; i++)
+                {
+                    MonsterDefinition definition = definitions[i];
+                    if (definition != null && !string.IsNullOrEmpty(definition.MonsterId))
+                        _monsterDefinitionsById[definition.MonsterId] = definition;
+                }
+                _monsterDefinitionsLoaded = true;
             }
 
-            switch (behaviorType)
-            {
-                case MonsterBehaviorType.None:
-                default:
-                    return "기본 행동";
-            }
+            return _monsterDefinitionsById.TryGetValue(monsterId, out MonsterDefinition result)
+                ? result
+                : null;
         }
 
         private void CreateSummarySection(
@@ -7253,7 +7260,7 @@ namespace CursorHunter.Progression
             _graphDragCursorActive = false;
         }
 
-        private static string GetCategoryTitle(TraitCategoryDefinition category)
+        private string GetCategoryTitle(TraitCategoryDefinition category)
         {
             if (category == null)
             {
@@ -9266,63 +9273,30 @@ namespace CursorHunter.Progression
             return "연구 효과를 적용합니다.";
         }
 
-        private static string GetMonsterTraitDescription(string monsterId)
-        {
-            switch (monsterId)
-            {
-                case "monster.01": return "특수 능력이 없는 기본 몬스터입니다.";
-                case "monster.02": return "몸집이 작아 공격을 맞히기 어렵습니다.";
-                case "monster.03": return "빠르게 이동합니다.";
-                case "monster.04": return "주기적으로 모습을 감춰 공격을 피합니다.";
-                case "monster.05": return "간헐적으로 방패를 들어 피해를 줄입니다.";
-                case "monster.06": return "순간이동으로 위치를 바꿉니다.";
-                case "monster.07": return "높은 체력을 지녔습니다.";
-                case "monster.08": return "몸집이 크고 피격 범위가 넓습니다.";
-                case "monster.09": return "주변 몬스터의 체력을 회복시킵니다.";
-                case "monster.10": return "쓰러진 주변 몬스터를 되살립니다.";
-                default: return "해금하면 전투 필드에 등장합니다.";
-            }
-        }
-
         private string BuildMonsterRewardSummary(string monsterId)
         {
-            if (_document == null || _document.information == null ||
-                _document.information.monsters == null)
-            {
+            MonsterDefinition definition = FindMonsterDefinition(monsterId);
+            if (definition == null || definition.BaseStats == null)
                 return string.Empty;
-            }
 
-            foreach (MonsterInformation monster in _document.information.monsters)
+            string reward = "처치 보상\n가넷 " + definition.GarnetReward.ToString(
+                "N0", CultureInfo.InvariantCulture) + "개";
+            if (definition.BonusDropAmount > 0 &&
+                definition.BonusDropChancePercent > 0f)
             {
-                if (monster == null || !string.Equals(
-                        monster.id,
-                        monsterId,
-                        StringComparison.Ordinal))
+                reward += " · " + GetGemstoneLocalizedName(
+                    definition.BonusDropCurrencyId,
+                    definition.BonusDropCurrencyId) + " " +
+                    definition.BonusDropAmount.ToString("N0", CultureInfo.InvariantCulture) +
+                    "개";
+                if (definition.BonusDropChancePercent < 100f)
                 {
-                    continue;
+                    reward += " (" + definition.BonusDropChancePercent.ToString(
+                        "0.#", CultureInfo.InvariantCulture) + "% 확률)";
                 }
-
-                string reward = "처치 보상\n가넷 " + monster.garnetReward.ToString(
-                    "N0", CultureInfo.InvariantCulture) + "개";
-                if (monster.gemstoneAmount > 0 &&
-                    monster.gemstoneChancePercent > 0f)
-                {
-                    reward += " · " + GetGemstoneLocalizedName(
-                        monster.gemstoneId,
-                        monster.gemstoneId) + " " +
-                        monster.gemstoneAmount.ToString("N0", CultureInfo.InvariantCulture) +
-                        "개";
-                    if (monster.gemstoneChancePercent < 100f)
-                    {
-                        reward += " (" + monster.gemstoneChancePercent.ToString(
-                            "0.#", CultureInfo.InvariantCulture) + "% 확률)";
-                    }
-                }
-
-                return reward;
             }
 
-            return string.Empty;
+            return reward;
         }
 
         private string GetLocalizedNodeTitle(TraitNodeDefinition node)
@@ -9721,8 +9695,15 @@ namespace CursorHunter.Progression
             return suffixStart < 0 ? id : id.Substring(0, suffixStart);
         }
 
-        private static string GetLocalizedEntityName(string id, string fallback)
+        private string GetLocalizedEntityName(string id, string fallback)
         {
+            if (id != null && id.StartsWith("monster.", StringComparison.Ordinal))
+            {
+                MonsterDefinition definition = FindMonsterDefinition(id);
+                if (definition != null && !string.IsNullOrWhiteSpace(definition.DisplayName))
+                    return definition.DisplayName;
+            }
+
             switch (id)
             {
                 case "skill.tornado": return "토네이도";
@@ -9733,16 +9714,6 @@ namespace CursorHunter.Progression
                 case "skill.laser": return "레이저";
                 case "skill.cursorAura": return "펫 동료";
                 case "skill.pet_baby_dragon": return "베이비 드래곤";
-                case "monster.01": return "그루터기";
-                case "monster.02": return "여왕벌";
-                case "monster.03": return "독버섯";
-                case "monster.04": return "가면유령";
-                case "monster.05": return "갑옷병사";
-                case "monster.06": return "눈요정";
-                case "monster.07": return "벌집";
-                case "monster.08": return "골렘";
-                case "monster.09": return "봉오리";
-                case "monster.10": return "판도라 상자";
                 default: return string.IsNullOrEmpty(fallback) ? id : fallback;
             }
         }
@@ -10346,7 +10317,13 @@ namespace CursorHunter.Progression
             text.raycastTarget = false;
 
             text.overflowMode = TextOverflowModes.Truncate;
-            text.enableAutoSizing = false;
+            // Runtime-created labels have fixed rectangles. Let TMP wrap and
+            // reduce the size slightly before truncating so Korean labels and
+            // translated copy remain readable across the supported canvases.
+            text.textWrappingMode = TextWrappingModes.Normal;
+            text.enableAutoSizing = true;
+            text.fontSizeMin = Mathf.Max(12f, text.fontSize * 0.76f);
+            text.fontSizeMax = text.fontSize;
             text.richText = false;
             if (bold && text.font != null)
             {
