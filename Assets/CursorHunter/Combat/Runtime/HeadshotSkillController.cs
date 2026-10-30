@@ -35,7 +35,8 @@ namespace CursorHunter.Combat
             ExplosionDelaySeconds = 1.15f,
             EffectDurationSeconds = 2.5f,
             SplashDamageMultiplier = 2f,
-            BossDamageMultiplier = 10f
+            BossDamageMultiplier = 10f,
+            RadiusMultiplier = 1f
         };
 
         [Header("Pool")]

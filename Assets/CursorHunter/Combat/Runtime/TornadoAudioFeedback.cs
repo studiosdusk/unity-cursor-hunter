@@ -6,6 +6,7 @@ namespace CursorHunter.Combat
     internal sealed class TornadoAudioFeedback
     {
         private const int SampleRate = 22050;
+        private const float WindFadeSpeed = 0.24f;
         private static AudioClip _castClip;
         private static AudioClip _windClip;
         private readonly AudioSource _cast;
@@ -37,7 +38,8 @@ namespace CursorHunter.Combat
                 ? Mathf.Clamp01(volume) * 0.24f * Mathf.Min(1.12f, 1f + (activeCount - 1) * 0.04f)
                 : 0f;
             if (activeCount > 0 && !_wind.isPlaying) _wind.Play();
-            _wind.volume = Mathf.MoveTowards(_wind.volume, target, Mathf.Max(0f, deltaTime) * 0.68f);
+            _wind.volume = Mathf.MoveTowards(
+                _wind.volume, target, Mathf.Max(0f, deltaTime) * WindFadeSpeed);
             if (activeCount == 0 && _wind.volume <= 0.001f) _wind.Stop();
         }
 

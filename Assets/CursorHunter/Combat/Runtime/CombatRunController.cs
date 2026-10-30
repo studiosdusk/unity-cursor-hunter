@@ -1009,33 +1009,60 @@ namespace CursorHunter.Combat
                 return null;
             }
 
+            float totalChance = SumEligibleRelicDropChance(
+                sourceMonsterId, _relicSnapshots, _relicAwardIds);
+
+            if (totalChance <= 0f || !PassesRelicDropRoll(
+                    _relicRandom.NextFloat(0f, 100f), totalChance))
+                return null;
+
+            float selection = _relicRandom.NextFloat(0f, totalChance);
+            return SelectRelicDropCandidate(
+                sourceMonsterId, _relicSnapshots, _relicAwardIds, selection);
+        }
+
+        internal static float SumEligibleRelicDropChance(
+            string sourceMonsterId,
+            IReadOnlyList<RelicCombatSnapshot> relics,
+            ISet<string> awardedIds)
+        {
+            if (string.IsNullOrEmpty(sourceMonsterId) || relics == null)
+                return 0f;
+
             float totalChance = 0f;
-            for (int i = 0; i < _relicSnapshots.Length; i++)
+            for (int i = 0; i < relics.Count; i++)
             {
-                RelicCombatSnapshot relic = _relicSnapshots[i];
-                if (relic.Owned || _relicAwardIds.Contains(relic.RelicId) ||
-                    relic.SourceMonsterId != sourceMonsterId)
-                {
+                RelicCombatSnapshot relic = relics[i];
+                if (!IsEligibleRelicCandidate(sourceMonsterId, relic, awardedIds))
                     continue;
-                }
 
                 totalChance += relic.DropChancePercent;
             }
 
-            if (totalChance <= 0f || _relicRandom.NextFloat(0f, 100f) >= totalChance)
+            return totalChance;
+        }
+
+        internal static bool PassesRelicDropRoll(float rollPercent, float totalChance)
+        {
+            return totalChance > 0f && rollPercent >= 0f && rollPercent < totalChance;
+        }
+
+        internal static string SelectRelicDropCandidate(
+            string sourceMonsterId,
+            IReadOnlyList<RelicCombatSnapshot> relics,
+            ISet<string> awardedIds,
+            float selection)
+        {
+            if (string.IsNullOrEmpty(sourceMonsterId) || relics == null || selection < 0f)
                 return null;
 
-            float selection = _relicRandom.NextFloat(0f, totalChance);
             float cumulativeChance = 0f;
             string lastCandidateId = null;
-            for (int i = 0; i < _relicSnapshots.Length; i++)
+            for (int i = 0; i < relics.Count; i++)
             {
-                RelicCombatSnapshot relic = _relicSnapshots[i];
-                if (relic.Owned || _relicAwardIds.Contains(relic.RelicId) ||
-                    relic.SourceMonsterId != sourceMonsterId)
-                {
+                RelicCombatSnapshot relic = relics[i];
+                if (!IsEligibleRelicCandidate(sourceMonsterId, relic, awardedIds))
                     continue;
-                }
 
                 cumulativeChance += relic.DropChancePercent;
                 lastCandidateId = relic.RelicId;
@@ -1045,6 +1072,16 @@ namespace CursorHunter.Combat
 
             // Protect against floating-point rounding at the upper boundary.
             return lastCandidateId;
+        }
+
+        private static bool IsEligibleRelicCandidate(
+            string sourceMonsterId,
+            RelicCombatSnapshot relic,
+            ISet<string> awardedIds)
+        {
+            return !relic.Owned &&
+                (awardedIds == null || !awardedIds.Contains(relic.RelicId)) &&
+                relic.SourceMonsterId == sourceMonsterId;
         }
 
         private bool RollCriticalHit()

@@ -12,10 +12,91 @@ namespace CursorHunter.Combat.Tests
     public sealed class CombatBalanceMainScenePlayModeTests
     {
         private Scene _scene;
+        private float _timeScale;
+
+        [UnitySetUp]
+        public IEnumerator CaptureTimeScale()
+        {
+            _timeScale = Time.timeScale;
+            yield break;
+        }
+
+        [TestCase(true, true, 1f, false, true, TestName = "EditorPauseStopsThePlaytimeClock")]
+        [TestCase(false, false, 1f, false, true, TestName = "LosingFocusStopsThePlaytimeClock")]
+        [TestCase(false, true, 0f, false, true, TestName = "ZeroTimeScaleStopsThePlaytimeClock")]
+        [TestCase(false, true, 1f, true, true, TestName = "CombatPauseStopsThePlaytimeClock")]
+        [TestCase(false, true, 1f, false, false, TestName = "ActivePlayAdvancesThePlaytimeClock")]
+        public void EditorPlaytimePausePolicyCoversEveryPauseSource(
+            bool applicationPaused, bool applicationFocused, float timeScale,
+            bool combatPaused, bool expected)
+        {
+            MethodInfo policy = typeof(PrototypeRunHud).GetMethod("IsEditorPlaytimePaused",
+                BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.That(policy, Is.Not.Null);
+            bool actual = (bool)policy.Invoke(null, new object[]
+            {
+                applicationPaused, applicationFocused, timeScale, combatPaused
+            });
+            Assert.That(actual, Is.EqualTo(expected));
+        }
+
+        [UnityTest]
+        public IEnumerator AdvancingBossTierResetsOnlyTheStageClockWhilePaused()
+        {
+#if UNITY_EDITOR
+            _timeScale = Time.timeScale;
+            Time.timeScale = 0f;
+            _scene = UnityEditor.SceneManagement.EditorSceneManager.LoadSceneInPlayMode(
+                "Assets/CursorHunter/App/Scenes/Main.unity",
+                new LoadSceneParameters(LoadSceneMode.Additive));
+            yield return null;
+            yield return null;
+
+            var hud = Object.FindFirstObjectByType<PrototypeRunHud>();
+            Assert.That(hud, Is.Not.Null);
+            FieldInfo total = typeof(PrototypeRunHud).GetField("_editorPlaytimeElapsed",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            FieldInfo stage = typeof(PrototypeRunHud).GetField("_editorStageElapsed",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            FieldInfo observedTier = typeof(PrototypeRunHud).GetField("_editorObservedBossTier",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            FieldInfo applicationPaused = typeof(PrototypeRunHud).GetField("_editorApplicationPaused",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            MethodInfo updateClock = typeof(PrototypeRunHud).GetMethod("UpdateEditorPlaytimeClock",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(total, Is.Not.Null);
+            Assert.That(stage, Is.Not.Null);
+            Assert.That(observedTier, Is.Not.Null);
+            Assert.That(applicationPaused, Is.Not.Null);
+            Assert.That(updateClock, Is.Not.Null);
+
+            total.SetValue(hud, 1234d);
+            stage.SetValue(hud, 321d);
+            observedTier.SetValue(hud, 99);
+            applicationPaused.SetValue(hud, true);
+            updateClock.Invoke(hud, null);
+
+            Assert.That(total.GetValue(hud), Is.EqualTo(1234d),
+                "Changing boss tiers must preserve the total playtime.");
+            Assert.That(stage.GetValue(hud), Is.EqualTo(0d),
+                "The next boss tier must start a fresh stage timer.");
+            GameObject clock = GameObject.Find("EditorPlaytimeClock");
+            TMPro.TMP_Text clockText = clock != null
+                ? clock.GetComponentInChildren<TMPro.TMP_Text>(true)
+                : null;
+            Assert.That(clockText, Is.Not.Null);
+            Assert.That(clockText.text, Does.Contain("전체 00:20:34"));
+            Assert.That(clockText.text, Does.Contain("00:00"));
+#else
+            Assert.Ignore("Requires Editor PlayMode.");
+#endif
+            yield break;
+        }
 
         [UnityTearDown]
         public IEnumerator Cleanup()
         {
+            Time.timeScale = _timeScale;
             if (_scene.IsValid() && _scene.isLoaded)
                 yield return SceneManager.UnloadSceneAsync(_scene);
         }

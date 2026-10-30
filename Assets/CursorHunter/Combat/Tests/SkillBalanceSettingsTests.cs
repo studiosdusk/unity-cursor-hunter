@@ -6,13 +6,13 @@ namespace CursorHunter.Combat.Tests
 {
     public sealed class SkillBalanceSettingsTests
     {
-        [TestCase(typeof(TornadoSkillController), 11)]
-        [TestCase(typeof(HeadshotSkillController), 6)]
-        [TestCase(typeof(ThunderSkillController), 5)]
+        [TestCase(typeof(TornadoSkillController), 12)]
+        [TestCase(typeof(HeadshotSkillController), 7)]
+        [TestCase(typeof(ThunderSkillController), 7)]
         [TestCase(typeof(FlameExhaustSkillController), 8)]
         [TestCase(typeof(MagicBallSkillController), 5)]
         [TestCase(typeof(LaserSkillController), 5)]
-        [TestCase(typeof(PetSkillController), 5)]
+        [TestCase(typeof(PetSkillController), 6)]
         public void EveryAuthoredSkillFieldIsExposedWithFiniteMetadata(Type type, int count)
         {
             var root = new GameObject("Balance schema");

@@ -224,7 +224,10 @@ namespace CursorHunter.EditorTools.Tests
             yield return new EnterPlayMode();
             EditorSceneManager.LoadSceneInPlayMode(OtherScenePath, new LoadSceneParameters(LoadSceneMode.Single));
             yield return null;
-            Selection.activeGameObject = SceneManager.GetSceneByPath(OtherScenePath).GetRootGameObjects()[1];
+            var runtimeSelection = new GameObject("Runtime-only selection");
+            SceneManager.MoveGameObjectToScene(
+                runtimeSelection, SceneManager.GetSceneByPath(OtherScenePath));
+            Selection.activeGameObject = runtimeSelection;
             yield return new ExitPlayMode();
             Object selectionAfterUnityRestore = Selection.activeObject;
             yield return WaitForRestore();

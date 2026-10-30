@@ -13,63 +13,83 @@ MonoBehaviour:
   m_Name: RelicCollectionCatalog
   m_EditorClassIdentifier:
   entries:
-  - title: 빨간 포션
+  - id: relic.red_potion
+    title: 빨간 포션
     icon: {fileID: 21300000, guid: 202231647a7ed4f18933e1eafd9835fb, type: 3}
     description: 커서 기본 공격 피해 +5%
-  - title: 파란 포션
+  - id: relic.blue_potion
+    title: 파란 포션
     icon: {fileID: 21300000, guid: d3ad47b65a3144ea593c0c93a2641474, type: 3}
     description: 자동 스킬 피해 +5%
-  - title: 몬스터 고기
+  - id: relic.monster_meat
+    title: 몬스터 고기
     icon: {fileID: 21300000, guid: d2d8706278c414fb0b8ddf59d6470318, type: 3}
     description: 펫 공격 피해 +10%
-  - title: 도적 신발
+  - id: relic.thief_shoes
+    title: 도적 신발
     icon: {fileID: 21300000, guid: 689aab790dfd640a78c6b3890daa0b71, type: 3}
     description: 펫 이동 속도 +15%
-  - title: 궁수의 활
+  - id: relic.archers_bow
+    title: 궁수의 활
     icon: {fileID: 21300000, guid: 84e3504adeb474cd78690f0e7ce48a69, type: 3}
     description: 펫 공격 간격 -10%
-  - title: 전사의 갑옷
+  - id: relic.warrior_armor
+    title: 전사의 갑옷
     icon: {fileID: 21300000, guid: db45e68c10e784423a0a4aa24c8ba033, type: 3}
     description: 일반 필드 시간 +2초 (최대 30초)
-  - title: 마법사의 모자
+  - id: relic.wizards_hat
+    title: 마법사의 모자
     icon: {fileID: 21300000, guid: 38a8311eeb6114df7a9bd458e196e082, type: 3}
     description: 범위형 스킬 반경 +8%
-  - title: 용맹의 반지
+  - id: relic.valor_ring
+    title: 용맹의 반지
     icon: {fileID: 21300000, guid: 310b8e87e0f624fa587ef446b1885df4, type: 3}
     description: 치명타 피해 배율 +0.25배
-  - title: 행운의 주사위
+  - id: relic.lucky_dice
+    title: 행운의 주사위
     icon: {fileID: 21300000, guid: f3974630efb91453bb0b049b3bd8bc6f, type: 3}
     description: 펫 공격이 10% 확률로 2배 피해
-  - title: 크라켄의 눈
+  - id: relic.kraken_eye
+    title: 크라켄의 눈
     icon: {fileID: 21300000, guid: e8a913573801943d2b2ff4b562c83f92, type: 3}
     description: 보스 외 몬스터, 체력 30% 이하일 때 50% 확률로 즉사
-  - title: 네잎클로버
+  - id: relic.four_leaf_clover
+    title: 네잎클로버
     icon: {fileID: 21300000, guid: 27109c2994c094997b78d1cebc5b277a, type: 3}
     description: 젬 획득 시 10% 확률로 1개 추가
-  - title: 고대의 서
+  - id: relic.ancient_book
+    title: 고대의 서
     icon: {fileID: 21300000, guid: 562186b060ba241378d482c1154a84e7, type: 3}
     description: 펫 공격 반경 +20%
-  - title: 모험가의 가방
+  - id: relic.adventurers_bag
+    title: 모험가의 가방
     icon: {fileID: 21300000, guid: 88d80ec7bf9ed49e18c3e3612ffcbcd1, type: 3}
     description: 처치 가넷 보상 +10%
-  - title: 나침반
+  - id: relic.compass
+    title: 나침반
     icon: {fileID: 21300000, guid: af47147931c3147a6b130388045bcc5a, type: 3}
     description: 펫 탐지 반경 +15%
-  - title: 확성기
+  - id: relic.megaphone
+    title: 확성기
     icon: {fileID: 21300000, guid: 5fb5c6b85663f44e2abe89863eb73bd6, type: 3}
     description: 일반 몬스터 생성 간격 -5%
-  - title: 망원경
+  - id: relic.telescope
+    title: 망원경
     icon: {fileID: 21300000, guid: ae1ab6a3c2fd44399a945a071c1d0e8f, type: 3}
     description: 커서 공격 반경 +10%
-  - title: 짱돌
+  - id: relic.stone
+    title: 짱돌
     icon: {fileID: 21300000, guid: f65cb867da27e48cda237c149b44b8b6, type: 3}
     description: 최대 체력 대상 첫 타격 피해 +15%
-  - title: 무지개 깃털
+  - id: relic.rainbow_feather
+    title: 무지개 깃털
     icon: {fileID: 21300000, guid: 894abf050c0dc41b6bab39641a001dff, type: 3}
     description: 자동 스킬 쿨타임 -5%
-  - title: 심판의 저울
+  - id: relic.scales_of_judgment
+    title: 심판의 저울
     icon: {fileID: 21300000, guid: 0f7806085e32347f39a2f408199654df, type: 3}
     description: 보스 피해 +10%
-  - title: 보물상자
+  - id: relic.treasure_chest
+    title: 보물상자
     icon: {fileID: 21300000, guid: 63b367dbaca5c43d6bd8977f915e4b8c, type: 3}
     description: 일반 몬스터 처치 보상 +15%
