@@ -12,10 +12,12 @@ namespace CursorHunter.Combat
         private ParticleSystem[] _particles;
         private bool[] _resumeParticles;
         private Vector3 _baseScale;
+        private float _activatedAt;
         private float _returnAt;
         private bool _active;
 
         public bool IsActive => _active;
+        internal float ActivatedAt => _activatedAt;
 
         private void Awake()
         {
@@ -37,6 +39,7 @@ namespace CursorHunter.Combat
             transform.localScale = _baseScale *
                 (Mathf.Max(0.01f, targetSizeWorldUnits) *
                  Mathf.Max(0.01f, sizeMultiplier));
+            _activatedAt = now;
             _returnAt = now + duration;
             _active = true;
             gameObject.SetActive(true);
@@ -80,6 +83,7 @@ namespace CursorHunter.Combat
         internal void ReturnToPool()
         {
             _active = false;
+            _activatedAt = 0f;
             transform.localScale = _baseScale;
             for (int i = 0; i < _particles.Length; i++)
             {
