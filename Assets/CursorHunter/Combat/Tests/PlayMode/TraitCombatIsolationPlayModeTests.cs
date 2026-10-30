@@ -42,8 +42,13 @@ namespace CursorHunter.Combat.Tests
             _combat = Find<CombatRunController>();
             _spawner = Find<MonsterSpawner>();
             _traits = Components().Single(value => value.GetType().Name == "TraitScreenController");
-            Assert.That(_hunt.IsTraitScreenConnectedToCombat, Is.False,
-                "Main must default to authored combat, independently of the trait screen.");
+            Assert.That(_hunt.IsTraitScreenConnectedToCombat, Is.True,
+                "Player combat must default to the real purchased trait snapshot.");
+            // This fixture verifies the explicit authored/sandbox path. The
+            // player path is exercised by TraitTooltipPlayModeTests.
+            SetField(_hunt, "connectTraitScreenToCombat", false);
+            SetField(_hunt, "defaultStage", UnityEditor.AssetDatabase.LoadAssetAtPath<CombatStageDefinition>(
+                "Assets/CursorHunter/App/Stages/Stage01.asset"));
             _hunt.ClearCombatBalanceSettings();
             foreach (MonoBehaviour skill in Skills()) SetField(skill, "editorSkillAcquired", false);
             // This read initializes the real catalog and loads its profile once.
@@ -234,13 +239,19 @@ namespace CursorHunter.Combat.Tests
             object stage = Field(_hunt, "defaultStage");
             Assert.That(stage, Is.Not.Null);
             var rows = (Array)Field(stage, "monsters");
+            GameInformation authored = JsonUtility.FromJson<GameInformation>(
+                Resources.Load<TextAsset>("GameData/game-data.en").text);
             var expected = new List<SpawnSnapshot>();
             foreach (object row in rows)
             {
                 if (!Property<bool>(row, "AllowSpawn")) continue;
                 object definition = Property<object>(row, "Monster");
                 int production = Convert.ToInt32(Property<object>(row, "Production"), CultureInfo.InvariantCulture);
-                int bonus = Math.Max(0, production == 0 ? 0 : production - 1);
+                string monsterId = Property<string>(definition, "MonsterId");
+                int resolvedProduction = production == 0
+                    ? authored.monsters.Single(monster => monster.id == monsterId).productionCount
+                    : production;
+                int bonus = Math.Max(0, resolvedProduction - 1);
                 MethodInfo create = definition.GetType().GetMethod("CreateSnapshotWithProductionBonus");
                 Assert.That(create, Is.Not.Null);
                 expected.Add((SpawnSnapshot)create.Invoke(definition,

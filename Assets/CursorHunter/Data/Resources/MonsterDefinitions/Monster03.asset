@@ -26,7 +26,7 @@ MonoBehaviour:
     hitAreaHeight: 1.2
     garnetReward: 5
     bonusDropCurrencyId: gem.topaz
-    bonusDropAmount: 1
+    bonusDropAmount: 4
     bonusDropChancePercent: 100
   behaviorProfiles:
   - {fileID: 11400000, guid: 27244024086e4476abc73bc422f6e10c, type: 2}

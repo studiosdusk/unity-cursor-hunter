@@ -175,6 +175,7 @@ namespace CursorHunter.Combat
             _nextCastAt = now + _combat.ResolveAutoSkillCooldown(
                 _runtime.CooldownSeconds);
             _hasCast = true;
+            CombatAudioFeedback.PlaySkill(SkillId);
             Physics2D.SyncTransforms();
             if (!next.Tick(now, _enemyFilter) && _active.Remove(next))
             {

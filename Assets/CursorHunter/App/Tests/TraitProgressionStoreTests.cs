@@ -8,7 +8,7 @@ namespace CursorHunter.App.Tests
     public sealed class TraitProgressionStoreTests
     {
         private const string Key = "cursor_hunter.progression.v1";
-        private const string BackupKey = Key + ".before-v4";
+        private const string BackupKey = Key + ".before-v5";
         private bool _hadSave;
         private bool _hadBackup;
         private string _save;
@@ -34,14 +34,14 @@ namespace CursorHunter.App.Tests
         }
 
         [Test]
-        public void FirstV4SavePreservesExactLegacyDataAndBackupIsNotOverwritten()
+        public void FirstV5SavePreservesExactLegacyDataAndBackupIsNotOverwritten()
         {
             const string old = "{\"version\":2,\"garnetBalance\":42,\"purchasedNodeIds\":[\"relic.monster.01.level.01\"],\"fragmentCurrencyIds\":[\"fragment.relic.monster.01\"],\"fragmentBalances\":[77]}";
             PlayerPrefs.SetString(Key, old);
             Assert.That(TraitProgressionStore.Save(42, new long[] { 42 }, new[] { "stat.attack.01" }, null, null), Is.True);
             Assert.That(PlayerPrefs.GetString(BackupKey), Is.EqualTo(old));
             Assert.That(TraitProgressionStore.TryLoad(out var current), Is.True);
-            Assert.That(current.version, Is.EqualTo(4));
+            Assert.That(current.version, Is.EqualTo(5));
             Assert.That(PlayerPrefs.GetString(Key), Does.Not.Contain("fragment"));
             Assert.That(TraitProgressionStore.Save(43, new long[] { 43 }, new[] { "stat.attack.01" }, null, null), Is.True);
             Assert.That(PlayerPrefs.GetString(BackupKey), Is.EqualTo(old));

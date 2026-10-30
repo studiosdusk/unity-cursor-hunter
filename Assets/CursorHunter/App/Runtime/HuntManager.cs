@@ -55,6 +55,9 @@ namespace CursorHunter.App
         private CombatStageDefinition _lastStartedStage;
         private readonly HashSet<RunId> _settledRunIds =
             new HashSet<RunId>();
+#if UNITY_EDITOR
+        [NonSerialized] private bool _ignoreFocusPauseForAutomatedPlayModeTest;
+#endif
 
         private void Awake()
         {
@@ -144,6 +147,25 @@ namespace CursorHunter.App
         /// </summary>
         public void BeginPrototypeRun()
         {
+            ResolveReferences();
+            if (connectTraitScreenToCombat)
+            {
+                if (progressionController == null)
+                {
+                    Debug.LogError(
+                        "Cannot start the player run because the connected Trait screen is missing.",
+                        this);
+                    return;
+                }
+
+                if (!progressionController.CanStartPlayerCombat)
+                {
+                    uiRootController?.ShowTrait();
+                    progressionController.GuideStarterResearch();
+                    return;
+                }
+            }
+
             // The main run must use the player's actual unlocked roster and
             // production upgrades. Authored stage rosters remain available
             // through the explicit BeginStageRun entry point.
@@ -491,6 +513,16 @@ namespace CursorHunter.App
             }
         }
 
+        /// <summary>Opens research directly from an eligible player's battle result.</summary>
+        public void ReturnToResearch()
+        {
+            ReturnToMainMenu();
+            if (connectTraitScreenToCombat && progressionController != null)
+            {
+                uiRootController?.ShowTrait();
+            }
+        }
+
         /// <summary>Reuses the last field selection with a fresh RunId and current progression snapshot.</summary>
         public void ReplayLastRun()
         {
@@ -528,11 +560,17 @@ namespace CursorHunter.App
                 _pausedForInspection = false;
                 return;
             }
-            bool shouldPause = !Application.isFocused ||
+            bool shouldPause =
+#if UNITY_EDITOR
+                (!_ignoreFocusPauseForAutomatedPlayModeTest && !Application.isFocused) ||
+#else
+                !Application.isFocused ||
+#endif
                 (connectTraitScreenToCombat && progressionController != null && progressionController.IsSummaryOpen);
 #if UNITY_EDITOR
             if (IsCombatBalanceTestActive)
-                shouldPause = !UnityEditorInternal.InternalEditorUtility.isApplicationActive ||
+                shouldPause = (!_ignoreFocusPauseForAutomatedPlayModeTest &&
+                    !UnityEditorInternal.InternalEditorUtility.isApplicationActive) ||
                     (connectTraitScreenToCombat && progressionController != null && progressionController.IsSummaryOpen);
 #endif
             if (shouldPause && _runCoordinator.State == RunState.Running)
@@ -547,6 +585,13 @@ namespace CursorHunter.App
         private void HandleRunCompleted(RunResult result)
         {
             SettleRunRewards(result);
+
+            if (connectTraitScreenToCombat && _runUsesTraitScreen &&
+                result.Mode == RunMode.Boss &&
+                result.EndReason == RunEndReason.BossDefeated)
+            {
+                progressionController?.RegisterBossVictory();
+            }
 
             if (cursorController != null)
             {

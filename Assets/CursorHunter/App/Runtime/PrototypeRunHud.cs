@@ -1,6 +1,7 @@
 using CursorHunter.Contracts;
 using CursorHunter.Combat;
 using CursorHunter.Progression;
+using System;
 using System.Text;
 using UnityEngine;
 using UnityEngine.UI;
@@ -40,13 +41,102 @@ namespace CursorHunter.App
         private RunResult _pendingResult;
         private RunId _activeRunId;
         private bool _acceptResult;
+#if UNITY_EDITOR
+        private TextMeshProUGUI _editorPlaytimeText;
+        private double _editorPlaytimeStartedAt;
+        private long _editorPlaytimeLastSecond = -1;
+#endif
+
+        private void Start()
+        {
+#if UNITY_EDITOR
+            _editorPlaytimeStartedAt = Time.realtimeSinceStartupAsDouble;
+#endif
+        }
 
         private void Update()
         {
+#if UNITY_EDITOR
+            UpdateEditorPlaytimeClock();
+#endif
             if (!_waitingForCollection || gemstoneList != null && gemstoneList.IsFinishingCollection) return;
             _waitingForCollection = false;
             DisplayResult(_pendingResult);
         }
+
+#if UNITY_EDITOR
+        private void UpdateEditorPlaytimeClock()
+        {
+            if (_editorPlaytimeText == null)
+            {
+                if (canvas == null)
+                {
+                    canvas = GameObject.Find("UICanvas")?.GetComponent<Canvas>();
+                }
+                if (canvas == null)
+                {
+                    canvas = FindFirstObjectByType<Canvas>(FindObjectsInactive.Include);
+                }
+                if (canvas == null)
+                {
+                    return;
+                }
+
+                if (_runtimeFont == null)
+                {
+                    _runtimeFont = LocalizedTypography.GetFont(uiFont);
+                }
+
+                GameObject clockObject = new GameObject(
+                    "EditorPlaytimeClock",
+                    typeof(RectTransform),
+                    typeof(Image));
+                clockObject.transform.SetParent(canvas.transform, false);
+                RectTransform clockRect = clockObject.GetComponent<RectTransform>();
+                clockRect.anchorMin = new Vector2(0f, 1f);
+                clockRect.anchorMax = new Vector2(0f, 1f);
+                clockRect.pivot = new Vector2(0f, 1f);
+                clockRect.anchoredPosition = new Vector2(24f, -24f);
+                clockRect.sizeDelta = new Vector2(250f, 42f);
+
+                Image clockBackground = clockObject.GetComponent<Image>();
+                clockBackground.color = new Color(0.025f, 0.06f, 0.11f, 0.82f);
+                clockBackground.raycastTarget = false;
+
+                Canvas foreground = clockObject.AddComponent<Canvas>();
+                foreground.overrideSorting = true;
+                foreground.sortingLayerID = canvas.sortingLayerID;
+                foreground.sortingOrder = canvas.sortingOrder + 30;
+
+                _editorPlaytimeText = CreateText(
+                    "Label",
+                    clockObject.transform,
+                    Vector2.zero,
+                    Vector2.one,
+                    new Vector2(0.5f, 0.5f),
+                    Vector2.zero,
+                    new Vector2(-20f, -8f),
+                    16,
+                    TextAnchor.MiddleCenter);
+                _editorPlaytimeText.color = new Color(0.84f, 0.91f, 1f, 1f);
+                _editorPlaytimeText.fontStyle = FontStyles.Bold;
+            }
+
+            long elapsedSeconds = Math.Max(
+                0L,
+                (long)(Time.realtimeSinceStartupAsDouble - _editorPlaytimeStartedAt));
+            if (elapsedSeconds == _editorPlaytimeLastSecond)
+            {
+                return;
+            }
+
+            _editorPlaytimeLastSecond = elapsedSeconds;
+            long hours = elapsedSeconds / 3600;
+            int minutes = (int)(elapsedSeconds / 60 % 60);
+            int seconds = (int)(elapsedSeconds % 60);
+            _editorPlaytimeText.text = $"플레이 경과 {hours:00}:{minutes:00}:{seconds:00}";
+        }
+#endif
 
         public void SetTraitConnectionEnabled(bool enabled)
         {

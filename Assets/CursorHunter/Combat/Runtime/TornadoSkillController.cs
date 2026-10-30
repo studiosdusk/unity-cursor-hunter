@@ -52,6 +52,10 @@ namespace CursorHunter.Combat
         };
         [SerializeField, Min(0f)] private float fieldEdgePaddingWorldUnits = 1.5f;
 
+        [Header("Tornado audio")]
+        [SerializeField, Range(0f, 1f)] private float castSoundVolume = 0.62f;
+        [SerializeField, Range(0f, 0.5f)] private float windSoundVolume = 0.22f;
+
         [Header("Pool")]
         [SerializeField, Range(1, 64)] private int maximumPooledObjects = 16;
 
@@ -74,6 +78,7 @@ namespace CursorHunter.Combat
         private bool _visualsPaused;
         private bool _overflowLogged;
         private bool _poolExhaustionLogged;
+        private TornadoAudioFeedback _audio;
 
         public int ActiveObjectCount => _active.Count;
         public int PooledObjectCount => _active.Count + _free.Count;
@@ -128,6 +133,7 @@ namespace CursorHunter.Combat
             _overflowLogged = false;
             _poolExhaustionLogged = false;
             _syncedFrame = -1;
+            if (_audio == null) _audio = new TornadoAudioFeedback(transform);
 
             int needed = SkillBalanceMath.PoolNeed(_runtime.DurationSeconds,
                 _runtime.CooldownSeconds, maximumPooledObjects, _runtime.Count);
@@ -155,6 +161,7 @@ namespace CursorHunter.Combat
                 if (!_visualsPaused)
                 {
                     _visualsPaused = true;
+                    _audio?.SetPaused(true);
                     for (int i = 0; i < _active.Count; i++)
                         _active[i].SetVisualPaused(true);
                 }
@@ -165,6 +172,7 @@ namespace CursorHunter.Combat
             if (_visualsPaused)
             {
                 _visualsPaused = false;
+                _audio?.SetPaused(false);
                 for (int i = 0; i < _active.Count; i++)
                     _active[i].SetVisualPaused(false);
             }
@@ -173,10 +181,12 @@ namespace CursorHunter.Combat
             if (!TryGetFieldBounds(out Rect bounds)) return;
             if (now >= _nextCastAt)
             {
+                int activeBeforeCast = _active.Count;
                 Cast(now, bounds);
                 _nextCastAt = now + _combat.ResolveAutoSkillCooldown(
                     _runtime.CooldownSeconds);
                 _hasCast = true;
+                if (_active.Count > activeBeforeCast) _audio?.PlayCast(castSoundVolume);
             }
 
             for (int i = _active.Count - 1; i >= 0; i--)
@@ -192,6 +202,7 @@ namespace CursorHunter.Combat
             }
             for (int i = 0; i < _active.Count; i++)
                 _active[i].TryHit(now);
+            _audio?.Tick(_active.Count, windSoundVolume, Time.unscaledDeltaTime);
         }
 
         private void Cast(float now, Rect bounds)
@@ -369,6 +380,7 @@ namespace CursorHunter.Combat
 
         internal void StopSkill()
         {
+            _audio?.Stop();
             for (int i = 0; i < _active.Count; i++)
             {
                 TornadoObject instance = _active[i];

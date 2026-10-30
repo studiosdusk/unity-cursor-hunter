@@ -66,8 +66,8 @@ namespace CursorHunter.Data
             if (!information.TryValidate(out error)) return false;
             if (progression.categories == null)
                 return Fail("Missing progression categories.", out error);
-            if (progression.categories.Length != 23)
-                return Fail("Expected 23 progression categories, found " + progression.categories.Length + ".", out error);
+            if (progression.categories.Length != 22)
+                return Fail("Expected 22 progression categories, found " + progression.categories.Length + ".", out error);
             if (progression.bossRewards == null || progression.bossRewards.Length != 5 ||
                 (progression.savedProgressPolicy != "overlay" && progression.savedProgressPolicy != "fileOnly") ||
                 progression.initialBossTier < 0 || progression.initialBossTier > 5)
@@ -125,19 +125,30 @@ namespace CursorHunter.Data
                 if (!categories.Contains(monster.id) || FindEntity(monster.id) == null ||
                     string.IsNullOrWhiteSpace(FindEntity(monster.id).prefabKey))
                     return Fail("Missing monster/category/visual key.", out error);
+            if (!categories.Contains("skill.pet_baby_dragon") ||
+                !nodes.TryGetValue("skill.pet_baby_dragon", out UpgradeNodeData starterPet) ||
+                starterPet.requiredBossTier != 0)
+                return Fail("Missing tier-zero companion skill.", out error);
             string[] purchasableSkills =
             {
-                "skill.tornado", "skill.headshot", "skill.thunder",
-                "skill.flame_exhaust", "skill.magic_ball", "skill.laser",
-                "skill.pet_baby_dragon"
+                "skill.tornado", "skill.thunder", "skill.flame_exhaust",
+                "skill.magic_ball", "skill.laser"
             };
+            var skillUnlocksByBossTier = new int[6];
             foreach (string skillId in purchasableSkills)
             {
                 if (!categories.Contains(skillId))
                     return Fail("Missing skill category: " + skillId, out error);
                 if (!nodes.ContainsKey(skillId))
                     return Fail("Missing skill unlock node: " + skillId, out error);
+                int requiredBossTier = nodes[skillId].requiredBossTier;
+                if (requiredBossTier < 1 || requiredBossTier > 5 ||
+                    ++skillUnlocksByBossTier[requiredBossTier] != 1)
+                    return Fail("Each boss tier must unlock exactly one skill.", out error);
             }
+            for (int tier = 1; tier <= 5; tier++)
+                if (skillUnlocksByBossTier[tier] != 1)
+                    return Fail("Each boss tier must unlock exactly one skill.", out error);
             for (int i = 0; i < progression.bossRewards.Length; i++)
             {
                 var boss = progression.bossRewards[i];

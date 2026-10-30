@@ -132,6 +132,29 @@ namespace CursorHunter.Combat.Tests
         }
 
         [Test]
+        public void SpawnCapacityIsSharedBetweenUnlockedSpecies()
+        {
+            var first = new SpawnSnapshot("monster.a", "visual.a", 100L,
+                0.1f, 5, 80, 1L, "", 0L, 0f);
+            var second = new SpawnSnapshot("monster.b", "visual.b", 100L,
+                0.1f, 5, 80, 1L, "", 0L, 0f);
+            SpawnPlan plan = Plan(first, second);
+            Assert.That(_spawner.StartRun(_request, plan,
+                new[] { "monster.a", "monster.b" }).Succeeded, Is.True);
+
+            Set(_spawner, "_spawnSnapshot", first);
+            Set(_spawner, "_spawnVisualPrefab", _visualPrefab);
+            for (int i = 0; i < 20; i++) SpawnPack();
+            Assert.That(CountSpawned("monster.a"), Is.EqualTo(40),
+                "One early species must not consume the entire global population cap.");
+
+            Set(_spawner, "_spawnSnapshot", second);
+            for (int i = 0; i < 20; i++) SpawnPack();
+            Assert.That(CountSpawned("monster.b"), Is.EqualTo(40));
+            Assert.That(_spawner.ActiveSpawnedCount, Is.EqualTo(80));
+        }
+
+        [Test]
         public void InvalidLaterSpeciesDoesNotPartiallyChangeLivingMonsterOrPlan()
         {
             SpawnPlan initial = Plan(Snapshot("monster.a", 100L), Snapshot("monster.b", 50L));
@@ -174,6 +197,24 @@ namespace CursorHunter.Combat.Tests
                 if (target.MonsterId == monsterId) return target;
             Assert.Fail("Expected an owned spawned body for " + monsterId);
             return null;
+        }
+
+        private int CountSpawned(string monsterId)
+        {
+            int count = 0;
+            foreach (MonsterCombatTarget target in _root.GetComponentsInChildren<MonsterCombatTarget>(true))
+                if (target != null && target.IsActive && !target.IsDead && target.MonsterId == monsterId)
+                    count++;
+            return count;
+        }
+
+        private void SpawnPack()
+        {
+            MethodInfo method = typeof(MonsterSpawner).GetMethod(
+                "SpawnPack", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(method, Is.Not.Null);
+            object[] arguments = { SpawnStartStatus.Started };
+            Assert.That(method.Invoke(_spawner, arguments), Is.True);
         }
 
         private static SpawnSnapshot Snapshot(string id, long hp, float interval = 4f,

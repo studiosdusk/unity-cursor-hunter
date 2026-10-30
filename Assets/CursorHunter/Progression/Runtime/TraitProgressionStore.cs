@@ -14,8 +14,39 @@ namespace CursorHunter.Progression
     public static class TraitProgressionStore
     {
         private const string SaveKey = "cursor_hunter.progression.v1";
-        private const int CurrentVersion = 4;
-        private const string LegacyBackupKey = SaveKey + ".before-v4";
+        private const int CurrentVersion = 5;
+        private const string LegacyBackupKey = SaveKey + ".before-v5";
+        private const string StarterTutorialKey = SaveKey + ".starter-tutorial-complete";
+        private const string StarterTutorialStartedKey = SaveKey + ".starter-tutorial-started";
+
+        public static bool HasCompletedStarterTutorial =>
+            PlayerPrefs.GetInt(StarterTutorialKey, 0) == 1;
+
+        public static bool ShouldShowStarterTutorial =>
+            !HasCompletedStarterTutorial &&
+            (PlayerPrefs.GetInt(StarterTutorialStartedKey, 0) == 1 ||
+             !PlayerPrefs.HasKey(SaveKey));
+
+        public static void BeginStarterTutorial()
+        {
+            if (HasCompletedStarterTutorial) return;
+            PlayerPrefs.SetInt(StarterTutorialStartedKey, 1);
+            PlayerPrefs.Save();
+        }
+
+        public static void CompleteStarterTutorial()
+        {
+            PlayerPrefs.SetInt(StarterTutorialKey, 1);
+            PlayerPrefs.DeleteKey(StarterTutorialStartedKey);
+            PlayerPrefs.Save();
+        }
+
+        public static void ResetStarterTutorial()
+        {
+            PlayerPrefs.DeleteKey(StarterTutorialKey);
+            PlayerPrefs.SetInt(StarterTutorialStartedKey, 1);
+            PlayerPrefs.Save();
+        }
 
         [Serializable]
         public sealed class SaveData
@@ -27,6 +58,7 @@ namespace CursorHunter.Progression
             public List<string> purchasedNodeIds = new List<string>();
             public List<int> spentCosts = new List<int>();
             public List<string> spentCurrencyIds = new List<string>();
+            public int unlockedBossTier;
         }
 
         public static bool TryLoad(out SaveData data)
@@ -73,7 +105,8 @@ namespace CursorHunter.Progression
             IReadOnlyList<long> gemstoneBalances,
             IEnumerable<string> purchasedNodeIds,
             IReadOnlyDictionary<string, int> spentCosts,
-            IReadOnlyDictionary<string, string> spentCurrencyIds)
+            IReadOnlyDictionary<string, string> spentCurrencyIds,
+            int unlockedBossTier = 0)
         {
             SaveData data = new SaveData
             {
@@ -82,7 +115,8 @@ namespace CursorHunter.Progression
                 gemstoneBalances = CopyBalances(gemstoneBalances),
                 purchasedNodeIds = CopyIds(purchasedNodeIds),
                 spentCosts = new List<int>(),
-                spentCurrencyIds = new List<string>()
+                spentCurrencyIds = new List<string>(),
+                unlockedBossTier = Math.Max(0, Math.Min(5, unlockedBossTier))
             };
             // Keep both lists aligned with purchasedNodeIds so the DTO can be
             // restored without serializing dictionaries or relying on their
@@ -109,7 +143,7 @@ namespace CursorHunter.Progression
                     return false;
                 }
 
-                // Preserve the exact old save (including retired data) before the first v4 write.
+                // Preserve the exact old save (including retired data) before the first v5 write.
                 // Unknown/corrupt versions must not be silently overwritten.
                 if (PlayerPrefs.HasKey(SaveKey))
                 {
@@ -135,6 +169,8 @@ namespace CursorHunter.Progression
         public static void Clear()
         {
             PlayerPrefs.DeleteKey(SaveKey);
+            PlayerPrefs.DeleteKey(StarterTutorialKey);
+            PlayerPrefs.DeleteKey(StarterTutorialStartedKey);
             PlayerPrefs.Save();
         }
 

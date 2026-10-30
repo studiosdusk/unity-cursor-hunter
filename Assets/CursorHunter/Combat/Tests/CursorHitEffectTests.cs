@@ -322,14 +322,14 @@ namespace CursorHunter.Combat.Tests
             var target = new FakeTarget { RunId = _combat.CurrentRunId, Health = 3L };
             CombatDamageApplied captured = default;
             _combat.DamageApplied += hit => captured = hit;
-            ApplyHit.Invoke(_combat, new object[] { target, 0L, CombatDamageSource.CursorAttack });
+            ApplyHit.Invoke(_combat, new object[] { target, 0L, CombatDamageSource.CursorAttack, false });
             Assert.That(captured.Source, Is.EqualTo(CombatDamageSource.CursorAttack));
             Assert.That(captured.EffectiveDamage, Is.EqualTo(3L));
             Assert.That(captured.WorldPosition, Is.EqualTo(new Vector3(1f, 9f, 0f)));
             Assert.That(captured.HitEffectPosition, Is.EqualTo(new Vector3(1f, 2f, 0f)));
             Assert.That(captured.HitEffectSizeWorldUnits, Is.EqualTo(2f));
             Assert.That(_manager.EmittedCount, Is.EqualTo(1));
-            ApplyHit.Invoke(_combat, new object[] { target, 0L, CombatDamageSource.CursorAttack });
+            ApplyHit.Invoke(_combat, new object[] { target, 0L, CombatDamageSource.CursorAttack, false });
             Assert.That(_manager.EmittedCount, Is.EqualTo(1));
         }
 
@@ -367,7 +367,7 @@ namespace CursorHunter.Combat.Tests
                 float bodySize = 0.9f * visualScale * Mathf.Abs(parentScale);
                 CombatDamageApplied captured = default;
                 _combat.DamageApplied += hit => captured = hit;
-                ApplyHit.Invoke(_combat, new object[] { target, 0L, CombatDamageSource.CursorAttack });
+                ApplyHit.Invoke(_combat, new object[] { target, 0L, CombatDamageSource.CursorAttack, false });
                 Assert.That(target.IsDead, Is.True);
                 Assert.That(captured.HitEffectPosition, Is.EqualTo(center));
                 Assert.That(captured.HitEffectSizeWorldUnits, Is.EqualTo(bodySize).Within(0.001f));
@@ -437,8 +437,8 @@ namespace CursorHunter.Combat.Tests
                 var b = new FakeTarget { RunId = other.CurrentRunId };
                 for (int i = 0; i < 50; i++)
                 {
-                    ApplyHit.Invoke(_combat, new object[] { a, 0L, CombatDamageSource.CursorAttack });
-                    ApplyHit.Invoke(other, new object[] { b, 0L, CombatDamageSource.CursorAttack });
+                    ApplyHit.Invoke(_combat, new object[] { a, 0L, CombatDamageSource.CursorAttack, false });
+                    ApplyHit.Invoke(other, new object[] { b, 0L, CombatDamageSource.CursorAttack, false });
                     Assert.That(a.Health, Is.EqualTo(b.Health));
                 }
             }

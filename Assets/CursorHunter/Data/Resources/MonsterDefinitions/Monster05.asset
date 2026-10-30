@@ -17,7 +17,7 @@ MonoBehaviour:
   prefabKey: Scorpion/Scorpion_Purple
   visualPrefab: {fileID: 561586964182505770, guid: 7a8d59dbeae2e4c37b145007772eaac7, type: 3}
   baseStats:
-    maxHealth: 120
+    maxHealth: 72
     spawnIntervalSeconds: 1.5
     packSize: 1
     moveSpeed: 0.45
@@ -26,7 +26,7 @@ MonoBehaviour:
     hitAreaHeight: 1.2
     garnetReward: 7
     bonusDropCurrencyId: gem.amethyst
-    bonusDropAmount: 1
+    bonusDropAmount: 3
     bonusDropChancePercent: 100
   behaviorProfiles:
   - {fileID: 11400000, guid: ac42c96b714f44d19200eeaebfee7fc7, type: 2}

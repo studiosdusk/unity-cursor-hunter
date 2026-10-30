@@ -12,8 +12,8 @@ class CombatInformationV4Tests(unittest.TestCase):
 
     def test_complete_pipeline_static_contract(self):
         document = validate_documents()
-        self.assertEqual(len(document["progression"]["categories"]), 23)
-        self.assertEqual(sum(len(c["nodes"]) for c in document["progression"]["categories"]), 90)
+        self.assertEqual(len(document["progression"]["categories"]), 22)
+        self.assertEqual(sum(len(c["nodes"]) for c in document["progression"]["categories"]), 89)
 
     def test_only_resolved_combat_sections_remain(self):
         self.assertEqual(set(self.info), {

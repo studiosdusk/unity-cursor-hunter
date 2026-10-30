@@ -1,6 +1,6 @@
 {
   "name": "CursorHunter.App.PlayModeTests",
-  "references": ["CursorHunter.App", "CursorHunter.Combat", "CursorHunter.Contracts", "Unity.TextMeshPro", "UnityEngine.UI", "UnityEngine.TestRunner"],
+  "references": ["CursorHunter.App", "CursorHunter.Combat", "CursorHunter.Contracts", "CursorHunter.Progression", "Unity.TextMeshPro", "UnityEngine.UI", "UnityEngine.TestRunner"],
   "overrideReferences": true,
   "precompiledReferences": ["nunit.framework.dll"],
   "autoReferenced": false,

@@ -430,7 +430,11 @@ namespace CursorHunter.Combat
             int speciesCount = 0;
             foreach (var target in _spawnedTargets)
                 if (target != null && !target.IsDead && target.MonsterId == _spawnSnapshot.MonsterId) speciesCount++;
-            int remainingCapacity = Mathf.Min(_spawnSnapshot.AliveLimit - speciesCount,
+            int activeSpeciesCount = GetEnabledSpeciesCount();
+            int fairShareLimit = Mathf.CeilToInt(
+                Mathf.Max(1, globalAliveLimit) / (float)Mathf.Max(1, activeSpeciesCount));
+            int speciesAliveLimit = Mathf.Min(_spawnSnapshot.AliveLimit, fairShareLimit);
+            int remainingCapacity = Mathf.Min(speciesAliveLimit - speciesCount,
                 Mathf.Max(1, globalAliveLimit) - ActiveSpawnedCount);
             int spawnCount = Mathf.Min(
                 _spawnSnapshot.PackSize,
@@ -481,6 +485,22 @@ namespace CursorHunter.Combat
 
             return spawnCount == 0 ||
                    _spawnedTargets.Count - firstNewTargetIndex == spawnCount;
+        }
+
+        private int GetEnabledSpeciesCount()
+        {
+            if (_enabledSpecies == null)
+            {
+                return _entries == null ? 0 : _entries.Count;
+            }
+
+            int count = 0;
+            for (int index = 0; index < _enabledSpecies.Length; index++)
+            {
+                if (_enabledSpecies[index]) count++;
+            }
+
+            return count;
         }
 
         private bool TryInitializeTarget(

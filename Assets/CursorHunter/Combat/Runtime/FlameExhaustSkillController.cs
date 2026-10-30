@@ -241,6 +241,7 @@ namespace CursorHunter.Combat
             _nextCastAt = now + _combat.ResolveAutoSkillCooldown(
                 _runtime.CooldownSeconds);
             _hasCast = true;
+            CombatAudioFeedback.PlaySkill(SkillId);
         }
 
         internal bool IsCurrentRun(RunId runId) =>
