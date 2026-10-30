@@ -72,7 +72,6 @@ namespace CursorHunter.Combat
         private bool _hasCast;
         private bool _visualsPaused;
         private bool _poolWarningLogged;
-        private bool _hitEffectPoolWarningLogged;
         private bool _hitEffectPoolStarved;
         private bool _refreshProjectileGeometry;
 
@@ -112,7 +111,6 @@ namespace CursorHunter.Combat
             _configured = true;
             _visualsPaused = false;
             _poolWarningLogged = false;
-            _hitEffectPoolWarningLogged = false;
             _hitEffectPoolStarved = false;
 
             int needed = SkillBalanceMath.PoolNeed(_runtime.ProjectileDurationSeconds,
@@ -260,24 +258,44 @@ namespace CursorHunter.Combat
             if (!_combat.TryApplySkillDamage(runId, target,
                     _runtime.Damage)) return false;
 
+            FlameExhaustHitEffect effect;
             if (_freeHitEffects.Count > 0)
             {
-                FlameExhaustHitEffect effect = _freeHitEffects.Pop();
-                effect.Activate(position, _random.NextFloat(0f, 360f),
-                    _combat.ElapsedSeconds,
-                    _runtime.HitEffectDurationSeconds,
-                    targetSize > 0f ? targetSize : 1f);
-                _activeHitEffects.Add(effect);
+                effect = _freeHitEffects.Pop();
             }
             else
             {
                 _hitEffectPoolStarved = true;
-                if (!_hitEffectPoolWarningLogged)
+                if (_activeHitEffects.Count == 0)
                 {
-                    _hitEffectPoolWarningLogged = true;
-                    Debug.LogWarning("Flame Exhaust hit VFX pool exhausted; damage was still applied.", this);
+                    // ConfigureForRun always warms at least one instance. Keep a
+                    // defensive fallback so a damaged pool cannot suppress feedback.
+                    effect = Instantiate(hitEffectPrefab, transform);
+                }
+                else
+                {
+                    // Keep the newest hit visible when a burst exceeds the pool.
+                    // Recycle the effect that has been visible the longest.
+                    int oldestIndex = 0;
+                    float oldestActivation = _activeHitEffects[0].ActivatedAt;
+                    for (int i = 1; i < _activeHitEffects.Count; i++)
+                    {
+                        float activatedAt = _activeHitEffects[i].ActivatedAt;
+                        if (activatedAt >= oldestActivation) continue;
+                        oldestActivation = activatedAt;
+                        oldestIndex = i;
+                    }
+
+                    effect = _activeHitEffects[oldestIndex];
+                    _activeHitEffects.RemoveAt(oldestIndex);
+                    effect.ReturnToPool();
                 }
             }
+
+            effect.Activate(position, _random.NextFloat(0f, 360f),
+                _combat.ElapsedSeconds, _runtime.HitEffectDurationSeconds,
+                targetSize > 0f ? targetSize : 1f);
+            _activeHitEffects.Add(effect);
             return true;
         }
 
