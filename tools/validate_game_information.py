@@ -50,6 +50,10 @@ def main():
     check(len(example["relics"]) == 20, "Expected 20 combat relic definitions")
     check(example["relicDropRules"].get("maxPerKill") == 1, "Relic drop cap must be one per kill")
     gems = ["gem." + name for name in ["garnet", "topaz", "amethyst", "sapphire", "diamond", "dragon"]]
+    behavior_profiles = [
+        "Basic", "Small", "Fast", "Vanish", "Shield", "Teleport",
+        "HighHealth", "Giant", "Healer", "Resurrector",
+    ]
     check([g["id"] for g in example["gemstones"]] == gems, "Gemstone IDs/order changed")
     check(len(data["monsters"]) == len(example["monsters"]) == 10, "Expected 10 monsters")
     check([s["id"] for s in example["skills"]] ==
@@ -114,6 +118,19 @@ def main():
         if definition.exists():
             text = definition.read_text()
             check(f"monsterId: {expected_id}" in text, "Wrong monster asset ID")
+            display_name = re.search(r"(?m)^  displayName: (.+)$", text)
+            check(bool(display_name), f"Missing trait-screen display name: {expected_id}")
+            check(bool(display_name) and bool(display_name.group(1).strip()),
+                  f"Empty trait-screen display name: {expected_id}")
+            profile_name = behavior_profiles[index - 1]
+            profile_path = BASE / f"Data/Resources/MonsterBehaviorProfiles/{profile_name}.asset"
+            profile_meta = Path(str(profile_path) + ".meta")
+            check(profile_path.exists() and profile_meta.exists(),
+                  f"Missing combat behavior profile for {expected_id}: {profile_name}")
+            if profile_meta.exists():
+                profile_guid = re.search(r"(?m)^guid: ([0-9a-f]+)$", profile_meta.read_text())
+                check(bool(profile_guid) and profile_guid.group(1) in text,
+                      f"Wrong combat behavior profile for {expected_id}: {profile_name}")
             match = re.search(r"visualPrefab: \{fileID: (\d+), guid: ([0-9a-f]+), type: 3\}", text)
             check(bool(match), f"Missing prefab: {expected_id}")
             if match:

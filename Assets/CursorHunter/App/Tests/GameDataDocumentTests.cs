@@ -79,11 +79,21 @@ namespace CursorHunter.App.Tests
             var definitionsById = new Dictionary<string, MonsterDefinition>();
             foreach (MonsterDefinition definition in definitions)
                 definitionsById.Add(definition.MonsterId, definition);
+            Assert.That(definitionsById.TryGetValue("monster.01", out MonsterDefinition baselineDefinition),
+                Is.True, "Missing baseline monster definition.");
+            SpawnSnapshot baselineSnapshot = baselineDefinition.CreateSnapshot(1);
 
             foreach (MonsterInformation information in document.information.monsters)
             {
                 Assert.That(definitionsById.TryGetValue(information.id, out MonsterDefinition definition),
                     Is.True, "Missing combat definition for " + information.id);
+                Assert.That(string.IsNullOrWhiteSpace(definition.DisplayName), Is.False,
+                    information.id + " needs its trait-screen display name");
+                Assert.That(definition.CreateSnapshot(80).IsValid, Is.True,
+                    information.id + " needs a valid combat snapshot for its trait summary");
+                Assert.That(string.IsNullOrWhiteSpace(
+                    definition.BuildTraitDescription(baselineSnapshot)), Is.False,
+                    information.id + " needs a user-facing summary of its combat behavior");
                 Assert.That(definition.MaxHealth, Is.EqualTo(information.hitPoints), information.id + " HP");
                 Assert.That(definition.SpawnIntervalSeconds,
                     Is.EqualTo(information.spawnIntervalSeconds).Within(0.001f), information.id + " spawn interval");

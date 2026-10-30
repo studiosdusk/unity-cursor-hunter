@@ -373,7 +373,7 @@ namespace CursorHunter.App.Tests
             Assert.That(productionValue, Does.Contain("한 번에 3마리"));
             Assert.That(productionValue, Does.Not.Contain("Spawn"));
             string productionDescription = Get<TextMeshProUGUI>(_trait, "_tooltipDescription").text;
-            Assert.That(productionDescription, Does.Contain("특수 능력이 없는 기본 몬스터"));
+            Assert.That(productionDescription, Does.Contain("특별한 능력 없이 기본 방식으로"));
             Assert.That(productionDescription, Does.Contain("처치 보상"));
             Assert.That(productionDescription, Does.Not.Contain("한 번에 3마리 등장"));
             Assert.That(Get<TextMeshProUGUI>(_trait, "_tooltipCost").text, Does.Contain("필요 100"));
@@ -762,16 +762,16 @@ namespace CursorHunter.App.Tests
             };
             string[] traits =
             {
-                "특수 능력이 없는 기본 몬스터입니다.",
-                "몸집이 작아 공격을 맞히기 어렵습니다.",
+                "특별한 능력 없이 기본 방식으로 움직입니다.",
+                "몸집과 피격 범위가 작습니다.",
                 "빠르게 이동합니다.",
-                "주기적으로 모습을 감춰 공격을 피합니다.",
-                "간헐적으로 방패를 들어 피해를 줄입니다.",
-                "순간이동으로 위치를 바꿉니다.",
-                "높은 체력을 지녔습니다.",
+                "4초마다 1.2초 동안 모습을 감춰 공격을 피합니다.",
+                "4.5초마다 1.7초 동안 받는 피해가 65% 감소합니다.",
+                "3.5초마다 순간이동해 위치를 바꿉니다.",
+                "체력이 높아 오래 버팁니다.",
                 "몸집이 크고 피격 범위가 넓습니다.",
-                "주변 몬스터의 체력을 회복시킵니다.",
-                "쓰러진 주변 몬스터를 되살립니다."
+                "3.5초마다 반경 2.75 안의 아군 체력을 최대 체력의 20%만큼 회복합니다.",
+                "4초마다 반경 3.5 안의 쓰러진 몬스터를 최대 체력의 30%로 되살립니다."
             };
             string[] rewardGems =
             {
