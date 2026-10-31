@@ -19,7 +19,7 @@ namespace CursorHunter.App
         private AnimationCurve _scatterCurve, _flightCurve;
         public bool Flying { get; private set; }
         public int Row { get; private set; }
-        public int Value { get; private set; }
+        public long Value { get; private set; }
         public Vector2 Position => _rect.anchoredPosition;
 
         public void Initialize()
@@ -31,13 +31,13 @@ namespace CursorHunter.App
             gameObject.SetActive(false);
         }
 
-        public void Launch(int row, int value, Sprite sprite, Vector2 origin, Vector2 destination,
+        public void Launch(int row, long value, Sprite sprite, Vector2 origin, Vector2 destination,
             GemstoneCollectionSettings settings, float scatterAngle, float radial, float bend,
-            float variation, bool pressure)
+            float variation, bool pressure, Vector2? scatterCenter = null)
         {
             Row = row; Value = value; Flying = true;
             _origin = origin + settings.motion.originOffset;
-            _scatter = _origin + new Vector2(Mathf.Cos(scatterAngle), Mathf.Sin(scatterAngle)) * radial;
+            _scatter = (scatterCenter ?? _origin) + new Vector2(Mathf.Cos(scatterAngle), Mathf.Sin(scatterAngle)) * radial;
             _previous = _older = _origin;
             _scatterTime = settings.reducedMotion ? 0f : Mathf.Lerp(settings.motion.scatterDuration.x, settings.motion.scatterDuration.y, variation);
             _hold = settings.reducedMotion || pressure ? 0f : Mathf.Lerp(settings.motion.holdDuration.x, settings.motion.holdDuration.y, variation);
@@ -48,7 +48,7 @@ namespace CursorHunter.App
             _total = Mathf.Max(0.01f, _scatterTime + _hold + _flight);
             _arc = settings.reducedMotion ? 0f : bend;
             _angle = settings.reducedMotion ? 0f : (variation * 2f - 1f) * settings.motion.rotationDegrees;
-            _size = value == 10 ? settings.sizes.pixels.z : value == 5 ? settings.sizes.pixels.y : settings.sizes.pixels.x;
+            _size = value >= 10 ? settings.sizes.pixels.z : value >= 5 ? settings.sizes.pixels.y : settings.sizes.pixels.x;
             _birthScale = settings.sizes.birthScale; _arrivalScale = settings.sizes.arrivalScale;
             _birthTime = Mathf.Max(0.01f, settings.motion.birthDuration); _shrink = Mathf.Max(0.01f, settings.motion.shrinkDuration);
             // Curves are copied once per configuration revision by the controller, never per slot.

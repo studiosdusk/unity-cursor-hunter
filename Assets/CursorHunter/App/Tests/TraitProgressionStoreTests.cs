@@ -50,6 +50,24 @@ namespace CursorHunter.App.Tests
             Assert.That(PlayerPrefs.GetString(BackupKey), Is.EqualTo(old));
         }
 
+        [TestCase(0, 3, 3)]
+        [TestCase(7, 0, 5)]
+        public void LegacyBossAndResearchProgressRestoreWithoutLosingWallet(
+            int highestStage, int unlockTier, int expectedTier)
+        {
+            string legacy = "{\"version\":5,\"garnetBalance\":99," +
+                "\"highestBossStageCleared\":" + highestStage +
+                ",\"unlockedBossTier\":" + unlockTier + "}";
+            PlayerPrefs.SetString(Key, legacy);
+            Assert.That(TraitProgressionStore.TryLoad(out var loaded), Is.True);
+            Assert.That(loaded.highestBossStageCleared, Is.EqualTo(highestStage));
+            Assert.That(loaded.unlockedBossTier, Is.EqualTo(expectedTier));
+            Assert.That(loaded.garnetBalance, Is.EqualTo(99));
+            Assert.That(loaded.ownedRelicIds, Is.Empty);
+            Assert.That(loaded.settledBossRunIds, Is.Empty);
+            Assert.That(PlayerPrefs.GetString(Key), Is.EqualTo(legacy));
+        }
+
         [Test]
         public void UnsupportedFutureSaveIsNotOverwritten()
         {

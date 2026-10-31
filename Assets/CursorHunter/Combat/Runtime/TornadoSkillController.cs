@@ -300,8 +300,17 @@ namespace CursorHunter.Combat
             }
         }
 
-        private TornadoBaseStat BalanceBasis => _balance == null ? baseStat :
-            SkillBalanceMath.Read<TornadoBaseStat>(_balance);
+        private TornadoBaseStat BalanceBasis
+        {
+            get
+            {
+                TornadoBaseStat basis = _balance == null ? baseStat :
+                    SkillBalanceMath.Read<TornadoBaseStat>(_balance);
+                // Existing prefabs omit the new radius field; match runtime's fallback.
+                if (basis.RadiusMultiplier <= 0f) basis.RadiusMultiplier = 1f;
+                return basis;
+            }
+        }
 
         public SkillBalanceSettings CaptureBalanceSettings() =>
             SkillBalanceMath.Capture(SkillId, _balance != null ? _balance.Enabled :

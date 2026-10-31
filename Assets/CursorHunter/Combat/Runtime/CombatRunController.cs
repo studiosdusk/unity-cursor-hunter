@@ -98,6 +98,7 @@ namespace CursorHunter.Combat
         public long EffectiveDamage => _effectiveDamage;
         public LayerMask EnemyLayers => enemyLayers;
         public bool IsBossRun => _isRunning && _runRequest.Mode == RunMode.Boss;
+        public IReadOnlyList<ResourceRewardSnapshot> BossClearRewards => _runRequest.BossClearRewards;
         public CombatSnapshot CombatSnapshot => playerCombatStatsRuntime != null
             ? playerCombatStatsRuntime.Snapshot
             : default;
@@ -809,6 +810,12 @@ namespace CursorHunter.Combat
             RunEndReason endReason,
             RunSettlementPolicy settlementPolicy)
         {
+            if (_runRequest.Mode == RunMode.Boss && endReason != RunEndReason.BossDefeated)
+            {
+                settlementPolicy = RunSettlementPolicy.Discard;
+                _garnetEarned = 0L;
+                _resourceRewards.Clear();
+            }
             return new RunResult(
                 _runRequest,
                 endReason,
@@ -927,6 +934,12 @@ namespace CursorHunter.Combat
                 return true;
             }
 
+            if (_runRequest.Mode == RunMode.Boss && _runRequest.BossClearRewards.Count > 0)
+            {
+                CommitBossClearRewards(rewardPosition, hasRewardPosition);
+                return true;
+            }
+
             long garnetReward = target.GarnetReward;
             bool normalMonsterKill = _runRequest.Mode == RunMode.NormalField &&
                 target is MonsterCombatTarget;
@@ -983,20 +996,58 @@ namespace CursorHunter.Combat
                 _relicAwards.Add(relicAwardId);
             }
             if (garnetReward > 0L || bonusAmount > 0L)
-            {
-                try
-                {
-                    RewardResolved?.Invoke(new CombatRewardResolved(_runRequest.RunId,
-                        _defeatedCount, rewardPosition, hasRewardPosition,
-                        garnetReward, bonusId, bonusAmount));
-                }
-                catch (Exception exception)
-                {
-                    // Presentation cannot roll back a committed reward or interrupt combat.
-                    Debug.LogException(exception, this);
-                }
-            }
+                NotifyKillReward(rewardPosition, hasRewardPosition, garnetReward, bonusId, bonusAmount);
+            RequestBossCompletion();
             return true;
+        }
+
+        private void CommitBossClearRewards(Vector3 position, bool hasPosition)
+        {
+            long garnet = 0;
+            foreach (ResourceRewardSnapshot reward in _runRequest.BossClearRewards)
+            {
+                if (!TryAddNonNegative(GetResourceEarned(reward.CurrencyId), reward.Amount, out _))
+                {
+                    RequestAbort(RunEndReason.NumericOverflow);
+                    return;
+                }
+                if (reward.CurrencyId == "gem.garnet") garnet = reward.Amount;
+            }
+            if (_defeatedCount == int.MaxValue || !TryAddNonNegative(_garnetEarned, garnet, out long nextGarnet))
+            {
+                RequestAbort(RunEndReason.NumericOverflow);
+                return;
+            }
+            // Validate the entire payout before committing any currency.
+            _defeatedCount++;
+            _garnetEarned = nextGarnet;
+            foreach (ResourceRewardSnapshot reward in _runRequest.BossClearRewards)
+                TryRecordReward(reward.CurrencyId, reward.Amount);
+            NotifyKillReward(position, hasPosition, garnet, string.Empty, 0);
+            RequestBossCompletion();
+        }
+
+        private void NotifyKillReward(Vector3 position, bool hasPosition, long garnet, string bonusId, long bonus)
+        {
+            try
+            {
+                RewardResolved?.Invoke(new CombatRewardResolved(_runRequest.RunId,
+                    _defeatedCount, position, hasPosition, garnet, bonusId, bonus));
+            }
+            catch (Exception exception)
+            {
+                // Presentation cannot roll back a committed reward or interrupt combat.
+                Debug.LogException(exception, this);
+            }
+        }
+
+        private void RequestBossCompletion()
+        {
+            if (_runRequest.Mode == RunMode.Boss && !_abortRequested && !_completionRequested)
+            {
+                _completionRequested = true;
+                CompletionRequested?.Invoke(RunEndReason.BossDefeated);
+            }
         }
 
         private string RollRelicDrop(string sourceMonsterId)

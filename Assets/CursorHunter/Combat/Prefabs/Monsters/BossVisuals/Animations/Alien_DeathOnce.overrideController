@@ -1,0 +1,13 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!221 &22100000
+AnimatorOverrideController:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Alien_DeathOnce
+  m_Controller: {fileID: 9100000, guid: 9d400adb5d540f445a1e0ad44ad240a1, type: 2}
+  m_Clips:
+  - m_OriginalClip: {fileID: 7400000, guid: ac14e316e0038264299c082f8ce23306, type: 2}
+    m_OverrideClip: {fileID: 7400000, guid: 7a8ac439db2264d3c8ddf8db6fc12abd, type: 2}

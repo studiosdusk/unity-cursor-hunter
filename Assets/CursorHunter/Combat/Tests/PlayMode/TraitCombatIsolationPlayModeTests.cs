@@ -150,8 +150,9 @@ namespace CursorHunter.Combat.Tests
             AssertSkillsConfigured(TornadoSkillController.SkillId);
             object runtime = Field(tornado, "_runtime");
             float multiplier = basis.Values.Single(value => value.Id == "damageMultiplier").Value;
-            long expectedDamage = Math.Max(1L,
-                (long)Math.Round(multiplier, MidpointRounding.AwayFromZero));
+            double scaled = multiplier;
+            long expectedDamage = scaled >= long.MaxValue ? long.MaxValue :
+                Math.Max(1L, (long)Math.Round(scaled, MidpointRounding.AwayFromZero));
             Assert.That(Property<long>(runtime, "Damage"), Is.EqualTo(expectedDamage));
             Assert.That(expectedDamage, Is.Not.EqualTo(Math.Max(1L,
                 (long)Math.Round(attack * (double)multiplier,

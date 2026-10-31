@@ -60,6 +60,8 @@ namespace CursorHunter.App
         private CombatRunController _subscribed;
         private GemstoneCollectionSettings _live;
         private RunId _runId;
+        private RunId _completedRunId;
+        private Vector2 _bossRewardOrigin;
         private long _lastSequence;
         private uint _random = 0x73C51u;
         private float _clock, _finishLeft, _previewHold, _lastSound = -10f;
@@ -106,7 +108,7 @@ namespace CursorHunter.App
                 for (int j = 0; j < i; j++) if (bindings[j].currencyId == b.currencyId) return "재화 ID가 중복되었습니다.";
             }
             var s = settings;
-            if (s == null || s.sizes == null || s.motion == null || s.counter == null || s.budget == null || s.sound == null)
+            if (s == null || s.sizes == null || s.motion == null || s.counter == null || s.budget == null || s.sound == null || s.bossBurst == null)
                 return "연출 설정 그룹이 누락되었습니다.";
             if (!(s.sizes.pixels.x > 0 && s.sizes.pixels.y > s.sizes.pixels.x && s.sizes.pixels.z > s.sizes.pixels.y))
                 return "젬 크기는 0 < 소 < 중 < 대여야 합니다.";
@@ -114,6 +116,12 @@ namespace CursorHunter.App
                 s.budget.bonusReserved < 0 || s.budget.bonusReserved >= s.budget.maxActive ||
                 s.budget.launchesPerFrame < 1 || s.budget.queueCapacity < 1 || s.budget.pressureFlightDuration <= 0)
                 return "풀 / 활성 상한 / 추가 젬 예약 / 발사량 / 대기 용량 설정을 확인하세요.";
+            if (s.bossBurst.count < 1 || !Range(s.bossBurst.scatterRadius) ||
+                !Range(s.bossBurst.scatterDuration) || !Range(s.bossBurst.holdDuration) ||
+                !Range(s.bossBurst.flightDuration) || s.bossBurst.flightDuration.x <= 0 ||
+                float.IsNaN(s.bossBurst.finishDuration) || float.IsInfinity(s.bossBurst.finishDuration) ||
+                s.bossBurst.finishDuration < 1 || s.bossBurst.finishDuration > 3)
+                return "보스 분출의 개수·반경·시간 설정을 확인하세요.";
             if (!Range(s.motion.scatterDuration) || !Range(s.motion.scatterRadius) || !Range(s.motion.holdDuration) ||
                 !Range(s.motion.flightDuration) || s.motion.flightDuration.x <= 0 || !Range(s.motion.launchInterval) ||
                 !Range(s.motion.curvature) || s.motion.scatterCurve == null || s.motion.attractionCurve == null ||
@@ -217,6 +225,8 @@ namespace CursorHunter.App
             }
             CancelPresentation(false, false);
             _runId = source.CurrentRunId; _lastSequence = 0; _clock = 0f;
+            _completedRunId = default;
+            _bossRewardOrigin = WorldToEffect(Vector3.zero, false);
             ResetStatistics();
             for (int i = 0; i < bindings.Length; i++) _counters[i].Snap(source.GetResourceEarned(bindings[i].currencyId));
             Canvas.ForceUpdateCanvases(); UpdateDestinations();
@@ -238,6 +248,7 @@ namespace CursorHunter.App
             if (reward.Sequence <= _lastSequence) return;
             _lastSequence = reward.Sequence;
             Vector2 origin = WorldToEffect(reward.WorldPosition, reward.HasWorldPosition);
+            if (combat.IsBossRun) { _bossRewardOrigin = origin; return; }
             AddReward("gem.garnet", reward.Garnet, origin);
             AddReward(reward.BonusCurrencyId, reward.BonusAmount, origin);
         }
@@ -365,7 +376,8 @@ namespace CursorHunter.App
         }
         public void CompleteRun(RunResult result)
         {
-            if (!Owns(result.RunId)) return;
+            if (!Owns(result.RunId) || result.RunId == _completedRunId) return;
+            _completedRunId = result.RunId;
             _queue.Clear();
             for (int i = 0; i < bindings.Length; i++)
             {
@@ -377,8 +389,72 @@ namespace CursorHunter.App
                 _counters[i].Actual = Math.Max(_counters[i].Actual, amount);
                 if (amount > 0L) bindings[i].row.SetActive(true);
             }
+            // Settlement controls the saved wallet, not the loot presentation in balance tests.
+            if (result.BossDefeated)
+            {
+                LaunchBossBurst();
+                return;
+            }
             _finishing = true; _finishLeft = _live.finishDuration;
             if (_active == 0 || _finishLeft <= 0f) FinishNow();
+        }
+
+        private void LaunchBossBurst()
+        {
+            ClearFlights();
+            Canvas.ForceUpdateCanvases();
+            UpdateDestinations();
+            var burst = JsonUtility.FromJson<GemstoneCollectionSettings>(JsonUtility.ToJson(_live));
+            BossBurstSettings(burst);
+            Rect bounds = effectRoot.rect;
+            float radius = Mathf.Min(burst.motion.scatterRadius.y, Mathf.Min(bounds.width, bounds.height) * .3f);
+            burst.motion.scatterRadius.y = Mathf.Max(1f, radius);
+            burst.motion.scatterRadius.x = Mathf.Min(burst.motion.scatterRadius.x, radius);
+            // Keep the fan inside the screen even when the killing blow lands at an edge.
+            Vector2 center = new Vector2(
+                Mathf.Clamp(_bossRewardOrigin.x, bounds.xMin + radius + 24f, bounds.xMax - radius - 24f),
+                Mathf.Clamp(_bossRewardOrigin.y, bounds.yMin + radius + 24f, bounds.yMax - radius - 100f));
+            int rows = 0;
+            for (int i = 0; i < bindings.Length; i++)
+                if (_finalAmounts[i] > 0 && _sprites[i] != null) rows++;
+            int budget = Math.Min(_pool.Length, Math.Min(_live.budget.maxActive, _live.bossBurst.count));
+            int slot = 0;
+            for (int row = 0; row < bindings.Length; row++)
+            {
+                long amount = _finalAmounts[row];
+                if (amount <= 0 || _sprites[row] == null) continue;
+                int count = (int)Math.Min(amount, Math.Max(1, (budget - slot) / Math.Max(1, rows)));
+                count = Math.Min(count, budget - slot);
+                rows--;
+                if (count <= 0) continue;
+                _counters[row].Snap(0L);
+                _counters[row].Actual = amount;
+                long each = amount / count, extra = amount % count;
+                for (int i = 0; i < count; i++)
+                {
+                    long value = each + (i < extra ? 1L : 0L);
+                    float angle = (slot * 2.399963f) + Random01() * 0.25f;
+                    _pool[slot++].Launch(row, value, _sprites[row], _bossRewardOrigin, _destinations[row], burst,
+                        angle, Between(burst.motion.scatterRadius), Between(burst.motion.curvature) * (Random01() < 0.5f ? -1f : 1f), Random01(), false, center);
+                    _active++;
+                    if (bindings[row].currencyId == "gem.garnet") _garnetActive++;
+                    if (value >= 10) EmittedLarge++; else if (value >= 5) EmittedMedium++; else EmittedSmall++;
+                }
+            }
+            PeakActiveCount = Math.Max(PeakActiveCount, _active);
+            _finishing = true;
+            _finishLeft = burst.reducedMotion ? 0.35f : Mathf.Clamp(_live.bossBurst.finishDuration, 1f, 3f);
+            if (_active == 0) FinishNow();
+        }
+
+        private static void BossBurstSettings(GemstoneCollectionSettings burst)
+        {
+            burst.motion.scatterRadius = burst.bossBurst.scatterRadius;
+            burst.motion.scatterDuration = burst.bossBurst.scatterDuration;
+            burst.motion.holdDuration = burst.bossBurst.holdDuration;
+            burst.motion.flightDuration = burst.bossBurst.flightDuration;
+            burst.motion.rotationDegrees = 55f;
+            burst.motion.curvature = new Vector2(60f, 180f);
         }
         private void FinishNow()
         {

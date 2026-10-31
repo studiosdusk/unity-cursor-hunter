@@ -53,6 +53,7 @@ namespace CursorHunter.App.Tests
         {
             Set(_hunt, "connectTraitScreenToCombat", false);
             CombatBalanceSettings settings = _hunt.CaptureCombatBalanceSettings();
+            settings.UsePlayerProgression = false;
             settings.AttackPower = 1L; settings.CriticalChancePercent = 0f; settings.DurationSeconds = 15f;
             foreach (SkillBalanceSettings skill in settings.Skills) skill.Enabled = false;
             foreach (MonsterBalanceSettings monster in settings.Monsters)

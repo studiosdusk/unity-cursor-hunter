@@ -12,7 +12,7 @@ namespace CursorHunter.App.Editor
         {
             var controller = (GemstoneCollectionController)target;
             serializedObject.Update();
-            EditorGUILayout.HelpBox("소 = 1개 · 중 = 5개 · 대 = 10개 (고정)\n최종 착점: 수량 Text (TMP) 중심\n동작·크기 변경은 새 발사부터 반영. 연결·풀 변경은 다음 활성화부터 반영됩니다.", MessageType.Info);
+            EditorGUILayout.HelpBox("일반: 소 = 1개 · 중 = 5개 · 대 = 10개\n보스: Boss Burst 예산 안에서 보상을 묶어 동시 분출\n최종 착점: 수량 Text (TMP) 중심\n동작·크기 변경은 새 발사부터 반영. 연결·풀 변경은 다음 활성화부터 반영됩니다.", MessageType.Info);
             EditorGUI.BeginChangeCheck();
             using (new EditorGUI.DisabledScope(Application.isPlaying))
             {

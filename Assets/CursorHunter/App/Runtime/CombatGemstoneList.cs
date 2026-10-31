@@ -54,7 +54,7 @@ namespace CursorHunter.App
                 string id = entry.icon.GemstoneId;
                 long earned = combat.GetResourceEarned(id);
                 // Keep already earned drops visible if a live balance edit disables their source.
-                bool visible = earned > 0L || CanDrop(spawner, id);
+                bool visible = earned > 0L || CanDrop(combat, spawner, id);
                 if (collectionController != null && collectionController.Owns(_runId)) entry.InvalidateAmount();
                 else entry.SetAmount(earned);
                 if (entry.root.activeSelf != visible) entry.root.SetActive(visible);
@@ -97,8 +97,11 @@ namespace CursorHunter.App
             }
         }
 
-        private static bool CanDrop(MonsterSpawner spawner, string currencyId)
+        private static bool CanDrop(CombatRunController combat, MonsterSpawner spawner, string currencyId)
         {
+            if (combat.IsBossRun)
+                foreach (ResourceRewardSnapshot reward in combat.BossClearRewards)
+                    if (reward.CurrencyId == currencyId && reward.Amount > 0) return true;
             SpawnPlan plan = spawner != null ? spawner.CurrentSpawnPlan : null;
             if (plan == null) return false;
             for (int index = 0; index < plan.Entries.Count; index++)
