@@ -4821,7 +4821,7 @@ MonoBehaviour:
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
           m_IntArgument: 0
           m_FloatArgument: 0
-          m_StringArgument: ""
+          m_StringArgument: 
           m_BoolArgument: 1
         m_CallState: 2
 --- !u!1 &289074298
@@ -8517,7 +8517,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1289941274725741928, guid: 8cbdb31b2956445cfba1b864b162b6a8, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -194
+      value: -106
       objectReference: {fileID: 0}
     - target: {fileID: 1289941274725741928, guid: 8cbdb31b2956445cfba1b864b162b6a8, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -13024,7 +13024,7 @@ MonoBehaviour:
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
           m_IntArgument: 0
           m_FloatArgument: 0
-          m_StringArgument: ""
+          m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
   panelSprite: {fileID: 21300000, guid: ad88fadd7bc384969bd45f53f0448093, type: 3}
@@ -13053,6 +13053,7 @@ MonoBehaviour:
   skillIcon: {fileID: 21300000, guid: 13756a141b0b84db08f0c80f06bb5d45, type: 3}
   monsterIcon: {fileID: 21300000, guid: 6b3d80100f82a44bb8968db0ec8c98e3, type: 3}
   petIcon: {fileID: 21300000, guid: e3db040c4cdb5234bbbea8c36b533fe2, type: 3}
+  affordableNodeBadgeSprite: {fileID: 21300000, guid: 01c94d2830b4d4e48bac276d763beee1, type: 3}
   gemstoneIconCatalog: {fileID: 11400000, guid: ed7e8a581bb147bdadba351c88f00ec9, type: 2}
   gemstoneIcons:
   - {fileID: 21300000, guid: 6f40e5d50d0934e45aac02171a570c88, type: 3}
@@ -13079,7 +13080,6 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 2fd0633512126e646a8fe810019b0737, type: 3}
   - {fileID: 21300000, guid: 6c63eea5ac3d47f41a4ada2581ce61f3, type: 3}
   - {fileID: 21300000, guid: 9ed7185891b014c4a8a16be35bb06d34, type: 3}
-  affordableNodeBadgeSprite: {fileID: 21300000, guid: 01c94d2830b4d4e48bac276d763beee1, type: 3}
   petIcons:
   - {fileID: 21300000, guid: e3db040c4cdb5234bbbea8c36b533fe2, type: 3}
   uiFont: {fileID: 12800000, guid: 76d037539f56c45a1ba293f2dff49672, type: 3}
@@ -27156,7 +27156,7 @@ SpriteRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: a97c105638bdf8b4a8650670310a4cd3, type: 2}
+  - {fileID: 2100000, guid: 9dfc825aed78fcd4ba02077103263b40, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -27175,9 +27175,9 @@ SpriteRenderer:
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
-  m_SortingOrder: 0
+  m_SortingLayerID: -1429834225
+  m_SortingLayer: 2
+  m_SortingOrder: 999
   m_MaskInteraction: 0
   m_Sprite: {fileID: 21300000, guid: fa60a8ac4426c4b7baa8bc999489c6af, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -39569,6 +39569,7 @@ MonoBehaviour:
   countSeconds: 0.3
   buttonPopupSeconds: 0.22
   reduceMotion: 0
+  countTickVolume: 0.14
 --- !u!114 &2188000113
 MonoBehaviour:
   m_ObjectHideFlags: 0
