@@ -31,7 +31,8 @@ namespace CursorHunter.App.Tests
         {
             _listenerVolume = AudioListener.volume;
             AudioListener.volume = 0f;
-            foreach (string key in new[] { ProfileKey, ProfileKey + ".before-v5", ProfileKey + ".before-v6" })
+            foreach (string key in new[]
+                { ProfileKey, ProfileKey + ".before-v5", ProfileKey + ".before-v6" })
             {
                 _savedStrings[key] = PlayerPrefs.HasKey(key) ? PlayerPrefs.GetString(key) : null;
                 PlayerPrefs.DeleteKey(key);
@@ -76,6 +77,76 @@ namespace CursorHunter.App.Tests
             }
             PlayerPrefs.Save();
             AudioListener.volume = _listenerVolume;
+        }
+
+        [UnityTest]
+        public IEnumerator TraitBackButtonUsesTheFieldBackButtonPrefabGeometryAndArtwork()
+        {
+            yield return null;
+            RectTransform runtimeRoot = Get<RectTransform>(_trait, "_runtimeRoot");
+            Button traitBack = runtimeRoot.Find("BackButton").GetComponent<Button>();
+            Button fieldBack = _scene.GetRootGameObjects()
+                .SelectMany(root => root.GetComponentsInChildren<Button>(true))
+                .FirstOrDefault(button => button.gameObject.name == "Button_Side01_Demo");
+
+            Assert.That(fieldBack, Is.Not.Null);
+            Assert.That(traitBack, Is.Not.Null);
+            Assert.That(traitBack.GetComponent<Image>().sprite,
+                Is.SameAs(fieldBack.GetComponent<Image>().sprite));
+
+            RectTransform fieldRect = fieldBack.transform as RectTransform;
+            RectTransform traitRect = traitBack.transform as RectTransform;
+            Assert.That(traitRect.anchorMin, Is.EqualTo(fieldRect.anchorMin));
+            Assert.That(traitRect.anchorMax, Is.EqualTo(fieldRect.anchorMax));
+            Assert.That(traitRect.pivot, Is.EqualTo(fieldRect.pivot));
+            Assert.That(traitRect.sizeDelta, Is.EqualTo(fieldRect.sizeDelta));
+            Assert.That(traitRect.anchoredPosition.x,
+                Is.EqualTo(fieldRect.anchoredPosition.x).Within(0.01f));
+            Assert.That(traitRect.anchoredPosition.y,
+                Is.EqualTo(fieldRect.anchoredPosition.y).Within(0.01f));
+
+            Image traitIcon = traitBack.transform.Find("Icon").GetComponent<Image>();
+            Image fieldIcon = fieldBack.transform.Find("Icon").GetComponent<Image>();
+            Assert.That(traitIcon.sprite, Is.SameAs(fieldIcon.sprite));
+            RectTransform traitIconRect = traitIcon.transform as RectTransform;
+            RectTransform fieldIconRect = fieldIcon.transform as RectTransform;
+            Assert.That(traitIconRect.sizeDelta, Is.EqualTo(fieldIconRect.sizeDelta));
+            Assert.That(traitIconRect.anchoredPosition.x,
+                Is.EqualTo(fieldIconRect.anchoredPosition.x).Within(0.01f));
+            Assert.That(traitIconRect.anchoredPosition.y,
+                Is.EqualTo(fieldIconRect.anchoredPosition.y).Within(0.01f));
+
+            Shadow traitShadow = traitBack.GetComponent<Shadow>();
+            Shadow fieldShadow = fieldBack.GetComponent<Shadow>();
+            Assert.That(traitShadow.effectColor, Is.EqualTo(fieldShadow.effectColor));
+            Assert.That(traitShadow.effectDistance, Is.EqualTo(fieldShadow.effectDistance));
+            Assert.That(traitBack.colors.normalColor, Is.EqualTo(fieldBack.colors.normalColor));
+            Assert.That(traitBack.colors.highlightedColor, Is.EqualTo(fieldBack.colors.highlightedColor));
+            Assert.That(traitBack.colors.pressedColor, Is.EqualTo(fieldBack.colors.pressedColor));
+
+            TraitProgressionStore.CompleteStarterTutorial();
+            traitBack.onClick.Invoke();
+            Assert.That(_app.CurrentScreen, Is.EqualTo(UiScreenId.MainMenu));
+        }
+
+        [UnityTest]
+        public IEnumerator FinalUpgradeKeepsRainbowFrameBeforeAndAfterPurchase()
+        {
+            Call(_trait, "ToggleUnlockAllConditionsForTesting");
+            yield return null;
+
+            RectTransform availableFinalNode = Node("stat.attack.10");
+            Assert.That(availableFinalNode, Is.Not.Null);
+            AssertRainbowFrame(availableFinalNode);
+            Assert.That(availableFinalNode.Find("StateBadge"), Is.Null,
+                "The final node is shown as available, not purchased, before purchase.");
+
+            Call(_trait, "UpgradeAllNodesForTesting");
+            yield return null;
+
+            RectTransform purchasedFinalNode = Node("stat.attack.10");
+            Assert.That(purchasedFinalNode.Find("StateBadge"), Is.Not.Null);
+            AssertRainbowFrame(purchasedFinalNode);
         }
 
         [UnityTest]
@@ -232,9 +303,13 @@ namespace CursorHunter.App.Tests
 
             TraitProgressionStore.CompleteStarterTutorial();
             _trait.GuideStarterResearch();
-            Hover("stat.cooldown.01");
+            Hover("stat.attack.02");
             AssertTooltipVisible();
             Assert.That(Get<Button>(_trait, "_tooltipUpgradeButton").interactable, Is.True);
+            string preview = Get<TextMeshProUGUI>(_trait, "_tooltipPreview").text;
+            Assert.That(preview, Does.Contain("→"));
+            Assert.That(preview, Does.Contain("강화 후").Or.Contain("현재"));
+            yield return CaptureTooltipAtResolutions("tooltip-stat-upgrade");
         }
 
         [UnityTest]
@@ -261,10 +336,12 @@ namespace CursorHunter.App.Tests
             RightClick(upgrade);
             yield return null;
             Assert.That(Purchased.Contains(upgrade), Is.True);
-            Assert.That(Get<long>(_trait, "_garnetBalance"), Is.EqualTo(balance - 80));
+            Assert.That(Get<long>(_trait, "_garnetBalance"),
+                Is.EqualTo(balance - ResearchCost(upgrade)));
             Assert.That(Get<string>(_trait, "_starterTutorialTargetId"), Is.EqualTo("stat.radius.02"));
             RightClick(upgrade);
-            Assert.That(Get<long>(_trait, "_garnetBalance"), Is.EqualTo(balance - 80));
+            Assert.That(Get<long>(_trait, "_garnetBalance"),
+                Is.EqualTo(balance - ResearchCost(upgrade)));
 
             foreach (string id in new[] { "stat.radius.02", "skill.pet_baby_dragon", "monster.01" })
             {
@@ -278,27 +355,85 @@ namespace CursorHunter.App.Tests
             yield return null;
             Assert.That(Get<bool>(_trait, "_starterTutorialActive"), Is.False,
                 "Reopening Trait after onboarding must restore normal research controls.");
+            Hover("skill.pet_baby_dragon");
+            AssertTooltipVisible();
+            yield return CaptureTooltipAtResolutions("tooltip-pet-skill");
+            string petValue = Get<TextMeshProUGUI>(_trait, "_tooltipValue").text;
+            Assert.That(petValue, Does.Contain("동료 배우기"));
+            Assert.That(petValue, Does.Not.Contain("Learn"));
+            Assert.That(Get<TextMeshProUGUI>(_trait, "_tooltipCost").text, Is.EqualTo("배움 완료"));
+            Assert.That(Get<Image>(_trait, "_tooltipCurrencyIcon").gameObject.activeSelf, Is.False);
+            Assert.That(Get<TextMeshProUGUI>(_trait, "_tooltipStatus").text, Is.EqualTo("전투에서 사용 중"));
+
             Hover("monster.01.production.01");
             AssertTooltipVisible();
+            yield return CaptureTooltipAtResolutions("tooltip-monster-production");
             Assert.That(Get<Button>(_trait, "_tooltipUpgradeButton").gameObject.activeSelf, Is.True);
+            string productionValue = Get<TextMeshProUGUI>(_trait, "_tooltipValue").text;
+            Assert.That(productionValue, Does.Contain("한 번에 3마리"));
+            Assert.That(productionValue, Does.Not.Contain("Spawn"));
+            string productionDescription = Get<TextMeshProUGUI>(_trait, "_tooltipDescription").text;
+            Assert.That(productionDescription, Does.Contain("특별한 능력 없이 기본 방식으로"));
+            Assert.That(productionDescription, Does.Contain("처치 보상"));
+            Assert.That(productionDescription, Does.Not.Contain("한 번에 3마리 등장"));
+            Assert.That(Get<TextMeshProUGUI>(_trait, "_tooltipCost").text, Does.Contain("필요 100"));
+            Assert.That(Get<TextMeshProUGUI>(_trait, "_tooltipStatus").text, Is.EqualTo("젬스톤이 부족해요"));
+            Assert.That(Get<TextMeshProUGUI>(_trait, "_tooltipUpgradeLabel").text, Is.EqualTo("강화하기"));
+        }
+
+        [UnityTest]
+        public IEnumerator EveryResearchTooltipFitsOnTheSmallestSupportedScreen()
+        {
+            TraitProgressionStore.CompleteStarterTutorial();
+            _trait.GuideStarterResearch();
+            Call(_trait, "UpgradeAllNodesForTesting");
+            yield return null;
+            var catalog = Get<TraitCatalog>(_trait, "_activeCatalog");
+            var categories = catalog.StatCategories
+                .Concat(catalog.SkillCategories)
+                .Concat(catalog.MonsterCategories);
+            string[] nodeIds = categories
+                .Where(category => category != null && category.Nodes != null)
+                .SelectMany(category => category.Nodes)
+                .Where(node => node != null && !string.IsNullOrEmpty(node.Id))
+                .Select(node => node.Id)
+                .ToArray();
+            Assert.That(nodeIds, Has.Length.EqualTo(103),
+                "The tooltip audit must cover every configured research node.");
+
+            string directory = System.Environment.GetEnvironmentVariable("CURSOR_HUNTER_GUIDE_CAPTURE");
+            var resolution = new Vector2Int(1280, 720);
+            foreach (string nodeId in nodeIds)
+            {
+                Call(_trait, "ShowNodeTooltip", FindResearch(nodeId));
+                AssertTooltipVisible();
+                string safeId = nodeId.Replace('.', '_');
+                yield return RenderCurrentFrame("tooltip-node-" + safeId,
+                    resolution, directory, true);
+            }
         }
 
         [UnityTest]
         public IEnumerator StarterResearchLeadsToCombatSettlementAndTheNextProductionUpgrade()
         {
+            long startingBalance = Get<long>(_trait, "_garnetBalance");
+            string[] starterPurchases = { "stat.attack.01", "stat.radius.01", "stat.cooldown.01",
+                "stat.critical.01", "stat.fieldDuration.01", "stat.attack.02", "stat.radius.02",
+                "skill.pet_baby_dragon", "monster.01" };
+            long expectedGarnetSpend = starterPurchases.Sum(id =>
+                ResearchCurrency(id) == "gem.garnet" ? ResearchCost(id) : 0L);
             var hunt = FindInScene<HuntManager>();
             var combat = FindInScene<CombatRunController>();
             var spawner = FindInScene<MonsterSpawner>();
             hunt.BeginPrototypeRun();
             Assert.That(combat.IsRunActive, Is.False, "A fresh profile cannot spawn monsters before research.");
-            foreach (string id in new[] { "stat.attack.01", "stat.radius.01", "stat.cooldown.01",
-                "stat.critical.01", "stat.fieldDuration.01", "stat.attack.02", "stat.radius.02",
-                "skill.pet_baby_dragon", "monster.01" })
+            foreach (string id in starterPurchases)
             {
                 RightClick(id);
                 yield return null;
             }
-            Assert.That(Get<long>(_trait, "_garnetBalance"), Is.EqualTo(5L));
+            Assert.That(Get<long>(_trait, "_garnetBalance"),
+                Is.EqualTo(startingBalance - expectedGarnetSpend));
             _app.CloseTrait();
             Assert.That(_app.CurrentScreen, Is.EqualTo(UiScreenId.MainMenu));
             Get<Button>(_app, "_starterGuideButton").onClick.Invoke();
@@ -321,7 +456,11 @@ namespace CursorHunter.App.Tests
 
             // Real targets and the real damage/reward pipeline; no direct wallet grants.
             long wallet = Get<long>(_trait, "_garnetBalance");
-            for (int wave = 0; combat.GarnetEarned < 30L && wave < 12; wave++)
+            long productionCost = ResearchCost("monster.01.production.01");
+            long requiredReward = productionCost -
+                (startingBalance - expectedGarnetSpend);
+            if (requiredReward < 30L) requiredReward = 30L;
+            for (int wave = 0; combat.GarnetEarned < requiredReward && wave < 19; wave++)
             {
                 // Batch editors are unfocused; resume before advancing the
                 // actual combat clock and spawner deterministically.
@@ -333,7 +472,7 @@ namespace CursorHunter.App.Tests
                 combat.AdvanceTime(.76f);
                 yield return null;
             }
-            Assert.That(combat.GarnetEarned, Is.GreaterThanOrEqualTo(30L));
+            Assert.That(combat.GarnetEarned, Is.GreaterThanOrEqualTo(requiredReward));
             Assert.That(Get<long>(_trait, "_garnetBalance"), Is.EqualTo(wallet),
                 "Combat rewards must wait for settlement.");
             long earned = combat.GarnetEarned;
@@ -410,6 +549,63 @@ namespace CursorHunter.App.Tests
             yield return new WaitForSecondsRealtime(1f);
             yield return CaptureCurrentFrame("all-research-combat");
             hunt.ReturnToMainMenu();
+        }
+
+        [UnityTest]
+        public IEnumerator SettledRelicAndGemstonePersistIntoTheNextCombatSnapshot()
+        {
+            Call(_trait, "UpgradeAllNodesForTesting");
+            var hunt = FindInScene<HuntManager>();
+            hunt.BeginPrototypeRun();
+            var mainCombat = FindInScene<CombatRunController>();
+            Assert.That(mainCombat.IsRunActive, Is.True);
+
+            long before = Get<long>(_trait, "_garnetBalance");
+            var request = new RunRequest(mainCombat.CurrentRunId, 1, 1,
+                RunMode.NormalField, string.Empty, 0UL, 30f);
+            var result = new RunResult(request, RunEndReason.UserExit,
+                RunSettlementPolicy.Eligible, 0f, 1, 17L, 1L,
+                new[] { new ResourceRewardSnapshot("gem.garnet", 17L) },
+                new[] { "relic.red_potion" });
+            Call(hunt, "SettleRunRewards", result);
+
+            Assert.That(Get<long>(_trait, "_garnetBalance"), Is.EqualTo(before + 17L));
+            Assert.That(TraitProgressionStore.TryLoad(out TraitProgressionStore.SaveData saved), Is.True);
+            Assert.That(saved.garnetBalance, Is.EqualTo(before + 17L));
+            CollectionAssert.Contains(saved.ownedRelicIds, "relic.red_potion");
+
+            Call(hunt, "SettleRunRewards", result);
+            Assert.That(Get<long>(_trait, "_garnetBalance"), Is.EqualTo(before + 17L),
+                "The same eligible run must not pay twice.");
+            hunt.ReturnToMainMenu();
+
+            ProgressionCombatSnapshot progression = _trait.CreateCombatSnapshot();
+            RelicCombatSnapshot redPotion = progression.Relics.Single(
+                relic => relic.RelicId == "relic.red_potion");
+            Assert.That(redPotion.Owned, Is.True,
+                "The saved relic must be owned in the next progression snapshot.");
+            RelicCombatModifiers modifiers = RelicCombatModifiers.From(progression.Relics);
+            Assert.That(modifiers.CursorAttackDamageMultiplier, Is.GreaterThan(1f));
+
+            var combatObject = new GameObject("Next relic-enabled combat");
+            try
+            {
+                var combat = combatObject.AddComponent<CombatRunController>();
+                Assert.That(combat.StartRun(new RunRequest("next-relic-run", 30f),
+                    modifiers.ApplyTo(progression.Combat)), Is.True);
+                Assert.That(combat.ConfigureRelics(progression.Relics,
+                    progression.RelicDropRules), Is.True);
+                Assert.That(combat.RelicSnapshots.Single(
+                    relic => relic.RelicId == "relic.red_potion").Owned, Is.True);
+                Assert.That(combat.RelicModifiers.CursorAttackDamageMultiplier,
+                    Is.GreaterThan(1f));
+            }
+            finally
+            {
+                Object.DestroyImmediate(combatObject);
+            }
+
+            yield return null;
         }
 
         [UnityTest]
@@ -501,6 +697,130 @@ namespace CursorHunter.App.Tests
         }
 
         [UnityTest]
+        public IEnumerator EveryMonsterDefinitionResolvesItsAuthoredCombatPrefab()
+        {
+            ScriptableObject[] definitions = Resources.LoadAll<ScriptableObject>("MonsterDefinitions");
+            Sprite[] traitIcons = Get<Sprite[]>(_trait, "monsterIcons");
+            Assert.That(traitIcons, Has.Length.EqualTo(10),
+                "Trait icon order must contain one icon for every authored monster.");
+            for (int index = 0; index < 10; index++)
+            {
+                string id = "monster." + (index + 1).ToString("00");
+                ScriptableObject definition = definitions.SingleOrDefault(candidate =>
+                    candidate != null && candidate.GetType().Name == "MonsterDefinition" &&
+                    (string)candidate.GetType().GetProperty("MonsterId")?.GetValue(candidate) == id);
+                Assert.That(definition, Is.Not.Null, "Missing Resources MonsterDefinition for " + id);
+                GameObject visualPrefab = (GameObject)definition.GetType()
+                    .GetProperty("VisualPrefab")?.GetValue(definition);
+                Assert.That(visualPrefab != null, Is.True,
+                    id + " has an unresolved visualPrefab reference.");
+                Assert.That((string)definition.GetType().GetProperty("DisplayName")?.GetValue(definition),
+                    Is.Not.Empty, id + " must have a player-facing name.");
+                Sprite traitIcon = traitIcons[index];
+                Assert.That(traitIcon, Is.Not.Null, id + " has no Trait icon.");
+
+                GameObject visual = Object.Instantiate(visualPrefab);
+                try
+                {
+                    Sprite[] battleSprites = visual.GetComponentsInChildren<SpriteRenderer>(true)
+                        .Select(renderer => renderer.sprite)
+                        .Where(sprite => sprite != null)
+                        .ToArray();
+                    Assert.That(battleSprites, Does.Contain(traitIcon),
+                        id + " combat visual must use the same authored sprite as its Trait icon " +
+                        traitIcon.name + ".");
+
+                    if (index == 1)
+                    {
+                        Assert.That((string)definition.GetType().GetProperty("DisplayName")
+                            ?.GetValue(definition), Is.EqualTo("여왕벌"));
+                        Assert.That((string)definition.GetType().GetProperty("PrefabKey")
+                            ?.GetValue(definition), Is.EqualTo("Bee/Bee_Honey"));
+                        Assert.That(traitIcon.name, Is.EqualTo("Body"),
+                            "The queen bee icon must be the Bee_Honey body, not a bat/fly sprite.");
+                    }
+                }
+                finally
+                {
+                    Object.DestroyImmediate(visual);
+                }
+            }
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator EveryMonsterTooltipShowsItsNameTraitAndKillRewards()
+        {
+            TraitProgressionStore.CompleteStarterTutorial();
+            _trait.GuideStarterResearch();
+            Call(_trait, "UpgradeAllNodesForTesting");
+
+            string[] names =
+            {
+                "그루터기", "여왕벌", "독버섯", "가면유령", "갑옷병사",
+                "눈요정", "벌집", "골렘", "봉오리", "판도라 상자"
+            };
+            string[] traits =
+            {
+                "특별한 능력 없이 기본 방식으로 움직입니다.",
+                "몸집과 피격 범위가 작습니다.",
+                "빠르게 이동합니다.",
+                "4초마다 1.2초 동안 모습을 감춰 공격을 피합니다.",
+                "4.5초마다 1.7초 동안 받는 피해가 65% 감소합니다.",
+                "3.5초마다 순간이동해 위치를 바꿉니다.",
+                "체력이 높아 오래 버팁니다.",
+                "몸집이 크고 피격 범위가 넓습니다.",
+                "3.5초마다 반경 2.75 안의 아군 체력을 최대 체력의 20%만큼 회복합니다.",
+                "4초마다 반경 3.5 안의 쓰러진 몬스터를 최대 체력의 30%로 되살립니다."
+            };
+            string[] rewardGems =
+            {
+                string.Empty, "토파즈", "토파즈", "자수정", "자수정",
+                "사파이어", "사파이어", "다이아몬드", "드래곤 스톤", "드래곤 스톤"
+            };
+            int[] garnetRewards = { 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
+            int[] bonusGemRewards = { 0, 3, 4, 3, 3, 5, 5, 2, 1, 1 };
+
+            for (int index = 0; index < names.Length; index++)
+            {
+                string monsterId = "monster." + (index + 1).ToString("00");
+                TraitNodeDefinition unlock = FindResearch(monsterId);
+                Call(_trait, "ShowNodeTooltip", unlock);
+                AssertTooltipVisible();
+                Assert.That(Get<TextMeshProUGUI>(_trait, "_tooltipType").text,
+                    Is.EqualTo("몬스터 해금"), monsterId);
+                Assert.That(Get<TextMeshProUGUI>(_trait, "_tooltipTitle").text,
+                    Is.EqualTo(names[index]), monsterId);
+
+                string description = Get<TextMeshProUGUI>(_trait, "_tooltipDescription").text;
+                Assert.That(description, Does.Contain(traits[index]), monsterId);
+                Assert.That(description, Does.Contain("처치 보상"), monsterId);
+                Assert.That(description, Does.Contain("가넷 " + garnetRewards[index] + "개"), monsterId);
+                Assert.That(description, Does.Not.Contain("생성 간격"), monsterId);
+                Assert.That(description, Does.Not.Contain("Spawn"), monsterId);
+                Assert.That(description, Does.Not.Contain("추가 잼스톤"), monsterId);
+                if (bonusGemRewards[index] > 0)
+                {
+                    Assert.That(description, Does.Contain(
+                        rewardGems[index] + " " + bonusGemRewards[index] + "개"), monsterId);
+                }
+
+                TraitNodeDefinition production = FindResearch(monsterId + ".production.01");
+                Call(_trait, "ShowNodeTooltip", production);
+                AssertTooltipVisible();
+                Assert.That(Get<TextMeshProUGUI>(_trait, "_tooltipType").text,
+                    Is.EqualTo("몬스터 생산량 증가"), monsterId);
+                Assert.That(Get<TextMeshProUGUI>(_trait, "_tooltipTitle").text,
+                    Does.StartWith(names[index]), monsterId);
+                description = Get<TextMeshProUGUI>(_trait, "_tooltipDescription").text;
+                Assert.That(description, Does.Contain(traits[index]), monsterId);
+                Assert.That(description, Does.Contain("처치 보상"), monsterId);
+            }
+
+            yield return null;
+        }
+
+        [UnityTest]
         public IEnumerator MonsterProfilesExecuteVanishShieldTeleportHealingAndSingleRewardRevival()
         {
             TraitProgressionStore.CompleteStarterTutorial();
@@ -509,8 +829,8 @@ namespace CursorHunter.App.Tests
             Purchased.RemoveWhere(id => id.StartsWith("skill."));
             FindInScene<MainCursorController>().enabled = false;
             _app.CloseTrait();
-            var hunt = FindInScene<HuntManager>();
             var combat = FindInScene<CombatRunController>();
+            var hunt = FindInScene<HuntManager>();
             hunt.BeginPrototypeRun();
             Assert.That(combat.IsRunActive, Is.True);
             var monsters = Object.FindObjectsByType<MonsterCombatTarget>(FindObjectsSortMode.None)
@@ -599,7 +919,7 @@ namespace CursorHunter.App.Tests
         }
 
         [UnityTest]
-        public IEnumerator CurrencyExchangeWorksBeforeItsMonsterUnlockAndPersistsTheExactHundredToOnePayout()
+        public IEnumerator CurrencyExchangeWorksWithoutItsMonsterAndPersistsTheExactHundredToOnePayout()
         {
             TraitProgressionStore.CompleteStarterTutorial();
             _trait.GuideStarterResearch();
@@ -608,19 +928,105 @@ namespace CursorHunter.App.Tests
             RightClick("monster.01");
             _trait.SetProgressionSnapshot(1000L, new long[] { 1000, 0, 0, 0, 0, 0 }, 1);
             yield return null;
-            var list = Get<RectTransform>(_trait, "_gemstoneList");
-            var exchange = list.Find("Gemstone_gem.garnet/ExchangeToNextTier").gameObject;
-            Assert.That(exchange.activeInHierarchy, Is.True);
-            Assert.That(Purchased.Contains("monster.02"), Is.False);
+            var panel = Get<RectTransform>(_trait, "_gemstonePanel");
+            Assert.That(panel, Is.Not.Null);
+            Assert.That(Purchased.Contains("monster.02"), Is.False,
+                "The next-tier exchange must not require its supply monster to be unlocked.");
+            var exchange = panel.Find("GemstoneList/Gemstone_gem.garnet/ExchangeToNextTier")
+                .GetComponent<TraitGemstoneExchangeHoldInput>();
+            Assert.That(exchange, Is.Not.Null);
             long before = Get<long>(_trait, "_garnetBalance");
-            var pointer = new PointerEventData(_events) { button = PointerEventData.InputButton.Left };
-            ExecuteEvents.Execute(exchange, pointer, ExecuteEvents.pointerDownHandler);
-            ExecuteEvents.Execute(exchange, pointer, ExecuteEvents.pointerUpHandler);
+            exchange.OnPointerDown(new PointerEventData(_events)
+                { button = PointerEventData.InputButton.Left });
+            exchange.OnPointerUp(new PointerEventData(_events)
+                { button = PointerEventData.InputButton.Left });
             Assert.That(Get<long>(_trait, "_garnetBalance"), Is.EqualTo(before - 100L));
             Assert.That(Get<long[]>(_trait, "_gemstoneBalances")[1], Is.EqualTo(1L));
             Assert.That(TraitProgressionStore.TryLoad(out var save), Is.True);
             Assert.That(save.garnetBalance, Is.EqualTo(before - 100L));
             Assert.That(save.gemstoneBalances[1], Is.EqualTo(1L));
+        }
+
+        [UnityTest]
+        public IEnumerator CurrencyExchangeRepeatsWhileHeldAndStopsOnRelease()
+        {
+            TraitProgressionStore.CompleteStarterTutorial();
+            _trait.GuideStarterResearch();
+            RightClick("stat.attack.01");
+            yield return null;
+            _trait.SetProgressionSnapshot(1000L, new long[] { 1000, 0, 0, 0, 0, 0 }, 1);
+            yield return null;
+
+            var panel = Get<RectTransform>(_trait, "_gemstonePanel");
+            var exchange = panel.Find("GemstoneList/Gemstone_gem.garnet/ExchangeToNextTier")
+                .GetComponent<TraitGemstoneExchangeHoldInput>();
+            long garnetBefore = Get<long>(_trait, "_garnetBalance");
+            long topazBefore = Get<long[]>(_trait, "_gemstoneBalances")[1];
+            var pointer = new PointerEventData(_events)
+                { button = PointerEventData.InputButton.Left };
+
+            exchange.OnPointerDown(pointer);
+            yield return new WaitForSecondsRealtime(.52f);
+            exchange.OnPointerUp(pointer);
+
+            long garnetAfterRelease = Get<long>(_trait, "_garnetBalance");
+            long topazAfterRelease = Get<long[]>(_trait, "_gemstoneBalances")[1];
+            Assert.That(garnetAfterRelease, Is.LessThanOrEqualTo(garnetBefore - 200L),
+                "A sustained press should exchange repeatedly after the initial payout.");
+            Assert.That(topazAfterRelease, Is.GreaterThanOrEqualTo(topazBefore + 2L));
+
+            yield return new WaitForSecondsRealtime(.25f);
+            Assert.That(Get<long>(_trait, "_garnetBalance"), Is.EqualTo(garnetAfterRelease),
+                "Releasing the pointer must stop all further exchange ticks.");
+            Assert.That(Get<long[]>(_trait, "_gemstoneBalances")[1], Is.EqualTo(topazAfterRelease));
+            Assert.That(TraitProgressionStore.TryLoad(out var save), Is.True);
+            Assert.That(save.garnetBalance, Is.EqualTo(garnetAfterRelease));
+            Assert.That(save.gemstoneBalances[1], Is.EqualTo(topazAfterRelease));
+        }
+
+        [UnityTest]
+        public IEnumerator RelicPresentationFollowsStableIdsWhenGameDataOrderChanges()
+        {
+            object document = Get<object>(_trait, "_document");
+            GameInformation information = ReadField<GameInformation>(document, "information");
+            var entries = Get<IList>(_trait, "relicEntries");
+            RelicInformation[] originalDefinitions = information.relics;
+            object[] originalEntries = entries.Cast<object>().ToArray();
+            RelicCollectionCatalog catalog = Resources.Load<RelicCollectionCatalog>(
+                "RelicCollectionCatalog");
+
+            try
+            {
+                entries.Clear();
+                foreach (object entry in originalEntries.Reverse())
+                    entries.Add(entry);
+                information.relics = originalDefinitions.Reverse().ToArray();
+
+                Call(_trait, "ApplyRelicPresentationDefaults");
+
+                Assert.That(catalog.Entries.Count, Is.EqualTo(20));
+                Assert.That(entries.Count, Is.EqualTo(information.relics.Length));
+                for (int i = 0; i < information.relics.Length; i++)
+                {
+                    string relicId = information.relics[i].id;
+                    object entry = entries[i];
+                    RelicCollectionCatalogEntry expected = catalog.FindById(relicId);
+                    Assert.That(expected, Is.Not.Null, "Missing catalog ID " + relicId);
+                    Assert.That(ReadProperty<string>(entry, "Id"), Is.EqualTo(relicId));
+                    Assert.That(ReadProperty<string>(entry, "Title"), Is.EqualTo(expected.Title));
+                    Assert.That(ReadProperty<Sprite>(entry, "Icon"), Is.EqualTo(expected.Icon));
+                }
+            }
+            finally
+            {
+                information.relics = originalDefinitions;
+                entries.Clear();
+                foreach (object entry in originalEntries)
+                    entries.Add(entry);
+                Call(_trait, "ApplyRelicPresentationDefaults");
+            }
+
+            yield return null;
         }
 
         private static void Call(object target, string method, params object[] args) => target.GetType()
@@ -639,6 +1045,23 @@ namespace CursorHunter.App.Tests
         {
             string directory = System.Environment.GetEnvironmentVariable("CURSOR_HUNTER_GUIDE_CAPTURE");
             if (string.IsNullOrEmpty(directory)) yield break;
+            yield return RenderCurrentFrame(label, new Vector2Int(1920, 1080), directory, false);
+        }
+
+        private IEnumerator CaptureTooltipAtResolutions(string label)
+        {
+            string directory = System.Environment.GetEnvironmentVariable("CURSOR_HUNTER_GUIDE_CAPTURE");
+            foreach (Vector2Int resolution in new[]
+                { new Vector2Int(1920, 1080), new Vector2Int(1280, 720), new Vector2Int(1280, 960) })
+            {
+                string suffix = resolution.x + "x" + resolution.y;
+                yield return RenderCurrentFrame(label + "-" + suffix, resolution, directory, true);
+            }
+        }
+
+        private IEnumerator RenderCurrentFrame(
+            string label, Vector2Int resolution, string directory, bool verifyTooltip)
+        {
             Camera camera = FindInScene<Camera>();
             Canvas canvas = _events.GetComponentInParent<Canvas>();
             if (canvas == null) canvas = FindInScene<Canvas>().rootCanvas;
@@ -646,7 +1069,7 @@ namespace CursorHunter.App.Tests
             Camera previousCamera = canvas.worldCamera;
             float previousDistance = canvas.planeDistance;
             RenderTexture previousTarget = camera.targetTexture;
-            var render = new RenderTexture(1920, 1080, 24);
+            var render = new RenderTexture(resolution.x, resolution.y, 24);
             try
             {
                 camera.targetTexture = render;
@@ -654,17 +1077,31 @@ namespace CursorHunter.App.Tests
                 canvas.worldCamera = camera;
                 canvas.planeDistance = 1f;
                 yield return null;
+                yield return null;
+                yield return new WaitForSecondsRealtime(0.16f);
                 Canvas.ForceUpdateCanvases();
-                camera.Render();
-                RenderTexture previousActive = RenderTexture.active;
-                RenderTexture.active = render;
-                var image = new Texture2D(1920, 1080, TextureFormat.RGB24, false);
-                image.ReadPixels(new Rect(0, 0, 1920, 1080), 0, 0);
-                image.Apply();
-                RenderTexture.active = previousActive;
-                System.IO.Directory.CreateDirectory(directory);
-                System.IO.File.WriteAllBytes(System.IO.Path.Combine(directory, label + ".png"), image.EncodeToPNG());
-                Object.Destroy(image);
+                if (verifyTooltip)
+                {
+                    typeof(TraitScreenController).GetMethod("RefreshNodeTooltipPosition",
+                        BindingFlags.Instance | BindingFlags.NonPublic).Invoke(_trait, null);
+                    Canvas.ForceUpdateCanvases();
+                }
+                if (verifyTooltip) AssertTooltipFitsResolution(camera, resolution, label);
+
+                if (!string.IsNullOrEmpty(directory))
+                {
+                    camera.Render();
+                    RenderTexture previousActive = RenderTexture.active;
+                    RenderTexture.active = render;
+                    var image = new Texture2D(resolution.x, resolution.y, TextureFormat.RGB24, false);
+                    image.ReadPixels(new Rect(0, 0, resolution.x, resolution.y), 0, 0);
+                    image.Apply();
+                    RenderTexture.active = previousActive;
+                    System.IO.Directory.CreateDirectory(directory);
+                    System.IO.File.WriteAllBytes(
+                        System.IO.Path.Combine(directory, label + ".png"), image.EncodeToPNG());
+                    Object.Destroy(image);
+                }
             }
             finally
             {
@@ -677,10 +1114,97 @@ namespace CursorHunter.App.Tests
             }
         }
 
+        private void AssertTooltipFitsResolution(Camera camera, Vector2Int resolution, string label)
+        {
+            RectTransform tooltip = Get<RectTransform>(_trait, "_tooltipRoot");
+            Assert.That(tooltip.gameObject.activeInHierarchy, Is.True);
+            var corners = new Vector3[4];
+            tooltip.GetWorldCorners(corners);
+            Rect bounds = camera.pixelRect;
+            foreach (Vector3 corner in corners)
+            {
+                Vector3 screenPoint = camera.WorldToScreenPoint(corner);
+                Assert.That(screenPoint.x, Is.InRange(bounds.xMin - 1f, bounds.xMax + 1f),
+                    label + ": tooltip must remain inside the " + resolution + " render area.");
+                Assert.That(screenPoint.y, Is.InRange(bounds.yMin - 1f, bounds.yMax + 1f),
+                    label + ": tooltip must remain inside the " + resolution + " render area.");
+            }
+
+            foreach (TMP_Text text in tooltip.GetComponentsInChildren<TMP_Text>(true))
+            {
+                if (!text.isActiveAndEnabled) continue;
+                text.ForceMeshUpdate();
+                Assert.That(ContainsLatinLetter(text.text), Is.False,
+                    "Tooltip text " + text.name + " ('" + text.text +
+                    "') must not expose English source data at " + resolution + ".");
+                Assert.That(text.isTextOverflowing, Is.False,
+                    "Tooltip text " + text.name + " ('" + text.text + "', " +
+                    text.rectTransform.rect + ", font " + text.fontSize.ToString("0.##") +
+                    ", overflow " + text.overflowMode + ") must not overflow at " + resolution + ".");
+            }
+        }
+
+        private static bool ContainsLatinLetter(string value)
+        {
+            if (string.IsNullOrEmpty(value)) return false;
+            bool insideRichTextTag = false;
+            foreach (char character in value)
+            {
+                if (character == '<')
+                {
+                    insideRichTextTag = true;
+                    continue;
+                }
+
+                if (insideRichTextTag)
+                {
+                    if (character == '>') insideRichTextTag = false;
+                    continue;
+                }
+
+                if ((character >= 'A' && character <= 'Z') ||
+                    (character >= 'a' && character <= 'z'))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         private HashSet<string> Purchased => Get<HashSet<string>>(_trait, "_purchased");
+
+        private TraitNodeDefinition FindResearch(string id)
+        {
+            TraitCatalog catalog = Get<TraitCatalog>(_trait, "_activeCatalog");
+            return catalog.StatCategories.Concat(catalog.SkillCategories)
+                .Concat(catalog.MonsterCategories).SelectMany(category => category.Nodes)
+                .Single(node => node.Id == id);
+        }
+
+        private int ResearchCost(string id) => FindResearch(id).Cost;
+
+        private string ResearchCurrency(string id) => FindResearch(id).CostGemstoneId;
 
         private RectTransform Node(string id) =>
             Get<Dictionary<string, RectTransform>>(_trait, "_boardNodeRectsById")[id];
+
+        private static void AssertRainbowFrame(RectTransform node)
+        {
+            AssertRainbowSide(node, "FrameTop", new Color(1f, 0.25f, 0.36f, 1f));
+            AssertRainbowSide(node, "FrameRight", new Color(1f, 0.75f, 0.20f, 1f));
+            AssertRainbowSide(node, "FrameBottom", new Color(0.20f, 0.82f, 1f, 1f));
+            AssertRainbowSide(node, "FrameLeft", new Color(0.70f, 0.40f, 1f, 1f));
+        }
+
+        private static void AssertRainbowSide(RectTransform node, string side, Color expected)
+        {
+            Image frame = node.GetComponentsInChildren<Image>(true)
+                .Where(image => image.gameObject.name == side)
+                .OrderByDescending(image => image.color.a)
+                .FirstOrDefault();
+            Assert.That(frame, Is.Not.Null, "Missing final-tier frame side " + side + ".");
+            Assert.That(frame.color, Is.EqualTo(expected), side);
+        }
 
         private PointerEventData Pointer(string id)
         {
@@ -699,10 +1223,10 @@ namespace CursorHunter.App.Tests
             PointerEventData pointer = Pointer(id);
             var hits = new List<RaycastResult>();
             _events.RaycastAll(pointer, hits);
-            Assert.That(hits.Count, Is.GreaterThan(0));
+            Assert.That(hits.Count, Is.GreaterThan(0), "No pointer hit for node " + id);
             Transform hit = hits[0].gameObject.transform;
             Assert.That(hit == Node(id) || hit.IsChildOf(Node(id)), Is.True,
-                "Tutorial dimming must allow pointer inspection of node " + id);
+                "Pointer inspection must reach node " + id);
             ExecuteEvents.Execute(Node(id).gameObject, pointer, ExecuteEvents.pointerEnterHandler);
         }
 
@@ -738,5 +1262,13 @@ namespace CursorHunter.App.Tests
 
         private static T Get<T>(object target, string field) => (T)target.GetType()
             .GetField(field, BindingFlags.Instance | BindingFlags.NonPublic).GetValue(target);
+
+        private static T ReadProperty<T>(object target, string property) => (T)target.GetType()
+            .GetProperty(property, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+            .GetValue(target);
+
+        private static T ReadField<T>(object target, string field) => (T)target.GetType()
+            .GetField(field, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+            .GetValue(target);
     }
 }

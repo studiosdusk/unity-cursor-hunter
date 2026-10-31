@@ -207,7 +207,7 @@ namespace CursorHunter.Combat.Tests
         }
 
         [UnityTest]
-        public IEnumerator BossHitUsesDamageMultiplierInsteadOfRemainingHealth()
+        public IEnumerator BossHitUsesIndependentDamageMultiplierInsteadOfPlayerAttackOrRemainingHealth()
         {
 #if UNITY_EDITOR
             _sandboxScene = UnityEditor.SceneManagement.EditorSceneManager.LoadSceneInPlayMode(
@@ -244,7 +244,8 @@ namespace CursorHunter.Combat.Tests
             combat.AdvanceTime(0.15f);
             yield return null;
 
-            Assert.That(boss.CurrentHealth, Is.EqualTo(4000L));
+            Assert.That(boss.CurrentHealth, Is.EqualTo(4980L),
+                "The configured 2x skill damage and 10x boss modifier deal 20 damage independently of 100 player attack.");
             Assert.That(boss.IsDead, Is.False);
             combat.TryAbortRun(RunEndReason.UserExit, default, out _);
 #else

@@ -36,8 +36,9 @@ App이 Data/Progression에서 런 입력을 만들어 Combat에 전달한다. Pr
 - 런타임 통합에서는 App만 입력 라우팅, EventSystem, 화면 전환 수명주기를 소유한다. Sandbox는 독립 실행용 카메라/EventSystem을 자체 보유하되 실제 통합에는 가져오지 않는다.
 - VFX 원본을 수정하지 않고 Combat/Prefabs/Vfx에 Variant 또는 외형 래퍼를 둔다. UI도 같은 방식으로 소유 영역에 둔다.
 - 일반 몬스터는 공용 `Combat/Prefabs/Monsters/MonsterRoot.prefab`을 사용한다. 종별
-  `MonsterDefinition`이 Base 스탯·드랍·외형 참조를 가지고, 재사용 가능한
+  `MonsterDefinition`이 이름·Base 스탯·드랍·외형 참조를 가지고, 재사용 가능한
   `MonsterBehaviorProfile` 목록을 Base 위에 합성해 런 스냅샷으로 복사한다.
+  특성 화면의 이름·처치 보상은 같은 Definition에서 읽고, 특성 요약은 그 Definition의 실제 스냅샷으로 생성해 전투 설명이 별도 문구 복사본과 어긋나지 않게 한다.
   전투 밸런스 창에서 최종 기본값을 저장한 Definition은 `baseStatsAreFinalValues`를 켜서
   수치 배율을 중복 적용하지 않는다. 프로필의 이동 모드와 특수 능력은 계속 합성한다.
 - HP/보상은 전투 프리팹에 저장하지 않는다. 전투는 App이 만든 `SpawnSnapshot`만 사용한다.

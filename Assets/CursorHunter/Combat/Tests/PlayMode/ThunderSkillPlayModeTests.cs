@@ -38,6 +38,7 @@ namespace CursorHunter.Combat.Tests
             combat.AdvanceTime(0.01f);
             yield return null;
             Assert.That(controller.ActiveEffectCount, Is.EqualTo(1));
+            AssertThunderAudioPlayed();
             ThunderEffect effect = ActiveEffect(controller);
             MonsterCombatTarget primary = TargetOf(effect);
             Assert.That(primary, Is.Not.Null);
@@ -52,7 +53,7 @@ namespace CursorHunter.Combat.Tests
             primary.enabled = false;
             secondary.enabled = false;
             primary.transform.position = new Vector3(2f, 0f, 0f);
-            secondary.transform.position = new Vector3(2f, 0f, 0f);
+            secondary.transform.position = new Vector3(10f, 0f, 0f);
 
             int primaryHits = 0;
             int secondaryHits = 0;
@@ -202,6 +203,42 @@ namespace CursorHunter.Combat.Tests
                 Is.GreaterThan(0.1f));
             Assert.That(Vector3.Distance(hitPoint.position, bounds.center),
                 Is.LessThan(0.01f));
+        }
+
+        private static void AssertThunderAudioPlayed()
+        {
+            System.Type audioType = typeof(ThunderSkillController).Assembly.GetType(
+                "CursorHunter.Combat.CombatAudioFeedback");
+            Assert.That(audioType, Is.Not.Null);
+            AudioClip[] clips = (AudioClip[])audioType.GetField("_clips",
+                BindingFlags.NonPublic | BindingFlags.Static).GetValue(null);
+            AudioSource[] sources = (AudioSource[])audioType.GetField("SkillSources",
+                BindingFlags.NonPublic | BindingFlags.Static).GetValue(null);
+            Assert.That(clips, Is.Not.Null);
+            Assert.That(clips.Length, Is.GreaterThan(4));
+            Assert.That(sources[2].isPlaying, Is.True,
+                "Thunder must use its reserved skill voice when it activates.");
+
+            AudioClip thunder = clips[4];
+            Assert.That(thunder, Is.Not.Null);
+            Assert.That(thunder.length, Is.GreaterThanOrEqualTo(0.8f));
+            var samples = new float[thunder.samples * thunder.channels];
+            Assert.That(thunder.GetData(samples, 0), Is.True);
+            float alpha = 1f - Mathf.Exp(-2f * Mathf.PI * 180f / thunder.frequency);
+            float lowPass = 0f;
+            double lowFrequencyEnergy = 0d;
+            int measured = 0;
+            for (int i = 0; i < samples.Length; i++)
+            {
+                lowPass += alpha * (samples[i] - lowPass);
+                if (i < thunder.frequency / 20) continue;
+                lowFrequencyEnergy += lowPass * lowPass;
+                measured++;
+            }
+
+            double lowFrequencyRms = System.Math.Sqrt(lowFrequencyEnergy / measured);
+            Assert.That(lowFrequencyRms, Is.GreaterThan(0.06d),
+                "Thunder should have a sustained low-frequency rumble beneath its crack.");
         }
 
         private static void SetBaseStat(object instance, string name, object value)

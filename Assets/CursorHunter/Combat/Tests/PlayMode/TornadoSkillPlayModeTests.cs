@@ -227,11 +227,29 @@ namespace CursorHunter.Combat.Tests
 
             AudioSource cast = controller.transform.Find("TornadoAudio/Cast").GetComponent<AudioSource>();
             AudioSource wind = controller.transform.Find("TornadoAudio/Wind").GetComponent<AudioSource>();
+            object audioFeedback = typeof(TornadoSkillController).GetField("_audio",
+                BindingFlags.NonPublic | BindingFlags.Instance).GetValue(controller);
+            System.Type audioType = audioFeedback.GetType();
+            var tickAudio = audioType.GetMethod("Tick", BindingFlags.Public | BindingFlags.Instance);
+            var stopAudio = audioType.GetMethod("Stop", BindingFlags.Public | BindingFlags.Instance);
+            stopAudio.Invoke(audioFeedback, null);
+            tickAudio.Invoke(audioFeedback, new object[] { 3, 0.22f, 0.1f });
+            float fadeInVolume = wind.volume;
+            float targetWindVolume = 0.22f * 0.24f * 1.08f;
+            Assert.That(fadeInVolume, Is.GreaterThan(0f).And.LessThan(targetWindVolume),
+                "Wind must fade in over time instead of jumping to its target volume.");
+            tickAudio.Invoke(audioFeedback, new object[] { 0, 0.22f, 0.05f });
+            Assert.That(wind.volume, Is.GreaterThan(0f).And.LessThan(fadeInVolume),
+                "Wind must fade out gradually after the final tornado ends.");
+            tickAudio.Invoke(audioFeedback, new object[] { 0, 0.22f, 1f });
+            Assert.That(wind.isPlaying, Is.False);
+            stopAudio.Invoke(audioFeedback, null);
+
             System.Type sharedAudio = typeof(TornadoSkillController).Assembly.GetType(
                 "CursorHunter.Combat.CombatAudioFeedback");
             sharedAudio.GetMethod("PlayMonsterHit", BindingFlags.Public | BindingFlags.Static)
                 .Invoke(null, new object[] { "monster.01" });
-            _busyVoices = (AudioSource[])sharedAudio.GetField("Sources",
+            _busyVoices = (AudioSource[])sharedAudio.GetField("ImpactSources",
                 BindingFlags.NonPublic | BindingFlags.Static).GetValue(null);
             foreach (AudioSource source in _busyVoices)
             {
@@ -248,7 +266,8 @@ namespace CursorHunter.Combat.Tests
             Assert.That(controller.ActiveObjectCount, Is.EqualTo(3));
             Assert.That(cast.isPlaying, Is.True, "Busy hit/death channels must not drop the cast cue.");
             Assert.That(wind.isPlaying && wind.loop, Is.True);
-            Assert.That(cast.volume, Is.GreaterThan(0.5f));
+            Assert.That(cast.volume, Is.InRange(0.1f, 0.25f),
+                "The tornado cast cue must stay audible without returning to the former overpowering volume.");
             Assert.That(wind.volume, Is.GreaterThan(0f));
             AssertAudibleStereoClip(cast.clip, 0.8f);
             AssertAudibleStereoClip(wind.clip, 1.5f);

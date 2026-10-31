@@ -201,8 +201,14 @@ namespace CursorHunter.App.Tests
             Assert.That(actions.alpha, Is.Zero, "Both buttons stay hidden while the reward count animates.");
             Assert.That(upgrade.transform.localScale, Is.EqualTo(Vector3.zero));
             Assert.That(retry.transform.localScale, Is.EqualTo(Vector3.zero));
+            AudioSource countTick = Get<AudioSource>(_view, "_countTickSource");
+            yield return WaitFor(() => countTick.isPlaying);
+            Assert.That(Amount("garnet"), Is.Not.EqualTo("+123"),
+                "The reward count should still be increasing while its tick sound plays.");
             yield return WaitFor(() => upgrade.transform.localScale.x > 0f);
             Assert.That(Amount("garnet"), Is.EqualTo("+123"), "The main result must finish first.");
+            Assert.That(countTick.isPlaying, Is.False,
+                "The count sound should stop only after the reward has reached its exact final amount.");
             Assert.That(retry.transform.localScale, Is.EqualTo(Vector3.zero));
             Assert.That(actions.interactable, Is.False);
             Assert.That(_view.IsReady, Is.False);

@@ -49,6 +49,7 @@ MonoBehaviour:
     Count: 1
     DurationSeconds: 5
     DamageMultiplier: 2
+    RadiusMultiplier: 1
     CooldownSeconds: 8
     FirstCastDelaySeconds: 1
     HitIntervalSeconds: 0.5

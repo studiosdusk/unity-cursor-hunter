@@ -154,6 +154,10 @@ namespace CursorHunter.Combat.Tests
             long expectedDamage = scaled >= long.MaxValue ? long.MaxValue :
                 Math.Max(1L, (long)Math.Round(scaled, MidpointRounding.AwayFromZero));
             Assert.That(Property<long>(runtime, "Damage"), Is.EqualTo(expectedDamage));
+            Assert.That(expectedDamage, Is.Not.EqualTo(Math.Max(1L,
+                (long)Math.Round(attack * (double)multiplier,
+                    MidpointRounding.AwayFromZero))),
+                "A purchased player attack increase must not scale the skill's authored damage.");
             Assert.That(Property<float>(runtime, "CooldownSeconds"), Is.EqualTo(
                 basis.Values.Single(value => value.Id == "cooldownSeconds").Value));
             Assert.That(Property<float>(runtime, "MoveSpeedWorldUnitsPerSecond"), Is.EqualTo(

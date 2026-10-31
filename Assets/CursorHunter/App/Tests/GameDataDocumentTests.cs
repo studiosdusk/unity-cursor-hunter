@@ -79,11 +79,21 @@ namespace CursorHunter.App.Tests
             var definitionsById = new Dictionary<string, MonsterDefinition>();
             foreach (MonsterDefinition definition in definitions)
                 definitionsById.Add(definition.MonsterId, definition);
+            Assert.That(definitionsById.TryGetValue("monster.01", out MonsterDefinition baselineDefinition),
+                Is.True, "Missing baseline monster definition.");
+            SpawnSnapshot baselineSnapshot = baselineDefinition.CreateSnapshot(1);
 
             foreach (MonsterInformation information in document.information.monsters)
             {
                 Assert.That(definitionsById.TryGetValue(information.id, out MonsterDefinition definition),
                     Is.True, "Missing combat definition for " + information.id);
+                Assert.That(string.IsNullOrWhiteSpace(definition.DisplayName), Is.False,
+                    information.id + " needs its trait-screen display name");
+                Assert.That(definition.CreateSnapshot(80).IsValid, Is.True,
+                    information.id + " needs a valid combat snapshot for its trait summary");
+                Assert.That(string.IsNullOrWhiteSpace(
+                    definition.BuildTraitDescription(baselineSnapshot)), Is.False,
+                    information.id + " needs a user-facing summary of its combat behavior");
                 Assert.That(definition.MaxHealth, Is.EqualTo(information.hitPoints), information.id + " HP");
                 Assert.That(definition.SpawnIntervalSeconds,
                     Is.EqualTo(information.spawnIntervalSeconds).Within(0.001f), information.id + " spawn interval");
@@ -118,7 +128,7 @@ namespace CursorHunter.App.Tests
         }
 
         [Test]
-        public void TornadoHasUnlockAndIndependentDamageAndRadiusResearch()
+        public void TornadoUnlockAndIndependentDamageAndRadiusResearchAreConfigured()
         {
             var document = GameDataDocument.Load();
             UpgradeCategoryData category = System.Array.Find(
@@ -126,8 +136,79 @@ namespace CursorHunter.App.Tests
             Assert.That(category.nodes, Has.Length.EqualTo(3));
             Assert.That(category.nodes[0].id, Is.EqualTo("skill.tornado"));
             Assert.That(category.nodes[0].operation, Is.EqualTo("enable"));
+            Assert.That(category.nodes[1].statId, Is.EqualTo("damage"));
+            Assert.That(category.nodes[1].prerequisiteNodeId, Is.EqualTo("skill.tornado"));
+            Assert.That(category.nodes[2].statId, Is.EqualTo("radius"));
+            Assert.That(category.nodes[2].prerequisiteNodeId,
+                Is.EqualTo("skill.tornado.damage.01"));
             Assert.That(Build(document, new HashSet<string> { "skill.tornado" })
                 .skills[0].enabled, Is.True);
+        }
+
+        [Test]
+        public void EachBossStageUnlocksOneNewCombatSkillWithSeparateDamageAndRadiusResearch()
+        {
+            GameDataDocument document = GameDataDocument.Load();
+            string[] expectedSkills =
+            {
+                "skill.tornado", "skill.thunder", "skill.flame_exhaust",
+                "skill.magic_ball", "skill.laser"
+            };
+            int[] unlocksPerBossStage = new int[6];
+
+            foreach (UpgradeCategoryData category in document.progression.categories)
+            {
+                if (category == null || category.id == null ||
+                    !category.id.StartsWith("skill.", System.StringComparison.Ordinal) ||
+                    category.id == "skill.pet_baby_dragon")
+                {
+                    continue;
+                }
+
+                UpgradeNodeData unlock = System.Array.Find(category.nodes,
+                    node => node != null && node.operation == "enable");
+                Assert.That(unlock, Is.Not.Null, category.id + " must have an unlock node.");
+                Assert.That(unlock.id, Is.EqualTo(category.id), category.id);
+                Assert.That(unlock.requiredBossTier, Is.InRange(1, 5), category.id);
+                unlocksPerBossStage[unlock.requiredBossTier]++;
+
+                UpgradeNodeData damage = System.Array.Find(category.nodes,
+                    node => node != null && node.statId == "damage");
+                UpgradeNodeData radius = System.Array.Find(category.nodes,
+                    node => node != null && node.statId == "radius");
+                Assert.That(damage, Is.Not.Null, category.id + " needs independent damage research.");
+                Assert.That(radius, Is.Not.Null, category.id + " needs independent radius research.");
+                Assert.That(damage.operation, Is.EqualTo("add"), category.id);
+                Assert.That(radius.operation, Is.EqualTo("add"), category.id);
+                Assert.That(damage.value, Is.GreaterThan(0d), category.id);
+                Assert.That(radius.value, Is.GreaterThan(0d), category.id);
+                Assert.That(damage.requiredBossTier, Is.EqualTo(unlock.requiredBossTier), category.id);
+                Assert.That(radius.requiredBossTier,
+                    Is.EqualTo(System.Math.Min(5, unlock.requiredBossTier + 1)), category.id);
+            }
+
+            for (int tier = 1; tier <= 5; tier++)
+            {
+                Assert.That(unlocksPerBossStage[tier], Is.EqualTo(1),
+                    "Boss stage " + tier + " must reveal exactly one new skill type.");
+                UpgradeCategoryData category = System.Array.Find(
+                    document.progression.categories,
+                    value => value.id == expectedSkills[tier - 1]);
+                Assert.That(category, Is.Not.Null);
+                UpgradeNodeData unlock = System.Array.Find(category.nodes,
+                    node => node != null && node.operation == "enable");
+                Assert.That(unlock.requiredBossTier, Is.EqualTo(tier), expectedSkills[tier - 1]);
+            }
+
+            UpgradeCategoryData pet = System.Array.Find(document.progression.categories,
+                value => value.id == "skill.pet_baby_dragon");
+            Assert.That(pet, Is.Not.Null);
+            Assert.That(System.Array.Exists(pet.nodes,
+                node => node != null && node.statId == "damage" && node.requiredBossTier == 0), Is.True,
+                "The starter pet must have its own damage research.");
+            Assert.That(System.Array.Exists(pet.nodes,
+                node => node != null && node.statId == "simultaneousHits"), Is.True,
+                "The pet must have research for simultaneous target count.");
         }
 
         [Test]
