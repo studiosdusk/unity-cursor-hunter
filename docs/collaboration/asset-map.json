@@ -85,10 +85,17 @@
   },
   {
     "design_id": "ui.boss.hp",
-    "owner": "Combat",
-    "path": "Assets/DownLoadAssets/GUI-CasualFantasy/Prefabs/Prefabs_Component_UI_Etc/StatusBar_White.prefab",
-    "guid": "eb0b9bba8101e4683943ee77ce7b9ab8",
-    "status": "candidate-not-runtime-verified"
+    "owner": "App",
+    "path": "Assets/DownLoadAssets/Casual_GUI/GUI Pro-SimpleCasual/Prefabs/BossSlider.prefab",
+    "guid": "8cbdb31b2956445cfba1b864b162b6a8",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "ui.font.numeric",
+    "owner": "Data",
+    "path": "Assets/DownLoadAssets/Casual_GUI/GUI Pro-SimpleCasual/ResourcesData/Fonts/Rubik-SemiBold SDF.asset",
+    "guid": "c9f0ab9a170fa4c3596972aa1db04a9a",
+    "status": "runtime-applied"
   },
   {
     "design_id": "field.normal",
@@ -578,6 +585,111 @@
     "owner": "Progression",
     "path": "Assets/DownLoadAssets/2D Characters-PetPack4/Sprites/Thumbnail/2x/Pet_Baby Dragon.png",
     "guid": "e3db040c4cdb5234bbbea8c36b533fe2",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "boss.06.visual",
+    "owner": "Combat",
+    "path": "Assets/CursorHunter/Combat/Prefabs/Monsters/BossVisuals/Boss06_Walker_Candle.prefab",
+    "guid": "c7281a8eb6bbc4717b8acc7a6e2a1abb",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "boss.07.visual",
+    "owner": "Combat",
+    "path": "Assets/CursorHunter/Combat/Prefabs/Monsters/BossVisuals/Boss07_Bud_Bomb.prefab",
+    "guid": "b713658280de644e4afd91dffdaff828",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "boss.08.visual",
+    "owner": "Combat",
+    "path": "Assets/CursorHunter/Combat/Prefabs/Monsters/BossVisuals/Boss08_Cactus_Green.prefab",
+    "guid": "db4dbf00d3f0f420e991e828a0929161",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "boss.09.visual",
+    "owner": "Combat",
+    "path": "Assets/CursorHunter/Combat/Prefabs/Monsters/BossVisuals/Boss09_Ant_Worker.prefab",
+    "guid": "18ea0d5bd3b0b48529af5e507c52c795",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "boss.10.visual",
+    "owner": "Combat",
+    "path": "Assets/CursorHunter/Combat/Prefabs/Monsters/BossVisuals/Boss10_Mantis_Green.prefab",
+    "guid": "7bb33018b7d9945619db6629205be3c0",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "boss.11.visual",
+    "owner": "Combat",
+    "path": "Assets/CursorHunter/Combat/Prefabs/Monsters/BossVisuals/Boss11_Plant_Nepenthes.prefab",
+    "guid": "c26b22afbc6094c16bebe61570fcfc5c",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "boss.12.visual",
+    "owner": "Combat",
+    "path": "Assets/CursorHunter/Combat/Prefabs/Monsters/BossVisuals/Boss12_Fly_Bigeye.prefab",
+    "guid": "1b3bd084ab14b4ca98c0cb1349ef0632",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "boss.13.visual",
+    "owner": "Combat",
+    "path": "Assets/CursorHunter/Combat/Prefabs/Monsters/BossVisuals/Boss13_Dragonfly_Bot.prefab",
+    "guid": "c7bd331f086894ef285ecdee59d72805",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "boss.14.visual",
+    "owner": "Combat",
+    "path": "Assets/CursorHunter/Combat/Prefabs/Monsters/BossVisuals/Boss14_Bee_Devil.prefab",
+    "guid": "0c29e4082cb004692991fe754b38a2b1",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "boss.15.visual",
+    "owner": "Combat",
+    "path": "Assets/CursorHunter/Combat/Prefabs/Monsters/BossVisuals/Boss15_Spider_Venom.prefab",
+    "guid": "1aef6cba791c34c18b1c50cec9857ce3",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "boss.16.visual",
+    "owner": "Combat",
+    "path": "Assets/CursorHunter/Combat/Prefabs/Monsters/BossVisuals/Boss16_Scorpion_Stone.prefab",
+    "guid": "ddcca9ea8b52f4595b2dbcbac175782d",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "boss.17.visual",
+    "owner": "Combat",
+    "path": "Assets/CursorHunter/Combat/Prefabs/Monsters/BossVisuals/Boss17_Golem_Tree.prefab",
+    "guid": "ed67c25a671324442b69a0b9a387605d",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "boss.18.visual",
+    "owner": "Combat",
+    "path": "Assets/CursorHunter/Combat/Prefabs/Monsters/BossVisuals/Boss18_Ghost_Pirate.prefab",
+    "guid": "d3abd2c0f3fe842799745a1503c9cc9c",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "boss.19.visual",
+    "owner": "Combat",
+    "path": "Assets/CursorHunter/Combat/Prefabs/Monsters/BossVisuals/Boss19_Skeleton_Warrior.prefab",
+    "guid": "dc82b4de80bbd483c85ed7657c9d5c48",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "boss.20.visual",
+    "owner": "Combat",
+    "path": "Assets/CursorHunter/Combat/Prefabs/Monsters/BossVisuals/Boss20_Alien_Vampire.prefab",
+    "guid": "e1143b50ff6d34d998b51fac230e4f67",
     "status": "runtime-applied"
   }
 ]

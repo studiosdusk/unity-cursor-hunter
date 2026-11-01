@@ -42,6 +42,8 @@ namespace CursorHunter.App.Editor
                     settings.Monsters.Add(MonsterBalanceSettings.FromSnapshot(
                         definition.CreateSnapshot(settings.PerMonsterAliveLimit), enabled));
                 }
+                foreach (BossDefinition definition in target.GetBalanceBossDefinitions().OrderBy(value => value.Stage))
+                    settings.Bosses.Add(BossBalanceSettings.FromSnapshot(definition.CreateSnapshot()));
                 return true;
             }
             catch (Exception exception) { error = exception.Message; settings = null; return false; }
@@ -55,6 +57,16 @@ namespace CursorHunter.App.Editor
                 !TryBuildFiles(scenePath, InformationPath, Definitions(), settings,
                     out Dictionary<string, string> originals,
                     out Dictionary<string, string> updated, out error)) return false;
+            // Prepare boss SOs in the same transaction as common stats and normal monsters.
+            // Legacy drafts without boss inputs leave the boss assets unchanged.
+            if (settings.Bosses != null && settings.Bosses.Count > 0)
+            {
+                if (!TryBuildBossFiles(target.GetBalanceBossDefinitions(), settings.Bosses,
+                    out Dictionary<string, string> bossOriginals,
+                    out Dictionary<string, string> bossUpdated, out error)) return false;
+                foreach (var pair in bossOriginals) originals.Add(pair.Key, pair.Value);
+                foreach (var pair in bossUpdated) updated.Add(pair.Key, pair.Value);
+            }
 
             AssetDatabase.DisallowAutoRefresh();
             try
@@ -140,6 +152,58 @@ namespace CursorHunter.App.Editor
                 foreach (var pair in informationUpdated) staged.Add(ProjectPath(pair.Key), pair.Value);
                 originals = before;
                 updated = staged;
+                return true;
+            }
+            catch (Exception exception) { error = exception.Message; return false; }
+        }
+
+        public static bool TryBuildBossFiles(IReadOnlyList<BossDefinition> definitions,
+            IReadOnlyList<BossBalanceSettings> settings, out Dictionary<string, string> originals,
+            out Dictionary<string, string> updated, out string error)
+        {
+            originals = new Dictionary<string, string>(StringComparer.Ordinal);
+            updated = new Dictionary<string, string>(StringComparer.Ordinal);
+            error = string.Empty;
+            try
+            {
+                if (definitions == null || settings == null || definitions.Count != settings.Count)
+                { error = "모든 보스 단계의 기본값이 필요합니다."; return false; }
+                var values = new Dictionary<string, BossBalanceSettings>(StringComparer.Ordinal);
+                foreach (BossBalanceSettings value in settings)
+                {
+                    if (value == null || string.IsNullOrEmpty(value.BossId) || values.ContainsKey(value.BossId))
+                    { error = "중복되거나 없는 보스 설정입니다."; return false; }
+                    values.Add(value.BossId, value);
+                }
+                var before = new Dictionary<string, string>(StringComparer.Ordinal);
+                var staged = new Dictionary<string, string>(StringComparer.Ordinal);
+                foreach (BossDefinition definition in definitions)
+                {
+                    if (definition == null || !values.TryGetValue(definition.BossId, out BossBalanceSettings value))
+                    { error = "보스 원본과 최종 설정이 일치하지 않습니다."; return false; }
+                    if (!value.TryCreateSnapshot(definition, out _, out error)) return false;
+                    string path = AssetDatabase.GetAssetPath(definition);
+                    if (!path.StartsWith("Assets/", StringComparison.Ordinal) || !path.EndsWith(".asset", StringComparison.Ordinal))
+                    { error = "프로젝트의 보스 에셋만 저장할 수 있습니다."; return false; }
+                    string original = File.ReadAllText(path);
+                    string next = original;
+                    var fields = new Dictionary<string, string>
+                    {
+                        { "maxHealth", value.MaxHealth.ToString(Numbers) },
+                        { "moveSpeed", Number(value.MoveSpeed) },
+                        { "visualScale", Number(value.VisualScale) },
+                        { "hitArea", "{x: " + Number(value.HitAreaWidth) + ", y: " + Number(value.HitAreaHeight) + "}" }
+                    };
+                    foreach (var pair in fields)
+                    {
+                        var pattern = new Regex("(?m)^(  " + pair.Key + ":)[^\\r\\n]*");
+                        if (pattern.Matches(next).Count != 1)
+                            throw new InvalidOperationException("보스 기본 필드를 찾을 수 없습니다: " + pair.Key);
+                        next = pattern.Replace(next, match => match.Groups[1].Value + " " + pair.Value);
+                    }
+                    before.Add(path, original); staged.Add(path, next);
+                }
+                originals = before; updated = staged;
                 return true;
             }
             catch (Exception exception) { error = exception.Message; return false; }

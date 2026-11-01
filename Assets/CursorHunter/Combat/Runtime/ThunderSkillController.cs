@@ -129,11 +129,15 @@ namespace CursorHunter.Combat
                     _active[i].SetVisualPaused(false);
             }
 
+            RunId runId = _runId;
             float now = _combat.ElapsedSeconds;
             for (int i = _active.Count - 1; i >= 0; i--)
             {
                 ThunderEffect effect = _active[i];
-                if (effect != null && effect.Tick(now)) continue;
+                bool alive = effect != null && effect.Tick(now);
+                // A hit can synchronously finish the run and clear this list.
+                if (!IsCurrentRun(runId)) return;
+                if (alive) continue;
                 _active.RemoveAt(i);
                 if (effect != null)
                 {
@@ -203,8 +207,17 @@ namespace CursorHunter.Combat
             }
         }
 
-        private ThunderBaseStat BalanceBasis => _balance == null ? baseStat :
-            SkillBalanceMath.Read<ThunderBaseStat>(_balance);
+        private ThunderBaseStat BalanceBasis
+        {
+            get
+            {
+                ThunderBaseStat basis = _balance == null ? baseStat :
+                    SkillBalanceMath.Read<ThunderBaseStat>(_balance);
+                if (basis.RadiusWorldUnits <= 0f) basis.RadiusWorldUnits = 1.5f;
+                if (basis.RadiusMultiplier <= 0f) basis.RadiusMultiplier = 1f;
+                return basis;
+            }
+        }
 
         public SkillBalanceSettings CaptureBalanceSettings() =>
             SkillBalanceMath.Capture(SkillId, _balance != null ? _balance.Enabled :

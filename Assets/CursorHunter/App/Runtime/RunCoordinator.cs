@@ -59,6 +59,19 @@ namespace CursorHunter.App
                 default, spawnPlan, out failureReason, enabledMonsterIds, true);
         }
 
+        public bool StartBalanceTest(RunRequest request, ProgressionCombatSnapshot progression,
+            SpawnPlan spawnPlan, IReadOnlyList<string> enabledMonsterIds, out string failureReason)
+        {
+            if (progression == null || !progression.IsValid)
+            {
+                failureReason = "유효한 플레이어 특성 스냅샷이 필요합니다.";
+                return false;
+            }
+            return StartInternal(request, progression.Combat, null, progression.Skills,
+                progression.Relics, progression.RelicDropRules, spawnPlan, out failureReason,
+                enabledMonsterIds, discardRewards: true, requireExactSkillMapping: true);
+        }
+
         public bool Start(
             RunRequest request,
             CombatSnapshot combatSnapshot,
@@ -321,12 +334,12 @@ namespace CursorHunter.App
                 return false;
             }
 
-            if (!_session.Complete(endReason, settlementPolicy))
+            if (!_session.Complete(endReason, result.SettlementPolicy))
             {
                 return false;
             }
 
-            _monsterSpawner.StopRun();
+            _monsterSpawner.StopRun(finishBossDeathAnimation: result.BossDefeated);
             Completed?.Invoke(result);
             return true;
         }
@@ -391,7 +404,7 @@ namespace CursorHunter.App
                 return false;
             }
 
-            if (!_session.Abort(endReason, settlementPolicy))
+            if (!_session.Abort(endReason, result.SettlementPolicy))
             {
                 return false;
             }

@@ -61,6 +61,12 @@ namespace CursorHunter.Combat
         private int _deathStateHash;
         private bool _deathAnimationFinished;
         private float _animatorSpeedBeforeDeath;
+        private bool _deathVisualAfterRun;
+        private float _deathVisualTimeout;
+        private AnimatorUpdateMode _animatorUpdateModeBeforeCompletion;
+        private AnimatorCullingMode _animatorCullingModeBeforeCompletion;
+        private float _animatorSpeedBeforeCompletion;
+        private bool _hitColliderEnabledBeforeCompletion;
         private string _monsterId;
         private long _maxHealth;
         private long _currentHealth;
@@ -194,6 +200,12 @@ namespace CursorHunter.Combat
             if (_runId != _deathRunId)
             {
                 _destroyScheduled = false;
+                return;
+            }
+
+            if (_deathVisualAfterRun)
+            {
+                DestroySelf();
                 return;
             }
 
@@ -656,7 +668,12 @@ namespace CursorHunter.Combat
             }
 
             bool hasDeathState = TryGetDeathState(out AnimatorStateInfo state);
-            if (_destroyScheduled &&
+            if (_destroyScheduled && _deathVisualAfterRun)
+            {
+                if (Time.unscaledTime < _deathVisualTimeout &&
+                    (!hasDeathState || state.normalizedTime < 1f)) return;
+            }
+            else if (_destroyScheduled &&
                 ((!hasDeathState ||
                   (!_deathAnimationFinished &&
                    state.normalizedTime < deathDespawnNormalizedTime)) ||
@@ -675,6 +692,37 @@ namespace CursorHunter.Combat
             {
                 DestroyImmediate(gameObject);
             }
+        }
+
+        /// <summary>Keep a defeated boss visual alive after combat, without a revival or hit window.</summary>
+        internal bool TryContinueDeathAfterRun(RunId runId)
+        {
+            if (!_isDead || !_destroyScheduled || !runId.IsValid ||
+                _runId != runId || _deathRunId != runId) return false;
+            RegisteredInstances.Remove(this);
+            _hitColliderEnabledBeforeCompletion = hitEffectCollider != null && hitEffectCollider.enabled;
+            if (hitEffectCollider != null) hitEffectCollider.enabled = false;
+            _deathVisualAfterRun = true;
+            _deathVisualTimeout = Time.unscaledTime + 0.25f;
+            if (animator != null && animator.isActiveAndEnabled &&
+                animator.runtimeAnimatorController != null)
+            {
+                _animatorUpdateModeBeforeCompletion = animator.updateMode;
+                _animatorCullingModeBeforeCompletion = animator.cullingMode;
+                _animatorSpeedBeforeCompletion = animator.speed;
+                animator.updateMode = AnimatorUpdateMode.UnscaledTime;
+                animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+                animator.speed = 1f;
+                // The lethal hit may happen after Animator evaluation this frame.
+                animator.Update(0f);
+                if (TryGetDeathState(out AnimatorStateInfo state))
+                {
+                    float speed = Mathf.Abs(state.speed * state.speedMultiplier);
+                    // Normal completion follows normalized time; the deadline covers broken/stalled visuals.
+                    _deathVisualTimeout += Mathf.Max(0.25f, state.length / Mathf.Max(0.01f, speed));
+                }
+            }
+            return true;
         }
 
         /// <summary>
@@ -1147,6 +1195,15 @@ namespace CursorHunter.Combat
 
         private void RestoreDeathAnimationPlayback()
         {
+            if (_deathVisualAfterRun && hitEffectCollider != null)
+                hitEffectCollider.enabled = _hitColliderEnabledBeforeCompletion;
+            if (_deathVisualAfterRun && animator != null)
+            {
+                animator.updateMode = _animatorUpdateModeBeforeCompletion;
+                animator.cullingMode = _animatorCullingModeBeforeCompletion;
+                animator.speed = _animatorSpeedBeforeCompletion;
+            }
+            _deathVisualAfterRun = false;
             if (_deathAnimationFinished && animator != null)
             {
                 animator.speed = _animatorSpeedBeforeDeath;

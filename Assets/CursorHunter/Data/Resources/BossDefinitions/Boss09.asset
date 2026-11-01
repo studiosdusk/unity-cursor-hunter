@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 94bd0af1989b4737aa5b89f81544bb59, type: 3}
+  m_Name: Boss09
+  m_EditorClassIdentifier: CursorHunter.Data::CursorHunter.Data.BossDefinition
+  stage: 9
+  bossId: boss.09
+  displayName: 일개미
+  visualPrefab: {fileID: 5612695387504037353, guid: 18ea0d5bd3b0b48529af5e507c52c795, type: 3}
+  maxHealth: 14656
+  moveSpeed: 0.6
+  visualScale: 2.1
+  hitArea: {x: 1.8, y: 2.1}
+  movementMode: 0
+  specialAbility: 0
+  abilityInterval: 4
+  abilityDuration: 0
+  abilityStrength: 0
+  clearRewards:
+  - currencyId: gem.garnet
+    amount: 8157
+  - currencyId: gem.topaz
+    amount: 2855
+  - currencyId: gem.amethyst
+    amount: 1224
+  - currencyId: gem.sapphire
+    amount: 489
+  - currencyId: gem.diamond
+    amount: 204

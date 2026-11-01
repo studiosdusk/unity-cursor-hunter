@@ -42,7 +42,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f01bf383ae8942609ea056fc3d52ee69, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: CursorHunter.Combat::CursorHunter.Combat.PetSkillController
   editorSkillAcquired: 0
   petRoot: {fileID: 0}
@@ -50,10 +50,11 @@ MonoBehaviour:
   worldCamera: {fileID: 0}
   attackEffectPrefab: {fileID: 5107304801680389854, guid: 797527cd75a36424db3d5aaea2a449fd, type: 3}
   baseStat:
+    SimultaneousHits: 1
     DamageMultiplier: 0.5
     AttackIntervalSeconds: 1.2
     MoveSpeedWorldUnitsPerSecond: 4
-    DetectionRadiusWorldUnits: 8
+    DetectionRadiusWorldUnits: 24
     AttackRangeWorldUnits: 1.5
   impactDelaySeconds: 0.167
   attackAnimationSeconds: 0.5

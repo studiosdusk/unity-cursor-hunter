@@ -33,9 +33,9 @@ namespace CursorHunter.App
             _glow.enabled = false;
         }
 
-        public void Arrive(int value, float clock, bool main, GemstoneCollectionSettings settings)
+        public void Arrive(long value, float clock, bool main, GemstoneCollectionSettings settings)
         {
-            Arrived = Math.Min(Actual, Arrived + value);
+            Arrived += Math.Min(Math.Max(0L, Actual - Arrived), Math.Max(0L, value));
             if (!_countTween.IsPlaying())
             {
                 _from = Shown; _countProgress = 0f;

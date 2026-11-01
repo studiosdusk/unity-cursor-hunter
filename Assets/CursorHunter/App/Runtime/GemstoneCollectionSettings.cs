@@ -13,10 +13,22 @@ namespace CursorHunter.App
         public CounterOptions counter = new CounterOptions();
         public SoundOptions sound = new SoundOptions();
         public BudgetOptions budget = new BudgetOptions();
+        public BossBurstOptions bossBurst = new BossBurstOptions();
         [Tooltip("전투 종료 때 남은 비행을 마무리하는 최대 시간(초)")]
         [Range(0f, 0.5f)] public float finishDuration = 0.3f;
         [Tooltip("분출·회전·잔상을 생략하고 팝업 강도를 줄입니다. 1/5/10 개수는 보존합니다.")]
         public bool reducedMotion;
+
+        [Serializable] public sealed class BossBurstOptions
+        {
+            [Tooltip("보스 토벌 시 동시에 터지는 젬 수. 큰 보상은 젬 한 개에 여러 개를 묶어 표시합니다.")]
+            [Range(8, 256)] public int count = 128;
+            public Vector2 scatterRadius = new Vector2(100f, 310f);
+            public Vector2 scatterDuration = new Vector2(0.18f, 0.35f);
+            public Vector2 holdDuration = new Vector2(0.12f, 0.3f);
+            public Vector2 flightDuration = new Vector2(0.45f, 0.8f);
+            [Range(1f, 3f)] public float finishDuration = 1.8f;
+        }
 
         [Serializable] public sealed class SizeOptions
         {

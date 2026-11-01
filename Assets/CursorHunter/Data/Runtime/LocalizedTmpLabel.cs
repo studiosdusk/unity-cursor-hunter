@@ -21,7 +21,11 @@ namespace CursorHunter.Data
         private void Refresh()
         {
             if (_text == null) _text = GetComponent<TMP_Text>();
-            if (_text != null && !string.IsNullOrEmpty(key)) _text.text = LocalizationCatalog.Get(key, fallback);
+            if (_text != null && !string.IsNullOrEmpty(key))
+            {
+                _text.font = LocalizedTypography.GetFont(null);
+                _text.text = LocalizationCatalog.Get(key, fallback);
+            }
         }
     }
 }

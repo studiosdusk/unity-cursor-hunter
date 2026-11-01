@@ -178,6 +178,7 @@ namespace CursorHunter.Combat
                     _activeHitEffects[i].SetVisualPaused(false);
             }
 
+            RunId runId = _runId;
             float now = _combat.ElapsedSeconds;
             for (int i = _activeHitEffects.Count - 1; i >= 0; i--)
             {
@@ -201,7 +202,11 @@ namespace CursorHunter.Combat
             for (int i = _activeProjectiles.Count - 1; i >= 0; i--)
             {
                 FlameExhaustProjectile projectile = _activeProjectiles[i];
-                if (projectile.Tick(now, _enemyFilter)) continue;
+                bool alive = projectile.Tick(now, _enemyFilter);
+                // A lethal boss hit completes the run and returns the entire pool
+                // synchronously, before Tick returns to this loop.
+                if (!IsCurrentRun(runId)) return;
+                if (alive) continue;
                 _activeProjectiles.RemoveAt(i);
                 projectile.ReturnToPool();
                 _freeProjectiles.Push(projectile);
@@ -235,6 +240,7 @@ namespace CursorHunter.Combat
                 _combat.AreaSkillRadiusMultiplier);
             _activeProjectiles.Add(next);
             next.Tick(now, _enemyFilter);
+            if (!IsCurrentRun(runId)) return;
             _nextCastAt = now + _combat.ResolveAutoSkillCooldown(
                 _runtime.CooldownSeconds);
             _hasCast = true;
@@ -257,6 +263,8 @@ namespace CursorHunter.Combat
             float targetSize = Mathf.Max(bounds.size.x, bounds.size.y);
             if (!_combat.TryApplySkillDamage(runId, target,
                     _runtime.Damage)) return false;
+            // Damage was applied successfully even if it ended this run.
+            if (!IsCurrentRun(runId)) return true;
 
             FlameExhaustHitEffect effect;
             if (_freeHitEffects.Count > 0)

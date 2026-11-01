@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+
 namespace CursorHunter.Contracts
 {
     /// <summary>
@@ -13,7 +16,9 @@ namespace CursorHunter.Contracts
             RunMode mode,
             string bossId,
             ulong seed,
-            float durationSeconds)
+            float durationSeconds,
+            int bossStage = 0,
+            ResourceRewardSnapshot[] bossClearRewards = null)
         {
             if (!runId.IsValid)
             {
@@ -49,6 +54,17 @@ namespace CursorHunter.Contracts
             BalanceVersion = balanceVersion;
             Mode = mode;
             BossId = bossId ?? string.Empty;
+            BossStage = mode == RunMode.Boss ? bossStage : 0;
+            if (bossClearRewards != null && bossClearRewards.Length > 0)
+            {
+                if (mode != RunMode.Boss) throw new ArgumentException("Only boss runs have clear rewards.", nameof(bossClearRewards));
+                var ids = new HashSet<string>(StringComparer.Ordinal);
+                foreach (ResourceRewardSnapshot reward in bossClearRewards)
+                    if (!reward.IsValid || !ids.Add(reward.CurrencyId))
+                        throw new ArgumentException("Boss clear rewards require unique IDs and positive amounts.", nameof(bossClearRewards));
+                _bossClearRewards = Array.AsReadOnly((ResourceRewardSnapshot[])bossClearRewards.Clone());
+            }
+            else _bossClearRewards = null;
             Seed = seed;
             DurationSeconds = mode == RunMode.NormalField ? System.Math.Min(30f, durationSeconds) : durationSeconds;
         }
@@ -74,6 +90,10 @@ namespace CursorHunter.Contracts
         public int BalanceVersion { get; }
         public RunMode Mode { get; }
         public string BossId { get; }
+        public int BossStage { get; }
+        private readonly IReadOnlyList<ResourceRewardSnapshot> _bossClearRewards;
+        public IReadOnlyList<ResourceRewardSnapshot> BossClearRewards =>
+            _bossClearRewards ?? Array.Empty<ResourceRewardSnapshot>();
         public ulong Seed { get; }
         public float DurationSeconds { get; }
 

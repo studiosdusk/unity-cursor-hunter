@@ -111,7 +111,7 @@ EXPLANATIONS = {
     "criticalDamageMultiplier": "치명타일 때 피해에 곱하는 배율입니다. 2는 두 배 피해입니다.",
     "globalAliveLimit": "모든 몬스터 종류를 합친 동시 생존 수의 상한입니다. 성능 예산상 최대 80입니다.",
     "perMonsterAliveLimit": "각 몬스터 종류별 동시 생존 수의 상한입니다. 전체 상한보다 클 수 없습니다.",
-    "bossFieldDurationSeconds": "보스 필드 제한 시간입니다. 보스 전투 자체는 별도 미구현 항목이며 현재 기본 설정은 60초입니다.",
+    "bossFieldDurationSeconds": "보스 한 단계의 제한 시간입니다. 1~20단계 모두 30초이며 일반 필드 시간 강화와 별개입니다.",
     "id": "코드·저장 데이터·다른 JSON 항목이 함께 사용하는 고정 식별자입니다. 표시 이름과 다르며 임의 변경 시 저장 이관이 필요합니다.",
     "enabled": "이 항목이 활성화되어 있는지 나타냅니다. true는 활성, false는 비활성입니다.",
     "amount": "보유한 젬 수량입니다. 0 이상의 Int64 정수이며 overlay 정책에서는 기존 저장 잔액을 적용합니다.",

@@ -9,20 +9,40 @@ namespace CursorHunter.Data
     {
         private static readonly Dictionary<Font, TMP_FontAsset> Fonts = new Dictionary<Font, TMP_FontAsset>();
 
+        public static TMP_FontAsset GetNumericFont()
+        {
+            var settings = Resources.Load<GameTypographySettings>("GameData/TypographySettings");
+            return settings != null && settings.numericFont != null ? settings.numericFont : GetFont(null);
+        }
+
         public static TMP_FontAsset GetFont(Font source)
         {
+            Font fallbackSource = null;
             if (source == null)
             {
                 var settings = Resources.Load<GameTypographySettings>("GameData/TypographySettings");
-                if (settings != null) source = settings.sourceFont;
+                if (settings != null)
+                {
+                    source = settings.GetSourceFont(LocalizationCatalog.Language);
+                    if (source != settings.sourceFont) fallbackSource = settings.sourceFont;
+                }
             }
             if (source == null) return TMP_Settings.defaultFontAsset;
-            if (Fonts.TryGetValue(source, out var cached) && cached != null) return cached;
-            var font = TMP_FontAsset.CreateFontAsset(source);
-            font.name = source.name + " Dynamic SDF";
-            font.atlasPopulationMode = AtlasPopulationMode.Dynamic;
-            font.isMultiAtlasTexturesEnabled = true;
-            Fonts[source] = font;
+            if (!Fonts.TryGetValue(source, out var font) || font == null)
+            {
+                font = TMP_FontAsset.CreateFontAsset(source);
+                font.name = source.name + " Dynamic SDF";
+                font.atlasPopulationMode = AtlasPopulationMode.Dynamic;
+                font.isMultiAtlasTexturesEnabled = true;
+                Fonts[source] = font;
+            }
+            // Untranslated Korean names must still render with a locale-specific primary font.
+            if (fallbackSource != null)
+            {
+                TMP_FontAsset fallback = GetFont(fallbackSource);
+                font.fallbackFontAssetTable ??= new List<TMP_FontAsset>();
+                if (!font.fallbackFontAssetTable.Contains(fallback)) font.fallbackFontAssetTable.Add(fallback);
+            }
             return font;
         }
 
@@ -60,7 +80,14 @@ namespace CursorHunter.Data
 
     public static class LocalizationCatalog
     {
-        [Serializable] public sealed class Entry { public string key; public string ko; public string en; }
+        [Serializable] public sealed class Entry
+        {
+            public string key;
+            public string ko;
+            public string en;
+            // Existing ko/en JSON remains compatible; additional languages need only data.
+            public LocalizedText[] translations;
+        }
         [Serializable] private sealed class Table { public Entry[] entries; }
         private static Entry[] _entries;
         public static string Language { get; private set; } = "ko";
@@ -76,7 +103,7 @@ namespace CursorHunter.Data
         }
         public static void SetLanguage(string language)
         {
-            if (language != "ko" && language != "en") throw new ArgumentException("Supported locales: ko, en.");
+            language = LocaleCode.Normalize(language);
             if (language == Language) return;
             Language = language;
             Changed?.Invoke();
@@ -85,7 +112,14 @@ namespace CursorHunter.Data
         {
             Load();
             foreach (var entry in _entries)
-                if (entry.key == key) return Language == "en" && !string.IsNullOrEmpty(entry.en) ? entry.en : entry.ko;
+                if (entry.key == key)
+                {
+                    string translated = LocalizedText.Find(entry.translations, Language);
+                    if (translated != null) return translated;
+                    foreach (string candidate in LocaleCode.Fallbacks(Language))
+                        if (candidate == "en" && !string.IsNullOrWhiteSpace(entry.en)) return entry.en;
+                    return string.IsNullOrWhiteSpace(entry.ko) ? fallback : entry.ko;
+                }
             return fallback;
         }
         public static void BindKnown(TMP_Text text, string fallback)

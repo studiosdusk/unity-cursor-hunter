@@ -59,6 +59,8 @@ namespace CursorHunter.Progression
             public List<string> ownedRelicIds = new List<string>();
             public List<int> spentCosts = new List<int>();
             public List<string> spentCurrencyIds = new List<string>();
+            public int highestBossStageCleared;
+            public List<string> settledBossRunIds = new List<string>();
             public int unlockedBossTier;
         }
 
@@ -93,6 +95,11 @@ namespace CursorHunter.Progression
                 loaded.spentCosts = loaded.spentCosts ?? new List<int>();
                 loaded.spentCurrencyIds = loaded.spentCurrencyIds ??
                     new List<string>();
+                loaded.highestBossStageCleared = Math.Max(0, Math.Min(20, loaded.highestBossStageCleared));
+                // Boss-branch saves predate the separate research unlock tier.
+                loaded.unlockedBossTier = Math.Max(Math.Min(5, loaded.highestBossStageCleared),
+                    Math.Max(0, Math.Min(5, loaded.unlockedBossTier)));
+                loaded.settledBossRunIds = loaded.settledBossRunIds ?? new List<string>();
                 data = loaded;
                 return true;
             }
@@ -110,7 +117,9 @@ namespace CursorHunter.Progression
             IReadOnlyDictionary<string, int> spentCosts,
             IReadOnlyDictionary<string, string> spentCurrencyIds,
             int unlockedBossTier = 0,
-            IEnumerable<string> ownedRelicIds = null)
+            IEnumerable<string> ownedRelicIds = null,
+            int highestBossStageCleared = 0,
+            IEnumerable<string> settledBossRunIds = null)
         {
             SaveData data = new SaveData
             {
@@ -121,7 +130,9 @@ namespace CursorHunter.Progression
                 ownedRelicIds = CopyIds(ownedRelicIds),
                 spentCosts = new List<int>(),
                 spentCurrencyIds = new List<string>(),
-                unlockedBossTier = Math.Max(0, Math.Min(5, unlockedBossTier))
+                unlockedBossTier = Math.Max(0, Math.Min(5, unlockedBossTier)),
+                highestBossStageCleared = Math.Max(0, Math.Min(20, highestBossStageCleared)),
+                settledBossRunIds = CopyIds(settledBossRunIds)
             };
             // Keep both lists aligned with purchasedNodeIds so the DTO can be
             // restored without serializing dictionaries or relying on their

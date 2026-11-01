@@ -82,7 +82,11 @@ namespace CursorHunter.Combat
                 Physics2D.CircleCast(start, radius, _direction, filter,
                     _sweepHits, distance);
                 for (int i = 0; i < _sweepHits.Count; i++)
+                {
                     TryHit(_sweepHits[i].collider);
+                    if (!_active || _owner == null || !_owner.IsCurrentRun(_runId))
+                        return false;
+                }
                 transform.position += (Vector3)movement;
             }
 
@@ -90,7 +94,11 @@ namespace CursorHunter.Combat
             Physics2D.OverlapCircle((Vector2)transform.position, radius,
                 filter, _overlaps);
             for (int i = 0; i < _overlaps.Count; i++)
+            {
                 TryHit(_overlaps[i]);
+                if (!_active || _owner == null || !_owner.IsCurrentRun(_runId))
+                    return false;
+            }
 
             return now < _expiresAt;
         }
@@ -100,7 +108,10 @@ namespace CursorHunter.Combat
             if (collider == null || _owner == null) return;
             MonsterCombatTarget target = collider.GetComponentInParent<MonsterCombatTarget>();
             if (target == null || _hitTargets.Contains(target)) return;
-            if (_owner.Hit(_runId, target)) _hitTargets.Add(target);
+            RunId runId = _runId;
+            if (_owner.Hit(runId, target) && _active && _runId == runId &&
+                _owner != null && _owner.IsCurrentRun(runId))
+                _hitTargets.Add(target);
         }
 
         internal void RefreshBalance(float now, FlameExhaustRuntimeStat previous,
