@@ -97,8 +97,11 @@ namespace CursorHunter.Combat
                 MonsterCombatTarget target = collider == null ? null :
                     collider.GetComponentInParent<MonsterCombatTarget>();
                 if (target == null || _hitTargets.Contains(target)) continue;
-                if (_owner.Hit(_runId, target)) _hitTargets.Add(target);
-                if (!_owner.IsCurrentRun(_runId)) return false;
+                RunId runId = _runId;
+                bool hit = _owner.Hit(runId, target);
+                if (!_active || _owner == null || _runId != runId ||
+                    !_owner.IsCurrentRun(runId)) return false;
+                if (hit) _hitTargets.Add(target);
             }
             return true;
         }

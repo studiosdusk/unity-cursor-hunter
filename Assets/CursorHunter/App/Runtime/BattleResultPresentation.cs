@@ -62,7 +62,9 @@ namespace CursorHunter.App
 
         public bool IsVisible => overlay != null && overlay.activeSelf;
         public bool IsReady => _phase == Phase.Ready;
-        private enum Phase { Hidden, TimeOut, Dismiss, Rewards, Buttons, Ready }
+        private bool IsBossPresentationRunning =>
+            collection != null && collection.IsFinishingCollection || huntManager != null && huntManager.IsBossDeathPlaying;
+        private enum Phase { Hidden, BossLoot, TimeOut, Dismiss, Rewards, Buttons, Ready }
         private Phase _phase;
         private float _clock;
         private RunId _runId;
@@ -151,6 +153,11 @@ namespace CursorHunter.App
             damage.text = result.EffectiveDamage.ToString("N0", CultureInfo.InvariantCulture);
             FitLayout();
             RenderTimeOut(0f);
+            if (result.BossDefeated && IsBossPresentationRunning)
+            {
+                _phase = Phase.BossLoot;
+                overlay.SetActive(false); // Keep both the death animation and the loot burst visible.
+            }
         }
 
         public void Hide()
@@ -185,15 +192,30 @@ namespace CursorHunter.App
 
         private void ApplyLocalizedPresentation(RunResult result)
         {
+            bool boss = result.Mode == RunMode.Boss;
             SetLocalizedText(
                 timeOutTitle,
-                result.EndReason == RunEndReason.TimeExpired
+                boss
+                    ? result.BossDefeated ? "ui.result.boss.clear" : "ui.result.boss.failed"
+                    : result.EndReason == RunEndReason.TimeExpired
                     ? "ui.result.timeout"
                     : "ui.result.hunt.over",
-                result.EndReason == RunEndReason.TimeExpired ? "시간 종료" : "사냥 종료");
-            SetLocalizedText(title, "ui.result.title", "전투 종료");
+                boss
+                    ? result.BossDefeated ? "BOSS CLEAR!" : "BOSS FAILED"
+                    : result.EndReason == RunEndReason.TimeExpired ? "시간 종료" : "사냥 종료");
+            SetLocalizedText(
+                title,
+                boss ? "ui.result.boss.title" : "ui.result.title",
+                boss
+                    ? $"보스 {result.BossStage}단계 · " + (result.BossDefeated ? "토벌 성공" : "토벌 실패")
+                    : "전투 종료");
             subtitle.gameObject.SetActive(result.SettlementPolicy == RunSettlementPolicy.Discard);
-            SetLocalizedText(subtitle, "ui.result.test.no.reward", "테스트 전투 · 보상 미지급");
+            SetLocalizedText(
+                subtitle,
+                boss && !result.BossDefeated ? "ui.result.boss.failed.subtitle" : "ui.result.test.no.reward",
+                boss && !result.BossDefeated
+                    ? "시간 안에 토벌하지 못했습니다. 강화 후 다시 도전하세요."
+                    : "테스트 전투 · 보상 미지급");
 
             TMP_Text upgradeLabel = upgradeButton.GetComponentInChildren<TMP_Text>(true);
             if (upgradeLabel != null)
@@ -205,7 +227,15 @@ namespace CursorHunter.App
                     connected ? "강화하기" : "로비로");
             }
             TMP_Text retryLabel = retryButton.GetComponentInChildren<TMP_Text>(true);
-            SetLocalizedText(retryLabel, "ui.result.action.retry", "다시 도전");
+            string retryFallback = boss && result.BossDefeated
+                ? result.BossStage < 20 ? "다음 단계 도전" : "일반 전투"
+                : "다시 도전";
+            SetLocalizedText(
+                retryLabel,
+                boss && result.BossDefeated
+                    ? result.BossStage < 20 ? "ui.result.action.boss.next" : "ui.result.action.boss.field"
+                    : "ui.result.action.retry",
+                retryFallback);
             SetLocalizedText(
                 skipButton.GetComponentInChildren<TMP_Text>(true),
                 "ui.result.action.skip",
@@ -254,6 +284,14 @@ namespace CursorHunter.App
             _clock += Time.unscaledDeltaTime;
             switch (_phase)
             {
+                case Phase.BossLoot:
+                    if (!IsBossPresentationRunning)
+                    {
+                        overlay.SetActive(true);
+                        Next(Phase.TimeOut);
+                        RenderTimeOut(0f);
+                    }
+                    break;
                 case Phase.TimeOut:
                     RenderTimeOut(_clock / Mathf.Max(0.05f, popupSeconds));
                     if (_clock >= popupSeconds + holdSeconds &&
@@ -390,6 +428,7 @@ namespace CursorHunter.App
             _navigating = true;
             actions.interactable = false;
             huntManager.ReturnToResearch();
+            if (IsVisible) RestoreActionsAfterRejectedNavigation();
         }
 
         private void Retry()
@@ -397,9 +436,17 @@ namespace CursorHunter.App
             if (!IsReady || _navigating || huntManager == null) return;
             _navigating = true;
             actions.interactable = false;
-            huntManager.ReplayLastRun();
+            huntManager.ContinueFromResult();
             // A rejected start keeps the result available instead of stranding the player.
-            if (IsVisible) { _navigating = false; actions.interactable = true; }
+            if (IsVisible) RestoreActionsAfterRejectedNavigation();
+        }
+
+        private void RestoreActionsAfterRejectedNavigation()
+        {
+            _navigating = false;
+            actions.interactable = true;
+            subtitle.gameObject.SetActive(true);
+            subtitle.text = "진행을 완료하지 못했습니다. 다시 눌러 재시도하세요.";
         }
 
         private void FitLayout()

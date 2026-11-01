@@ -1343,9 +1343,9 @@ namespace CursorHunter.Progression
         /// <summary>
         /// Applies the immutable payout produced by one eligible run. Combat
         /// never edits these balances directly; App calls this once after its
-        /// RunId/settlement-event guard accepts the result. Locked gemstones
-        /// are ignored in normal mode so a stale result cannot reveal a future
-        /// currency.
+        /// RunId/settlement-event guard accepts the result. Valid currency
+        /// balances can exist before their supply monsters are unlocked;
+        /// receiving currency does not unlock monsters or research.
         /// </summary>
         public bool GrantResourceRewards(IReadOnlyList<ResourceRewardSnapshot> rewards)
         {
@@ -1485,6 +1485,50 @@ namespace CursorHunter.Progression
             }
         }
 
+        private int _highestBossStageCleared;
+        private readonly HashSet<string> _settledBossRunIds = new HashSet<string>(StringComparer.Ordinal);
+        public int HighestBossStageCleared
+        {
+            get { EnsureProgressionState(); return _highestBossStageCleared; }
+        }
+
+        /// <summary>Resets only boss stage progress, preserving purchases, rewards, and paid receipts.</summary>
+        public bool TryResetBossProgress()
+        {
+            EnsureProgressionState();
+            int previousStage = _highestBossStageCleared;
+            _highestBossStageCleared = 0;
+            if (SaveProgressionState()) return true;
+            _highestBossStageCleared = previousStage;
+            return false;
+        }
+
+        /// <summary>Save rewards, stage progress, and the receipt together. A replayed result is a no-op.</summary>
+        public bool GrantBossClear(RunResult result)
+        {
+            EnsureProgressionState();
+            if (!result.BossDefeated || result.SettlementPolicy != RunSettlementPolicy.Eligible ||
+                !result.RunId.IsValid || result.BossStage < 1 || result.BossStage > 20 ||
+                result.BossStage > _highestBossStageCleared + 1) return false;
+            if (_settledBossRunIds.Contains(result.RunId.Value)) return true;
+            int previousStage = _highestBossStageCleared;
+            int previousTier = unlockedBossTier;
+            _highestBossStageCleared = Math.Max(previousStage, result.BossStage);
+            // Replaying a cleared stage must not unlock the next research tier.
+            unlockedBossTier = Mathf.Max(previousTier, Mathf.Clamp(result.BossStage, 0, 5));
+            _settledBossRunIds.Add(result.RunId.Value);
+            if (GrantRunRewards(result.Rewards, result.RelicAwards))
+            {
+                RefreshTestBossTierButtons();
+                return true;
+            }
+            _highestBossStageCleared = previousStage;
+            unlockedBossTier = previousTier;
+            _settledBossRunIds.Remove(result.RunId.Value);
+            RefreshAll();
+            return false;
+        }
+
 
         /// <summary>
         /// Creates the resolved information document for the current trait
@@ -1617,6 +1661,8 @@ namespace CursorHunter.Progression
 
         private void ResolveCatalog()
         {
+            _highestBossStageCleared = 0;
+            _settledBossRunIds.Clear();
             _document = GameDataDocument.Load();
             // Data-file language does not select the player's UI locale.
             startingGarnet = _document.information.gemstones[0].amount;
@@ -1655,6 +1701,9 @@ namespace CursorHunter.Progression
 
             RestoreOwnedRelics(data.ownedRelicIds);
             _garnetBalance = Math.Max(0L, data.garnetBalance);
+            _highestBossStageCleared = data.highestBossStageCleared;
+            _settledBossRunIds.Clear();
+            foreach (string id in data.settledBossRunIds) _settledBossRunIds.Add(id);
             EnsureGemstoneBalanceCapacity();
             if (data.gemstoneBalances != null)
             {
@@ -1741,8 +1790,10 @@ namespace CursorHunter.Progression
                 _purchased,
                 _spentByNode,
                 _spentCurrencyByNode,
-                unlockedBossTier,
-                GetOwnedRelicIds());
+                unlockedBossTier: unlockedBossTier,
+                ownedRelicIds: GetOwnedRelicIds(),
+                highestBossStageCleared: _highestBossStageCleared,
+                settledBossRunIds: _settledBossRunIds);
             if (!saved)
             {
                 Debug.LogWarning(

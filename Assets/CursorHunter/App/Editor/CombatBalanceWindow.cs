@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using CursorHunter.Combat;
+using CursorHunter.Data;
 using UnityEditor;
 using UnityEngine;
 
@@ -12,7 +13,7 @@ namespace CursorHunter.App.Editor
     {
         private const string SessionPrefix = "CursorHunter.CombatBalanceWindow.";
         private static readonly string[] Modes = { "실시간 테스트", "최종 설정 스탯" };
-        private static readonly string[] Sections = { "베이스", "커서 공격", "스킬", "몬스터·스폰" };
+        private static readonly string[] Sections = { "베이스", "커서 공격", "스킬", "몬스터·스폰", "보스" };
         private static readonly CultureInfo Numbers = CultureInfo.InvariantCulture;
 
         [SerializeField] private HuntManager target;
@@ -20,6 +21,8 @@ namespace CursorHunter.App.Editor
         [SerializeField] private int selectedTab;
         [SerializeField] private int selectedSkill;
         [SerializeField] private int selectedMonster;
+        [SerializeField] private int selectedBoss;
+        [SerializeField] private int layoutVersion;
         [SerializeField] private Vector2 scroll;
         [SerializeField] private string draftJson;
         [SerializeField] private string finalDraftJson;
@@ -60,11 +63,13 @@ namespace CursorHunter.App.Editor
             titleContent = new GUIContent("전투 밸런스");
             minSize = new Vector2(520f, 380f);
             // Preserve the previously selected final-settings tab after the layout upgrade.
-            if (selectedTab == 4)
+            if (layoutVersion == 0 && selectedTab == 4)
             {
                 selectedMode = 1;
                 selectedTab = 0;
             }
+            bool migratePlayerSource = layoutVersion < 2;
+            layoutVersion = 2;
             _assemblyReloading = false;
             _draft = Deserialize(draftJson);
             _finalDraft = Deserialize(finalDraftJson);
@@ -75,6 +80,11 @@ namespace CursorHunter.App.Editor
             EditorApplication.update += OnEditorUpdate;
             AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
             ResolveTarget();
+            if (migratePlayerSource && _draft != null && target != null)
+            {
+                _draft.UsePlayerProgression = target.IsTraitScreenConnectedToCombat;
+                SaveDraft();
+            }
         }
 
         private void OnDisable()
@@ -153,18 +163,19 @@ namespace CursorHunter.App.Editor
             if (_restoreOnPlay && EditorApplication.isPlaying)
             {
                 _restoreOnPlay = false;
-                CombatBalanceSettings pending = Deserialize(SessionState.GetString(
-                    SessionPrefix + "Settings", string.Empty));
+                string pendingJson = SessionState.GetString(SessionPrefix + "Settings", string.Empty);
+                CombatBalanceSettings pending = Deserialize(pendingJson);
                 if (pending != null)
                 {
+                    if (!pendingJson.Contains("\"UsePlayerProgression\""))
+                        pending.UsePlayerProgression = target.IsTraitScreenConnectedToCombat;
                     _draft = pending;
                     ClearInputs("live.");
                     _fieldErrors.Clear();
                     ApplyDraft();
                 }
             }
-            _actual = target.IsCombatBalanceTestActive
-                ? target.AppliedCombatBalanceSettings : null;
+            _actual = target.IsCombatRunActive ? target.CaptureCombatBalanceSettings() : null;
             Repaint();
         }
 
@@ -255,6 +266,7 @@ namespace CursorHunter.App.Editor
             selectedTab = section;
             _saveFinalRequested = false;
 
+            DrawPlayerSource();
             DrawStatus();
             _drawingFinal = false;
             scroll = EditorGUILayout.BeginScrollView(scroll);
@@ -289,13 +301,61 @@ namespace CursorHunter.App.Editor
 
         private void DrawSection(int section)
         {
+            if (!_drawingFinal && _draft.UsePlayerProgression && section <= 2)
+            {
+                EditorGUILayout.HelpBox("공격력·커서·스킬은 구매한 특성에서 가져옵니다. 새로 구매한 특성은 다음 전투 시작 시 반영됩니다.", MessageType.Info);
+                if (_actual == null) return;
+                CombatBalanceSettings draft = _draft;
+                _draft = _actual;
+                using (new EditorGUI.DisabledScope(true)) DrawSectionValues(section);
+                _draft = draft;
+                return;
+            }
+            DrawSectionValues(section);
+        }
+
+        private void DrawSectionValues(int section)
+        {
             switch (section)
             {
                 case 0: DrawBase(); break;
                 case 1: DrawCursor(); break;
                 case 2: DrawSkills(); break;
                 case 3: DrawMonsters(); break;
+                case 4: DrawBosses(); break;
             }
+        }
+
+        private void DrawPlayerSource()
+        {
+            bool manualRun = target.IsCombatRunActive && _actual != null && !_actual.UsePlayerProgression;
+            using (new EditorGUI.DisabledScope(!target.IsTraitScreenConnectedToCombat || manualRun))
+            {
+                bool useProgression = EditorGUILayout.ToggleLeft("구매한 플레이어 특성 사용", _draft.UsePlayerProgression);
+                if (useProgression != _draft.UsePlayerProgression)
+                {
+                    // Start manual tuning from the current player, keeping the enemy draft intact.
+                    if (!useProgression && _actual != null)
+                    {
+                        CombatBalanceSettings manual = _actual.Clone();
+                        manual.Monsters = _draft.Monsters;
+                        manual.Bosses = _draft.Bosses;
+                        manual.GlobalAliveLimit = _draft.GlobalAliveLimit;
+                        manual.PerMonsterAliveLimit = _draft.PerMonsterAliveLimit;
+                        _draft = manual;
+                    }
+                    _draft.UsePlayerProgression = useProgression;
+                    ClearInputs("live.");
+                    _fieldErrors.Clear();
+                    ApplyDraft();
+                    GUI.FocusControl(null);
+                }
+            }
+            EditorGUILayout.LabelField(_draft.UsePlayerProgression
+                ? "구매한 특성 유지 · 몬스터와 보스 수치만 테스트합니다."
+                : "직접 입력 모드 · 공격력과 스킬은 구매 상태 대신 입력값을 사용합니다.", EditorStyles.wordWrappedMiniLabel);
+            if (manualRun)
+                EditorGUILayout.LabelField("현재 전투가 끝나면 구매한 특성 사용으로 전환할 수 있습니다.", EditorStyles.wordWrappedMiniLabel);
         }
 
         private void DrawFinalSettings()
@@ -479,6 +539,7 @@ namespace CursorHunter.App.Editor
             DrawingDraft.CriticalDamageMultiplier = FloatRow("치명타 피해 배율 (배)", DrawingDraft.CriticalDamageMultiplier, DrawingActual?.CriticalDamageMultiplier, 1f);
             DrawingDraft.BossDamageMultiplier = FloatRow("보스 피해 배율 (배)", DrawingDraft.BossDamageMultiplier, DrawingActual?.BossDamageMultiplier, float.Epsilon);
             DrawingDraft.DurationSeconds = FloatRow("일반 전투 시간 (초)", DrawingDraft.DurationSeconds, DrawingActual?.DurationSeconds, 15f, 30f);
+            EditorGUILayout.LabelField("공격 수치는 일반·보스 전투에 공통 적용됩니다. 보스 제한시간은 30초입니다.", EditorStyles.wordWrappedMiniLabel);
         }
 
         private void DrawCursor()
@@ -562,6 +623,54 @@ namespace CursorHunter.App.Editor
             selected.BonusDropChancePercent = FloatRow("추가 보상 확률 (%)", selected.BonusDropChancePercent, actual?.BonusDropChancePercent, 0f, 100f);
             if (selected.BonusDropAmount > 0L && (string.IsNullOrWhiteSpace(selected.BonusDropCurrencyId) || selected.BonusDropChancePercent <= 0f))
                 FieldError("추가 보상", "수량이 있으면 재화 ID와 0%보다 큰 확률을 입력하세요.");
+        }
+
+        private void DrawBosses()
+        {
+            BossDefinition[] definitions = target.GetBalanceBossDefinitions();
+            if (DrawingDraft.Bosses == null || DrawingDraft.Bosses.Count == 0)
+            {
+                DrawingDraft.Bosses = new List<BossBalanceSettings>();
+                Array.Sort(definitions, (a, b) => (a != null ? a.Stage : 0).CompareTo(b != null ? b.Stage : 0));
+                foreach (BossDefinition boss in definitions)
+                    if (boss != null) DrawingDraft.Bosses.Add(BossBalanceSettings.FromSnapshot(boss.CreateSnapshot()));
+            }
+            if (DrawingDraft.Bosses.Count == 0)
+            {
+                EditorGUILayout.HelpBox("보스 정의가 없습니다.", MessageType.Info);
+                return;
+            }
+            string[] options = DrawingDraft.Bosses.ConvertAll(value =>
+            {
+                BossDefinition boss = Array.Find(definitions, item => item != null && item.BossId == value.BossId);
+                return boss == null ? value.BossId : $"{boss.Stage}단계 · {boss.DisplayName}";
+            }).ToArray();
+            if (!_drawingFinal && target.IsBossCombatActive && GUILayout.Button("현재 전투 중인 보스 선택"))
+            {
+                BossDefinition current = Array.Find(definitions, value => value != null && value.Stage == target.ActiveBossBalanceStage);
+                if (current != null) selectedBoss = Math.Max(0, DrawingDraft.Bosses.FindIndex(value => value.BossId == current.BossId));
+                GUI.FocusControl(null);
+            }
+            selectedBoss = EditorGUILayout.Popup("보스 단계", Mathf.Clamp(selectedBoss, 0, options.Length - 1), options);
+            BossBalanceSettings selected = DrawingDraft.Bosses[selectedBoss];
+            BossBalanceSettings actual = DrawingActual?.Bosses?.Find(value => value.BossId == selected.BossId);
+            EditorGUILayout.LabelField(selected.BossId, EditorStyles.miniLabel);
+            selected.MaxHealth = LongRow("최대 HP", selected.MaxHealth, actual?.MaxHealth, 1L, selected.BossId);
+            selected.MoveSpeed = FloatRow("이동 속도 (월드 단위/초)", selected.MoveSpeed, actual?.MoveSpeed, float.Epsilon);
+            selected.VisualScale = FloatRow("시각 크기 (배)", selected.VisualScale, actual?.VisualScale, float.Epsilon);
+            selected.HitAreaWidth = FloatRow("피격 영역 너비 (월드 단위)", selected.HitAreaWidth, actual?.HitAreaWidth, float.Epsilon);
+            selected.HitAreaHeight = FloatRow("피격 영역 높이 (월드 단위)", selected.HitAreaHeight, actual?.HitAreaHeight, float.Epsilon);
+            EditorGUILayout.LabelField("보스는 30초·한 마리입니다. 이름·외형·특성·보상은 BossDefinition 설정을 사용합니다.", EditorStyles.wordWrappedMiniLabel);
+            if (_drawingFinal) return;
+            EditorGUILayout.LabelField("현재 단계의 변경은 즉시 적용되며, 다른 단계는 해당 보스에 도전할 때 적용됩니다. HP 비율은 유지합니다.", EditorStyles.wordWrappedMiniLabel);
+            EditorGUILayout.LabelField("테스트 보상·클리어 기록은 저장하지 않습니다. Play 중에는 해금 여부와 관계없이 선택한 단계를 테스트할 수 있습니다.", EditorStyles.wordWrappedMiniLabel);
+            using (new EditorGUI.DisabledScope(!EditorApplication.isPlaying || target.IsCombatRunActive))
+                if (GUILayout.Button("선택 단계 보스 테스트 시작"))
+                {
+                    ApplyDraft();
+                    BossDefinition boss = Array.Find(definitions, item => item != null && item.BossId == selected.BossId);
+                    if (string.IsNullOrEmpty(_applyError) && boss != null) target.BeginBossStage(boss.Stage);
+                }
         }
 
         private long LongRow(string name, long value, long? actual, long minimum, string scope = "base")

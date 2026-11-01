@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 94bd0af1989b4737aa5b89f81544bb59, type: 3}
+  m_Name: Boss05
+  m_EditorClassIdentifier: CursorHunter.Data::CursorHunter.Data.BossDefinition
+  stage: 5
+  bossId: boss.05
+  displayName: 판도라 상자
+  visualPrefab: {fileID: 2625415614136960199, guid: 947519fa8f8194135b34e788dd766e0e, type: 3}
+  maxHealth: 3315
+  moveSpeed: 1.0
+  visualScale: 2.0
+  hitArea: {x: 1.8, y: 2.1}
+  movementMode: 0
+  specialAbility: 3
+  abilityInterval: 4.0
+  abilityDuration: 1
+  abilityStrength: 0.5
+  clearRewards:
+  - currencyId: gem.garnet
+    amount: 2856
+  - currencyId: gem.topaz
+    amount: 1000
+  - currencyId: gem.amethyst
+    amount: 428
+  - currencyId: gem.sapphire
+    amount: 171

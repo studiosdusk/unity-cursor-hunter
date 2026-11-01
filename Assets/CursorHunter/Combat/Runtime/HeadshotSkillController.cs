@@ -131,11 +131,15 @@ namespace CursorHunter.Combat
                     _active[i].SetVisualPaused(false);
             }
 
+            RunId runId = _runId;
             float now = _combat.ElapsedSeconds;
             for (int i = _active.Count - 1; i >= 0; i--)
             {
                 HeadshotEffect effect = _active[i];
-                if (effect != null && effect.Tick(now)) continue;
+                bool alive = effect != null && effect.Tick(now);
+                // A hit can synchronously finish the run and clear this list.
+                if (!IsCurrentRun(runId)) return;
+                if (alive) continue;
                 _active.RemoveAt(i);
                 if (effect != null)
                 {
@@ -214,11 +218,20 @@ namespace CursorHunter.Combat
                 if (!IsCurrentRun(runId)) break;
                 _combat.TryApplySkillDamage(runId, target,
                     _runtime.SplashDamage);
+                if (!IsCurrentRun(runId)) return;
             }
         }
 
-        private HeadshotBaseStat BalanceBasis => _balance == null ? baseStat :
-            SkillBalanceMath.Read<HeadshotBaseStat>(_balance);
+        private HeadshotBaseStat BalanceBasis
+        {
+            get
+            {
+                HeadshotBaseStat basis = _balance == null ? baseStat :
+                    SkillBalanceMath.Read<HeadshotBaseStat>(_balance);
+                if (basis.RadiusMultiplier <= 0f) basis.RadiusMultiplier = 1f;
+                return basis;
+            }
+        }
 
         public SkillBalanceSettings CaptureBalanceSettings() =>
             SkillBalanceMath.Capture(SkillId, _balance != null ? _balance.Enabled :
