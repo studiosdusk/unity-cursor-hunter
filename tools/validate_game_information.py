@@ -56,6 +56,14 @@ def main():
     ]
     check([g["id"] for g in example["gemstones"]] == gems, "Gemstone IDs/order changed")
     check(len(data["monsters"]) == len(example["monsters"]) == 10, "Expected 10 monsters")
+    progression_nodes = [node for category in document["progression"]["categories"]
+                         for node in category["nodes"]]
+    check("initialBossTier" not in document["progression"],
+          "Progression configuration must not gate research by boss tier")
+    check(all("requiredBossTier" not in node for node in progression_nodes),
+          "Progression nodes must not contain boss-stage unlock restrictions")
+    check(all(f"monster.{index:02}" in categories for index in range(1, 11)),
+          "Expected all 10 monster research categories")
     check([s["id"] for s in example["skills"]] ==
           ["skill.tornado", "skill.headshot", "skill.thunder", "skill.flame_exhaust",
            "skill.magic_ball", "skill.laser", "skill.pet_baby_dragon"],
@@ -63,6 +71,89 @@ def main():
     check(data["normalFieldDurationSeconds"] == [15, 20, 25, 30], "Normal duration must stop at 30")
     check(all(finite_positive(v) and v >= .05 for v in data["attackCooldownSeconds"]), "Invalid cooldown")
     check(all(data["attackCooldownSeconds"][i] > data["attackCooldownSeconds"][i+1] for i in range(4)), "Cooldown upgrades must decrease")
+    progression_nodes = {
+        node["id"]: node
+        for category in document["progression"]["categories"]
+        for node in category["nodes"]
+    }
+    paid_costs = [node["cost"] for node in progression_nodes.values() if node.get("cost", 0) > 0]
+    free_costs = [node["cost"] for node in progression_nodes.values() if node.get("cost", 0) == 0]
+    check(len(paid_costs) == 107 and len(free_costs) == 6,
+          "Expected 113 researches: 107 paid and six free starting researches")
+    check(all(cost % 20 == 0 for cost in paid_costs),
+          "Paid research costs must remain exactly doubled from the 10-gem baseline increments")
+    check(all(progression_nodes.get(node_id, {}).get("cost") == expected for node_id, expected in {
+        "stat.attack.02": 160,
+        "stat.radius.02": 160,
+        "skill.pet_baby_dragon": 160,
+        "skill.magic_ball": 240,
+        "skill.tornado": 320,
+        "monster.02": 180,
+        "monster.02.production.01": 100,
+    }.items()), "Representative research costs do not match the 2x balance")
+    expected_skill_roots = {
+        "skill.pet_baby_dragon": ("gem.garnet", "stat.attack.01"),
+        "skill.magic_ball": ("gem.topaz", "skill.pet_baby_dragon.damage.01"),
+        "skill.tornado": ("gem.amethyst", "skill.magic_ball"),
+        "skill.headshot": ("gem.amethyst", "skill.magic_ball"),
+        "skill.thunder": ("gem.sapphire", "skill.headshot.damage.01"),
+        "skill.flame_exhaust": ("gem.diamond", "skill.thunder.damage.01"),
+        "skill.laser": ("gem.diamond", "skill.thunder.damage.01"),
+    }
+    skill_category_order = [category["id"] for category in document["progression"]["categories"]
+                            if category["id"].startswith("skill.")]
+    check(skill_category_order == list(expected_skill_roots),
+          "Skill categories must follow the five-phase pet-first progression")
+    for skill_id, (currency_id, prerequisite_id) in expected_skill_roots.items():
+        root = categories.get(skill_id, {}).get("nodes", [{}])[0]
+        check(root.get("currencyId") == currency_id and
+              root.get("prerequisiteNodeId") == prerequisite_id,
+              f"Wrong phase prerequisite or currency: {skill_id}")
+    check(next((monster["hitPoints"] for monster in example["monsters"]
+                if monster["id"] == "monster.02"), None) == 15,
+          "Queen Bee baseline HP must be 15")
+    skill_damage_baselines = (
+        ("skill.pet_baby_dragon", "PetSkillController.cs", "PetSkillController.prefab",
+         "DamageMultiplier", 3),
+        ("skill.magic_ball", "MagicBallSkillController.cs", "MagicBallSkillController.prefab",
+         "DamageMultiplier", 5),
+        ("skill.tornado", "TornadoSkillController.cs", "TornadoSkillController.prefab",
+         "DamageMultiplier", 7),
+        ("skill.headshot", "HeadshotSkillController.cs", "HeadshotSkillController.prefab",
+         "SplashDamageMultiplier", 7),
+        ("skill.thunder", "ThunderSkillController.cs", "ThunderSkillController.prefab",
+         "DamageMultiplier", 9),
+        ("skill.flame_exhaust", "FlameExhaustSkillController.cs",
+         "FlameExhaustSkillController.prefab", "DamageMultiplier", 11),
+        ("skill.laser", "LaserSkillController.cs", "LaserSkillController.prefab",
+         "DamageMultiplier", 11),
+    )
+    for skill_id, runtime_name, prefab_name, field_name, damage in skill_damage_baselines:
+        runtime_path = BASE / "Combat/Runtime" / runtime_name
+        prefab_path = BASE / "Combat/Prefabs/Skills" / prefab_name
+        runtime_text = runtime_path.read_text() if runtime_path.exists() else ""
+        prefab_text = prefab_path.read_text() if prefab_path.exists() else ""
+        number = rf"{damage}(?:\.0)?"
+        check(bool(re.search(rf"{field_name}\s*=\s*{number}f?\b", runtime_text)),
+              f"{skill_id} runtime baseline damage must be {damage}")
+        check(bool(re.search(rf"(?m)^\s*{field_name}: {number}\s*$", prefab_text)),
+              f"{skill_id} prefab baseline damage must be {damage}")
+    tornado_runtime = (BASE / "Combat/Runtime/TornadoSkillController.cs").read_text()
+    tornado_prefab = (BASE / "Combat/Prefabs/Skills/TornadoSkillController.prefab").read_text()
+    check(bool(re.search(r"HitIntervalSeconds\s*=\s*1(?:\.0)?f?\b", tornado_runtime)),
+          "Tornado must hit at most once per second while overlapping a target")
+    check(bool(re.search(r"(?m)^\s*HitIntervalSeconds: 1(?:\.0)?\s*$", tornado_prefab)),
+          "Tornado prefab hit interval must match its one-second runtime baseline")
+    headshot_runtime = (BASE / "Combat/Runtime/HeadshotSkillController.cs").read_text()
+    headshot_prefab = (BASE / "Combat/Prefabs/Skills/HeadshotSkillController.prefab").read_text()
+    check(bool(re.search(r"BossDamageMultiplier\s*=\s*3(?:\.0)?f?\b", headshot_runtime)),
+          "Headshot boss bonus must preserve its specialization without dominating the phase")
+    check(bool(re.search(r"(?m)^\s*BossDamageMultiplier: 3(?:\.0)?\s*$", headshot_prefab)),
+          "Headshot prefab boss bonus must match the runtime baseline")
+    check(bool(re.search(
+        r"m_EditorClassIdentifier: CursorHunter\.Combat::CursorHunter\.Combat\.PlayerCombatStatsDefaults\s+attackPower: 10",
+        (BASE / "App/Scenes/Main.unity").read_text())),
+        "Main authored attack power must stay 10 for the Queen Bee two-hit baseline")
     known_currencies = {"gem.garnet"}
     override_controllers = {}
     animation_clips = {}
@@ -81,6 +172,62 @@ def main():
     ids = set()
     main_scene_path = BASE / "App/Scenes/Main.unity"
     main_scene_text = main_scene_path.read_text()
+    starting_garnet = re.search(r"(?m)^  startingGarnet: (\d+)$", main_scene_text)
+    starting_balances = re.search(r"(?m)^  startingGemstoneBalances: ([0-9a-f]+)$", main_scene_text)
+    starting_garnet_balance = (
+        int.from_bytes(bytes.fromhex(starting_balances.group(1))[:8], "little")
+        if starting_balances else -1
+    )
+    starting_garnet_value = int(starting_garnet.group(1)) if starting_garnet else -1
+    starter_tutorial_node_ids = [
+        "stat.attack.01",
+        "stat.radius.01",
+        "stat.cooldown.01",
+        "stat.critical.01",
+        "stat.fieldDuration.01",
+        "monster.01",
+    ]
+    starter_tutorial_nodes = [
+        progression_nodes[node_id]
+        for node_id in starter_tutorial_node_ids
+        if node_id in progression_nodes
+    ]
+    tutorial_controller = (
+        BASE / "Progression/Runtime/TraitScreenController.cs").read_text()
+    tutorial_array = re.search(
+        r"StarterTutorialNodeIds\s*=\s*\{([\s\S]*?)\};",
+        tutorial_controller)
+    controller_tutorial_order = (
+        re.findall(r'"([^"]+)"', tutorial_array.group(1))
+        if tutorial_array else [])
+    right_click_step = re.search(
+        r"IsStarterTutorialRightClickStep\(TraitNodeDefinition node\)\s*\{([\s\S]*?)\n        \}",
+        tutorial_controller)
+    right_click_step_id = (
+        re.search(r'node\.Id,\s*"([^"]+)"', right_click_step.group(1))[1]
+        if right_click_step and re.search(r'node\.Id,\s*"([^"]+)"', right_click_step.group(1))
+        else None
+    )
+    information_garnet = next(
+        (gem.get("amount", 0) for gem in example["gemstones"]
+         if gem.get("id") == "gem.garnet"),
+        -1,
+    )
+    check(all(node_id in progression_nodes for node_id in starter_tutorial_node_ids),
+          "All starter tutorial research steps must exist")
+    check(controller_tutorial_order == starter_tutorial_node_ids,
+          "Starter tutorial order must include only basic stats and Stump")
+    check(all(node.get("cost", 0) == 0 for node in starter_tutorial_nodes),
+          "Every mandatory starter tutorial research must be free")
+    check(progression_nodes.get("monster.01", {}).get("operation") == "enable",
+          "Starter onboarding must explicitly unlock the basic Stump monster")
+    check(right_click_step_id in starter_tutorial_node_ids and
+          progression_nodes.get(right_click_step_id, {}).get("cost") == 0,
+          "The mandatory right-click practice must use a free tutorial node")
+    check(starting_garnet_value == information_garnet,
+          "Main scene startingGarnet must match the runtime game-data starting wallet")
+    check(starting_garnet_balance == information_garnet,
+          "Main scene gemstone balances must match the runtime game-data starting wallet")
     icon_block = re.search(r"(?m)^  monsterIcons:\n((?:  - .*\n)+)", main_scene_text)
     scene_monster_icon_guids = (
         re.findall(r"guid: ([0-9a-f]{32})", icon_block[1]) if icon_block else []
@@ -96,14 +243,16 @@ def main():
             name = re.search(r"(?m)^  m_Name: (.+)$", document)
             if game_object and name:
                 game_object_names[game_object[1]] = name[1]
+        body_sprites = []
         for document in documents:
             renderer = re.match(r"^--- !u!212 &", document)
             game_object = re.search(r"(?m)^  m_GameObject: \{fileID: (\d+)\}", document)
             sprite = re.search(r"(?m)^  m_Sprite: \{fileID: \d+, guid: ([0-9a-f]{32}), type: 3\}", document)
             if (renderer and game_object and sprite and
                     game_object_names.get(game_object[1], "").startswith("Body")):
-                return sprite[1]
-        return None
+                body_sprites.append((game_object_names[game_object[1]], sprite[1]))
+        exact_body = next((guid for name, guid in body_sprites if name == "Body"), None)
+        return exact_body or (body_sprites[0][1] if body_sprites else None)
 
     for index, monster in enumerate(data["monsters"], 1):
         expected_id = f"monster.{index:02}"
@@ -118,6 +267,34 @@ def main():
         if definition.exists():
             text = definition.read_text()
             check(f"monsterId: {expected_id}" in text, "Wrong monster asset ID")
+            # Growth/progression reads the JSON, while live spawn and drops
+            # read MonsterDefinition. Keep the duplicated authoring values in
+            # sync so the tooltip, summary and combat reward cannot disagree.
+            def asset_scalar(field):
+                match = re.search(r"(?m)^    " + re.escape(field) + r": (.*)$", text)
+                return match.group(1).strip() if match else None
+
+            for asset_field, info_field in (
+                    ("maxHealth", "hitPoints"),
+                    ("spawnIntervalSeconds", "spawnIntervalSeconds"),
+                    ("garnetReward", "garnetReward"),
+                    ("bonusDropAmount", "gemstoneAmount"),
+                    ("bonusDropChancePercent", "gemstoneChancePercent")):
+                raw = asset_scalar(asset_field)
+                check(raw is not None, f"Missing {asset_field} in combat definition: {expected_id}")
+                if raw is not None:
+                    try:
+                        check(math.isclose(float(raw), float(monster[info_field]),
+                                           rel_tol=0.0, abs_tol=0.0001),
+                              f"Growth/combat {info_field} mismatch: {expected_id}")
+                    except (TypeError, ValueError):
+                        check(False, f"Invalid {asset_field} in combat definition: {expected_id}")
+
+            if monster["gemstoneAmount"] > 0:
+                raw_currency = asset_scalar("bonusDropCurrencyId")
+                check(raw_currency == monster["gemstoneId"],
+                      f"Growth/combat gemstone ID mismatch: {expected_id}")
+
             display_name = re.search(r"(?m)^  displayName: (.+)$", text)
             check(bool(display_name), f"Missing trait-screen display name: {expected_id}")
             check(bool(display_name) and bool(display_name.group(1).strip()),
@@ -175,25 +352,66 @@ def main():
                         check(f"--- !u!1 &{match[1]}\n" in source.read_text(), f"Prefab root fileID missing: {expected_id}")
     check(known_currencies == set(gems), "Some currencies have no attainable monster source")
     expected_progression_skills = {
-        "skill.pet_baby_dragon", "skill.tornado", "skill.thunder",
+        "skill.pet_baby_dragon", "skill.tornado", "skill.thunder", "skill.headshot",
         "skill.flame_exhaust", "skill.magic_ball", "skill.laser",
     }
     check({skill["id"] for skill in data["skills"]} == expected_progression_skills,
-          "Progression skill categories must contain the starter pet and five boss-tier skills")
+          "Progression skill categories must contain the starter pet and six skills")
     for skill in data["skills"]:
         check(skill["currencyId"] in known_currencies, "Unattainable skill currency")
-    skill_unlock_tiers = {
-        skill_id: categories[skill_id]["nodes"][0]["requiredBossTier"]
-        for skill_id in categories if skill_id.startswith("skill.")
-    }
-    check(skill_unlock_tiers == {
-        "skill.pet_baby_dragon": 0,
-        "skill.tornado": 1,
-        "skill.thunder": 2,
-        "skill.flame_exhaust": 3,
-        "skill.magic_ball": 4,
-        "skill.laser": 5,
-    }, "The pet is a tier-zero skill and each boss tier unlocks one skill")
+    check(all(skill_id in categories and categories[skill_id].get("nodes")
+              for skill_id in expected_progression_skills),
+          "Each skill must have a purchase node")
+    for skill_id in expected_progression_skills - {"skill.pet_baby_dragon"}:
+        skill_nodes = categories.get(skill_id, {}).get("nodes", [])
+        check(any(node.get("id", "").startswith(skill_id + ".damage.")
+                  for node in skill_nodes),
+              f"Missing independent damage research: {skill_id}")
+        check(any(node.get("id") == skill_id + ".damage.02"
+                  for node in skill_nodes),
+              f"Missing second damage research: {skill_id}")
+        check(any(node.get("id", "").startswith(skill_id + ".radius.")
+                  for node in skill_nodes),
+              f"Missing independent radius research: {skill_id}")
+    pet_nodes = categories.get("skill.pet_baby_dragon", {}).get("nodes", [])
+    check(any(node.get("id", "").startswith("skill.pet_baby_dragon.damage.")
+              for node in pet_nodes), "Pet needs independent damage research")
+    check(any(node.get("id") == "skill.pet_baby_dragon.damage.03"
+              for node in pet_nodes), "Pet needs its third damage research")
+    check(any(node.get("id", "").startswith("skill.pet_baby_dragon.simultaneousHits.")
+              for node in pet_nodes), "Pet needs simultaneous-hit research")
+
+    # Keep the early-field supply path explicit: GameData stores the resolved
+    # per-wave count, while the authored MonsterDefinition keeps one base
+    # member and App adds the progression bonus when preparing a live run.
+    stump = next((monster for monster in example["monsters"]
+                  if monster["id"] == "monster.01"), None)
+    stump_category = categories.get("monster.01", {})
+    stump_production_nodes = [
+        node for node in stump_category.get("nodes", [])
+        if node.get("id", "").startswith("monster.01.production.")
+    ]
+    stump_definition = BASE / "Data/Resources/MonsterDefinitions/Monster01.asset"
+    check(stump is not None and stump.get("productionCount") == 2 and
+          math.isclose(stump.get("spawnIntervalSeconds", 0), 0.75,
+                       rel_tol=0.0, abs_tol=0.0001),
+          "Stump baseline must produce two per opportunity every 0.75 seconds")
+    check([node.get("value") for node in stump_production_nodes] == [3, 4, 5] and
+          all(node.get("operation") == "set" for node in stump_production_nodes),
+          "Stump production research must set resolved counts to 3, 4, then 5")
+    if stump_definition.exists():
+        stump_asset_text = stump_definition.read_text()
+        stump_pack_size = re.search(r"(?m)^    packSize: (\d+)$", stump_asset_text)
+        stump_interval = re.search(r"(?m)^    spawnIntervalSeconds: ([^\s]+)$", stump_asset_text)
+        check(bool(stump_pack_size) and int(stump_pack_size.group(1)) == 1,
+              "Stump combat definition must use one base member before progression bonus")
+        check(bool(stump_interval) and
+              math.isclose(float(stump_interval.group(1)), 0.75,
+                           rel_tol=0.0, abs_tol=0.0001),
+              "Stump combat spawn interval must match its 0.75-second progression baseline")
+    else:
+        check(False, "Missing Stump combat definition")
+
     tornado_controller = BASE / "Combat/Prefabs/Skills/TornadoSkillController.prefab"
     tornado_object = BASE / "Combat/Prefabs/Skills/TornadoObject.prefab"
     check(tornado_controller.exists(), "Missing tornado controller prefab")
@@ -320,7 +538,7 @@ def main():
                         errors.append(f"C# syntax: {path.relative_to(ROOT)}:{node.start_point.row+1} {node.type}")
                     stack.extend(node.children)
     if errors: raise SystemExit("\n".join(errors))
-    print("PASS: JSON sections, 10 monsters, seven skill IDs, 20 combat relic definitions, currency reachability, prefab IDs, TMP, scene and render settings" + (", C# syntax" if args.syntax else ""))
+    print("PASS: JSON sections, MonsterDefinition baselines, Stump production, starter onboarding order, currency/prerequisite-based skill and monster progression, 10 monsters, seven skill IDs, 20 combat relic definitions, currency reachability, prefab IDs, TMP, scene and render settings" + (", C# syntax" if args.syntax else ""))
     print("Unity import, semantic compilation and gameplay were NOT run.")
 
 if __name__ == "__main__":

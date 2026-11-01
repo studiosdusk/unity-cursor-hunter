@@ -12991,8 +12991,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: CursorHunter.Progression::CursorHunter.Progression.TraitScreenController
   catalog: {fileID: 0}
-  startingGarnet: 125
-  startingGemstoneBalances: 7d0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+  startingGarnet: 245
+  startingGemstoneBalances: f50000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
   unlockedBossTier: 0
   loadSavedProgress: 1
   testModeUnlockAll: 0
@@ -13028,6 +13028,7 @@ MonoBehaviour:
           m_BoolArgument: 0
         m_CallState: 2
   panelSprite: {fileID: 21300000, guid: ad88fadd7bc384969bd45f53f0448093, type: 3}
+  buttonFrameSprite: {fileID: 21300000, guid: f791e829a95b1449ba877a31928529d2, type: 3}
   combatBackgroundSprite: {fileID: 21300000, guid: 2847dc0f67feb49b4959b999a9ea4129, type: 3}
   tabSprite: {fileID: 21300000, guid: ecf3e525de7a347879c0787e5d7f091d, type: 3}
   tabFocusSprite: {fileID: 21300000, guid: db9921feae62c49c397bde0fdd539174, type: 3}
@@ -13043,14 +13044,14 @@ MonoBehaviour:
   backIcon: {fileID: 21300000, guid: fda9564e96d404ec384b9e32872d049a, type: 3}
   backButtonSprite: {fileID: 21300000, guid: 50a77b18a26f24b29891dc0d7bcea91a, type: 3}
   backButtonPrefab: {fileID: 5752868007636506729, guid: bb06557e467f04573afc67eeb98673da, type: 3}
-  gemstoneExchangeIcon: {fileID: 21300000, guid: fef0df8ebb5b64808b21515b1915f55a, type: 3}
+  gemstoneExchangeIcon: {fileID: 21300000, guid: ef5a74fb425d447cf9a17a563e33a5c0, type: 3}
   attackIcon: {fileID: 21300000, guid: 12c58e25a645d4bf9808e3e5b47cd280, type: 3}
   radiusIcon: {fileID: 21300000, guid: 8725c96846cc04e13b9bd0282edb30dd, type: 3}
-  attackIntervalIcon: {fileID: 21300000, guid: 2ec93f10f96b7458d9718d95c2487da8, type: 3}
-  timerIcon: {fileID: 21300000, guid: cb04b83a8c3a045558cd1f05866cf45e, type: 3}
-  criticalIcon: {fileID: 21300000, guid: 97b49874aed4b43788d90720bf2b2023, type: 3}
+  attackIntervalIcon: {fileID: 21300000, guid: 3eb4e662b192f46948ab40e0d86bde70, type: 3}
+  timerIcon: {fileID: 21300000, guid: 542529b813b5b41b189d96f9a7a131e2, type: 3}
+  criticalIcon: {fileID: 21300000, guid: 3cb40553ee528443994cdeed7f93ff27, type: 3}
   gemstoneIcon: {fileID: 21300000, guid: 58f1b94daaf3b4b06b098c42546e19d4, type: 3}
-  bossIcon: {fileID: 21300000, guid: d77571e140f0144daaad2a7e4ba19c7c, type: 3}
+  bossIcon: {fileID: 21300000, guid: f21f7b7da30174b6897f0e7082ffd668, type: 3}
   skillIcon: {fileID: 21300000, guid: 13756a141b0b84db08f0c80f06bb5d45, type: 3}
   monsterIcon: {fileID: 21300000, guid: 6b3d80100f82a44bb8968db0ec8c98e3, type: 3}
   petIcon: {fileID: 21300000, guid: e3db040c4cdb5234bbbea8c36b533fe2, type: 3}
@@ -13078,7 +13079,7 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 58ecdefa4b1d13344a5d2d437e661188, type: 3}
   - {fileID: 21300000, guid: 0760c09a431bc7243a8a3895187b7ea1, type: 3}
   - {fileID: 21300000, guid: fce62f34b0be7a94295f5b4a12f24dca, type: 3}
-  - {fileID: 21300000, guid: 2fd0633512126e646a8fe810019b0737, type: 3}
+  - {fileID: 21300000, guid: b991d264a57c52c4b96f3b8f7954f035, type: 3}
   - {fileID: 21300000, guid: 6c63eea5ac3d47f41a4ada2581ce61f3, type: 3}
   - {fileID: 21300000, guid: 9ed7185891b014c4a8a16be35bb06d34, type: 3}
   petIcons:
@@ -13196,7 +13197,7 @@ MonoBehaviour:
   connectorWidth: 18
   connectorThickness: 3
   categoryHeaderHeight: 28
-  textScale: 1.05
+  textScale: 1.18
   backgroundColor: {r: 0.015, g: 0.045, b: 0.11, a: 0.98}
   panelColor: {r: 0.02, g: 0.06, b: 0.14, a: 0.84}
   inkColor: {r: 0.96, g: 0.98, b: 1, a: 1}

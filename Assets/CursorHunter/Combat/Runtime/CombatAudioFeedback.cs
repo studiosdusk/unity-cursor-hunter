@@ -46,7 +46,7 @@ namespace CursorHunter.Combat
 
             if (cue >= 0)
             {
-                PlaySkillCue(cue, cue == 4 ? 0.39f : 0.22f, 1f);
+                PlaySkillCue(cue, cue == 4 ? 0.44f : 0.22f, 1f);
             }
         }
 
@@ -307,16 +307,29 @@ namespace CursorHunter.Combat
                 case 3: // Quick aimed shot and bright impact.
                     return (Mathf.Sin(2f * Mathf.PI * (360f - 180f * phase) * t) * 0.42f +
                             noise * 0.36f) * Mathf.Exp(-phase * 5f);
-                case 4: // Sharp lightning crack over a longer, low thunder roll.
+                case 4: // A sharp lightning crack followed by two rolling thunder swells.
                 {
-                    float crack = noise * Mathf.Exp(-phase * 20f) * 0.72f;
-                    float body = Mathf.Sin(2f * Mathf.PI * (78f - 42f * phase) * t) *
-                        Mathf.Pow(1f - phase, 0.72f) * 0.52f;
-                    float rumble = Mathf.Sin(2f * Mathf.PI * (43f - 18f * phase) * t) *
-                        Mathf.Pow(1f - phase, 0.48f) * 0.32f;
-                    float mid = Mathf.Sin(2f * Mathf.PI * (164f - 96f * phase) * t) *
-                        Mathf.Pow(1f - phase, 1.1f) * 0.18f;
-                    return crack + body + rumble + mid;
+                    float crackEnvelope = 1f - SmoothEnvelopeRamp(0.018f, 0.105f, t);
+                    float crack = (noise * 0.7f +
+                        Mathf.Sin(2f * Mathf.PI * (1480f - 620f * phase) * t) * 0.38f +
+                        Mathf.Sin(2f * Mathf.PI * 2260f * t) * 0.12f) * crackEnvelope;
+
+                    float rollStart = SmoothEnvelopeRamp(0.025f, 0.12f, t);
+                    float rollFade = Mathf.Exp(-Mathf.Max(0f, t - 0.035f) * 4.2f);
+                    float lowRumble = (
+                        Mathf.Sin(2f * Mathf.PI * (49f - 12f * phase) * t) * 0.34f +
+                        Mathf.Sin(2f * Mathf.PI * (78f - 22f * phase) * t) * 0.24f +
+                        Mathf.Sin(2f * Mathf.PI * (124f - 48f * phase) * t) * 0.15f) *
+                        rollFade * rollStart;
+
+                    float firstRoll = SmoothEnvelopeRamp(0.07f, 0.13f, t) *
+                        Mathf.Exp(-Mathf.Max(0f, t - 0.1f) * 4.2f);
+                    float secondRoll = SmoothEnvelopeRamp(0.27f, 0.36f, t) *
+                        Mathf.Exp(-Mathf.Max(0f, t - 0.31f) * 4.8f);
+                    float distantThunder = (
+                        Mathf.Sin(2f * Mathf.PI * (68f - 24f * phase) * t) * firstRoll * 0.2f +
+                        Mathf.Sin(2f * Mathf.PI * (46f - 16f * phase) * t) * secondRoll * 0.17f);
+                    return crack + lowRumble + distantThunder;
                 }
                 case 5: // Brief flame whoosh.
                     return (noise * 0.55f + Mathf.Sin(2f * Mathf.PI * 190f * t) * 0.22f) *
@@ -349,6 +362,12 @@ namespace CursorHunter.Combat
             }
 
             return 0.88f + (hash & 7) * 0.035f;
+        }
+
+        private static float SmoothEnvelopeRamp(float startSeconds, float endSeconds, float timeSeconds)
+        {
+            float progress = Mathf.InverseLerp(startSeconds, endSeconds, timeSeconds);
+            return Mathf.SmoothStep(0f, 1f, progress);
         }
     }
 }

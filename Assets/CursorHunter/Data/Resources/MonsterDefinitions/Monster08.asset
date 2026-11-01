@@ -14,10 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: CursorHunter.Data::CursorHunter.Data.MonsterDefinition
   monsterId: monster.08
   displayName: 골렘
-  prefabKey: Scorpion/Scorpion_Stone
-  visualPrefab: {fileID: 356266224589905375, guid: dc35bdf8047c478787d9122e891c5893, type: 3}
+  prefabKey: Golem/Golem_Tree
+  visualPrefab: {fileID: 7808000846942534700, guid: d61956f2cc114764a34272d2af5328e9, type: 3}
   baseStats:
-    maxHealth: 125
+    maxHealth: 49
     spawnIntervalSeconds: 1.95
     packSize: 1
     moveSpeed: 0.45
@@ -26,7 +26,7 @@ MonoBehaviour:
     hitAreaHeight: 1.2
     garnetReward: 10
     bonusDropCurrencyId: gem.diamond
-    bonusDropAmount: 2
+    bonusDropAmount: 3
     bonusDropChancePercent: 100
   behaviorProfiles:
   - {fileID: 11400000, guid: 01a7d3c08a6e4d03b4b2771043f81329, type: 2}

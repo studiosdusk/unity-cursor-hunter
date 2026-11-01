@@ -279,7 +279,7 @@ namespace CursorHunter.Combat.Tests
                 BindingFlags.NonPublic | BindingFlags.Instance).GetValue(_skill);
             long petDamage = (long)runtime.GetType().GetProperty("Damage",
                 BindingFlags.NonPublic | BindingFlags.Instance).GetValue(runtime);
-            Assert.That(petDamage, Is.EqualTo(1L),
+            Assert.That(petDamage, Is.EqualTo(3L),
                 "Pet damage is its own authored stat; player attack power must not multiply it.");
             MonsterCombatTarget target = CreateTarget(spawn + Vector3.right);
             yield return Tick(0.01f);
@@ -288,17 +288,17 @@ namespace CursorHunter.Combat.Tests
             TrackEntry first = animation.AnimationState.GetTrack(0);
             first.TrackTime = 0.2f;
             yield return Tick(0.2f);
-            Assert.That(target.CurrentHealth, Is.EqualTo(target.MaxHealth - 1L));
+            Assert.That(target.CurrentHealth, Is.EqualTo(target.MaxHealth - 3L));
             first.TrackTime = first.AnimationEnd;
             yield return Tick(0.31f);
             yield return Tick(0.01f);
             TrackEntry second = animation.AnimationState.GetTrack(0);
             Assert.That(second.Animation.Name, Is.EqualTo("Attack"));
             Assert.That(second.TrackTime, Is.Zero, "Each non-looping attack must restart.");
-            Assert.That(target.CurrentHealth, Is.EqualTo(target.MaxHealth - 1L));
+            Assert.That(target.CurrentHealth, Is.EqualTo(target.MaxHealth - 3L));
             second.TrackTime = 0.2f;
             yield return Tick(0.2f);
-            Assert.That(target.CurrentHealth, Is.EqualTo(target.MaxHealth - 2L));
+            Assert.That(target.CurrentHealth, Is.EqualTo(target.MaxHealth - 6L));
             Assert.That(_pet.transform.position, Is.EqualTo(spawn));
 #else
             Assert.Ignore("Requires the authored BabyDragon Spine prefab.");

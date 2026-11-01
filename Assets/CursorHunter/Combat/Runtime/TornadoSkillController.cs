@@ -40,11 +40,11 @@ namespace CursorHunter.Combat
         {
             Count = 1,
             DurationSeconds = 5f,
-            DamageMultiplier = 2f,
+            DamageMultiplier = 7f,
             RadiusMultiplier = 1f,
             CooldownSeconds = 8f,
             FirstCastDelaySeconds = 1f,
-            HitIntervalSeconds = 0.5f,
+            HitIntervalSeconds = 1f,
             MoveSpeedWorldUnitsPerSecond = 1f,
             DirectionChangeSeconds = 3f,
             StopChanceOnDirectionChange = 0.25f,
@@ -54,8 +54,8 @@ namespace CursorHunter.Combat
         [SerializeField, Min(0f)] private float fieldEdgePaddingWorldUnits = 1.5f;
 
         [Header("Tornado audio")]
-        [SerializeField, Range(0f, 1f)] private float castSoundVolume = 0.62f;
-        [SerializeField, Range(0f, 0.5f)] private float windSoundVolume = 0.22f;
+        [SerializeField, Range(0f, 1f)] private float castSoundVolume = 0.40f;
+        [SerializeField, Range(0f, 0.5f)] private float windSoundVolume = 0.14f;
 
         [Header("Pool")]
         [SerializeField, Range(1, 64)] private int maximumPooledObjects = 16;
@@ -187,7 +187,8 @@ namespace CursorHunter.Combat
                 _nextCastAt = now + _combat.ResolveAutoSkillCooldown(
                     _runtime.CooldownSeconds);
                 _hasCast = true;
-                if (_active.Count > activeBeforeCast) _audio?.PlayCast(castSoundVolume);
+                if (_active.Count > activeBeforeCast)
+                    _audio?.PlayCast(Mathf.Min(castSoundVolume, 0.40f));
             }
 
             for (int i = _active.Count - 1; i >= 0; i--)

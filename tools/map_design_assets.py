@@ -17,7 +17,7 @@ def main():
         ('ui.boss.hp','Combat','StatusBar_White.prefab',''),
         ('field.normal','Combat','Map_3_Jungle Age.prefab','/Landscape/'),
         ('field.boss','Combat','Map_13_Medieval Age.prefab','/Landscape/'),
-        ('monster.golem','Combat','Golem_Iron.prefab',''),
+        ('monster.golem','Combat','Golem_Tree.prefab',''),
         ('boss.v4','Combat','Golem_Iron.prefab',''),
         ('skill.fireball','Combat','FX_AOE_Fireball.prefab','/URP/'),
         ('skill.hurricane','Combat','FX_AirTornado_Loop.prefab','/URP/'),

@@ -134,28 +134,31 @@ def validate_documents():
         for entry in document["entities"]:
             assert entry["displayName"] and entry["description"]
         categories = {entry["id"]: entry for entry in progression["categories"]}
-        assert len(categories) == len(progression["categories"]) == 22
+        assert len(categories) == len(progression["categories"]) == 23
         nodes = {n["id"]: n for c in progression["categories"] for n in c["nodes"]}
-        assert len(nodes) == sum(len(c["nodes"]) for c in categories.values()) == 103
-        skill_tiers = {
-            "skill.tornado": 1,
-            "skill.thunder": 2,
-            "skill.flame_exhaust": 3,
-            "skill.magic_ball": 4,
-            "skill.laser": 5,
-        }
-        for skill_id, tier in skill_tiers.items():
+        assert len(nodes) == sum(len(c["nodes"]) for c in categories.values()) == 113
+        assert "initialBossTier" not in progression
+        for category in categories.values():
+            for node in category["nodes"]:
+                assert "requiredBossTier" not in node
+        skill_ids = (
+            "skill.tornado", "skill.thunder", "skill.headshot",
+            "skill.flame_exhaust", "skill.magic_ball", "skill.laser",
+        )
+        for skill_id in skill_ids:
             skill_nodes = categories[skill_id]["nodes"]
             assert skill_nodes[0]["id"] == skill_id
-            assert skill_nodes[0]["requiredBossTier"] == tier
             assert any(node["id"].startswith(skill_id + ".damage.") for node in skill_nodes)
             assert any(node["id"].startswith(skill_id + ".radius.") for node in skill_nodes)
-        assert "skill.headshot" not in categories
+            assert any(node["id"] == skill_id + ".damage.02" for node in skill_nodes)
+        headshot_nodes = categories["skill.headshot"]["nodes"]
+        assert headshot_nodes[1]["prerequisiteNodeId"] == "skill.headshot"
+        assert headshot_nodes[2]["prerequisiteNodeId"] == "skill.headshot.damage.01"
         pet_nodes = categories["skill.pet_baby_dragon"]["nodes"]
         assert pet_nodes[0]["id"] == "skill.pet_baby_dragon"
-        assert pet_nodes[0]["requiredBossTier"] == 0
         assert any(node["id"].startswith("skill.pet_baby_dragon.damage.") for node in pet_nodes)
         assert any(node["id"].startswith("skill.pet_baby_dragon.simultaneousHits.") for node in pet_nodes)
+        assert any(node["id"] == "skill.pet_baby_dragon.damage.03" for node in pet_nodes)
         currency = {g["id"] for g in info["gemstones"]}
         ordered_nodes = set()
         for c in categories.values():
@@ -165,7 +168,7 @@ def validate_documents():
                 ordered_nodes.add(n["id"])
                 assert n["cost"] >= 0 and n["currencyId"] in currency
                 assert n["operation"] in ("baseline", "set", "add", "enable", "tier")
-                assert isinstance(n["startsUnlocked"], bool) and 0 <= n["requiredBossTier"] <= 5
+                assert isinstance(n["startsUnlocked"], bool)
                 assert n["displayName"] and n["description"] and math.isfinite(n["value"])
                 seen, current = {n["id"]}, n["prerequisiteNodeId"]
                 while current:
@@ -200,7 +203,7 @@ def validate_documents():
 
 def main():
     validate_documents()
-    print("PASS: English-only runtime input, Korean detailed/key-only references, separate growth configuration, 22 categories / 103 nodes, starter pet plus five boss-tier skill unlocks, seven combat skill definitions, 20 relic definitions and fixed-drop rules, behaviorType=0, schema, references and rewards")
+    print("PASS: English-only runtime input, Korean detailed/key-only references, separate growth configuration, 23 categories / 113 currency/prerequisite-based nodes, starter pet plus six skills, seven combat skill definitions, 20 relic definitions and fixed-drop rules, behaviorType=0, schema, references and rewards")
     print("No Unity or game execution.")
 
 if __name__ == "__main__":

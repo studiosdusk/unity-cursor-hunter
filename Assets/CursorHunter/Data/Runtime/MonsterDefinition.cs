@@ -251,57 +251,70 @@ namespace CursorHunter.Data
             switch (snapshot.SpecialAbility)
             {
                 case MonsterSpecialAbility.Vanish:
-                    return FormatTraitValue(snapshot.SpecialAbilityIntervalSeconds) +
-                        "초마다 " + FormatTraitValue(snapshot.SpecialAbilityDurationSeconds) +
-                        "초 동안 모습을 감춰 공격을 피합니다.";
+                    return LocalizationCatalog.Format(
+                        "ui.monster.trait.vanish",
+                        "{0}초마다 {1}초 동안 모습을 감춰 공격을 피합니다.",
+                        FormatTraitValue(snapshot.SpecialAbilityIntervalSeconds),
+                        FormatTraitValue(snapshot.SpecialAbilityDurationSeconds));
                 case MonsterSpecialAbility.Shield:
-                    return FormatTraitValue(snapshot.SpecialAbilityIntervalSeconds) +
-                        "초마다 " + FormatTraitValue(snapshot.SpecialAbilityDurationSeconds) +
-                        "초 동안 받는 피해가 " +
-                        Mathf.RoundToInt(snapshot.SpecialAbilityStrength * 100f) +
-                        "% 감소합니다.";
+                    return LocalizationCatalog.Format(
+                        "ui.monster.trait.shield",
+                        "{0}초마다 {1}초 동안 받는 피해가 {2}% 감소합니다.",
+                        FormatTraitValue(snapshot.SpecialAbilityIntervalSeconds),
+                        FormatTraitValue(snapshot.SpecialAbilityDurationSeconds),
+                        Mathf.RoundToInt(snapshot.SpecialAbilityStrength * 100f));
                 case MonsterSpecialAbility.Teleport:
-                    return FormatTraitValue(snapshot.SpecialAbilityIntervalSeconds) +
-                        "초마다 순간이동해 위치를 바꿉니다.";
+                    return LocalizationCatalog.Format(
+                        "ui.monster.trait.teleport",
+                        "{0}초마다 순간이동해 위치를 바꿉니다.",
+                        FormatTraitValue(snapshot.SpecialAbilityIntervalSeconds));
                 case MonsterSpecialAbility.HealNearby:
-                    return FormatTraitValue(snapshot.SpecialAbilityIntervalSeconds) +
-                        "초마다 반경 " + FormatTraitValue(snapshot.SpecialAbilityRadius) +
-                        " 안의 아군 체력을 최대 체력의 " +
-                        Mathf.RoundToInt(snapshot.SpecialAbilityStrength * 100f) +
-                        "%만큼 회복합니다.";
+                    return LocalizationCatalog.Format(
+                        "ui.monster.trait.heal",
+                        "{0}초마다 주변 아군의 체력을 {1}% 회복합니다.",
+                        FormatTraitValue(snapshot.SpecialAbilityIntervalSeconds),
+                        Mathf.RoundToInt(snapshot.SpecialAbilityStrength * 100f));
                 case MonsterSpecialAbility.ReviveNearby:
-                    return FormatTraitValue(snapshot.SpecialAbilityIntervalSeconds) +
-                        "초마다 반경 " + FormatTraitValue(snapshot.SpecialAbilityRadius) +
-                        " 안의 쓰러진 몬스터를 최대 체력의 " +
-                        Mathf.RoundToInt(snapshot.SpecialAbilityStrength * 100f) +
-                        "%로 되살립니다.";
+                    return LocalizationCatalog.Format(
+                        "ui.monster.trait.revive",
+                        "{0}초마다 주변의 쓰러진 몬스터를 체력 {1}%로 되살립니다.",
+                        FormatTraitValue(snapshot.SpecialAbilityIntervalSeconds),
+                        Mathf.RoundToInt(snapshot.SpecialAbilityStrength * 100f));
             }
 
             if (snapshot.VisualScale <= baseline.VisualScale * 0.8f ||
                 snapshot.HitAreaWidth <= baseline.HitAreaWidth * 0.8f ||
                 snapshot.HitAreaHeight <= baseline.HitAreaHeight * 0.8f)
             {
-                return "몸집과 피격 범위가 작습니다.";
+                return LocalizationCatalog.Get(
+                    "ui.monster.trait.small",
+                    "몸집과 피격 범위가 작습니다.");
             }
 
             if (snapshot.VisualScale >= baseline.VisualScale * 1.2f ||
                 snapshot.HitAreaWidth >= baseline.HitAreaWidth * 1.2f ||
                 snapshot.HitAreaHeight >= baseline.HitAreaHeight * 1.2f)
             {
-                return "몸집이 크고 피격 범위가 넓습니다.";
+                return LocalizationCatalog.Get(
+                    "ui.monster.trait.large",
+                    "몸집이 크고 피격 범위가 넓습니다.");
             }
 
             if (snapshot.MoveSpeed >= baseline.MoveSpeed * 1.2f)
             {
-                return "빠르게 이동합니다.";
+                return LocalizationCatalog.Get("ui.monster.trait.fast", "빠르게 이동합니다.");
             }
 
             if (snapshot.MaxHealth >= baseline.MaxHealth * 1.5d)
             {
-                return "체력이 높아 오래 버팁니다.";
+                return LocalizationCatalog.Get(
+                    "ui.monster.trait.high.health",
+                    "체력이 높아 오래 버팁니다.");
             }
 
-            return "특별한 능력 없이 기본 방식으로 움직입니다.";
+            return LocalizationCatalog.Get(
+                "ui.monster.trait.basic",
+                "특별한 능력 없이 기본 방식으로 움직입니다.");
         }
 
         private static string FormatTraitValue(float value)

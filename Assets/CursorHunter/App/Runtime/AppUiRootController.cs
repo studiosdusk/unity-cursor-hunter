@@ -575,7 +575,7 @@ namespace CursorHunter.App
             label.enableAutoSizing = true;
             label.fontSizeMin = Mathf.Max(12f, fontSize - 2f);
             label.fontSizeMax = fontSize;
-            label.overflowMode = TextOverflowModes.Truncate;
+            label.overflowMode = TextOverflowModes.Overflow;
             label.raycastTarget = false;
             return label;
         }

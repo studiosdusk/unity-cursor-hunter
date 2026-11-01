@@ -51,8 +51,8 @@
   {
     "design_id": "trait.stat.critical.icon",
     "owner": "Progression",
-    "path": "Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/IconMisc/Icon_Fire02.png",
-    "guid": "97b49874aed4b43788d90720bf2b2023",
+    "path": "Assets/DownLoadAssets/IconPack/2D Minimal-IconPack/Icons/512/Neture_Fire_02_Red.png",
+    "guid": "3cb40553ee528443994cdeed7f93ff27",
     "status": "runtime-applied"
   },
   {
@@ -65,8 +65,8 @@
   {
     "design_id": "trait.stat.boss-damage.icon",
     "owner": "Progression",
-    "path": "Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/IconMisc/Icon_Skull03.png",
-    "guid": "d77571e140f0144daaad2a7e4ba19c7c",
+    "path": "Assets/DownLoadAssets/IconPack/2D Minimal-IconPack/Icons/512/UI_Play_Skull_03.png",
+    "guid": "f21f7b7da30174b6897f0e7082ffd668",
     "status": "runtime-applied"
   },
   {
@@ -88,13 +88,6 @@
     "owner": "App",
     "path": "Assets/DownLoadAssets/Casual_GUI/GUI Pro-SimpleCasual/Prefabs/BossSlider.prefab",
     "guid": "8cbdb31b2956445cfba1b864b162b6a8",
-    "status": "runtime-applied"
-  },
-  {
-    "design_id": "ui.font.numeric",
-    "owner": "Data",
-    "path": "Assets/DownLoadAssets/Casual_GUI/GUI Pro-SimpleCasual/ResourcesData/Fonts/Rubik-SemiBold SDF.asset",
-    "guid": "c9f0ab9a170fa4c3596972aa1db04a9a",
     "status": "runtime-applied"
   },
   {
@@ -163,8 +156,8 @@
   {
     "design_id": "monster.golem",
     "owner": "Combat",
-    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/Prefabs/Golem/Golem_Iron.prefab",
-    "guid": "84ccd47ae94098f489358e7e865939be",
+    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/Prefabs/Golem/Golem_Tree.prefab",
+    "guid": "138592ac932887d4db848bba2ab897a7",
     "status": "candidate-not-runtime-verified"
   },
   {
@@ -422,15 +415,15 @@
   {
     "design_id": "trait.monster.monster8.icon",
     "owner": "Progression",
-    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Scorpion/Scorpion_Stone/Body.png",
-    "guid": "2fd0633512126e646a8fe810019b0737",
+    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/ResourcesData/Sprites/Golem/Golem_Tree/Body.png",
+    "guid": "b991d264a57c52c4b96f3b8f7954f035",
     "status": "runtime-applied"
   },
   {
     "design_id": "monster.08.prefab",
     "owner": "Combat",
-    "path": "Assets/DownLoadAssets/MonsterAsset/2D Minimal-EnemyMonster/EnemyMonster 2/Prefabs/Scorpion/Scorpion_Stone.prefab",
-    "guid": "fd951ec3c4786094d83ecc7d26ff1778",
+    "path": "Assets/CursorHunter/Combat/Prefabs/Monsters/Visuals/Golem_Tree_Combat.prefab",
+    "guid": "d61956f2cc114764a34272d2af5328e9",
     "status": "runtime-applied"
   },
   {
@@ -512,15 +505,15 @@
   {
     "design_id": "trait.stat.attack-interval.icon",
     "owner": "Progression",
-    "path": "Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Frame/CardFrame01_Demo_Slider_Icon.png",
-    "guid": "2ec93f10f96b7458d9718d95c2487da8",
+    "path": "Assets/DownLoadAssets/IconPack/2D Minimal-IconPack/Icons/512/UI_Common_Speed_02_White.png",
+    "guid": "3eb4e662b192f46948ab40e0d86bde70",
     "status": "runtime-applied"
   },
   {
     "design_id": "trait.stat.field-duration.icon",
     "owner": "Progression",
-    "path": "Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/IconMisc/Icon_Timer.png",
-    "guid": "cb04b83a8c3a045558cd1f05866cf45e",
+    "path": "Assets/DownLoadAssets/IconPack/2D Minimal-IconPack/Icons/512/Item_Clock_01_Silver.png",
+    "guid": "542529b813b5b41b189d96f9a7a131e2",
     "status": "runtime-applied"
   },
   {
@@ -585,6 +578,20 @@
     "owner": "Progression",
     "path": "Assets/DownLoadAssets/2D Characters-PetPack4/Sprites/Thumbnail/2x/Pet_Baby Dragon.png",
     "guid": "e3db040c4cdb5234bbbea8c36b533fe2",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "ui.trait.gemstone-exchange",
+    "owner": "Progression",
+    "path": "Assets/DownLoadAssets/Casual_GUI/GUI Pro-SimpleCasual/ResourcesData/Sprites/Components/Icon_PictoIcons/512/PictoIcon_Refresh.Png",
+    "guid": "ef5a74fb425d447cf9a17a563e33a5c0",
+    "status": "runtime-applied"
+  },
+  {
+    "design_id": "ui.font.numeric",
+    "owner": "Data",
+    "path": "Assets/DownLoadAssets/Casual_GUI/GUI Pro-SimpleCasual/ResourcesData/Fonts/Rubik-SemiBold SDF.asset",
+    "guid": "c9f0ab9a170fa4c3596972aa1db04a9a",
     "status": "runtime-applied"
   },
   {

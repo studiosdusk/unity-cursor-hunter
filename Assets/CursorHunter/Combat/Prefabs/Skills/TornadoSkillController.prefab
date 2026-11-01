@@ -48,16 +48,18 @@ MonoBehaviour:
   baseStat:
     Count: 1
     DurationSeconds: 5
-    DamageMultiplier: 2
+    DamageMultiplier: 7
     RadiusMultiplier: 1
     CooldownSeconds: 8
     FirstCastDelaySeconds: 1
-    HitIntervalSeconds: 0.5
+    HitIntervalSeconds: 1
     MoveSpeedWorldUnitsPerSecond: 1
     DirectionChangeSeconds: 3
     StopChanceOnDirectionChange: 0.25
     StopDurationSeconds: 0.75
     ShrinkOutSeconds: 1
   fieldEdgePaddingWorldUnits: 1.5
+  castSoundVolume: 0.4
+  windSoundVolume: 0.14
   maximumPooledObjects: 16
   editorSkillAcquired: 0

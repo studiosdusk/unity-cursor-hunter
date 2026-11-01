@@ -73,6 +73,8 @@ namespace CursorHunter.App
         private Sequence _buttonSequence;
         private AudioSource _countTickSource;
         private AudioClip _countTickClip;
+        private RunResult _currentResult;
+        private bool _hasCurrentResult;
 
         private void Awake()
         {
@@ -95,11 +97,13 @@ namespace CursorHunter.App
         private void OnEnable()
         {
             if (uiRoot != null) uiRoot.ScreenChanged += OnScreenChanged;
+            LocalizationCatalog.Changed += RefreshLocalizedPresentation;
         }
 
         private void OnDisable()
         {
             if (uiRoot != null) uiRoot.ScreenChanged -= OnScreenChanged;
+            LocalizationCatalog.Changed -= RefreshLocalizedPresentation;
             Hide();
         }
 
@@ -123,23 +127,12 @@ namespace CursorHunter.App
             if (!result.RunId.IsValid || result.RunId == _runId) return;
             Hide();
             _runId = result.RunId;
+            _currentResult = result;
+            _hasCurrentResult = true;
             _phase = Phase.TimeOut;
             overlay.SetActive(true);
             timeOutPanel.SetActive(true);
-            bool boss = result.Mode == RunMode.Boss;
-            timeOutTitle.text = boss ? (result.BossDefeated ? "BOSS CLEAR!" : "BOSS FAILED") :
-                result.EndReason == RunEndReason.TimeExpired ? "TIME OUT!" : "HUNT OVER";
-            title.text = boss ? $"보스 {result.BossStage}단계 · " + (result.BossDefeated ? "토벌 성공" : "토벌 실패") : "전투 종료";
-            subtitle.gameObject.SetActive(result.SettlementPolicy == RunSettlementPolicy.Discard);
-            subtitle.text = boss && !result.BossDefeated ? "시간 안에 토벌하지 못했습니다. 강화 후 다시 도전하세요." : "테스트 전투 / 보상 지급 없음";
-            retryButton.GetComponentInChildren<TMP_Text>(true).text = boss && result.BossDefeated
-                ? result.BossStage < 20 ? "다음 단계 도전" : "일반 전투" : "다시 도전";
-            TMP_Text upgradeLabel = upgradeButton.GetComponentInChildren<TMP_Text>(true);
-            if (upgradeLabel != null)
-                upgradeLabel.text = huntManager != null && huntManager.IsTraitScreenConnectedToCombat
-                    ? "특성 강화" : "로비로";
-            hint.text = "클릭하면 바로 보기";
-            hint.gameObject.SetActive(true);
+            ApplyLocalizedPresentation(result);
             _visibleRewardCount = 0;
             foreach (RewardRow row in rewards)
             {
@@ -175,6 +168,7 @@ namespace CursorHunter.App
             _buttonSequence = null;
             _clock = 0f;
             _runId = default;
+            _hasCurrentResult = false;
             _navigating = false;
             if (overlay != null) overlay.SetActive(false);
             if (timeOutPanel != null) timeOutPanel.SetActive(false);
@@ -188,6 +182,98 @@ namespace CursorHunter.App
             if (upgradeButton != null) upgradeButton.transform.localScale = Vector3.zero;
             if (retryButton != null) retryButton.transform.localScale = Vector3.zero;
             if (backdrop != null) backdrop.alpha = 0f;
+        }
+
+        private void RefreshLocalizedPresentation()
+        {
+            if (!_hasCurrentResult || !IsVisible) return;
+            ApplyLocalizedPresentation(_currentResult);
+        }
+
+        private void ApplyLocalizedPresentation(RunResult result)
+        {
+            bool boss = result.Mode == RunMode.Boss;
+            SetLocalizedText(
+                timeOutTitle,
+                boss
+                    ? result.BossDefeated ? "ui.result.boss.clear" : "ui.result.boss.failed"
+                    : result.EndReason == RunEndReason.TimeExpired
+                    ? "ui.result.timeout"
+                    : "ui.result.hunt.over",
+                boss
+                    ? result.BossDefeated ? "BOSS CLEAR!" : "BOSS FAILED"
+                    : result.EndReason == RunEndReason.TimeExpired ? "시간 종료" : "사냥 종료");
+            SetLocalizedText(
+                title,
+                boss ? "ui.result.boss.title" : "ui.result.title",
+                boss
+                    ? $"보스 {result.BossStage}단계 · " + (result.BossDefeated ? "토벌 성공" : "토벌 실패")
+                    : "전투 종료");
+            subtitle.gameObject.SetActive(result.SettlementPolicy == RunSettlementPolicy.Discard);
+            SetLocalizedText(
+                subtitle,
+                boss && !result.BossDefeated ? "ui.result.boss.failed.subtitle" : "ui.result.test.no.reward",
+                boss && !result.BossDefeated
+                    ? "시간 안에 토벌하지 못했습니다. 강화 후 다시 도전하세요."
+                    : "테스트 전투 · 보상 미지급");
+
+            TMP_Text upgradeLabel = upgradeButton.GetComponentInChildren<TMP_Text>(true);
+            if (upgradeLabel != null)
+            {
+                bool connected = huntManager != null && huntManager.IsTraitScreenConnectedToCombat;
+                SetLocalizedText(
+                    upgradeLabel,
+                    connected ? "ui.action.upgrade" : "ui.result.action.lobby",
+                    connected ? "강화하기" : "로비로");
+            }
+            TMP_Text retryLabel = retryButton.GetComponentInChildren<TMP_Text>(true);
+            string retryFallback = boss && result.BossDefeated
+                ? result.BossStage < 20 ? "다음 단계 도전" : "일반 전투"
+                : "다시 도전";
+            SetLocalizedText(
+                retryLabel,
+                boss && result.BossDefeated
+                    ? result.BossStage < 20 ? "ui.result.action.boss.next" : "ui.result.action.boss.field"
+                    : "ui.result.action.retry",
+                retryFallback);
+            SetLocalizedText(
+                skipButton.GetComponentInChildren<TMP_Text>(true),
+                "ui.result.action.skip",
+                "바로 보기");
+            SetLocalizedText(
+                resultSkipButton.GetComponentInChildren<TMP_Text>(true),
+                "ui.result.action.skip",
+                "바로 보기");
+            SetLocalizedText(hint, "ui.result.hint", "클릭하면 보상을 바로 볼 수 있어요.");
+            SetLocalizedText(emptyRewards, "ui.result.empty.rewards", "획득한 재화가 없습니다.");
+
+            kills.text = result.DefeatedCount.ToString("N0", CultureInfo.InvariantCulture);
+            SetLocalizedFormat(
+                duration,
+                "ui.result.duration",
+                "전투 시간 {0}초",
+                result.ElapsedSeconds.ToString("0.0", CultureInfo.InvariantCulture));
+            damage.text = result.EffectiveDamage.ToString("N0", CultureInfo.InvariantCulture);
+        }
+
+        private static void SetLocalizedText(TMP_Text label, string key, string fallback)
+        {
+            if (label == null) return;
+            LocalizedTmpLabel localized = label.GetComponent<LocalizedTmpLabel>();
+            if (localized == null) localized = label.gameObject.AddComponent<LocalizedTmpLabel>();
+            localized.Bind(key, fallback);
+        }
+
+        private static void SetLocalizedFormat(
+            TMP_Text label,
+            string key,
+            string fallbackFormat,
+            params object[] arguments)
+        {
+            if (label == null) return;
+            LocalizedTmpLabel localized = label.GetComponent<LocalizedTmpLabel>();
+            if (localized == null) localized = label.gameObject.AddComponent<LocalizedTmpLabel>();
+            localized.BindFormat(key, fallbackFormat, arguments);
         }
 
         private void Update()

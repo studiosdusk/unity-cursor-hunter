@@ -58,7 +58,7 @@ Dead 클립을 Override하고, 나머지는 원본 Animator를 사용한다.
 | gem.sapphire | Progression | [ItemIcon_Gem_Pentagon_Blue.png](../../Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Icon_ItemIcons/512/ItemIcon_Gem_Pentagon_Blue.png) |
 | gem.diamond | Progression | [ItemIcon_Gem_Pentagon_Green.png](../../Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Icon_ItemIcons/512/ItemIcon_Gem_Pentagon_Green.png) *(프로토타입 임시 색상)* |
 | ui.trait.node | Progression | 런타임 4면 선 + 평면 Image (`TraitScreenController.cs`) |
-| ui.trait.drag-cursor | Progression | [UI_Common_Hand_01.png](../../Assets/DownLoadAssets/IconPack/2D%20Minimal-IconPack/Icons/128/UI_Common_Hand_01.png) — 드래그 중 손 모양 커서 |
+| ui.trait.drag-cursor | Progression | 별도 커서 에셋을 사용하지 않음 — 보드 드래그 중에도 운영체제 기본 포인터 모양과 크기를 유지 |
 | ui.trait.tabs | Progression | [TabMenu_Top_White.prefab](../../Assets/DownLoadAssets/GUI-CasualFantasy/Prefabs/Prefabs_Component_UI_Etc/TabMenu_Top_White.prefab) |
 | ui.boss.hp | App | 사용자가 Main에 배치한 [BossSlider.prefab](../../Assets/DownLoadAssets/Casual_GUI/GUI%20Pro-SimpleCasual/Prefabs/BossSlider.prefab). `BossHealthPresenter`가 결과창 기준의 굵은 한글 제목·Rubik 숫자·전용 SDF 테두리를 적용한다. 바 배치와 공급사 원본은 유지하고 두 텍스트의 가로 영역만 런타임에서 확장한다. |
 | ui.font.numeric | Data | [Rubik-SemiBold SDF.asset](../../Assets/DownLoadAssets/Casual_GUI/GUI%20Pro-SimpleCasual/ResourcesData/Fonts/Rubik-SemiBold%20SDF.asset). 기존 결과창의 숫자 글꼴을 `TypographySettings.numericFont` 기본값으로 지정하고 BossSlider 체력 숫자에 사용한다. 한글 제목은 `sourceFont`/`localeFonts`와 Bold를 사용한다. |
@@ -78,7 +78,7 @@ Dead 클립을 Override하고, 나머지는 원본 Animator를 사용한다.
 | monster.behavior-profile.healer | Data | [Healer.asset](../../Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Healer.asset) |
 | monster.behavior-profile.resurrector | Data | [Resurrector.asset](../../Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Resurrector.asset) |
 | monster.behavior-profile.giant | Data | [Giant.asset](../../Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Giant.asset) |
-| monster.golem | Combat | [Golem_Iron.prefab](../../Assets/DownLoadAssets/MonsterAsset/2D%20Minimal-EnemyMonster/EnemyMonster%202/Prefabs/Golem/Golem_Iron.prefab) |
+| monster.golem | Combat | [Golem_Tree.prefab](../../Assets/DownLoadAssets/MonsterAsset/2D%20Minimal-EnemyMonster/EnemyMonster%202/Prefabs/Golem/Golem_Tree.prefab) |
 | boss.v4 | Combat | [Golem_Iron.prefab](../../Assets/DownLoadAssets/MonsterAsset/2D%20Minimal-EnemyMonster/EnemyMonster%202/Prefabs/Golem/Golem_Iron.prefab) |
 | skill.fireball | Combat | [FX_AOE_Fireball.prefab](../../Assets/DownLoadAssets/Eric%20VFX%20Studio/Game%20VFX%20-%20Stylized%20AOE%20Bundle/Prefabs/URP/FX_AOE_Fireball.prefab) |
 | skill.hurricane | Combat | [FX_AirTornado_Loop.prefab](../../Assets/DownLoadAssets/Eric%20VFX%20Studio/Game%20VFX%20-%20Tornado%20Collection/Prefab/URP/FX_AirTornado_Loop.prefab) |
@@ -102,11 +102,12 @@ Dead 클립을 Override하고, 나머지는 원본 Animator를 사용한다.
 |---|---|---|
 | 공격력 | `ItemIcon_Weapon_Sword.png` | AS-09904 |
 | 공격 반경 | `UI_ETC_Target_02_Blue.png` | AS-12757 |
-| 공격 간격 | `CardFrame01_Demo_Slider_Icon.png` | AS-09635 |
-| 치명타 | `Icon_Fire02.png` | AS-09982 |
+| 공격 간격 | `UI_Common_Speed_02_White.png` (512px) | 런타임 매핑 |
+| 치명타 | `Neture_Fire_02_Red.png` (512px) | 런타임 매핑 |
 | 젬 수집 | `ItemIcon_Bag01.png` | 기존 매핑 유지 |
-| 보스 피해 배수 | `Icon_Skull03.png` | AS-10024 |
-| 일반 필드 시간 | `Icon_Timer.png` | AS-10047 |
+| 보스 피해 배수 | `UI_Play_Skull_03.png` (512px) | 런타임 매핑 |
+| 일반 필드 시간 | `Item_Clock_01_Silver.png` (512px) | 런타임 매핑 |
+| 젬 교환 | `PictoIcon_Refresh.Png` (512px) | 상위 등급 젬 공급원 해금 시 표시 |
 
 특성 화면의 스킬 노드 아이콘은 현재 구현된 자동 스킬 기준으로 통일한다. Main 씬의
 `skillIcons[0..5]`은 토네이도·헤드샷·벼락·화염 배기·마력 구체·레이저 순서이며,

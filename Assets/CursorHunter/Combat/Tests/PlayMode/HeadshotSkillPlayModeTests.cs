@@ -237,6 +237,7 @@ namespace CursorHunter.Combat.Tests
             SetField(controller, "editorSkillAcquired", true);
             SetBaseStat(controller, "FirstCastDelaySeconds", 0f);
             SetBaseStat(controller, "ExplosionDelaySeconds", 0.1f);
+            SetBaseStat(controller, "SplashDamageMultiplier", 2f);
             SetBaseStat(controller, "BossDamageMultiplier", 10f);
             combat.ConfigureSkills(null);
             combat.AdvanceTime(0.01f);

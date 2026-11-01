@@ -57,7 +57,7 @@ namespace CursorHunter.App
             _editorPlaytimeElapsed = 0d;
             _editorStageElapsed = 0d;
             _editorObservedBossTier = progressionController != null
-                ? progressionController.CurrentBossUnlockTier
+                ? progressionController.CurrentBossProgressTier
                 : 0;
 #endif
         }
@@ -145,7 +145,7 @@ namespace CursorHunter.App
             }
 
             int bossTier = progressionController != null
-                ? progressionController.CurrentBossUnlockTier
+                ? progressionController.CurrentBossProgressTier
                 : 0;
             if (_editorObservedBossTier < 0)
             {
@@ -183,7 +183,13 @@ namespace CursorHunter.App
             int stageMinutes = (int)(stageSeconds / 60 % 60);
             int stageRemainder = (int)(stageSeconds % 60);
             int displayedBoss = Mathf.Clamp(bossTier + 1, 1, 5);
-            _editorPlaytimeText.text = $"전체 {hours:00}:{minutes:00}:{seconds:00}   보스 {displayedBoss}단계 {stageMinutes:00}:{stageRemainder:00}";
+            long stageHours = stageSeconds / 3600;
+            _editorPlaytimeText.text = LocalizationCatalog.Format(
+                "ui.timer.total.and.stage",
+                "전체 {0}   보스 {1}단계 {2}",
+                $"{hours:00}:{minutes:00}:{seconds:00}",
+                displayedBoss,
+                $"{stageHours:00}:{stageMinutes:00}:{stageRemainder:00}");
         }
 #endif
 
@@ -291,9 +297,16 @@ namespace CursorHunter.App
             else
             {
                 int displaySeconds = Mathf.CeilToInt(Mathf.Max(0f, combat.RemainingSeconds));
-                _timerText.text = $"TIME {displaySeconds:00}\nKILLS {combat.DefeatedCount}";
+                _timerText.text = LocalizationCatalog.Format(
+                    "ui.combat.hud.time.kills",
+                    "남은 시간 {0}초\n처치 수 {1}",
+                    displaySeconds,
+                    combat.DefeatedCount);
                 if (gemstoneList == null)
-                    _timerText.text += $"\nGARNET +{combat.GarnetEarned}";
+                    _timerText.text += "\n" + LocalizationCatalog.Format(
+                        "ui.combat.hud.garnet",
+                        "가넷 +{0}",
+                        combat.GarnetEarned.ToString("N0", System.Globalization.CultureInfo.InvariantCulture));
             }
             _timerText.gameObject.SetActive(true);
 
@@ -353,8 +366,8 @@ namespace CursorHunter.App
                               result.EndReason == RunEndReason.StartFailed ||
                               result.EndReason == RunEndReason.NumericOverflow;
             string resultTitle = wasAborted
-                ? "전투 중단"
-                : "전투 완료";
+                ? LocalizationCatalog.Get("ui.result.aborted", "전투 중단")
+                : LocalizationCatalog.Get("ui.result.complete", "전투 완료");
 
             StringBuilder rewardText = new StringBuilder();
             int displayedRewardCount = 0;
@@ -370,7 +383,8 @@ namespace CursorHunter.App
 
                     if (displayedRewardCount == 0)
                     {
-                        rewardText.Append("\n추가 보상 ");
+                        rewardText.Append("\n").Append(
+                            LocalizationCatalog.Get("ui.result.extra.rewards", "추가 보상 "));
                     }
 
                     if (displayedRewardCount > 0)
@@ -387,10 +401,22 @@ namespace CursorHunter.App
 
             _resultText.text =
                 resultTitle + "\n\n" +
-                $"전투 시간 {result.ElapsedSeconds:0.0}초\n" +
-                $"처치 수 {result.DefeatedCount}\n" +
-                $"가넷 +{result.GarnetEarned}\n" +
-                $"총 피해 {result.EffectiveDamage}" +
+                LocalizationCatalog.Format(
+                    "ui.result.duration",
+                    "전투 시간 {0}초",
+                    result.ElapsedSeconds.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)) + "\n" +
+                LocalizationCatalog.Format(
+                    "ui.result.defeated",
+                    "처치 수 {0}",
+                    result.DefeatedCount.ToString("N0", System.Globalization.CultureInfo.InvariantCulture)) + "\n" +
+                LocalizationCatalog.Format(
+                    "ui.result.garnet",
+                    "가넷 +{0}",
+                    result.GarnetEarned.ToString("N0", System.Globalization.CultureInfo.InvariantCulture)) + "\n" +
+                LocalizationCatalog.Format(
+                    "ui.result.damage",
+                    "총 피해 {0}",
+                    result.EffectiveDamage.ToString("N0", System.Globalization.CultureInfo.InvariantCulture)) +
                 rewardText;
             _resultPanel.SetActive(true);
 
@@ -404,13 +430,13 @@ namespace CursorHunter.App
         {
             return currencyId switch
             {
-                "gem.garnet" => "가넷",
-                "gem.topaz" => "토파즈",
-                "gem.amethyst" => "자수정",
-                "gem.sapphire" => "사파이어",
-                "gem.diamond" => "다이아몬드",
-                "gem.dragon" => "드래곤 스톤",
-                _ => "젬스톤"
+                "gem.garnet" => LocalizationCatalog.Get("ui.gem.garnet", "가넷"),
+                "gem.topaz" => LocalizationCatalog.Get("ui.gem.topaz", "토파즈"),
+                "gem.amethyst" => LocalizationCatalog.Get("ui.gem.amethyst", "자수정"),
+                "gem.sapphire" => LocalizationCatalog.Get("ui.gem.sapphire", "사파이어"),
+                "gem.diamond" => LocalizationCatalog.Get("ui.gem.diamond", "다이아몬드"),
+                "gem.dragon" => LocalizationCatalog.Get("ui.gem.dragon", "드래곤 스톤"),
+                _ => LocalizationCatalog.Get("ui.gem.generic", "젬스톤")
             };
         }
 

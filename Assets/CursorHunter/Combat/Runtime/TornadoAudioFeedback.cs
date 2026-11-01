@@ -6,7 +6,7 @@ namespace CursorHunter.Combat
     internal sealed class TornadoAudioFeedback
     {
         private const int SampleRate = 22050;
-        private const float WindFadeSpeed = 0.24f;
+        private const float WindFadeSpeed = 0.12f;
         private static AudioClip _castClip;
         private static AudioClip _windClip;
         private readonly AudioSource _cast;
@@ -96,8 +96,10 @@ namespace CursorHunter.Combat
             for (int i = 0; i < frames; i++)
             {
                 float t = i / (float)SampleRate;
-                float envelope = Mathf.Min(1f, t / 0.018f) * Mathf.Exp(-t * 1.8f) *
-                    Mathf.Clamp01((duration - t) / 0.2f);
+                float fadeIn = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(t / 0.18f));
+                float fadeOut = Mathf.SmoothStep(0f, 1f,
+                    Mathf.Clamp01((duration - t) / 0.22f));
+                float envelope = fadeIn * Mathf.Exp(-t * 1.8f) * fadeOut;
                 float rumble = Mathf.Sin(2f * Mathf.PI * (110f * t - 32f * t * t));
                 float surge = Mathf.Sin(2f * Mathf.PI * (240f * t + 340f * t * t));
                 float thump = Mathf.Sin(2f * Mathf.PI * 68f * t) * Mathf.Exp(-t * 15f) * 0.26f;

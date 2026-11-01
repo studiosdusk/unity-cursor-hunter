@@ -46,7 +46,7 @@ MonoBehaviour:
     FirstCastDelaySeconds: 1
     ExplosionDelaySeconds: 1.15
     EffectDurationSeconds: 2.5
-    SplashDamageMultiplier: 2
-    BossDamageMultiplier: 10
+    SplashDamageMultiplier: 7
+    BossDamageMultiplier: 3
     RadiusMultiplier: 1
   maximumPooledEffects: 16

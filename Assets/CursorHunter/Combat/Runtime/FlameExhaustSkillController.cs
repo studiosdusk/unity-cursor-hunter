@@ -40,7 +40,7 @@ namespace CursorHunter.Combat
                 SpeedWorldUnitsPerSecond = 8f,
                 CursorSizeRatio = 0.45f,
                 HitRadiusMultiplier = 1.2f,
-                DamageMultiplier = 1.5f,
+                DamageMultiplier = 11f,
                 HitEffectDurationSeconds = 0.8f
             };
 
