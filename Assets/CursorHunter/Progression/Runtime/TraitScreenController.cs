@@ -1519,7 +1519,6 @@ namespace CursorHunter.Progression
             _settledBossRunIds.Add(result.RunId.Value);
             if (GrantRunRewards(result.Rewards, result.RelicAwards))
             {
-                RefreshTestBossTierButtons();
                 return true;
             }
             _highestBossStageCleared = previousStage;
