@@ -239,6 +239,26 @@ namespace CursorHunter.Combat.Tests
             double lowFrequencyRms = System.Math.Sqrt(lowFrequencyEnergy / measured);
             Assert.That(lowFrequencyRms, Is.GreaterThan(0.06d),
                 "Thunder should have a sustained low-frequency rumble beneath its crack.");
+
+            double attackRms = MeasureRms(samples, thunder.frequency, 0.005f, 0.075f);
+            double rollingRms = MeasureRms(samples, thunder.frequency, 0.22f, 0.42f);
+            double tailRms = MeasureRms(samples, thunder.frequency, 0.72f, 0.8f);
+            Assert.That(attackRms, Is.GreaterThan(rollingRms),
+                "Thunder should begin with a distinct lightning crack.");
+            Assert.That(rollingRms, Is.GreaterThan(0.035d),
+                "The thunder roll should remain audible after the initial crack.");
+            Assert.That(tailRms, Is.LessThan(rollingRms * 0.8d),
+                "The thunder tail should fade instead of stopping abruptly.");
+        }
+
+        private static double MeasureRms(float[] samples, int sampleRate, float start, float end)
+        {
+            int first = Mathf.Clamp(Mathf.FloorToInt(start * sampleRate), 0, samples.Length);
+            int last = Mathf.Clamp(Mathf.CeilToInt(end * sampleRate), first + 1, samples.Length);
+            double energy = 0d;
+            for (int i = first; i < last; i++)
+                energy += samples[i] * samples[i];
+            return System.Math.Sqrt(energy / (last - first));
         }
 
         private static void SetBaseStat(object instance, string name, object value)

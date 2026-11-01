@@ -34,8 +34,8 @@ namespace CursorHunter.Combat
             FirstCastDelaySeconds = 1f,
             ExplosionDelaySeconds = 1.15f,
             EffectDurationSeconds = 2.5f,
-            SplashDamageMultiplier = 2f,
-            BossDamageMultiplier = 10f,
+            SplashDamageMultiplier = 7f,
+            BossDamageMultiplier = 3f,
             RadiusMultiplier = 1f
         };
 

@@ -56,7 +56,7 @@ MonoBehaviour:
     FirstCastDelaySeconds: 0
     MoveSpeedWorldUnitsPerSecond: 7
     SizeMultiplier: 1
-    DamageMultiplier: 1
+    DamageMultiplier: 5
     SameTargetHitCooldownSeconds: 0.5
   startingDirections:
   - {x: 0.92388, y: 0.38268}

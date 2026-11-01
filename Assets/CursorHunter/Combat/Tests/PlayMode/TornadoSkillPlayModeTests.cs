@@ -133,6 +133,7 @@ namespace CursorHunter.Combat.Tests
                 "The controller must already be placed in the scene.");
             SetBaseStat(controller, "Count", 2);
             SetBaseStat(controller, "MoveSpeedWorldUnitsPerSecond", 0f);
+            SetBaseStat(controller, "HitIntervalSeconds", 0.5f);
             combat.ConfigureSkills(
                 new[] { new SkillCombatSnapshot(TornadoSkillController.SkillId,
                     true, new[] { new SkillStatUpgrade("count", 1f) }) });
@@ -233,17 +234,25 @@ namespace CursorHunter.Combat.Tests
             var tickAudio = audioType.GetMethod("Tick", BindingFlags.Public | BindingFlags.Instance);
             var stopAudio = audioType.GetMethod("Stop", BindingFlags.Public | BindingFlags.Instance);
             stopAudio.Invoke(audioFeedback, null);
-            tickAudio.Invoke(audioFeedback, new object[] { 3, 0.22f, 0.1f });
+            tickAudio.Invoke(audioFeedback, new object[] { 3, 0.14f, 0.1f });
             float fadeInVolume = wind.volume;
-            float targetWindVolume = 0.22f * 0.24f * 1.08f;
+            float targetWindVolume = 0.14f * 0.24f * 1.08f;
             Assert.That(fadeInVolume, Is.GreaterThan(0f).And.LessThan(targetWindVolume),
                 "Wind must fade in over time instead of jumping to its target volume.");
-            tickAudio.Invoke(audioFeedback, new object[] { 0, 0.22f, 0.05f });
+            tickAudio.Invoke(audioFeedback, new object[] { 0, 0.14f, 0.05f });
             Assert.That(wind.volume, Is.GreaterThan(0f).And.LessThan(fadeInVolume),
                 "Wind must fade out gradually after the final tornado ends.");
-            tickAudio.Invoke(audioFeedback, new object[] { 0, 0.22f, 1f });
+            tickAudio.Invoke(audioFeedback, new object[] { 0, 0.14f, 1f });
             Assert.That(wind.isPlaying, Is.False);
             stopAudio.Invoke(audioFeedback, null);
+
+            float castIntroRms = MeasureClipRms(cast.clip, 0.01f, 0.08f);
+            float castBodyRms = MeasureClipRms(cast.clip, 0.2f, 0.5f);
+            float castTailRms = MeasureClipRms(cast.clip, 0.82f, 0.94f);
+            Assert.That(castIntroRms, Is.LessThan(castBodyRms),
+                "The tornado cast cue should fade in instead of starting abruptly.");
+            Assert.That(castTailRms, Is.LessThan(castBodyRms),
+                "The tornado cast cue should fade out smoothly at the end.");
 
             System.Type sharedAudio = typeof(TornadoSkillController).Assembly.GetType(
                 "CursorHunter.Combat.CombatAudioFeedback");
@@ -266,7 +275,7 @@ namespace CursorHunter.Combat.Tests
             Assert.That(controller.ActiveObjectCount, Is.EqualTo(3));
             Assert.That(cast.isPlaying, Is.True, "Busy hit/death channels must not drop the cast cue.");
             Assert.That(wind.isPlaying && wind.loop, Is.True);
-            Assert.That(cast.volume, Is.InRange(0.1f, 0.25f),
+            Assert.That(cast.volume, Is.InRange(0.1f, 0.15f),
                 "The tornado cast cue must stay audible without returning to the former overpowering volume.");
             Assert.That(wind.volume, Is.GreaterThan(0f));
             AssertAudibleStereoClip(cast.clip, 0.8f);
@@ -314,6 +323,21 @@ namespace CursorHunter.Combat.Tests
             }
             Assert.That(System.Math.Sqrt(energy / samples.Length), Is.GreaterThan(0.05));
             Assert.That(peak, Is.InRange(0.5f, 0.9f));
+        }
+
+        private static float MeasureClipRms(AudioClip clip, float startSeconds, float endSeconds)
+        {
+            int first = Mathf.Clamp(Mathf.FloorToInt(startSeconds * clip.frequency), 0, clip.samples);
+            int last = Mathf.Clamp(Mathf.CeilToInt(endSeconds * clip.frequency), first + 1,
+                clip.samples);
+            var samples = new float[clip.samples * clip.channels];
+            Assert.That(clip.GetData(samples, 0), Is.True);
+            double energy = 0d;
+            int firstChannelSample = first * clip.channels;
+            int lastChannelSample = last * clip.channels;
+            for (int i = firstChannelSample; i < lastChannelSample; i++)
+                energy += samples[i] * samples[i];
+            return Mathf.Sqrt((float)(energy / (lastChannelSample - firstChannelSample)));
         }
 
         private static float CapturedMoveSpeed(TornadoSkillController controller)

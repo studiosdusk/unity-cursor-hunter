@@ -40,7 +40,7 @@ namespace CursorHunter.Combat
             FirstCastDelaySeconds = 0f,
             EffectDurationSeconds = 1f,
             SizeMultiplier = 1f,
-            DamageMultiplier = 2f
+            DamageMultiplier = 11f
         };
 
         [Header("Pool")]

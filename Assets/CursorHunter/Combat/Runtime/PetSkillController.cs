@@ -42,7 +42,7 @@ namespace CursorHunter.Combat
         [SerializeField] private PetBaseStat baseStat = new PetBaseStat
         {
             SimultaneousHits = 1,
-            DamageMultiplier = 0.5f,
+            DamageMultiplier = 3f,
             AttackIntervalSeconds = 1.2f,
             MoveSpeedWorldUnitsPerSecond = 4f,
             DetectionRadiusWorldUnits = 8f,

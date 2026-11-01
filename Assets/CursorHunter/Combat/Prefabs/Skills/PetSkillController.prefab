@@ -50,7 +50,7 @@ MonoBehaviour:
   worldCamera: {fileID: 0}
   attackEffectPrefab: {fileID: 5107304801680389854, guid: 797527cd75a36424db3d5aaea2a449fd, type: 3}
   baseStat:
-    DamageMultiplier: 0.5
+    DamageMultiplier: 3
     AttackIntervalSeconds: 1.2
     MoveSpeedWorldUnitsPerSecond: 4
     DetectionRadiusWorldUnits: 8

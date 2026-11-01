@@ -1,26 +1,29 @@
 > 현재 화면과 노드 수는 이 문서의 "현재 성장 UI" 절 및 실행 데이터 `progression-config.en.json`을 기준으로 한다. 아래 v0.0.4 표와 캡처는 과거 기록이다.
 
-## 현재 성장 UI · 2026-10-21
+## 현재 성장 UI · 2026-10-31
 
-`Main.unity`의 런타임 UI는 스탯 43개, 시작 펫과 보스 단계별 스킬 5개의 배우기 노드,
-몬스터 40개 등 103개 노드를 전체 화면 단일 연구 보드로 보여 준다. 보스 단계 1~5에
-스킬 한 종류씩 배정한다. 보스 단계를 만족한 뒤 연구 시작점을 구매해야 해당 스킬 노드가
-나타나며, 가넷 40개로 배우면 런 시작 스냅샷의 `enabled`로 전달된다. 전투 JSON의 헤드샷
-정의는 유지하지만 현재 성장 트리에는 표시하지 않는다.
-수치·비용·보스 조건은 현재 `progression-config.en.json`을 기준으로 한다.
+`Main.unity`의 런타임 UI는 스탯 43개, 펫 연구 6개, 전투 스킬 6종의 해금·피해 2단계·범위
+연구 24개, 몬스터 연구 40개 등 총 113개 노드를 전체 화면 단일 연구 보드로 보여 준다.
+보스 티어 해금 조건은 성장 설정에서 제거했다. 스킬과 몬스터는 연구 시작점·선행 노드와
+필요 젬스톤으로 구매하며, 해금 연구를 배우면 런 시작 스냅샷의 `enabled`로 전달된다.
+여섯 전투 스킬 각각에 독립 피해 2단계·범위 강화 노드가 있고, 펫 피해는 3단계까지 성장한다.
+수치·비용·선행 조건은 현재 `progression-config.en.json`을 기준으로 한다.
 
 가운데 `stat.attack.01` 시작 노드에서 상·하·좌·우로 기본 스탯을 배치하고, 바깥쪽으로
 낮은 티어와 비용부터 점차 어려운 노드를 놓는다. 보드는 가로·세로가 연결된 정사각 그리드며,
-모든 연결선은 동서남북으로만 뻗는다. 재화 부족은 주홍색, 선행/보스 잠금은 자홍색,
+모든 연결선은 동서남북으로만 뻗는다. 재화 부족은 주홍색, 선행 잠금은 자홍색,
 구매 가능은 금색, 구매 완료는 청록색 테두리와 배지로 구분한다.
 
-일반 진행에서는 전체 103개 노드를 한꺼번에 표시하지 않는다. 시작점, 이미 구매한 노드,
-현재 보스 단계와 구매한 선행 노드를 모두 충족해 다음 선택지가 된 노드만 보드에 배치한다.
+연구 완료 상태에서는 15행의 대칭 마름모로 배치한다. 행 너비는 `1, 3, 5, 7, 9, 11, 13, 15, 13, 11, 9, 7, 5, 3, 1`이다. 각 행은 양끝에서 한 칸씩만 넓어지고 좁아지며, 중앙을 포함해 빈 셀은 두지 않는다.
+
+일반 진행에서는 전체 113개 노드를 한꺼번에 표시하지 않는다. 시작점, 이미 구매한 노드,
+구매한 선행 노드를 충족해 다음 선택지가 된 노드만 보드에 배치한다.
 다음에 선택할 수 있지만 아직 구매하지 않은 항목은 자물쇠 아이콘과 상태 배지로 표시하고,
-아직 단계나 선행 조건을 충족하지 못해 선택할 수 없는 미래 노드는 숨긴다. 테스트 전체 해금
+아직 선행 조건을 충족하지 못해 선택할 수 없는 미래 노드는 숨긴다. 보스 단계는 노출과 구매에
+영향을 주지 않는다. 테스트 전체 해금
 모드에서는 모든 노드를 표시한다.
 
-노드에 포인터를 올리면 설명·수치·필요 재화·보유량·선행 조건·구매/강화 상태를 보여 주는
+노드에 포인터를 올리면 항목명, 해금/배우기/업그레이드 종류, 간단한 설명, 필요한 젬스톤만 보여 주는
 말풍선이 나타나고, 가능한 경우 그 자리에서 해금/강화하거나 환불 초기화할 수 있다.
 호버 확대, 툴팁 진입 애니메이션, 구매 후 사각 펄스·파편 이펙트를 쓴다. 드래그 이동,
 확대·축소와 화면 맞춤 컨트롤은 HUD로 겹쳐 표시해 그래프 공간을 줄이지 않는다.
@@ -30,6 +33,11 @@
 확보한다. 설명 말풍선과 HUD는
 `BasicFrame_SquareSolid01_Demo01.png`를 9-slice 패널로 재사용한다. 이전 본문의 탭별 행,
 고정 우측 상세 패널, 탭별 스크린샷은 과거 레이아웃 기록이다.
+
+특성 화면의 툴팁·우측 상세 패널은 같은 프레임을 사용해 전투 결과 팝업과 남색 패널/금색
+포인트를 공유한다. 런타임 탭과 액션 버튼은 `Button_SquareSolid03_White.png`를 9-slice로
+재사용하고 선택 탭·주요 액션은 금색, 보조 액션·비선택 탭은 남색으로 색조를 적용한다.
+이 스프라이트는 `Main.unity`의 `TraitScreenController.buttonFrameSprite`에 연결한다.
 
 일반 몬스터 10종의 이름과 실제 전투 특성은 아래 표를 기준으로 한다. 잠금이 풀린
 몬스터 중 새 젬스톤을 공급하는 종은 아이콘 우측 상단에 해당 젬스톤을 표시한다.
@@ -108,9 +116,9 @@ Combat에서는 Data를 직접 참조하지 않고 App UI에서 아이콘을 연
 
 - `stat.attack.01~10`은 AS-09904 검(`ItemIcon_Weapon_Sword.png`)을 사용한다.
 - `stat.radius.01~11`은 AS-12757 표적(`UI_ETC_Target_02_Blue.png`)을 사용한다.
-- `stat.cooldown.01~05` 공격 간격 노드는 AS-09635(`CardFrame01_Demo_Slider_Icon.png`)를 사용한다.
-- `stat.critical.01~08`은 AS-09982(`Icon_Fire02.png`)를 사용한다.
-- `stat.boss.01~05`는 AS-10024 해골(`Icon_Skull03.png`)을 사용한다.
+- `stat.cooldown.01~05` 공격 간격 노드는 512px `UI_Common_Speed_02_White.png`를 사용한다.
+- `stat.critical.01~08`은 512px `Neture_Fire_02_Red.png`를 사용한다.
+- `stat.boss.01~05`는 512px `UI_Play_Skull_03.png`를 사용한다.
 - 현재 전투 스킬 6종은 `skillIcons[0..5]`, 베이비 드래곤은 `petIcon`을 사용한다.
 - `monster.production.*`는 해당 Monster 번호의 Body 스프라이트를 그대로 재사용한다.
 - 아이콘별 회색 카드 테두리는 만들지 않고 노드 셀 사각 선만 유지한다.
@@ -136,7 +144,6 @@ Combat에서는 Data를 직접 참조하지 않고 App UI에서 아이콘을 연
 | 컨트롤러 필드 | 적용 에셋 | 용도 |
 |---|---|---|
 | `combatBackgroundSprite` | `Assets/DownLoadAssets/Casual_GUI/GUI Pro-SimpleCasual/ResourcesData/Sprites/Demo/Demo_Background/Background_00.png` (2048×1152) | 성 풍경. 낮은 밝기·청회색 저채도 막 + 남색 그라데이션 + 가장자리 비네팅 |
-| `dragHandCursorSprite` | `Assets/DownLoadAssets/IconPack/2D Minimal-IconPack/Icons/128/UI_Common_Hand_01.png` | 보드를 드래그할 때 표시하며, 스프라이트 영역을 48×48 커서로 축소 |
 | `panelSprite` | `Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Frame/BasicFrame_SquareSolid01_Demo01.png` | 호환용 직렬화 참조. 주요 패널은 평면 색상 사용 |
 | `tabSprite` / `tabFocusSprite` | `Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/UI_Etc/TabMenu_Top_Demo_Bg.png` / `TabMenu_Top_Demo_Focus.png` | 탭 상태 |
 | `nodeSprite` / `nodePurchasedSprite` | 레거시 샘플 | 런타임 미사용. 모든 노드는 평면 정사각 셀 |
@@ -147,10 +154,11 @@ Combat에서는 Data를 직접 참조하지 않고 App UI에서 아이콘을 연
 | `backIcon` | `IconMisc/Icon_Arrow_Back.png` | 뒤로가기 |
 | `attackIcon` | AS-09904 `Icon_ItemIcons/512/ItemIcon_Weapon_Sword.png` | 공격력 |
 | `radiusIcon` | AS-12757 `IconPack/.../UI_ETC_Target_02_Blue.png` | 전투 반경·표적 |
-| `attackIntervalIcon` | AS-09635 `CardFrame01_Demo_Slider_Icon.png` | 공격 간격(직렬화 필드 재사용) |
-| `timerIcon` | AS-10047 `IconMisc/Icon_Timer.png` | 일반 필드 시간·스킬 쿨타임 |
-| `criticalIcon` | AS-09982 `IconMisc/Icon_Fire02.png` | 치명타 |
-| `bossIcon` | AS-10024 `IconMisc/Icon_Skull03.png` | 보스 피해 배수 |
+| `attackIntervalIcon` | `IconPack/512/UI_Common_Speed_02_White.png` | 공격 간격 |
+| `timerIcon` | `IconPack/512/Item_Clock_01_Silver.png` | 일반 필드 시간·스킬 쿨타임 |
+| `criticalIcon` | `IconPack/512/Neture_Fire_02_Red.png` | 치명타 |
+| `bossIcon` | `IconPack/512/UI_Play_Skull_03.png` | 보스 피해 배수 |
+| `gemstoneExchangeIcon` | `GUI Pro-SimpleCasual/.../512/PictoIcon_Refresh.Png` | 해금된 상위 젬으로 교환 |
 
 선택한 512px 아이콘 메타는 압축을 끄고, `NanumGothic.ttf`는 48pt 동적 폰트로
 설정했다. 캔버스는 픽셀 퍼펙트 오버레이와 1.18배 UI 글자 크기를 사용한다.
@@ -162,8 +170,7 @@ Combat에서는 Data를 직접 참조하지 않고 App UI에서 아이콘을 연
 - 연결선은 흰색에 카테고리 색상을 14% 섞은 `Image`이며 입력을 가로채지 않는다.
 - 배경에는 성 풍경 이미지와 런타임 생성 남색 그라데이션·비네팅 텍스처를 사용한다.
   노드 입력은 가로채지 않도록 이미지 레이어의 `raycastTarget = false`를 유지한다.
-- 보드를 누른 채 이동할 때는 `dragHandCursorSprite`를 커서로 표시하고, 버튼을 놓으면
-  시스템 기본 커서로 복원한다.
+- 보드를 누른 채 이동할 때 운영체제 포인터 모양과 크기를 변경하지 않는다.
 
 ## 스탯 노드 아이콘 매핑
 
@@ -175,10 +182,10 @@ Combat에서는 Data를 직접 참조하지 않고 App UI에서 아이콘을 연
 |---|---|---|
 | `stat.attack` 공격력 | 공격력 1~100 (10개) | `attackIcon` · 512px 검 |
 | `stat.radius` 공격 반경 | 작은 원 → 영역 1~5 → 1/32 → 1/16 → 1/8 → 1/4 → 전체 (11개) | `radiusIcon` · AS-12757 표적 |
-| `stat.cooldown` 공격 간격 | 런 기본값에서 공격 간격 강화 (5개) | `attackIntervalIcon` · AS-09635 |
-| `stat.critical` 치명타 | 0% → 5% → 10% → 20% → 30% → 50% → 75% → 100% (8개) | `criticalIcon` · AS-09982 |
-| `stat.boss` 보스 피해 배수 | 보스 공격력 1~5 (5개) | `bossIcon` · AS-10024 |
-| `stat.fieldDuration` 일반 필드 시간 | 15초 → 20초 → 25초 → 30초 (4개) | `timerIcon` · AS-10047 |
+| `stat.cooldown` 공격 간격 | 런 기본값에서 공격 간격 강화 (5개) | `attackIntervalIcon` · 512px 속도 아이콘 |
+| `stat.critical` 치명타 | 0% → 5% → 10% → 20% → 30% → 50% → 75% → 100% (8개) | `criticalIcon` · 512px 붉은 불꽃 아이콘 |
+| `stat.boss` 보스 피해 배수 | 보스 공격력 1~5 (5개) | `bossIcon` · 512px 해골 아이콘 |
+| `stat.fieldDuration` 일반 필드 시간 | 15초 → 20초 → 25초 → 30초 (4개) | `timerIcon` · 512px 은색 시계 |
 
 ### 현재 스탯 노드별 에셋 매핑
 
@@ -190,9 +197,9 @@ Combat에서는 Data를 직접 참조하지 않고 App UI에서 아이콘을 연
 |---|---|---|
 | `stat.attack.01~10` | 공격력 1 → 3 → 6 → 10 → 16 → 24 → 35 → 50 → 70 → 100 | AS-09904 `ItemIcon_Weapon_Sword.png` |
 | `stat.radius.01~11` | 작은 원 → 영역 1~5 → 1/32 → 1/16 → 1/8 → 1/4 → 화면 전체 | AS-12757 `UI_ETC_Target_02_Blue.png` |
-| `stat.cooldown.01~05` | 기본 공격 간격 강화 | AS-09635 `CardFrame01_Demo_Slider_Icon.png` |
-| `stat.critical.01~08` | 0% → 5% → 10% → 20% → 30% → 50% → 75% → 100% | AS-09982 `Icon_Fire02.png` |
-| `stat.boss.01~05` | 보스 피해 배수 1 → 2 → 3 → 4 → 5 | AS-10024 `Icon_Skull03.png` |
+| `stat.cooldown.01~05` | 기본 공격 간격 강화 | `IconPack/512/UI_Common_Speed_02_White.png` |
+| `stat.critical.01~08` | 0% → 5% → 10% → 20% → 30% → 50% → 75% → 100% | `IconPack/512/Neture_Fire_02_Red.png` |
+| `stat.boss.01~05` | 보스 피해 배수 1 → 2 → 3 → 4 → 5 | `IconPack/512/UI_Play_Skull_03.png` |
 
 현재 스킬 탭에는 토네이도·헤드샷·벼락·화염 배기·마력 구체·레이저·베이비 드래곤 노드가 있다.
 몬스터 행은
@@ -265,13 +272,16 @@ Unity 6000.3.13f1 `Main.unity` Game View에서 다시 캡처한다.
 | monster.05 갑옷병사 | AS-13628 | `.../Golem/Golem_Iron/Body.png` |
 | monster.06 눈요정 | AS-13524 | `.../Cactus/Cactus_Snow/Body.png` |
 | monster.07 벌집 | AS-13728 | `.../Skeleton/Skeleton_Soldier/Body.png` |
-| monster.08 골렘 | AS-13717 | `.../Scorpion/Scorpion_Stone/Body.png` |
+| monster.08 골렘 | — | `.../Golem/Golem_Tree/Body.png` |
 | monster.09 봉오리 | AS-13498 | `.../Bud/Bud_Fire/Body_Fire.png` |
 | monster.10 판도라 상자 | AS-13786 | `.../Walker/Walker_Box/Body.png` |
 
 위 경로는 앞서 표시한 `ResourcesData/Sprites/` 아래의 상대 경로다. 이름·성장 ID·행동은
-기획 데이터를 따르고, 특성 아이콘과 전투 프리팹은 같은 Body 스프라이트를 사용하도록
-매핑한다. 정적 검사기가 이 열 종의 Main 씬 아이콘 GUID와 전투 프리팹 본체 GUID를 대조한다.
+기획 데이터를 따른다. 골렘은 이전 `AS-13717`의 `Scorpion_Stone` 몸통 때문에 UI에서는
+골렘처럼 보이고 전투에서는 전갈 리그로 보이는 불일치가 있었다. 현재 monster.08은
+`Golem_Tree/Body.png` 아이콘과 `Golem_Tree_Combat` 전투 프리팹을 사용한다. 갑옷병사는
+기존 지정대로 `Golem_Iron`을 유지한다. 골렘의 아이콘과 실제 애니메이션 외형은 Unity
+Game View에서 확인한다.
 
 ## 한국어 폰트
 
@@ -283,7 +293,7 @@ Unity 6000.3.13f1 `Main.unity` Game View에서 다시 캡처한다.
 
 ## 데이터와 에셋의 경계
 
-`TraitCatalog`는 ID·한국어 표시명·설명·비용·보스 티어만 소유한다. 화면 아이콘은
+`TraitCatalog`는 ID·한국어 표시명·설명·비용·선행 연구만 소유한다. 화면 아이콘은
 `Main.unity`의 배열 참조로 주입하므로, 저장 데이터나 전투 코드가 UI 오브젝트를
 직접 수정하지 않는다. 커스텀 카탈로그가 기본 배열보다 긴 경우 배열 범위를 벗어난
 노드는 해당 카테고리 아이콘으로 안전하게 대체된다.

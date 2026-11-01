@@ -73,9 +73,9 @@ namespace CursorHunter.Combat.Tests
                 SkillBalanceSettings copy = original.Clone();
                 copy.Values.Find(value => value.Id == "damageMultiplier").Value = 99f;
                 Assert.That(original.Values.Find(value => value.Id == "damageMultiplier").Value,
-                    Is.EqualTo(1f));
+                    Is.EqualTo(5f));
                 Assert.That(skill.CaptureBalanceSettings().Values.Find(
-                    value => value.Id == "damageMultiplier").Value, Is.EqualTo(1f));
+                    value => value.Id == "damageMultiplier").Value, Is.EqualTo(5f));
                 Assert.That(copy.Values.Exists(value => value.Id == "cooldownSeconds"), Is.False);
             }
             finally { UnityEngine.Object.DestroyImmediate(root); }

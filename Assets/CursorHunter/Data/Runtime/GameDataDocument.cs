@@ -66,11 +66,10 @@ namespace CursorHunter.Data
             if (!information.TryValidate(out error)) return false;
             if (progression.categories == null)
                 return Fail("Missing progression categories.", out error);
-            if (progression.categories.Length != 22)
-                return Fail("Expected 22 progression categories, found " + progression.categories.Length + ".", out error);
+            if (progression.categories.Length != 23)
+                return Fail("Expected 23 progression categories, found " + progression.categories.Length + ".", out error);
             if (progression.bossRewards == null || progression.bossRewards.Length != 5 ||
-                (progression.savedProgressPolicy != "overlay" && progression.savedProgressPolicy != "fileOnly") ||
-                progression.initialBossTier < 0 || progression.initialBossTier > 5)
+                (progression.savedProgressPolicy != "overlay" && progression.savedProgressPolicy != "fileOnly"))
                 return Fail("Invalid progression rewards or save settings.", out error);
             var entityIds = new HashSet<string>(StringComparer.Ordinal);
             foreach (var entity in entities)
@@ -90,7 +89,7 @@ namespace CursorHunter.Data
                 {
                     if (node == null || string.IsNullOrWhiteSpace(node.id) || nodes.ContainsKey(node.id) ||
                         string.IsNullOrWhiteSpace(node.displayName) || node.cost < 0 || !currencies.Contains(node.currencyId) ||
-                        node.requiredBossTier < 0 || node.requiredBossTier > 5 || !ValidEffect(category, node))
+                        !ValidEffect(category, node))
                         return Fail("Invalid node/effect in " + category.id, out error);
                     if (!string.IsNullOrEmpty(node.prerequisiteNodeId) && !nodes.ContainsKey(node.prerequisiteNodeId))
                         return Fail("Nodes must follow prerequisite order: " + node.id, out error);
@@ -126,29 +125,21 @@ namespace CursorHunter.Data
                     string.IsNullOrWhiteSpace(FindEntity(monster.id).prefabKey))
                     return Fail("Missing monster/category/visual key.", out error);
             if (!categories.Contains("skill.pet_baby_dragon") ||
-                !nodes.TryGetValue("skill.pet_baby_dragon", out UpgradeNodeData starterPet) ||
-                starterPet.requiredBossTier != 0)
-                return Fail("Missing tier-zero companion skill.", out error);
+                !nodes.ContainsKey("skill.pet_baby_dragon"))
+                return Fail("Missing companion skill.", out error);
             string[] purchasableSkills =
             {
-                "skill.tornado", "skill.thunder", "skill.flame_exhaust",
-                "skill.magic_ball", "skill.laser"
+                "skill.tornado", "skill.thunder", "skill.headshot",
+                "skill.flame_exhaust", "skill.magic_ball", "skill.laser"
             };
-            var skillUnlocksByBossTier = new int[6];
-            foreach (string skillId in purchasableSkills)
+            for (int i = 0; i < purchasableSkills.Length; i++)
             {
+                string skillId = purchasableSkills[i];
                 if (!categories.Contains(skillId))
                     return Fail("Missing skill category: " + skillId, out error);
                 if (!nodes.ContainsKey(skillId))
                     return Fail("Missing skill unlock node: " + skillId, out error);
-                int requiredBossTier = nodes[skillId].requiredBossTier;
-                if (requiredBossTier < 1 || requiredBossTier > 5 ||
-                    ++skillUnlocksByBossTier[requiredBossTier] != 1)
-                    return Fail("Each boss tier must unlock exactly one skill.", out error);
             }
-            for (int tier = 1; tier <= 5; tier++)
-                if (skillUnlocksByBossTier[tier] != 1)
-                    return Fail("Each boss tier must unlock exactly one skill.", out error);
             for (int i = 0; i < progression.bossRewards.Length; i++)
             {
                 var boss = progression.bossRewards[i];
@@ -212,7 +203,6 @@ namespace CursorHunter.Data
     [Serializable] public sealed class ProgressionDefinition
     {
         public string savedProgressPolicy;
-        public int initialBossTier;
         public UpgradeCategoryData[] categories;
         public BossRewardData[] bossRewards;
     }
@@ -230,7 +220,6 @@ namespace CursorHunter.Data
         public string valueLabel;
         public int cost;
         public string currencyId;
-        public int requiredBossTier;
         public string prerequisiteNodeId;
         public bool startsUnlocked;
         public string operation;

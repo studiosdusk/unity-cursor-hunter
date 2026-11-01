@@ -86,8 +86,8 @@ namespace CursorHunter.App.Tests
             string priorSceneContent = NonBalanceSceneContent(File.ReadAllText(_scenePath));
             MonsterDefinition profiled = _definitions.Find(definition => definition.MonsterId == "monster.07");
             Assert.That(profiled.BehaviorProfiles.Any(profile => profile != null &&
-                Mathf.Approximately(profile.HealthMultiplier, 2.5f)), Is.True,
-                "The real profile fixture must exercise the 2.5x HP composition policy.");
+                Mathf.Approximately(profile.HealthMultiplier, 1f)), Is.True,
+                "The real Hive profile must not add a hidden HP multiplier to its displayed health.");
 
             Assert.That(CombatBalanceBaseStore.TryBuildFiles(_scenePath, _informationPath,
                 _definitions, settings, out Dictionary<string, string> originals,
@@ -149,9 +149,9 @@ namespace CursorHunter.App.Tests
             MonsterDefinition reloadedProfiled = AssetDatabase.LoadAssetAtPath<MonsterDefinition>(
                 AssetDatabase.GetAssetPath(profiled));
             Assert.That(reloadedProfiled.CreateSnapshot(13).MaxHealth, Is.EqualTo(101L),
-                "A final HP of 101 must remain 101 after the 2.5x profile is loaded again.");
+                "A final HP of 101 must remain 101 after the behavior profile is loaded again.");
             Assert.That(reloadedProfiled.BehaviorProfiles.Any(profile => profile != null &&
-                Mathf.Approximately(profile.HealthMultiplier, 2.5f)), Is.True,
+                Mathf.Approximately(profile.HealthMultiplier, 1f)), Is.True,
                 "Saving the final HP must retain the original behavior profile.");
             foreach (var meta in originalMetas)
                 Assert.That(File.ReadAllBytes(meta.Key), Is.EqualTo(meta.Value), meta.Key);

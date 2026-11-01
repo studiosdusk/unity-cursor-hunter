@@ -5,7 +5,7 @@
 
 ## 전투 스테이지 설정
 
-Main 씬의 `HuntManager > Connect Trait Screen To Combat`는 켜져 있다. 일반 전투는 같은 `TraitScreenController`가 만든 현재 구매·해금 상태 스냅샷으로 시작한다. 스탯은 특성 기본값과 구매 증가량을 반영하고, 스킬은 해금 상태와 정의된 강화 스냅샷을 읽으며, 몬스터는 해금 여부와 생산 수를 스폰 계획에 반영한다. 현재 성장 JSON은 스킬별 해금만 정의하고 강화 단계는 아직 없다. 전투 결과의 보상도 같은 특성 지갑으로 정산한다.
+Main 씬의 `HuntManager > Connect Trait Screen To Combat`는 켜져 있다. 일반 전투는 같은 `TraitScreenController`가 만든 현재 구매·해금 상태 스냅샷으로 시작한다. 스탯은 특성 기본값과 구매 증가량을 반영하고, 스킬은 해금 상태와 피해·범위·펫 동시 타격 등 정의된 강화 스냅샷을 읽으며, 몬스터는 해금 여부와 생산 수를 스폰 계획에 반영한다. 전투 결과의 보상도 같은 특성 지갑으로 정산한다.
 
 Main 전투 진입 버튼은 `BeginPrototypeRun()`을 호출한다. 특성 연결이 켜져 있으면 기본 스테이지 로스터를 적용하지 않고, 특성에서 실제 해금된 모든 몬스터를 사용한다. 특성 진행도를 따르지 않는 별도 스테이지는 `BeginStageRun(CombatStageDefinition)`으로 명시적으로 시작한다.
 

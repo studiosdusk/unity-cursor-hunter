@@ -38,7 +38,7 @@ namespace CursorHunter.Combat
             FirstCastDelaySeconds = 0f,
             MoveSpeedWorldUnitsPerSecond = 7f,
             SizeMultiplier = 1f,
-            DamageMultiplier = 1f,
+            DamageMultiplier = 5f,
             SameTargetHitCooldownSeconds = 0.5f
         };
 

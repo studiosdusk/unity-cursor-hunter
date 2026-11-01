@@ -67,8 +67,8 @@
     },
     {
       "key": "ui.radius",
-      "ko": "공격 반경",
-      "en": "Attack Radius"
+      "ko": "공격 범위",
+      "en": "Attack Range"
     },
     {
       "key": "ui.cooldown",
@@ -124,6 +124,1131 @@
       "key": "ui.selected",
       "ko": "선택한 항목",
       "en": "Selected Upgrade"
+    },
+    {
+      "key": "ui.tab.research",
+      "ko": "통합 연구",
+      "en": "Research"
+    },
+    {
+      "key": "ui.tab.relic",
+      "ko": "유물",
+      "en": "Relics"
+    },
+    {
+      "key": "ui.relic.test.start",
+      "ko": "유물 개별 테스트",
+      "en": "Relic Test"
+    },
+    {
+      "key": "ui.relic.test.stop",
+      "ko": "유물 테스트 종료",
+      "en": "End Relic Test"
+    },
+    {
+      "key": "ui.test.tools",
+      "ko": "테스트 도구",
+      "en": "Test Tools"
+    },
+    {
+      "key": "ui.test.progress",
+      "ko": "진행도 테스트",
+      "en": "Progression Test"
+    },
+    {
+      "key": "ui.test.progress.hint",
+      "ko": "젬스톤을 지급하고 선행 연구에 따라 열리는 항목을 확인하세요.",
+      "en": "Grant gemstones and check which research nodes become available."
+    },
+    {
+      "key": "ui.test.grant.all",
+      "ko": "전체 종류 지급",
+      "en": "Grant All Types"
+    },
+    {
+      "key": "ui.test.grant.each",
+      "ko": "젬스톤별 지급",
+      "en": "Grant by Gemstone"
+    },
+    {
+      "key": "ui.test.progress.actions",
+      "ko": "진행도 조작",
+      "en": "Progression Controls"
+    },
+    {
+      "key": "ui.test.gem.clear",
+      "ko": "젬 잔액 비우기",
+      "en": "Clear Gem Balances"
+    },
+    {
+      "key": "ui.test.gem.refund",
+      "ko": "젬 전체 회수",
+      "en": "Refund All Gemstones"
+    },
+    {
+      "key": "ui.test.unlock.conditions.off",
+      "ko": "조건 무시: 끔",
+      "en": "Ignore Requirements: Off"
+    },
+    {
+      "key": "ui.test.unlock.conditions.on",
+      "ko": "조건 무시: 켬",
+      "en": "Ignore Requirements: On"
+    },
+    {
+      "key": "ui.test.upgrade.all",
+      "ko": "전체 연구 완료",
+      "en": "Complete All Research"
+    },
+    {
+      "key": "ui.test.relic.heading",
+      "ko": "유물 획득 테스트",
+      "en": "Relic Ownership Test"
+    },
+    {
+      "key": "ui.test.relic.grant",
+      "ko": "획득 설정",
+      "en": "Grant Relic"
+    },
+    {
+      "key": "ui.test.relic.revoke",
+      "ko": "획득 취소",
+      "en": "Revoke Relic"
+    },
+    {
+      "key": "ui.test.relic.hint",
+      "ko": "유물 탭에서 중앙 강조 연출을 확인할 수 있습니다. 번호 1~20",
+      "en": "Preview the relic highlight in the Relics tab. Enter 1–20."
+    },
+    {
+      "key": "ui.test.reset.hint",
+      "ko": "젬 회수는 연구 상태를 유지합니다. 우측 아래 전체 초기화는 연구도 되돌립니다.",
+      "en": "Refunding gemstones keeps research. Full reset also resets research."
+    },
+    {
+      "key": "ui.test.grant",
+      "ko": "+ 지급",
+      "en": "+ Grant"
+    },
+    {
+      "key": "ui.wallet.combat.stats",
+      "ko": "현재 전투 능력치",
+      "en": "Current Combat Stats"
+    },
+    {
+      "key": "ui.stat.attack",
+      "ko": "공격력",
+      "en": "Attack Power"
+    },
+    {
+      "key": "ui.stat.radius",
+      "ko": "공격 범위",
+      "en": "Attack Range"
+    },
+    {
+      "key": "ui.stat.cooldown",
+      "ko": "공격 간격",
+      "en": "Attack Interval"
+    },
+    {
+      "key": "ui.stat.critical.chance",
+      "ko": "치명타 확률",
+      "en": "Critical Chance"
+    },
+    {
+      "key": "ui.stat.boss.multiplier",
+      "ko": "보스 피해 배수",
+      "en": "Boss Damage Multiplier"
+    },
+    {
+      "key": "ui.stat.field.duration",
+      "ko": "일반 필드 시간",
+      "en": "Normal Field Duration"
+    },
+    {
+      "key": "ui.stat.generic",
+      "ko": "능력치",
+      "en": "Stat"
+    },
+    {
+      "key": "ui.node.title.research.core",
+      "ko": "연구 시작점",
+      "en": "Research Core"
+    },
+    {
+      "key": "ui.node.title.stat.base",
+      "ko": "{0} 기본값",
+      "en": "{0} Base Value"
+    },
+    {
+      "key": "ui.node.title.stat.upgrade",
+      "ko": "{0} 강화 {1}",
+      "en": "{0} Upgrade {1}"
+    },
+    {
+      "key": "ui.node.title.skill.damage",
+      "ko": "{0} 피해 강화 {1}",
+      "en": "{0} Damage Upgrade {1}"
+    },
+    {
+      "key": "ui.node.title.skill.radius",
+      "ko": "{0} 범위 강화 {1}",
+      "en": "{0} Area Upgrade {1}"
+    },
+    {
+      "key": "ui.node.title.skill.simultaneous",
+      "ko": "{0} 동시 타격 강화 {1}",
+      "en": "{0} Multi-hit Upgrade {1}"
+    },
+    {
+      "key": "ui.node.title.skill.cooldown",
+      "ko": "{0} · 재사용 시간",
+      "en": "{0} · Cooldown"
+    },
+    {
+      "key": "ui.node.title.monster.production.count",
+      "ko": "{0} · 생산량 {1}마리",
+      "en": "{0} · {1} per spawn"
+    },
+    {
+      "key": "ui.node.title.monster.production",
+      "ko": "{0} · 생산량 증가",
+      "en": "{0} · Spawn Increase"
+    },
+    {
+      "key": "ui.requirement.prerequisite",
+      "ko": "먼저 {0} 해금 필요",
+      "en": "Unlock {0} first"
+    },
+    {
+      "key": "ui.requirement.acquisition.available",
+      "ko": "전투 중 확률로 획득",
+      "en": "Can be acquired during combat"
+    },
+    {
+      "key": "ui.node.description.research.core",
+      "ko": "가운데 시작점을 배우면 네 방향의 첫 연구가 나타납니다. 다음 연구는 선행 연구와 재화로 선택할 수 있습니다.",
+      "en": "Learn the center node to reveal the first upgrades in four directions. Further research follows prerequisites and currency costs."
+    },
+    {
+      "key": "ui.node.description.stat.field.duration",
+      "ko": "일반 필드 전투 시간이 늘어납니다.",
+      "en": "Increases normal field battle duration."
+    },
+    {
+      "key": "ui.node.description.stat.attack",
+      "ko": "기본 공격 피해가 증가합니다.",
+      "en": "Increases basic attack damage."
+    },
+    {
+      "key": "ui.node.description.stat.radius",
+      "ko": "기본 공격이 닿는 범위가 넓어집니다.",
+      "en": "Increases the area reached by basic attacks."
+    },
+    {
+      "key": "ui.node.description.stat.cooldown",
+      "ko": "같은 대상을 다시 공격하는 간격이 짧아집니다.",
+      "en": "Reduces the delay before attacking the same target again."
+    },
+    {
+      "key": "ui.node.description.stat.critical",
+      "ko": "치명타가 발동할 확률이 높아집니다.",
+      "en": "Increases the chance to deal a critical hit."
+    },
+    {
+      "key": "ui.node.description.stat.boss",
+      "ko": "보스에게 주는 피해가 증가합니다.",
+      "en": "Increases damage dealt to bosses."
+    },
+    {
+      "key": "ui.node.description.skill.tornado",
+      "ko": "토네이도가 범위 안의 몬스터를 여러 번 공격합니다.",
+      "en": "A tornado hits monsters in its area multiple times."
+    },
+    {
+      "key": "ui.node.description.skill.headshot",
+      "ko": "강한 탄환을 발사해 대상과 주변 몬스터를 공격합니다.",
+      "en": "A powerful shot damages its target and nearby monsters."
+    },
+    {
+      "key": "ui.node.description.skill.thunder",
+      "ko": "무작위 대상에게 벼락을 내려 주변 몬스터도 함께 공격합니다.",
+      "en": "Lightning strikes a random target and nearby monsters."
+    },
+    {
+      "key": "ui.node.description.skill.flame",
+      "ko": "불꽃 투사체를 발사해 몬스터를 공격합니다.",
+      "en": "A flame projectile attacks monsters."
+    },
+    {
+      "key": "ui.node.description.skill.magic.ball",
+      "ko": "마력 구체가 필드를 이동하며 닿은 몬스터를 공격합니다.",
+      "en": "A magic orb travels across the field and attacks monsters it touches."
+    },
+    {
+      "key": "ui.node.description.skill.laser",
+      "ko": "레이저 빔에 닿은 몬스터를 공격합니다.",
+      "en": "A laser beam damages monsters it touches."
+    },
+    {
+      "key": "ui.node.description.skill.pet",
+      "ko": "아기용 동료가 플레이어를 따라다니며 가까운 몬스터를 공격합니다.",
+      "en": "A baby dragon follows the player and attacks nearby monsters."
+    },
+    {
+      "key": "ui.node.description.skill.generic",
+      "ko": "스킬 효과를 강화합니다.",
+      "en": "Improves the skill effect."
+    },
+    {
+      "key": "ui.node.description.skill.pet.damage",
+      "ko": "동료의 공격 피해를 높입니다. 플레이어 공격력과 별도로 적용됩니다.",
+      "en": "Increases companion attack damage independently of player attack power."
+    },
+    {
+      "key": "ui.node.description.skill.damage",
+      "ko": "이 스킬의 피해를 높입니다. 플레이어 공격력과 별도로 적용됩니다.",
+      "en": "Increases this skill’s damage independently of player attack power."
+    },
+    {
+      "key": "ui.node.description.skill.radius",
+      "ko": "이 스킬의 공격 범위를 넓힙니다. 기본 공격 범위와 별도로 적용됩니다.",
+      "en": "Increases this skill’s area independently of basic attack range."
+    },
+    {
+      "key": "ui.node.description.skill.simultaneous",
+      "ko": "동료가 한 번의 공격으로 동시에 타격하는 몬스터 수를 늘립니다.",
+      "en": "Increases the number of monsters the companion can hit with one attack."
+    },
+    {
+      "key": "ui.node.description.skill.cooldown",
+      "ko": "이 스킬을 다시 사용하는 데 필요한 대기 시간을 줄입니다.",
+      "en": "Reduces the wait before this skill can be used again."
+    },
+    {
+      "key": "ui.node.description.generic",
+      "ko": "연구 효과를 적용합니다.",
+      "en": "Applies the research effect."
+    },
+    {
+      "key": "ui.node.value.research.first",
+      "ko": "동서남북 첫 연구 연결",
+      "en": "Connects first research in four directions"
+    },
+    {
+      "key": "ui.node.value.companion.learn",
+      "ko": "동료 배우기",
+      "en": "Learn Companion"
+    },
+    {
+      "key": "ui.node.value.baseline",
+      "ko": "기본값",
+      "en": "Base Value"
+    },
+    {
+      "key": "ui.node.value.skill.unlock",
+      "ko": "스킬 해금",
+      "en": "Unlock Skill"
+    },
+    {
+      "key": "ui.node.value.monster.unlock",
+      "ko": "몬스터 해금",
+      "en": "Monster Unlock"
+    },
+    {
+      "key": "ui.node.value.skill.damage",
+      "ko": "피해 +{0}",
+      "en": "Damage +{0}"
+    },
+    {
+      "key": "ui.node.value.skill.radius",
+      "ko": "범위 +{0}%",
+      "en": "Area +{0}%"
+    },
+    {
+      "key": "ui.node.value.skill.simultaneous",
+      "ko": "동시 타격 +{0}마리",
+      "en": "+{0} Monsters Hit"
+    },
+    {
+      "key": "ui.node.value.monster.production",
+      "ko": "생산량 증가",
+      "en": "Spawn Increase"
+    },
+    {
+      "key": "ui.value.spawn.count",
+      "ko": "한 번에 {0}마리",
+      "en": "{0} per spawn"
+    },
+    {
+      "key": "ui.unit.range.suffix",
+      "ko": " 공격 범위",
+      "en": " range"
+    },
+    {
+      "key": "ui.unit.seconds.suffix",
+      "ko": " 초",
+      "en": " sec"
+    },
+    {
+      "key": "ui.unit.multiplier.suffix",
+      "ko": "배",
+      "en": "×"
+    },
+    {
+      "key": "ui.unit.seconds",
+      "ko": "초",
+      "en": "sec"
+    },
+    {
+      "key": "ui.detail.attribute",
+      "ko": "항목",
+      "en": "Attribute"
+    },
+    {
+      "key": "ui.detail.description",
+      "ko": "상세 설명",
+      "en": "Description"
+    },
+    {
+      "key": "ui.detail.cost",
+      "ko": "비용",
+      "en": "Cost"
+    },
+    {
+      "key": "ui.status.available",
+      "ko": "구매 가능",
+      "en": "Available"
+    },
+    {
+      "key": "ui.status.learn.available",
+      "ko": "배우기 가능",
+      "en": "Ready to Learn"
+    },
+    {
+      "key": "ui.status.unlock.available",
+      "ko": "해금 가능",
+      "en": "Ready to Unlock"
+    },
+    {
+      "key": "ui.status.upgrade.available",
+      "ko": "강화 가능",
+      "en": "Ready to Upgrade"
+    },
+    {
+      "key": "ui.status.insufficient",
+      "ko": "재화 부족",
+      "en": "Not Enough Resources"
+    },
+    {
+      "key": "ui.status.locked",
+      "ko": "잠김",
+      "en": "Locked"
+    },
+    {
+      "key": "ui.action.learn",
+      "ko": "배우기",
+      "en": "Learn"
+    },
+    {
+      "key": "ui.action.unlock",
+      "ko": "해금하기",
+      "en": "Unlock"
+    },
+    {
+      "key": "ui.action.upgrade",
+      "ko": "강화하기",
+      "en": "Upgrade"
+    },
+    {
+      "key": "ui.action.reset",
+      "ko": "초기화",
+      "en": "Reset"
+    },
+    {
+      "key": "ui.action.start.combat",
+      "ko": "전투 시작",
+      "en": "Start Battle"
+    },
+    {
+      "key": "ui.action.start.research",
+      "ko": "연구 시작",
+      "en": "Begin Research"
+    },
+    {
+      "key": "ui.action.view.details",
+      "ko": "설명 보기",
+      "en": "View Details"
+    },
+    {
+      "key": "ui.onboarding.title",
+      "ko": "특성 연구부터 시작해요",
+      "en": "Start with Upgrades"
+    },
+    {
+      "key": "ui.onboarding.first.combat",
+      "ko": "첫 전투를 시작해요",
+      "en": "Start Your First Battle"
+    },
+    {
+      "key": "ui.onboarding.back",
+      "ko": "뒤로 가기",
+      "en": "Go Back"
+    },
+    {
+      "key": "ui.onboarding.hover",
+      "ko": "아이콘에 마우스를 올리면 설명과 비용을 볼 수 있어요.\n가운데 시작점부터 연구해 보세요.",
+      "en": "Hover an icon to see its effect and cost.\nBegin at the center node."
+    },
+    {
+      "key": "ui.onboarding.right.click",
+      "ko": "강조된 아이콘을 우클릭하세요.",
+      "en": "Right-click the highlighted icon."
+    },
+    {
+      "key": "ui.onboarding.right.click.learn",
+      "ko": "우클릭: 배우기 / 강화",
+      "en": "Right-click: Learn / Upgrade"
+    },
+    {
+      "key": "ui.onboarding.affordable",
+      "ko": "느낌표(!)는 지금 가진 재화로 강화할 수 있다는 표시예요.\n아이콘의 설명을 확인한 뒤 우클릭으로 강화해 보세요.",
+      "en": "An exclamation mark (!) means you can afford this upgrade.\nCheck the description, then right-click to upgrade."
+    },
+    {
+      "key": "ui.onboarding.radius",
+      "ko": "커서 공격 범위를 넓힙니다.\n아이콘을 우클릭하면 바로 강화할 수 있어요.",
+      "en": "Increase your cursor attack range.\nRight-click the icon to upgrade it."
+    },
+    {
+      "key": "ui.onboarding.pet",
+      "ko": "아기용 동료를 배워 전투에 데려가세요.",
+      "en": "Learn the Baby Dragon companion to bring it into battle."
+    },
+    {
+      "key": "ui.onboarding.stump",
+      "ko": "그루터기를 해금하면 첫 전투에 나타납니다.",
+      "en": "Unlock Stump to make it appear in your first battle."
+    },
+    {
+      "key": "ui.entity.skill.tornado",
+      "ko": "토네이도",
+      "en": "Tornado"
+    },
+    {
+      "key": "ui.entity.skill.headshot",
+      "ko": "헤드샷",
+      "en": "Headshot"
+    },
+    {
+      "key": "ui.entity.skill.thunder",
+      "ko": "벼락",
+      "en": "Thunderbolt"
+    },
+    {
+      "key": "ui.entity.skill.flame",
+      "ko": "화염 배기",
+      "en": "Flame Exhaust"
+    },
+    {
+      "key": "ui.entity.skill.magic.ball",
+      "ko": "마력 구체",
+      "en": "Magic Orb"
+    },
+    {
+      "key": "ui.entity.skill.laser",
+      "ko": "레이저",
+      "en": "Laser"
+    },
+    {
+      "key": "ui.entity.skill.pet",
+      "ko": "펫 동료",
+      "en": "Pet Companion"
+    },
+    {
+      "key": "ui.entity.skill.baby.dragon",
+      "ko": "베이비 드래곤",
+      "en": "Baby Dragon"
+    },
+    {
+      "key": "ui.entity.monster.stump",
+      "ko": "그루터기",
+      "en": "Stump"
+    },
+    {
+      "key": "ui.entity.monster.queen.bee",
+      "ko": "여왕벌",
+      "en": "Queen Bee"
+    },
+    {
+      "key": "ui.entity.monster.poison.mushroom",
+      "ko": "독버섯",
+      "en": "Poison Mushroom"
+    },
+    {
+      "key": "ui.entity.monster.mask.ghost",
+      "ko": "가면유령",
+      "en": "Masked Ghost"
+    },
+    {
+      "key": "ui.entity.monster.armored.soldier",
+      "ko": "갑옷병사",
+      "en": "Armored Soldier"
+    },
+    {
+      "key": "ui.entity.monster.snow.fairy",
+      "ko": "눈요정",
+      "en": "Snow Fairy"
+    },
+    {
+      "key": "ui.entity.monster.hive",
+      "ko": "벌집",
+      "en": "Hive"
+    },
+    {
+      "key": "ui.entity.monster.golem",
+      "ko": "골렘",
+      "en": "Golem"
+    },
+    {
+      "key": "ui.entity.monster.bud",
+      "ko": "봉오리",
+      "en": "Bud"
+    },
+    {
+      "key": "ui.entity.monster.pandora",
+      "ko": "판도라 상자",
+      "en": "Pandora Box"
+    },
+    {
+      "key": "ui.onboarding.step",
+      "ko": "처음 안내 · {0} / {1}",
+      "en": "Getting Started · {0} / {1}"
+    },
+    {
+      "key": "ui.onboarding.complete",
+      "ko": "처음 안내 · 준비 완료",
+      "en": "Getting Started · Complete"
+    },
+    {
+      "key": "ui.onboarding.first.battle.title",
+      "ko": "첫 전투를 시작해요",
+      "en": "Start Your First Battle"
+    },
+    {
+      "key": "ui.onboarding.first.battle.message",
+      "ko": "특성 연구가 끝났어요. 뒤로 돌아가 필드를 선택하면 첫 전투를 시작할 수 있어요.",
+      "en": "You have finished the required research. Go back and choose a field to begin your first battle."
+    },
+    {
+      "key": "ui.onboarding.next.in.lobby",
+      "ko": "다음 단계는 로비에서 이어집니다.",
+      "en": "Continue the next step from the lobby."
+    },
+    {
+      "key": "ui.onboarding.learn.stats",
+      "ko": "기본 능력치를 배워 다음 강화를 준비해요.\n아이콘을 우클릭해도 바로 배울 수 있어요.",
+      "en": "Learn the basic stats to prepare for upgrades.\nYou can also right-click an icon to learn it."
+    },
+    {
+      "key": "ui.onboarding.details",
+      "ko": "설명 보기",
+      "en": "View Details"
+    },
+    {
+      "key": "ui.status.research.complete",
+      "ko": "시작 완료",
+      "en": "Started"
+    },
+    {
+      "key": "ui.status.learn.complete",
+      "ko": "배움 완료",
+      "en": "Learned"
+    },
+    {
+      "key": "ui.status.unlock.complete",
+      "ko": "해금 완료",
+      "en": "Unlocked"
+    },
+    {
+      "key": "ui.status.upgrade.complete",
+      "ko": "강화 완료",
+      "en": "Upgraded"
+    },
+    {
+      "key": "ui.relic.collection.title",
+      "ko": "유물 보관소",
+      "en": "Relic Collection"
+    },
+    {
+      "key": "ui.graph.skills",
+      "ko": "스킬 연구",
+      "en": "Skill Research"
+    },
+    {
+      "key": "ui.graph.monsters",
+      "ko": "몬스터 연구",
+      "en": "Monster Research"
+    },
+    {
+      "key": "ui.gem.garnet",
+      "ko": "가넷",
+      "en": "Garnet"
+    },
+    {
+      "key": "ui.gem.topaz",
+      "ko": "토파즈",
+      "en": "Topaz"
+    },
+    {
+      "key": "ui.gem.amethyst",
+      "ko": "자수정",
+      "en": "Amethyst"
+    },
+    {
+      "key": "ui.gem.sapphire",
+      "ko": "사파이어",
+      "en": "Sapphire"
+    },
+    {
+      "key": "ui.gem.diamond",
+      "ko": "다이아몬드",
+      "en": "Diamond"
+    },
+    {
+      "key": "ui.gem.dragon",
+      "ko": "드래곤 스톤",
+      "en": "Dragon Stone"
+    },
+    {
+      "key": "ui.gem.generic",
+      "ko": "젬스톤",
+      "en": "Gemstone"
+    },
+    {
+      "key": "ui.tooltip.cost.after.unlock",
+      "ko": "비용 · 해금 후 공개",
+      "en": "Cost · Revealed After Unlock"
+    },
+    {
+      "key": "ui.tooltip.cost.test.free",
+      "ko": "테스트 무료 · 보유 {0}",
+      "en": "Free in Test Mode · Owned: {0}"
+    },
+    {
+      "key": "ui.tooltip.cost.required",
+      "ko": "필요 {0}  {1} · 보유 {2}",
+      "en": "Cost {0}  {1} · Owned: {2}"
+    },
+    {
+      "key": "ui.tooltip.item.locked",
+      "ko": "잠긴 항목",
+      "en": "Locked Item"
+    },
+    {
+      "key": "ui.tooltip.research.locked",
+      "ko": "잠긴 연구입니다.\n해금 조건을 충족하면 상세 정보가 공개됩니다.",
+      "en": "This research is locked.\nDetails are shown after you meet its unlock requirements."
+    },
+    {
+      "key": "ui.tooltip.rightclick.hint",
+      "ko": "아이콘을 우클릭해 강화해 보세요.",
+      "en": "Right-click the icon to upgrade."
+    },
+    {
+      "key": "ui.tooltip.rightclick.action",
+      "ko": "아이콘 우클릭으로 강화",
+      "en": "Right-click to Upgrade"
+    },
+    {
+      "key": "ui.tooltip.selection.empty",
+      "ko": "선택한 항목 없음",
+      "en": "No Upgrade Selected"
+    },
+    {
+      "key": "ui.tooltip.selection.no.items",
+      "ko": "표시할 항목이 없습니다.",
+      "en": "Nothing to display."
+    },
+    {
+      "key": "ui.status.applied.reset",
+      "ko": "적용됨 · 이 노드를 초기화할 수 있습니다",
+      "en": "Applied · This node can be reset"
+    },
+    {
+      "key": "ui.status.applied.dependent",
+      "ko": "적용됨 · 다음 강화가 연결되어 먼저 초기화해야 합니다",
+      "en": "Applied · Reset connected upgrades first"
+    },
+    {
+      "key": "ui.status.applied",
+      "ko": "효과 적용 중",
+      "en": "Effect Active"
+    },
+    {
+      "key": "ui.status.prerequisite",
+      "ko": "선행 특성을 먼저 해금하세요",
+      "en": "Unlock the prerequisite first"
+    },
+    {
+      "key": "ui.status.boss.requirement",
+      "ko": "필요한 보스를 먼저 격파하세요",
+      "en": "Defeat the required boss first"
+    },
+    {
+      "key": "ui.status.combat.reward",
+      "ko": "전투 중 확률로 획득하는 항목입니다",
+      "en": "Found randomly during combat"
+    },
+    {
+      "key": "ui.status.gem.insufficient",
+      "ko": "젬스톤이 부족합니다",
+      "en": "Not enough gemstones"
+    },
+    {
+      "key": "ui.status.upgrade.ready",
+      "ko": "강화할 수 있습니다",
+      "en": "Ready to upgrade"
+    },
+    {
+      "key": "ui.status.reset.dependent",
+      "ko": "연결된 다음 강화가 있어 먼저 초기화해야 합니다",
+      "en": "Reset connected upgrades first"
+    },
+    {
+      "key": "ui.status.reset.research",
+      "ko": "시작점만 남기고 연구를 초기화했습니다",
+      "en": "Research reset. The starting node remains."
+    },
+    {
+      "key": "ui.tooltip.type.monster.unlock",
+      "ko": "몬스터 해금",
+      "en": "Monster Unlock"
+    },
+    {
+      "key": "ui.tooltip.type.monster.production",
+      "ko": "몬스터 생산량 증가",
+      "en": "Monster Spawn Increase"
+    },
+    {
+      "key": "ui.tooltip.type.pet",
+      "ko": "펫 동료",
+      "en": "Pet Companion"
+    },
+    {
+      "key": "ui.tooltip.type.pet.upgrade",
+      "ko": "펫 동료 강화",
+      "en": "Pet Upgrade"
+    },
+    {
+      "key": "ui.tooltip.type.skill.upgrade",
+      "ko": "스킬 강화",
+      "en": "Skill Upgrade"
+    },
+    {
+      "key": "ui.tooltip.type.final",
+      "ko": "최종 단계 · {0}",
+      "en": "Final Tier · {0}"
+    },
+    {
+      "key": "ui.tooltip.description.core",
+      "ko": "가운데 연구를 시작하면 네 방향의 연구를 재화와 선행 연구에 따라 진행할 수 있습니다.",
+      "en": "Start at the center and follow the four research paths using gemstones and prerequisites."
+    },
+    {
+      "key": "ui.tooltip.description.stat.duration.base",
+      "ko": "일반 전투 제한 시간입니다.",
+      "en": "Sets the time limit for a normal battle."
+    },
+    {
+      "key": "ui.tooltip.description.stat.attack",
+      "ko": "기본 공격 피해가 증가합니다.",
+      "en": "Increases basic attack damage."
+    },
+    {
+      "key": "ui.tooltip.description.stat.radius",
+      "ko": "기본 공격이 닿는 범위가 넓어집니다.",
+      "en": "Increases the area reached by basic attacks."
+    },
+    {
+      "key": "ui.tooltip.description.stat.cooldown",
+      "ko": "같은 대상을 다시 공격하는 간격이 짧아집니다.",
+      "en": "Reduces the delay before attacking the same target again."
+    },
+    {
+      "key": "ui.tooltip.description.stat.critical",
+      "ko": "치명타가 발동할 확률이 높아집니다.",
+      "en": "Increases the chance to deal a critical hit."
+    },
+    {
+      "key": "ui.tooltip.description.stat.boss",
+      "ko": "보스에게 주는 피해가 증가합니다.",
+      "en": "Increases damage dealt to bosses."
+    },
+    {
+      "key": "ui.tooltip.description.stat.duration",
+      "ko": "일반 필드 전투 시간이 늘어납니다.",
+      "en": "Increases normal field battle duration."
+    },
+    {
+      "key": "ui.tooltip.description.skill.tornado",
+      "ko": "전투 중 토네이도를 소환해 범위 안의 몬스터를 여러 번 공격합니다. 배우면 전투에서 자동으로 사용합니다.",
+      "en": "Summons a tornado that hits monsters in its area multiple times. It is used automatically once learned."
+    },
+    {
+      "key": "ui.tooltip.description.skill.headshot",
+      "ko": "대상을 조준해 강한 탄환을 발사하고, 명중 지점 주변의 적에게도 피해를 줍니다. 배우면 전투에서 자동으로 사용합니다.",
+      "en": "Fires a powerful aimed shot that also damages nearby enemies. It is used automatically once learned."
+    },
+    {
+      "key": "ui.tooltip.description.skill.thunder",
+      "ko": "무작위 대상에게 벼락을 내려 주변 몬스터도 함께 공격합니다. 배우면 전투에서 자동으로 사용합니다.",
+      "en": "Calls lightning down on a random target and nearby enemies. It is used automatically once learned."
+    },
+    {
+      "key": "ui.tooltip.description.skill.flame",
+      "ko": "커서 방향으로 불꽃 투사체를 발사해 몬스터를 공격합니다. 배우면 전투에서 자동으로 사용합니다.",
+      "en": "Fires a flame projectile toward the cursor to attack monsters. It is used automatically once learned."
+    },
+    {
+      "key": "ui.tooltip.description.skill.magic",
+      "ko": "마력 구체가 필드를 이동하며 닿은 몬스터를 공격합니다. 배우면 전투에서 자동으로 사용합니다.",
+      "en": "A magic orb travels across the field and attacks monsters it touches. It is used automatically once learned."
+    },
+    {
+      "key": "ui.tooltip.description.skill.laser",
+      "ko": "필드에 레이저를 발사해 빔에 닿은 몬스터를 공격합니다. 배우면 전투에서 자동으로 사용합니다.",
+      "en": "Fires a laser across the field to attack monsters caught in its beam. It is used automatically once learned."
+    },
+    {
+      "key": "ui.tooltip.description.skill.pet",
+      "ko": "아기용 동료가 플레이어를 따라다니며 가까운 몬스터를 공격합니다.",
+      "en": "A baby dragon follows the player and attacks nearby monsters."
+    },
+    {
+      "key": "ui.tooltip.description.skill.learned",
+      "ko": "배우면 다음 전투부터 자동으로 사용합니다.",
+      "en": "Once learned, this skill is used automatically starting in the next battle."
+    },
+    {
+      "key": "ui.tooltip.description.skill.pet.damage",
+      "ko": "동료의 공격 피해를 높입니다. 플레이어 공격력과 별도로 적용됩니다.",
+      "en": "Increases companion attack damage independently of player attack power."
+    },
+    {
+      "key": "ui.tooltip.description.skill.damage",
+      "ko": "이 스킬의 피해를 높입니다. 플레이어 공격력과 별도로 적용됩니다.",
+      "en": "Increases this skill’s damage independently of player attack power."
+    },
+    {
+      "key": "ui.tooltip.description.skill.radius",
+      "ko": "이 스킬의 공격 범위를 넓힙니다. 기본 공격 범위와 별도로 적용됩니다.",
+      "en": "Increases this skill’s area independently of basic attack range."
+    },
+    {
+      "key": "ui.tooltip.description.skill.pet.hits",
+      "ko": "동료가 한 번의 공격으로 동시에 타격하는 몬스터 수를 늘립니다.",
+      "en": "Increases the number of monsters the companion can hit with one attack."
+    },
+    {
+      "key": "ui.tooltip.description.skill.cooldown",
+      "ko": "이 스킬을 다시 사용하는 데 필요한 대기 시간을 줄입니다.",
+      "en": "Reduces the wait before this skill can be used again."
+    },
+    {
+      "key": "ui.tooltip.description.generic",
+      "ko": "연구 효과를 적용합니다.",
+      "en": "Applies the research effect."
+    },
+    {
+      "key": "ui.tooltip.cost.none",
+      "ko": "비용 없음",
+      "en": "No Cost"
+    },
+    {
+      "key": "ui.tooltip.cost.random.drop",
+      "ko": "비용  랜덤 드롭",
+      "en": "Cost  Random Drop"
+    },
+    {
+      "key": "ui.graph.drag.move",
+      "ko": "드래그로 이동",
+      "en": "Drag to pan"
+    },
+    {
+      "key": "ui.graph.heading.skills",
+      "ko": "스킬 연구 · 드래그로 이동",
+      "en": "Skill Research · Drag to explore"
+    },
+    {
+      "key": "ui.graph.heading.monsters",
+      "ko": "몬스터 연구 · 드래그로 이동",
+      "en": "Monster Research · Drag to explore"
+    },
+    {
+      "key": "ui.monster.trait.unavailable",
+      "ko": "몬스터 특성 정보가 준비되지 않았습니다.",
+      "en": "Monster trait information is unavailable."
+    },
+    {
+      "key": "ui.monster.trait.vanish",
+      "ko": "{0}초마다 {1}초 동안 모습을 감춰 공격을 피합니다.",
+      "en": "Vanishes for {1}s every {0}s to avoid attacks."
+    },
+    {
+      "key": "ui.monster.trait.shield",
+      "ko": "{0}초마다 {1}초 동안 받는 피해가 {2}% 감소합니다.",
+      "en": "Takes {2}% less damage for {1}s every {0}s."
+    },
+    {
+      "key": "ui.monster.trait.teleport",
+      "ko": "{0}초마다 순간이동해 위치를 바꿉니다.",
+      "en": "Teleports to a new position every {0}s."
+    },
+    {
+      "key": "ui.monster.trait.heal",
+      "ko": "{0}초마다 주변 아군의 체력을 {1}% 회복합니다.",
+      "en": "Restores {1}% health to nearby allies every {0}s."
+    },
+    {
+      "key": "ui.monster.trait.revive",
+      "ko": "{0}초마다 주변의 쓰러진 몬스터를 체력 {1}%로 되살립니다.",
+      "en": "Revives nearby fallen monsters with {1}% health every {0}s."
+    },
+    {
+      "key": "ui.monster.trait.small",
+      "ko": "몸집과 피격 범위가 작습니다.",
+      "en": "Has a small body and hit area."
+    },
+    {
+      "key": "ui.monster.trait.large",
+      "ko": "몸집이 크고 피격 범위가 넓습니다.",
+      "en": "Has a large body and hit area."
+    },
+    {
+      "key": "ui.monster.trait.fast",
+      "ko": "빠르게 이동합니다.",
+      "en": "Moves quickly."
+    },
+    {
+      "key": "ui.monster.trait.high.health",
+      "ko": "체력이 높아 오래 버팁니다.",
+      "en": "Has high health and lasts longer."
+    },
+    {
+      "key": "ui.monster.trait.basic",
+      "ko": "특별한 능력 없이 기본 방식으로 움직입니다.",
+      "en": "Moves in a basic pattern without special abilities."
+    },
+    {
+      "key": "ui.monster.reward.garnet",
+      "ko": "처치 보상: 가넷 {0}개",
+      "en": "Defeat Reward: {0} Garnet"
+    },
+    {
+      "key": "ui.monster.reward.bonus",
+      "ko": " · {0} {1}개",
+      "en": " · {0}: {1}"
+    },
+    {
+      "key": "ui.monster.reward.chance",
+      "ko": " ({0}% 확률)",
+      "en": " ({0}% chance)"
+    },
+    {
+      "key": "ui.timer.total.and.stage",
+      "ko": "전체 {0}   보스 {1}단계 {2}",
+      "en": "Total {0}   Boss Tier {1}: {2}"
+    },
+    {
+      "key": "ui.combat.hud.time.kills",
+      "ko": "남은 시간 {0}초\n처치 수 {1}",
+      "en": "Time left {0}s\nKills {1}"
+    },
+    {
+      "key": "ui.combat.hud.garnet",
+      "ko": "가넷 +{0}",
+      "en": "Garnet +{0}"
+    },
+    {
+      "key": "ui.result.aborted",
+      "ko": "전투 중단",
+      "en": "Run Aborted"
+    },
+    {
+      "key": "ui.result.complete",
+      "ko": "전투 완료",
+      "en": "Run Complete"
+    },
+    {
+      "key": "ui.result.extra.rewards",
+      "ko": "추가 보상 ",
+      "en": "Bonus Rewards "
+    },
+    {
+      "key": "ui.result.duration",
+      "ko": "전투 시간 {0}초",
+      "en": "Battle Time {0}s"
+    },
+    {
+      "key": "ui.result.defeated",
+      "ko": "처치 수 {0}",
+      "en": "Monsters Defeated {0}"
+    },
+    {
+      "key": "ui.result.garnet",
+      "ko": "가넷 +{0}",
+      "en": "Garnet +{0}"
+    },
+    {
+      "key": "ui.result.damage",
+      "ko": "총 피해 {0}",
+      "en": "Total Damage {0}"
+    },
+    {
+      "key": "ui.result.timeout",
+      "ko": "시간 종료",
+      "en": "Time Expired"
+    },
+    {
+      "key": "ui.result.hunt.over",
+      "ko": "사냥 종료",
+      "en": "Hunt Over"
+    },
+    {
+      "key": "ui.result.title",
+      "ko": "전투 종료",
+      "en": "Hunt Results"
+    },
+    {
+      "key": "ui.result.test.no.reward",
+      "ko": "테스트 전투 · 보상 미지급",
+      "en": "Test Run · No Rewards"
+    },
+    {
+      "key": "ui.result.action.lobby",
+      "ko": "로비로",
+      "en": "To Lobby"
+    },
+    {
+      "key": "ui.result.action.retry",
+      "ko": "다시 도전",
+      "en": "Try Again"
+    },
+    {
+      "key": "ui.result.action.skip",
+      "ko": "바로 보기",
+      "en": "Skip Reveal"
+    },
+    {
+      "key": "ui.result.hint",
+      "ko": "클릭하면 보상을 바로 볼 수 있어요.",
+      "en": "Click to reveal your rewards."
+    },
+    {
+      "key": "ui.result.empty.rewards",
+      "ko": "획득한 재화가 없습니다.",
+      "en": "No rewards earned."
     }
   ]
 }

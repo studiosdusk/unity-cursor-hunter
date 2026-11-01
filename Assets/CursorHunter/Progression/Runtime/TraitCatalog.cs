@@ -28,7 +28,6 @@ namespace CursorHunter.Progression
         [SerializeField] private string valueLabel;
         [SerializeField, Min(0)] private int cost = 10;
         [SerializeField] private string costGemstoneId = "gem.garnet";
-        [SerializeField, Min(0)] private int requiredBossTier;
         [SerializeField] private string prerequisiteNodeId;
         [SerializeField] private bool startsUnlocked;
         [SerializeField] private bool acquisitionOnly;
@@ -41,7 +40,6 @@ namespace CursorHunter.Progression
         public string CostGemstoneId => string.IsNullOrEmpty(costGemstoneId)
             ? "gem.garnet"
             : costGemstoneId;
-        public int RequiredBossTier => Mathf.Max(0, requiredBossTier);
         public string PrerequisiteNodeId => prerequisiteNodeId;
         public bool StartsUnlocked => startsUnlocked;
         public bool AcquisitionOnly => acquisitionOnly;
@@ -56,7 +54,6 @@ namespace CursorHunter.Progression
             string nodeDescription,
             string nodeValueLabel,
             int nodeCost,
-            int nodeRequiredBossTier,
             bool nodeStartsUnlocked = false)
         {
             id = nodeId;
@@ -65,7 +62,6 @@ namespace CursorHunter.Progression
             valueLabel = nodeValueLabel;
             cost = Mathf.Max(0, nodeCost);
             costGemstoneId = "gem.garnet";
-            requiredBossTier = Mathf.Max(0, nodeRequiredBossTier);
             startsUnlocked = nodeStartsUnlocked;
         }
 
@@ -363,7 +359,7 @@ namespace CursorHunter.Progression
                 var category = new TraitCategoryDefinition(source.id, document.FindEntity(source.id).displayName, accent);
                 foreach (var entry in source.nodes)
                     category.AddNode(new TraitNodeDefinition(entry.id, entry.displayName, entry.description,
-                        entry.valueLabel, entry.cost, entry.requiredBossTier,
+                        entry.valueLabel, entry.cost,
                         GameInformationBuilder.IsInitiallyPurchased(document, source, entry))
                         .WithCostGemstone(entry.currencyId).WithPrerequisite(entry.prerequisiteNodeId));
                 switch (source.tab)

@@ -44,7 +44,6 @@
         "valueLabel",
         "cost",
         "currencyId",
-        "requiredBossTier",
         "prerequisiteNodeId",
         "startsUnlocked",
         "operation",
@@ -74,11 +73,6 @@
         "currencyId": {
           "type": "string",
           "minLength": 1
-        },
-        "requiredBossTier": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 5
         },
         "prerequisiteNodeId": {
           "type": "string"
@@ -189,7 +183,6 @@
       "additionalProperties": false,
       "required": [
         "savedProgressPolicy",
-        "initialBossTier",
         "categories",
         "bossRewards"
       ],
@@ -200,18 +193,13 @@
             "fileOnly"
           ]
         },
-        "initialBossTier": {
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 5
-        },
         "categories": {
           "type": "array",
           "items": {
             "$ref": "#/$defs/category"
           },
-          "minItems": 22,
-          "maxItems": 22
+          "minItems": 23,
+          "maxItems": 23
         },
         "bossRewards": {
           "type": "array",

@@ -17,7 +17,7 @@ MonoBehaviour:
   prefabKey: Walker/Walker_Box
   visualPrefab: {fileID: 1055932428988400584, guid: e0389eacbc514615a1b54ebbc2a3ac40, type: 3}
   baseStats:
-    maxHealth: 140
+    maxHealth: 75
     spawnIntervalSeconds: 2.25
     packSize: 1
     moveSpeed: 0.45
