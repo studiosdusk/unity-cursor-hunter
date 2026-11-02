@@ -111,6 +111,7 @@ namespace CursorHunter.Combat.Tests
             yield return null;
             yield return null;
             var hunt = Object.FindFirstObjectByType<HuntManager>();
+            typeof(HuntManager).GetField("playEntranceSequence", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(hunt, false);
             typeof(HuntManager).GetField("connectTraitScreenToCombat",
                 BindingFlags.Instance | BindingFlags.NonPublic).SetValue(hunt, false);
             var combat = Object.FindFirstObjectByType<CombatRunController>();
@@ -163,6 +164,7 @@ namespace CursorHunter.Combat.Tests
             yield return null;
             yield return null;
             var hunt = Object.FindFirstObjectByType<HuntManager>();
+            typeof(HuntManager).GetField("playEntranceSequence", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(hunt, false);
             typeof(HuntManager).GetField("connectTraitScreenToCombat",
                 BindingFlags.Instance | BindingFlags.NonPublic).SetValue(hunt, false);
             var combat = Object.FindFirstObjectByType<CombatRunController>();

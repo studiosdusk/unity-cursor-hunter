@@ -351,6 +351,7 @@ namespace CursorHunter.App
                 runHud.Initialize();
                 runHud.ShowRunning(combatRunController, monsterSpawner);
             }
+            StartEntrancePresentation();
         }
 
         private bool IsBalanceResult(RunResult result) => _balanceRunId.IsValid && result.RunId == _balanceRunId;

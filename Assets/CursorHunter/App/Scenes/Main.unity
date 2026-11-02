@@ -39451,6 +39451,8 @@ MonoBehaviour:
   uiRootController: {fileID: 2188000111}
   progressionController: {fileID: 760100001}
   retireButton: {fileID: 1919589632}
+  playEntranceSequence: 1
+  battlePresentation: {fileID: 2188000112}
   connectTraitScreenToCombat: 1
   defaultStage: {fileID: 0}
   monsterDefinition: {fileID: 11400000, guid: 7afc7c4d89551704be3531d7298dc4c6, type: 2}

@@ -64,7 +64,9 @@ namespace CursorHunter.App
         public bool IsReady => _phase == Phase.Ready;
         private bool IsBossPresentationRunning =>
             collection != null && collection.IsFinishingCollection || huntManager != null && huntManager.IsBossDeathPlaying;
-        private enum Phase { Hidden, BossLoot, TimeOut, Dismiss, Rewards, Buttons, Ready }
+        private enum Phase { Hidden, Start, StartDismiss, BossLoot, TimeOut, Dismiss, Rewards, Buttons, Ready }
+        public bool IsShowingStart => _phase == Phase.Start || _phase == Phase.StartDismiss;
+        private bool _startPaused;
         private Phase _phase;
         private float _clock;
         private RunId _runId;
@@ -159,6 +161,22 @@ namespace CursorHunter.App
             }
         }
 
+        public void ShowStart(RunId runId, bool paused = false)
+        {
+            if (!runId.IsValid || IsShowingStart && runId == _runId) return;
+            Hide();
+            _runId = runId;
+            _startPaused = paused;
+            _phase = Phase.Start;
+            overlay.SetActive(true);
+            timeOutPanel.SetActive(true);
+            SetLocalizedText(timeOutTitle, "ui.combat.start", "전투 시작!");
+            FitLayout();
+            RenderTimeOut(0f);
+        }
+
+        public void SetStartPaused(bool paused) => _startPaused = paused;
+
         public void Hide()
         {
             StopCountTickAudio();
@@ -185,6 +203,11 @@ namespace CursorHunter.App
 
         private void RefreshLocalizedPresentation()
         {
+            if (IsShowingStart)
+            {
+                SetLocalizedText(timeOutTitle, "ui.combat.start", "전투 시작!");
+                return;
+            }
             if (!_hasCurrentResult || !IsVisible) return;
             ApplyLocalizedPresentation(_currentResult);
         }
@@ -279,9 +302,18 @@ namespace CursorHunter.App
             if (_phase == Phase.Hidden) return;
             FitLayout();
             if (_phase == Phase.Ready || _phase == Phase.Buttons) return;
+            if (IsShowingStart && (_startPaused || Time.timeScale <= 0f)) return;
             _clock += Time.unscaledDeltaTime;
             switch (_phase)
             {
+                case Phase.Start:
+                    RenderTimeOut(_clock / Mathf.Max(0.05f, popupSeconds));
+                    if (_clock >= popupSeconds + holdSeconds) Next(Phase.StartDismiss);
+                    break;
+                case Phase.StartDismiss:
+                    timeOutGroup.alpha = 1f - Mathf.Clamp01(_clock / Mathf.Max(0.05f, dismissSeconds));
+                    if (_clock >= dismissSeconds) Hide();
+                    break;
                 case Phase.BossLoot:
                     if (!IsBossPresentationRunning)
                     {
@@ -324,7 +356,9 @@ namespace CursorHunter.App
             float t = Mathf.Clamp01(progress);
             backdrop.alpha = 1f;
             timeOutGroup.alpha = 1f;
-            timeOutPopup.localScale = Vector3.one * (reduceMotion || t >= 0.5f ? 1f : 0.82f);
+            // A single continuous expansion; the previous 82%/100% step looked like two pops.
+            float scale = reduceMotion ? 1f : Mathf.Lerp(0.82f, 1f, 1f - Mathf.Pow(1f - t, 3f));
+            timeOutPopup.localScale = Vector3.one * scale;
         }
 
         private void RenderRewards(float elapsed)

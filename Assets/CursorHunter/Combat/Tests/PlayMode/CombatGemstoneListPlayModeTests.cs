@@ -32,6 +32,7 @@ namespace CursorHunter.Combat.Tests
             yield return null;
             yield return null;
             _hunt = Object.FindFirstObjectByType<HuntManager>();
+            typeof(HuntManager).GetField("playEntranceSequence", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(_hunt, false);
             var combat = Object.FindFirstObjectByType<CombatRunController>();
             var list = Object.FindFirstObjectByType<CombatGemstoneList>(FindObjectsInactive.Include);
             string savedProfile = PlayerPrefs.GetString("cursor_hunter.progression.v1", "missing");
@@ -124,6 +125,7 @@ namespace CursorHunter.Combat.Tests
             yield return null;
             yield return null;
             _hunt = Object.FindFirstObjectByType<HuntManager>();
+            typeof(HuntManager).GetField("playEntranceSequence", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(_hunt, false);
             var combat = Object.FindFirstObjectByType<CombatRunController>();
             var hud = Object.FindFirstObjectByType<PrototypeRunHud>();
             var spawner = Object.FindFirstObjectByType<MonsterSpawner>();

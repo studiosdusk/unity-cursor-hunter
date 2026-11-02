@@ -43,6 +43,7 @@ namespace CursorHunter.App.Tests
             yield return null;
             yield return null;
             _hunt = Object.FindFirstObjectByType<HuntManager>();
+            Set(_hunt, "playEntranceSequence", false); // Entrance timing has its own real-scene fixture.
             _combat = Object.FindFirstObjectByType<CombatRunController>();
             _spawner = Object.FindFirstObjectByType<MonsterSpawner>();
             _result = Object.FindFirstObjectByType<BattleResultPresentation>();
@@ -417,6 +418,7 @@ namespace CursorHunter.App.Tests
             yield return null;
             yield return null;
             _hunt = Object.FindFirstObjectByType<HuntManager>();
+            Set(_hunt, "playEntranceSequence", false);
             _combat = Object.FindFirstObjectByType<CombatRunController>();
             _spawner = Object.FindFirstObjectByType<MonsterSpawner>();
             _result = Object.FindFirstObjectByType<BattleResultPresentation>();
@@ -830,7 +832,8 @@ namespace CursorHunter.App.Tests
                 BossDefinition boss = Resources.Load<BossDefinition>($"BossDefinitions/Boss{stage:00}");
                 Assert.That(target, Is.Not.Null, $"Stage {stage}");
                 Assert.That(target.MonsterId, Is.EqualTo($"boss.{stage:00}"));
-                var visual = target.transform.Find("VisualRoot").GetChild(0);
+                target.GetComponent<MonsterSpawnPresentation>().Advance(MonsterSpawnPresentation.PopupSeconds);
+                var visual = target.transform.Find("VisualRoot/SpawnPopup").GetChild(0);
                 Assert.That(visual.name, Is.EqualTo(boss.VisualPrefab.name));
                 var animator = visual.GetComponentInChildren<Animator>();
                 foreach (string state in new[] { "Idle", "Walk", "Hit", "Dead" })

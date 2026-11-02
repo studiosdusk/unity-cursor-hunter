@@ -144,6 +144,7 @@ namespace CursorHunter.App
             EnsureRunCoordinator();
             SubscribeToCoordinator();
             RefreshRetireButton();
+            if (uiRootController != null) uiRootController.ScreenChanged += HandleEntranceScreenChanged;
         }
 
         /// <summary>
@@ -214,6 +215,12 @@ namespace CursorHunter.App
 
             PlayerCombatStatsRuntime runtimeStats =
                 combatRunController.PlayerCombatStatsRuntime;
+            if (playEntranceSequence && battlePresentation == null)
+            {
+                Debug.LogError("Stage entrance requires the authored battle popup presentation.", this);
+                return;
+            }
+            _runCoordinator.DeferCombatStart = playEntranceSequence;
             _runUsesTraitScreen = false;
 #if UNITY_EDITOR
             if (_combatBalanceSettings != null)
@@ -414,6 +421,7 @@ namespace CursorHunter.App
                 else bossHealth.Hide();
             }
             RefreshRetireButton();
+            StartEntrancePresentation();
         }
 
         private void SyncCursorCombatStatDefaults()
@@ -482,7 +490,7 @@ namespace CursorHunter.App
         public void EndPrototypeRun()
         {
             if (_runCoordinator == null || !_runCoordinator.IsActive ||
-                combatRunController == null || !combatRunController.IsRunActive)
+                combatRunController == null || !combatRunController.IsRunActive || IsPlayingEntrance)
             {
                 return;
             }
@@ -497,7 +505,7 @@ namespace CursorHunter.App
             if (retireButton != null)
                 retireButton.interactable = isActiveAndEnabled &&
                     _runCoordinator != null && _runCoordinator.IsActive &&
-                    combatRunController != null && combatRunController.IsRunActive;
+                    combatRunController != null && combatRunController.IsRunActive && !IsPlayingEntrance;
         }
 
         /// <summary>
@@ -506,6 +514,7 @@ namespace CursorHunter.App
         /// </summary>
         public void ResetPrototypeRun()
         {
+            CancelEntrancePresentation();
             bossHealth?.Hide();
             if (_runCoordinator != null && _runCoordinator.IsActive)
             {
@@ -606,6 +615,18 @@ namespace CursorHunter.App
                 _pausedForInspection = false;
                 return;
             }
+            bool shouldPause = ShouldPauseForInspection();
+            if (shouldPause && _runCoordinator.State == RunState.Running)
+                _pausedForInspection = _runCoordinator.Pause();
+            else if (!shouldPause && _pausedForInspection)
+            {
+                _runCoordinator.Resume();
+                _pausedForInspection = false;
+            }
+        }
+
+        private bool ShouldPauseForInspection()
+        {
             bool shouldPause =
 #if UNITY_EDITOR
                 (!_ignoreFocusPauseForAutomatedPlayModeTest && !Application.isFocused) ||
@@ -619,13 +640,7 @@ namespace CursorHunter.App
                     !UnityEditorInternal.InternalEditorUtility.isApplicationActive) ||
                     (connectTraitScreenToCombat && progressionController != null && progressionController.IsSummaryOpen);
 #endif
-            if (shouldPause && _runCoordinator.State == RunState.Running)
-                _pausedForInspection = _runCoordinator.Pause();
-            else if (!shouldPause && _pausedForInspection)
-            {
-                _runCoordinator.Resume();
-                _pausedForInspection = false;
-            }
+            return shouldPause;
         }
 
         private void HandleRunCompleted(RunResult result)
@@ -720,6 +735,8 @@ namespace CursorHunter.App
 
         private void OnDisable()
         {
+            CancelEntrancePresentation();
+            if (uiRootController != null) uiRootController.ScreenChanged -= HandleEntranceScreenChanged;
             if (retireButton != null) retireButton.interactable = false;
             if (_runCoordinator != null && _runCoordinator.IsActive)
             {

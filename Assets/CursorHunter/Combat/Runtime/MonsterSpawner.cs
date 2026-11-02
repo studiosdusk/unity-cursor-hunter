@@ -26,6 +26,11 @@ namespace CursorHunter.Combat
         [SerializeField, Min(0f)] private float horizontalPadding = 0.02f;
         [SerializeField, Min(0f)] private float bottomPadding = 0.09f;
         [SerializeField, Min(0f)] private float topPadding = 0.15f;
+        [SerializeField, Min(0.5f)] private float initialEntranceSeconds = 1f;
+        private readonly List<MonsterSpawnPresentation> _initialPresentations = new List<MonsterSpawnPresentation>();
+        private bool _preparingEntrance;
+        private float _entranceClock;
+        public bool IsInitialEntranceComplete => !_preparingEntrance;
 
         private readonly List<MonsterCombatTarget> _spawnedTargets =
             new List<MonsterCombatTarget>();
@@ -109,6 +114,8 @@ namespace CursorHunter.Combat
                 return;
             }
 
+            if (_preparingEntrance) return;
+
             if (!combatRunController.IsRunActive)
             {
                 _isSpawning = false;
@@ -148,7 +155,8 @@ namespace CursorHunter.Combat
         public SpawnStartResult StartRun(
             RunRequest request,
             SpawnPlan spawnPlan,
-            IReadOnlyList<string> enabledMonsterIds)
+            IReadOnlyList<string> enabledMonsterIds,
+            bool prepareEntrance = false)
         {
             if (_isSpawning || _spawnedTargets.Count > 0)
             {
@@ -219,6 +227,9 @@ namespace CursorHunter.Combat
             _random = new SeededRandom(request.Seed);
             _spawnFailureLogged = false;
             _isSpawning = true;
+            _preparingEntrance = prepareEntrance;
+            _entranceClock = 0f;
+            _initialPresentations.Clear();
             for (int i = 0; i < _entries.Count; i++)
             {
                 _nextSpawnTimes[i] = _entries[i].Snapshot.SpawnIntervalSeconds;
@@ -232,7 +243,37 @@ namespace CursorHunter.Combat
                 }
                 _nextSpawnTimes[i] = _spawnSnapshot.SpawnIntervalSeconds;
             }
+            if (prepareEntrance)
+            {
+                // Presentation order uses a separate stream so gameplay positions and behavior seeds stay unchanged.
+                var order = new SeededRandom(request.Seed ^ 0x535041574EUL);
+                for (int i = _initialPresentations.Count - 1; i > 0; i--)
+                {
+                    int other = (int)(order.NextUInt64() % (ulong)(i + 1));
+                    MonsterSpawnPresentation swap = _initialPresentations[i];
+                    _initialPresentations[i] = _initialPresentations[other];
+                    _initialPresentations[other] = swap;
+                }
+                float spread = Mathf.Max(0f, initialEntranceSeconds - 0.1f - MonsterSpawnPresentation.PopupSeconds);
+                for (int i = 0; i < _initialPresentations.Count; i++)
+                    _initialPresentations[i].ScheduleInitial(0.1f +
+                        (_initialPresentations.Count > 1 ? spread * i / (_initialPresentations.Count - 1) : 0f));
+            }
             return new SpawnStartResult(SpawnStartStatus.Started, "All monster packs prepared.");
+        }
+
+        public void AdvanceInitialEntrance(float seconds)
+        {
+            if (!_preparingEntrance || seconds <= 0f || float.IsNaN(seconds) || float.IsInfinity(seconds)) return;
+            _entranceClock += seconds;
+            foreach (MonsterSpawnPresentation presentation in _initialPresentations)
+                if (presentation != null) presentation.Advance(seconds);
+            if (_entranceClock < initialEntranceSeconds) return;
+            // Clamp the last popup to its exact authored scale even at a floating-point boundary.
+            foreach (MonsterSpawnPresentation presentation in _initialPresentations)
+                if (presentation != null && !presentation.IsFinished) presentation.Advance(MonsterSpawnPresentation.PopupSeconds);
+            _initialPresentations.Clear();
+            _preparingEntrance = false;
         }
 
         /// <summary>Applies the complete candidate plan without restarting or reseeding this run.</summary>
@@ -424,6 +465,8 @@ namespace CursorHunter.Combat
         public void StopRun(bool finishBossDeathAnimation)
         {
             _isSpawning = false;
+            _preparingEntrance = false;
+            _initialPresentations.Clear();
             ClearBossDeathVisual();
 
             for (int index = _spawnedTargets.Count - 1; index >= 0; index--)
@@ -517,6 +560,11 @@ namespace CursorHunter.Combat
                     return false;
                 }
 
+                Transform pivot = target.transform.Find("VisualRoot/SpawnPopup");
+                MonsterSpawnPresentation presentation = target.gameObject.AddComponent<MonsterSpawnPresentation>();
+                presentation.Play(pivot, target, combatRunController, _preparingEntrance,
+                    _preparingEntrance ? 0.1f : 0f);
+                if (_preparingEntrance) _initialPresentations.Add(presentation);
                 _spawnedTargets.Add(target);
             }
 
@@ -644,9 +692,11 @@ namespace CursorHunter.Combat
                     return false;
                 }
 
+                Transform spawnPivot = new GameObject("SpawnPopup").transform;
+                spawnPivot.SetParent(visualRoot, false);
                 Transform visualClone = UnityEngine.Object.Instantiate(
                     _spawnVisualPrefab.transform,
-                    visualRoot,
+                    spawnPivot,
                     false);
                 if (visualClone == null)
                 {

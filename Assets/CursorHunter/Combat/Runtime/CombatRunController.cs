@@ -60,6 +60,7 @@ namespace CursorHunter.Combat
         private bool _isPrepared;
         private bool _isRunning;
         private bool _isPaused;
+        private bool _isEntering;
         private bool _completionRequested;
         private bool _abortRequested;
         private bool _hasInvalidSkillControllerSet;
@@ -77,10 +78,11 @@ namespace CursorHunter.Combat
         public RunId CurrentRunId => _isRunning ? _runRequest.RunId : default;
 
         public bool IsRunning =>
-            _isRunning && !_isPaused && !_completionRequested && !_abortRequested;
+            _isRunning && !IsPaused && !_completionRequested && !_abortRequested;
         public bool IsRunActive =>
             _isRunning && !_completionRequested && !_abortRequested;
-        public bool IsPaused => _isPaused;
+        public bool IsPaused => _isPaused || _isEntering;
+        public bool IsEntering => _isRunning && _isEntering;
         public float ElapsedSeconds => _elapsedSeconds;
         public float RemainingSeconds =>
             _isRunning
@@ -155,7 +157,7 @@ namespace CursorHunter.Combat
         /// </summary>
         public void AdvanceTime(float deltaSeconds)
         {
-            if (!_isRunning || _isPaused || _completionRequested || _abortRequested ||
+            if (!_isRunning || IsPaused || _completionRequested || _abortRequested ||
                 deltaSeconds <= 0f || float.IsNaN(deltaSeconds) ||
                 float.IsInfinity(deltaSeconds))
             {
@@ -252,6 +254,7 @@ namespace CursorHunter.Combat
             _isPrepared = true;
             _isRunning = false;
             _isPaused = false;
+            _isEntering = false;
             _completionRequested = false;
             _abortRequested = false;
             return true;
@@ -260,7 +263,7 @@ namespace CursorHunter.Combat
         /// <summary>
         /// Opens the combat clock after all other run participants prepared.
         /// </summary>
-        public bool CommitStart()
+        public bool CommitStart(bool waitForEntrance = false)
         {
             if (!_isPrepared || _isRunning)
             {
@@ -269,8 +272,17 @@ namespace CursorHunter.Combat
 
             _isPrepared = false;
             _isRunning = true;
+            _isEntering = waitForEntrance;
             playerCombatStatsRuntime.SetRunActive(true);
             PresentationReset?.Invoke();
+            return true;
+        }
+
+        public bool FinishEntrance()
+        {
+            if (!IsEntering || _completionRequested || _abortRequested) return false;
+            _isEntering = false;
+            ResetAttackPath();
             return true;
         }
 
@@ -286,6 +298,7 @@ namespace CursorHunter.Combat
 
             _isPrepared = false;
             _isPaused = false;
+            _isEntering = false;
             _completionRequested = false;
             _abortRequested = false;
             _lastBasicHitAt.Clear();
@@ -302,7 +315,7 @@ namespace CursorHunter.Combat
 
         public bool PauseRun()
         {
-            if (!_isRunning || _isPaused || _completionRequested || _abortRequested)
+            if (!_isRunning || IsPaused || _completionRequested || _abortRequested)
             {
                 return false;
             }
@@ -757,7 +770,7 @@ namespace CursorHunter.Combat
             RunSettlementPolicy settlementPolicy,
             out RunResult result)
         {
-            if (!_isRunning)
+            if (!_isRunning || _isEntering)
             {
                 result = default;
                 return false;
@@ -765,6 +778,7 @@ namespace CursorHunter.Combat
 
             _isRunning = false;
             _isPaused = false;
+            _isEntering = false;
             _completionRequested = false;
             _abortRequested = false;
             _lastBasicHitAt.Clear();
@@ -792,6 +806,7 @@ namespace CursorHunter.Combat
 
             _isRunning = false;
             _isPaused = false;
+            _isEntering = false;
             _completionRequested = false;
             _abortRequested = false;
             _lastBasicHitAt.Clear();
