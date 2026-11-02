@@ -38,6 +38,10 @@ namespace CursorHunter.Combat
         [SerializeField] private Camera worldCamera;
         [SerializeField] private GameObject attackEffectPrefab;
 
+        [Header("Spawn area (viewport)")]
+        [SerializeField] private Vector2 spawnViewportMin = new Vector2(0.08f, 0.15f);
+        [SerializeField] private Vector2 spawnViewportMax = new Vector2(0.92f, 0.8f);
+
         [Header("Base balance")]
         [SerializeField] private PetBaseStat baseStat = new PetBaseStat
         {
@@ -88,7 +92,8 @@ namespace CursorHunter.Combat
         private float _lastVisualSortingY;
         private bool _hasVisualSortingY;
         private Vector3 _spawnPosition;
-        private bool _hasSpawnPosition;
+        private Vector3 _authoredPosition;
+        private bool _hasAuthoredPosition;
         private string _currentAnimation;
 
         public bool IsPetVisible => _visible && petRoot != null &&
@@ -120,12 +125,11 @@ namespace CursorHunter.Combat
             if (!string.IsNullOrEmpty(skill.SkillId) &&
                 (skill.SkillId != SkillId || !skill.IsValid)) return false;
 
-            // Capture once so a later run starts at the authored scene position,
-            // rather than wherever the last target led the pet.
-            if (!_hasSpawnPosition)
+            // Keep the scene position only as a fallback for camera-less sandboxes.
+            if (!_hasAuthoredPosition)
             {
-                _spawnPosition = petRoot.position;
-                _hasSpawnPosition = true;
+                _authoredPosition = petRoot.position;
+                _hasAuthoredPosition = true;
             }
             _combat = combat;
             _runId = runId;
@@ -134,6 +138,7 @@ namespace CursorHunter.Combat
                 combat.RelicModifiers);
             _animation = petRoot.GetComponent<SkeletonAnimation>();
             ConfigureVisualSorting();
+            _spawnPosition = ChooseSpawnPosition(seed);
             _lastElapsedSeconds = combat.ElapsedSeconds;
             _nextScanAt = combat.ElapsedSeconds;
             _nextAttackAt = combat.ElapsedSeconds;
@@ -220,6 +225,26 @@ namespace CursorHunter.Combat
             }
 
             PlayAnimation("Idle", true);
+        }
+
+        private Vector3 ChooseSpawnPosition(ulong seed)
+        {
+            if (_sortingCamera == null) return _authoredPosition;
+
+            float minX = Mathf.Clamp01(spawnViewportMin.x);
+            float minY = Mathf.Clamp01(spawnViewportMin.y);
+            float maxX = Mathf.Clamp01(spawnViewportMax.x);
+            float maxY = Mathf.Clamp01(spawnViewportMax.y);
+            if (minX >= maxX || minY >= maxY) return _authoredPosition;
+
+            // Use an independent stream so pet placement never changes combat rolls.
+            var random = new SeededRandom(seed ^ 0x504554535041574EUL);
+            float distance = Mathf.Abs(
+                _authoredPosition.z - _sortingCamera.transform.position.z);
+            Vector3 position = _sortingCamera.ViewportToWorldPoint(new Vector3(
+                random.NextFloat(minX, maxX), random.NextFloat(minY, maxY), distance));
+            position.z = _authoredPosition.z;
+            return position;
         }
 
         private void ShowPet()

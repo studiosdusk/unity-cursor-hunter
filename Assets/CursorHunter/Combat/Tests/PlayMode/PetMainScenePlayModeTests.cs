@@ -39,7 +39,7 @@ namespace CursorHunter.Combat.Tests
             Assert.That(field, Is.Not.Null);
             Transform pet = (Transform)field.GetValue(controller);
             Assert.That(pet, Is.Not.Null);
-            Vector3 spawnPosition = pet.position;
+            float spawnPlaneZ = pet.position.z;
             Transform ring = pet.Find("MagicCircle1_Green");
             Assert.That(ring, Is.Not.Null);
             Transform configuredRing = (Transform)typeof(PetSkillController)
@@ -74,7 +74,11 @@ namespace CursorHunter.Combat.Tests
             yield return null;
 
             Assert.That(controller.IsPetVisible, Is.True);
-            Assert.That(pet.position, Is.EqualTo(spawnPosition));
+            Vector3 spawnPosition = pet.position;
+            Vector3 spawnViewport = worldCamera.WorldToViewportPoint(spawnPosition);
+            Assert.That(spawnViewport.x, Is.InRange(0.08f, 0.92f));
+            Assert.That(spawnViewport.y, Is.InRange(0.15f, 0.8f));
+            Assert.That(spawnPosition.z, Is.EqualTo(spawnPlaneZ));
             cursorAnchor.position = new Vector3(-100f, -100f, 0f);
             combat.AdvanceTime(0.2f);
             yield return null;
@@ -104,6 +108,26 @@ namespace CursorHunter.Combat.Tests
                 default, out _), Is.True);
             Assert.That(pet.gameObject.activeSelf, Is.False);
             Assert.That(ring.gameObject.activeInHierarchy, Is.False);
+
+            Assert.That(combat.PrepareRun(new RunRequest(new RunId("main-pet-restart"),
+                1, 1, RunMode.NormalField, string.Empty, 99UL, 5f),
+                new CombatSnapshot(10L, 1f, 0.2f, 1)), Is.True);
+            Assert.That(combat.ConfigureSkills(new[]
+            {
+                new SkillCombatSnapshot(PetSkillController.SkillId, true)
+            }), Is.True);
+            Assert.That(combat.CommitStart(), Is.True);
+            yield return null;
+
+            Assert.That(controller.IsPetVisible, Is.True);
+            Assert.That(pet.position, Is.Not.EqualTo(spawnPosition),
+                "A new run seed must choose a fresh starting position.");
+            spawnViewport = worldCamera.WorldToViewportPoint(pet.position);
+            Assert.That(spawnViewport.x, Is.InRange(0.08f, 0.92f));
+            Assert.That(spawnViewport.y, Is.InRange(0.15f, 0.8f));
+            Assert.That(pet.position.z, Is.EqualTo(spawnPlaneZ));
+            Assert.That(combat.TryAbortRun(RunEndReason.UserExit,
+                default, out _), Is.True);
 #else
             Assert.Ignore("Requires the Editor PlayMode scene loader.");
             yield break;
