@@ -336,6 +336,7 @@ namespace CursorHunter.App
             _lastRunWasBoss = boss != null;
             _lastBossStage = boss == null ? 0 : boss.Stage;
             _lastBossSucceeded = false;
+            RefreshRetireButton();
             if (boss != null) bossHealth?.Show(combatRunController, monsterSpawner.BossTarget, boss);
             else bossHealth?.Hide();
             _runUsesTraitScreen = player != null;

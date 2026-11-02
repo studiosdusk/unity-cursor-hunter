@@ -476,16 +476,16 @@ namespace CursorHunter.App.Tests
             LogAssert.Expect(LogType.Warning, "Trait progression changed in memory but could not be saved.");
             LogAssert.Expect(LogType.Warning, $"Run '{_combat.CurrentRunId}' produced rewards, but progression settlement could not be saved.");
             KillBoss();
-            RunResult pending = Get<RunResult>(_hunt, "_pendingBossSettlement");
+            RunResult pending = Get<RunResult>(_hunt, "_pendingRunSettlement");
             LogAssert.Expect(LogType.Warning, "Trait progression changed in memory but could not be saved.");
             LogAssert.Expect(LogType.Warning, $"Run '{pending.RunId}' produced rewards, but progression settlement could not be saved.");
             LogAssert.Expect(LogType.Warning, "보스 진행도 초기화를 저장하지 못했습니다. 다시 시도해 주세요.");
             _hunt.ResetBossProgress();
-            Assert.That(Get<RunResult>(_hunt, "_pendingBossSettlement").RunId, Is.EqualTo(pending.RunId));
+            Assert.That(Get<RunResult>(_hunt, "_pendingRunSettlement").RunId, Is.EqualTo(pending.RunId));
             Assert.That(Get<long>(progression, "_garnetBalance"), Is.EqualTo(garnet));
             PlayerPrefs.DeleteKey(ProfileKey);
             _hunt.ResetBossProgress();
-            Assert.That(Get<RunResult>(_hunt, "_pendingBossSettlement").RunId.IsValid, Is.False);
+            Assert.That(Get<RunResult>(_hunt, "_pendingRunSettlement").RunId.IsValid, Is.False);
             Assert.That(Get<long>(progression, "_garnetBalance"), Is.EqualTo(garnet + pending.GarnetEarned));
             Assert.That(_hunt.HighestBossStageCleared, Is.Zero);
             Assert.That(PlayerPrefs.GetString(ProfileKey), Does.Contain("\"highestBossStageCleared\":0"));
@@ -859,6 +859,197 @@ namespace CursorHunter.App.Tests
             yield return Ready();
             LogAssert.NoUnexpectedReceived();
         }
+        [UnityTest]
+        public IEnumerator RetireButtonKeepsNormalCurrencyRelicAndUncollectedLootExactlyOnce()
+        {
+            Button retire = RetireButton();
+            Assert.That(retire.interactable, Is.False);
+            BeginPlayerNormalRunWithRelicDrop();
+            RunId run = _combat.CurrentRunId;
+            long earned = _combat.GarnetEarned;
+            object progression = Get<object>(_hunt, "progressionController");
+            long before = Get<long>(progression, "_garnetBalance");
+            int terminals = 0;
+            Get<RunCoordinator>(_hunt, "_runCoordinator").Aborted += value => terminals++;
+            retire.onClick.Invoke();
+            retire.onClick.Invoke();
+            _hunt.EndPrototypeRun();
+            RunResult result = Get<RunResult>(_result, "_currentResult");
+            Assert.That(terminals, Is.EqualTo(1));
+            Assert.That(result.RunId, Is.EqualTo(run));
+            Assert.That(result.EndReason, Is.EqualTo(RunEndReason.UserExit));
+            Assert.That(result.SettlementPolicy, Is.EqualTo(RunSettlementPolicy.Eligible));
+            Assert.That(result.GarnetEarned, Is.EqualTo(earned).And.GreaterThan(0));
+            CollectionAssert.Contains(result.RelicAwards, "relic.red_potion");
+            Assert.That(Get<long>(progression, "_garnetBalance"), Is.EqualTo(before + earned));
+            Assert.That(PlayerPrefs.GetString(ProfileKey), Does.Contain("relic.red_potion"));
+            Assert.That(_combat.IsRunActive, Is.False);
+            Assert.That(_spawner.ActiveSpawnedCount, Is.Zero);
+            Assert.That(retire.interactable, Is.False);
+            Assert.That(Get<TMP_Text>(_result, "timeOutTitle").text, Is.EqualTo("중도 포기"));
+            Assert.That(Object.FindFirstObjectByType<AppUiRootController>().CurrentScreen, Is.EqualTo(UiScreenId.Combat));
+            yield return Ready();
+            var collection = Object.FindFirstObjectByType<GemstoneCollectionController>();
+            foreach (ResourceRewardSnapshot reward in result.Rewards)
+                Assert.That(collection.Shown(reward.CurrencyId), Is.EqualTo(reward.Amount));
+            Assert.That(Get<TMP_Text>(_result, "title").text, Is.EqualTo("사냥 중도 포기"));
+            Assert.That(collection.IsFinishing, Is.False);
+            Assert.That(Get<long>(progression, "_garnetBalance"), Is.EqualTo(before + earned));
+            Get<Button>(_result, "retryButton").onClick.Invoke();
+            Assert.That(_combat.IsRunActive, Is.True);
+            Assert.That(_combat.CurrentRunId, Is.Not.EqualTo(run));
+            Assert.That(retire.interactable, Is.True);
+            Assert.That(_result.IsVisible, Is.False);
+        }
+
+        [UnityTest]
+        public IEnumerator RetireButtonFromPausedBossShowsEmptyRetiredResultAndRetriesSameStage()
+        {
+            _hunt.BeginBossRun();
+            RunId run = _combat.CurrentRunId;
+            Assert.That(Get<RunCoordinator>(_hunt, "_runCoordinator").Pause(), Is.True);
+            RetireButton().onClick.Invoke();
+            RunResult result = Get<RunResult>(_result, "_currentResult");
+            Assert.That(result.EndReason, Is.EqualTo(RunEndReason.UserExit));
+            Assert.That(result.BossDefeated, Is.False);
+            Assert.That(result.Rewards, Is.Empty);
+            Assert.That(_hunt.HighestBossStageCleared, Is.Zero);
+            Assert.That(_spawner.ActiveSpawnedCount, Is.Zero);
+            Assert.That(_hunt.IsBossDeathPlaying, Is.False);
+            yield return Ready();
+            Assert.That(Get<TMP_Text>(_result, "emptyRewards").gameObject.activeSelf, Is.True);
+            Assert.That(Get<TMP_Text>(_result, "title").text, Is.EqualTo("보스 1단계 · 중도 포기"));
+            Assert.That(Get<TMP_Text>(_result, "subtitle").text, Does.Not.Contain("시간 안에"));
+            LocalizationCatalog.SetLanguage("en");
+            Assert.That(Get<TMP_Text>(_result, "title").text, Is.EqualTo("Boss Stage 1 · Retired"));
+            LocalizationCatalog.SetLanguage("ko");
+            Button retry = Get<Button>(_result, "retryButton");
+            Assert.That(retry.GetComponentInChildren<TMP_Text>(true).text, Is.EqualTo("같은 단계 재도전"));
+            retry.onClick.Invoke();
+            Assert.That(_combat.IsRunActive, Is.True);
+            Assert.That(_combat.CurrentRunId, Is.Not.EqualTo(run));
+            Assert.That(_spawner.BossTarget.MonsterId, Is.EqualTo("boss.01"));
+            Assert.That(RetireButton().interactable, Is.True);
+        }
+
+        [UnityTest]
+        public IEnumerator RetiredNormalPayoutSaveFailureKeepsResultAndRetriesCurrencyAndRelicTogether()
+        {
+            BeginPlayerNormalRunWithRelicDrop();
+            RunId run = _combat.CurrentRunId;
+            object progression = Get<object>(_hunt, "progressionController");
+            long before = Get<long>(progression, "_garnetBalance");
+            long earned = _combat.GarnetEarned;
+            PlayerPrefs.SetString(ProfileKey, "{\"version\":999}");
+            ExpectSettlementFailure(run);
+            RetireButton().onClick.Invoke();
+            Assert.That(Get<RunResult>(_hunt, "_pendingRunSettlement").RunId, Is.EqualTo(run));
+            Assert.That(Get<long>(progression, "_garnetBalance"), Is.EqualTo(before));
+            yield return Ready();
+            ExpectSettlementFailure(run);
+            Get<Button>(_result, "upgradeButton").onClick.Invoke();
+            Assert.That(_result.IsReady, Is.True);
+            Assert.That(_result.IsVisible, Is.True);
+            Assert.That(Get<TMP_Text>(_result, "subtitle").text, Does.Contain("재시도"));
+            Assert.That(Get<CanvasGroup>(_result, "actions").interactable, Is.True);
+            PlayerPrefs.DeleteKey(ProfileKey);
+            Get<Button>(_result, "upgradeButton").onClick.Invoke();
+            Assert.That(Get<RunResult>(_hunt, "_pendingRunSettlement").RunId.IsValid, Is.False);
+            Assert.That(Get<long>(progression, "_garnetBalance"), Is.EqualTo(before + earned));
+            Assert.That(PlayerPrefs.GetString(ProfileKey), Does.Contain("relic.red_potion"));
+            Assert.That(Object.FindFirstObjectByType<AppUiRootController>().CurrentScreen, Is.EqualTo(UiScreenId.Trait));
+            Assert.That(_hunt.TrySavePendingRunRewards(), Is.True);
+            Assert.That(Get<long>(progression, "_garnetBalance"), Is.EqualTo(before + earned));
+        }
+
+        [UnityTest]
+        public IEnumerator RetiredNormalBalanceTestStillRevealsEarnedAmountsWithoutSaving()
+        {
+            CombatBalanceSettings settings = _hunt.CaptureCombatBalanceSettings();
+            settings.UsePlayerProgression = false;
+            settings.AttackPower = 1;
+            settings.CriticalChancePercent = 0;
+            foreach (SkillBalanceSettings skill in settings.Skills) skill.Enabled = false;
+            foreach (MonsterBalanceSettings monster in settings.Monsters)
+            {
+                monster.Enabled = monster.MonsterId == "monster.01";
+                monster.MaxHealth = 10000;
+                monster.GarnetReward = 43;
+                monster.BonusDropCurrencyId = "gem.dragon";
+                monster.BonusDropAmount = 48;
+                monster.BonusDropChancePercent = 100;
+            }
+            Assert.That(_hunt.TrySetCombatBalanceSettings(settings, out string error), Is.True, error);
+            _hunt.BeginPrototypeRun();
+            Assert.That(_combat.TryApplySkillDamage(_combat.CurrentRunId,
+                Object.FindFirstObjectByType<MonsterCombatTarget>(), 1000000), Is.True);
+            string saved = PlayerPrefs.GetString(ProfileKey);
+            RetireButton().onClick.Invoke();
+            RunResult result = Get<RunResult>(_result, "_currentResult");
+            Assert.That(result.SettlementPolicy, Is.EqualTo(RunSettlementPolicy.Discard));
+            Assert.That(BattleResultPresentation.GetEarned(result, "gem.garnet"), Is.EqualTo(43));
+            Assert.That(BattleResultPresentation.GetEarned(result, "gem.dragon"), Is.EqualTo(48));
+            yield return Ready();
+            Assert.That(_result.IsVisible, Is.True);
+            Assert.That(PlayerPrefs.GetString(ProfileKey), Is.EqualTo(saved));
+        }
+
+        [UnityTest]
+        public IEnumerator RetirementAfterBossClearOrTimeoutDoesNotReplaceTheTerminalResult()
+        {
+            _hunt.BeginBossRun();
+            KillBoss();
+            RetireButton().onClick.Invoke();
+            Assert.That(Get<RunResult>(_result, "_currentResult").EndReason, Is.EqualTo(RunEndReason.BossDefeated));
+            _hunt.ResetPrototypeRun();
+            BeginPlayerNormalRunWithRelicDrop();
+            _combat.AdvanceTime(100);
+            RetireButton().onClick.Invoke();
+            Assert.That(Get<RunResult>(_result, "_currentResult").EndReason, Is.EqualTo(RunEndReason.TimeExpired));
+            Assert.That(RetireButton().interactable, Is.False);
+            yield return Ready();
+        }
+
+        private Button RetireButton()
+        {
+            Button button = Get<Button>(_hunt, "retireButton");
+            Assert.That(button, Is.Not.Null, "RetireButton must be assigned in Main, without a runtime lookup.");
+            Assert.That(button.name, Is.EqualTo("RetireButton"));
+            Assert.That(button.onClick.GetPersistentEventCount(), Is.EqualTo(1));
+            Assert.That(button.onClick.GetPersistentTarget(0), Is.EqualTo(_hunt));
+            Assert.That(button.onClick.GetPersistentMethodName(0), Is.EqualTo(nameof(HuntManager.EndPrototypeRun)));
+            return button;
+        }
+
+        private void BeginPlayerNormalRunWithRelicDrop()
+        {
+            Set(_hunt, "connectTraitScreenToCombat", true);
+            Set(_hunt, "_ignoreFocusPauseForAutomatedPlayModeTest", true);
+            PlayerSnapshot();
+            object progression = Get<object>(_hunt, "progressionController");
+            var purchased = Get<HashSet<string>>(progression, "_purchased");
+            purchased.UnionWith(new[] { "stat.attack.01", "stat.radius.01", "stat.cooldown.01",
+                "stat.critical.01", "stat.fieldDuration.01", "monster.01" });
+            _hunt.BeginPrototypeRun();
+            Assert.That(_combat.IsRunActive, Is.True);
+            MonsterCombatTarget target = Object.FindObjectsByType<MonsterCombatTarget>(FindObjectsSortMode.None)
+                .First(value => value.IsActive && value.IsRegistered);
+            RelicCombatSnapshot[] relics = _combat.RelicSnapshots.Select(relic => new RelicCombatSnapshot(
+                relic.RelicId, false, relic.RelicId == "relic.red_potion" ? target.MonsterId : "monster.unused",
+                relic.RelicId == "relic.red_potion" ? 100 : 0.001f,
+                relic.EffectId, relic.EffectValue, relic.EffectValue2)).ToArray();
+            Assert.That(_combat.ConfigureRelics(relics, new RelicDropRulesCombatSnapshot(
+                1, "unownedOnly", "sumFixedChanceThenWeightedPick", true)), Is.True);
+            Assert.That(_combat.TryApplySkillDamage(_combat.CurrentRunId, target, 1000000000), Is.True);
+            Assert.That(RetireButton().interactable, Is.True);
+        }
+
+        private static void ExpectSettlementFailure(RunId run)
+        {
+            LogAssert.Expect(LogType.Warning, "Trait progression changed in memory but could not be saved.");
+            LogAssert.Expect(LogType.Warning, $"Run '{run}' produced rewards, but progression settlement could not be saved.");
+        }
+
         private IEnumerator Ready()
         {
             float until = Time.realtimeSinceStartup + 6;

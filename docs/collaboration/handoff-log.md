@@ -1252,3 +1252,19 @@
 - 첫 사용자 안내가 공격력 2단계, 공격 범위 2단계, 펫 배우기를 요구하지만 각 비용이 가넷 160개라 총 480개가 필요했다. 시작 데이터는 가넷 245개여서 연구 도중 구매가 막힐 수 있음을 확인했다.
 - 신규 프로필의 게임 데이터·Trait 런타임 기본값·Main 씬 기본값을 가넷 480개로 맞췄다. 저장된 기존 프로필은 잔액을 유지한다. 정적 검증은 온보딩 유료 연구 세 개의 존재, 가넷 비용·총액 충족, 런타임 JSON과 Main 씬의 시작 잔액 일치를 확인하도록 강화했다. 한국어 데이터 참고 파일과 원본 체크섬도 동기화했다.
 - `validate_game_information.py`, `validate_bilingual_game_data.py`, `build_korean_game_data_reference.py`, `validate_collaboration.py`와 `git diff --check`가 통과했다. Unity 화면·컴파일·실제 플레이 검수는 사용자가 하기로 했으므로 실행하지 않았다.
+
+### 2026-11-02 · App — RetireButton 중도 종료 연결
+
+- Main 씬의 기존 `RetireButton` OnClick을 `HuntManager.EndPrototypeRun()`에 직렬화해 연결했다. 사용자의 버튼 외형·배치 변경은 유지했다.
+- 이번 변경은 씬의 버튼 연결만 포함한다. 중도 포기 전용 결과 문구, 보스 정산 규칙과 일반 보상 저장 실패 재시도 확장은 기획 상태로 유지한다.
+- `validate_collaboration.py`가 통과했다. `git diff --check`는 기존 Main 씬 사용자 변경의 공백 두 곳(35809, 36323행)을 보고했다. 해당 공백은 수정하지 않았다. Unity 실행·Play Mode 검증은 하지 않았다.
+
+### 2026-11-02 · App — 일반·보스 중도 포기 구현
+
+- Main의 기존 `RetireButton`을 `HuntManager.retireButton`에 씬 참조로 미리 할당했다. 기존 OnClick `EndPrototypeRun()`을 유지하며 활성 전투에서만 버튼을 허용하고 종료 즉시 비활성화한다. 종료가 먼저 확정된 토벌·시간 만료는 후속 포기 입력으로 바뀌지 않는다.
+- 일반 포기는 기존 `UserExit`/`Eligible` 경로로 누적 재화·유물을 정산하고 HUD에 흡수되기 전 보석까지 결과 연출에 포함한다. 보스 처치 전 포기는 기존 보상 0/진행도 유지 정책을 사용한다. 일반 밸런스 테스트도 포기 결과와 획득량 연출을 표시하되 저장하지 않는다.
+- 결과창에 한국어·영어 포기 제목과 보스 동일 단계 재도전 문구를 추가했다. 패널 전체에 붙은 바로 보기 클릭 영역의 자식 TMP를 라벨로 취급해 결과 제목을 덮어쓰던 문제도 고쳤다.
+- 저장 실패 보관을 보스 전용에서 일반·보스 공통 `_pendingRunSettlement`로 확장했다. 결과 행동·다음 전투·메뉴 복귀 전에 같은 재화·유물 지급을 재시도하고, 실패 중 결과를 유지하며 같은 세션에서 중복 정산하지 않는다. 영속 정산 journal은 추가하지 않았다.
+- 영향 파일: `App/Runtime/HuntManager.cs`, `HuntManager.Boss.cs`, `HuntManager.Balance.cs`, `BattleResultPresentation.cs`, `App/Scenes/Main.unity`, `App/Tests/PlayMode/BossBattlePlayModeTests.cs`, `Data/Resources/GameData/ui-localization.json`, `docs/collaboration/contracts.md`. 사용자 씬 외형·배치 변경은 유지했다.
+- 별도 회사/제품명으로 플레이어 저장을 분리한 임시 프로젝트에서 Unity 6000.3.13f1 컴파일과 PlayMode를 검증했다. 신규 중도 포기 5개와 기존 결과창 5개는 10/10 통과했다. 최종 보스·결과창 확장 회귀는 29개 중 25개 통과, 4개 실패다. 실패 4개는 변경 전 HEAD 코드에서도 재현했다: `monster.08` 외형 참조 누락 2개, 헤드샷이 성장으로 해금되지 않는다는 옛 테스트 기대값 2개. 이번 구현의 검증과 구분해 후속 확인 대상으로 남긴다.
+- 협업·게임 정보·한영 참조 검증과 변경한 코드/JSON/문서의 `git diff --check`가 통과했다. Main 씬 기존 사용자 변경의 공백 경고는 유지했다. 원시 결과 XML과 로그는 `/private/tmp/cursor-hunter-retire-qa-results`에 보관하고 임시 프로젝트는 삭제했다.

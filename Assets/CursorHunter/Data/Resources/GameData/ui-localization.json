@@ -1216,6 +1216,36 @@
       "en": "Hunt Over"
     },
     {
+      "key": "ui.result.retired",
+      "ko": "중도 포기",
+      "en": "Retired"
+    },
+    {
+      "key": "ui.result.retired.title",
+      "ko": "사냥 중도 포기",
+      "en": "Hunt Retired"
+    },
+    {
+      "key": "ui.result.boss.retired.title",
+      "ko": "보스 {0}단계 · 중도 포기",
+      "en": "Boss Stage {0} · Retired"
+    },
+    {
+      "key": "ui.result.boss.retired.subtitle",
+      "ko": "보스 처치 전에 포기하여 획득한 보상이 없습니다.",
+      "en": "No rewards earned: retired before defeating the boss."
+    },
+    {
+      "key": "ui.result.action.boss.retry",
+      "ko": "같은 단계 재도전",
+      "en": "Retry This Stage"
+    },
+    {
+      "key": "ui.result.action.retry.failed",
+      "ko": "진행을 완료하지 못했습니다. 다시 눌러 재시도하세요.",
+      "en": "Could not continue. Press again to retry."
+    },
+    {
       "key": "ui.result.title",
       "ko": "전투 종료",
       "en": "Hunt Results"
