@@ -939,7 +939,7 @@ namespace CursorHunter.App.Tests
 
             MonsterCombatTarget stump = monsters["monster.01"];
             stump.transform.position = Vector3.zero;
-            Assert.That(stump.ApplyDamage(combat.CurrentRunId, 5L, out _, out _), Is.True);
+            Assert.That(stump.ApplyDamage(combat.CurrentRunId, 1L, out _, out _), Is.True);
             long damagedHp = stump.CurrentHealth;
             monsters["monster.09"].transform.position = Vector3.zero;
             Call(monsters["monster.09"].GetComponent<MonsterBehaviorController>(), "Update");

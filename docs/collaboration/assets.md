@@ -74,6 +74,7 @@ Dead 클립을 Override하고, 나머지는 원본 Animator를 사용한다.
 | monster.behavior-profile.circular | Data | [Circular.asset](../../Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Circular.asset) |
 | monster.behavior-profile.vanish | Data | [Vanish.asset](../../Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Vanish.asset) |
 | monster.behavior-profile.shield | Data | [Shield.asset](../../Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Shield.asset) |
+| monster.shield-effect | Combat | [MonsterShieldEffect.prefab](../../Assets/CursorHunter/Combat/Prefabs/Vfx/MonsterShieldEffect.prefab) · [FX_AirBall_B 원본](../../Assets/DownLoadAssets/Eric%20VFX%20Studio/Game%20VFX%20-%20Shield%20Collection/Prefabs/URP/FX_AirBall_B.prefab) |
 | monster.behavior-profile.teleport | Data | [Teleport.asset](../../Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Teleport.asset) |
 | monster.behavior-profile.healer | Data | [Healer.asset](../../Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Healer.asset) |
 | monster.behavior-profile.resurrector | Data | [Resurrector.asset](../../Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Resurrector.asset) |

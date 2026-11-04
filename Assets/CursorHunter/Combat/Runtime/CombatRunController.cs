@@ -14,6 +14,8 @@ namespace CursorHunter.Combat
     [DisallowMultipleComponent]
     public sealed partial class CombatRunController : MonoBehaviour
     {
+        private const int MaxIdleShieldEffectsPerPrefab = 80;
+
         [SerializeField] private LayerMask enemyLayers = -1;
         [SerializeField, Min(32)] private int overlapBufferCapacity = 256;
         [SerializeField] private PlayerCombatStatsRuntime playerCombatStatsRuntime;
@@ -36,6 +38,8 @@ namespace CursorHunter.Combat
         private readonly List<string> _relicAwards = new List<string>(20);
         private readonly HashSet<string> _relicAwardIds =
             new HashSet<string>(StringComparer.Ordinal);
+        private readonly Dictionary<ParticleSystem, Stack<ParticleSystem>> _idleShieldEffects =
+            new Dictionary<ParticleSystem, Stack<ParticleSystem>>();
 
         private RunRequest _runRequest;
         private readonly List<IRunSkillController> _skillControllers =
@@ -148,6 +152,39 @@ namespace CursorHunter.Combat
         private void Update()
         {
             AdvanceTime(Time.deltaTime);
+        }
+
+        internal ParticleSystem RentShieldEffect(ParticleSystem prefab, Transform parent)
+        {
+            if (_idleShieldEffects.TryGetValue(prefab, out Stack<ParticleSystem> idle))
+            {
+                while (idle.TryPop(out ParticleSystem effect))
+                {
+                    if (effect == null) continue;
+                    effect.transform.SetParent(parent, false);
+                    return effect;
+                }
+            }
+
+            return Instantiate(prefab, parent);
+        }
+
+        internal void ReturnShieldEffect(ParticleSystem prefab, ParticleSystem effect)
+        {
+            if (!_idleShieldEffects.TryGetValue(prefab, out Stack<ParticleSystem> idle))
+            {
+                idle = new Stack<ParticleSystem>();
+                _idleShieldEffects.Add(prefab, idle);
+            }
+
+            if (idle.Count >= MaxIdleShieldEffectsPerPrefab)
+            {
+                Destroy(effect.gameObject);
+                return;
+            }
+
+            effect.transform.SetParent(transform, false);
+            idle.Push(effect);
         }
 
         /// <summary>

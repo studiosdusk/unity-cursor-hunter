@@ -87,6 +87,8 @@ namespace CursorHunter.App.Tests
             {
                 Assert.That(definitionsById.TryGetValue(information.id, out MonsterDefinition definition),
                     Is.True, "Missing combat definition for " + information.id);
+                Assert.That(definition.VisualPrefab != null, Is.True,
+                    information.id + " needs a valid combat visual prefab reference");
                 Assert.That(string.IsNullOrWhiteSpace(definition.DisplayName), Is.False,
                     information.id + " needs its trait-screen display name");
                 Assert.That(definition.CreateSnapshot(80).IsValid, Is.True,

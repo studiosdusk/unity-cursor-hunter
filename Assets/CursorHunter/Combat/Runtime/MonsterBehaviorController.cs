@@ -11,12 +11,16 @@ namespace CursorHunter.Combat
     public sealed class MonsterBehaviorController : MonoBehaviour
     {
         private const float ActionDurationSeconds = 2f;
+        private const float ShieldGrowSeconds = 0.18f;
+        private const float ShieldShrinkSeconds = 0.16f;
 
         [SerializeField] private Transform visualRoot;
         [SerializeField] private Transform hitArea;
         [SerializeField] private BoxCollider2D hitAreaCollider;
+        [SerializeField] private ParticleSystem shieldEffectPrefab;
 
         private MonsterCombatTarget _target;
+        private ParticleSystem _shieldEffect;
         private CombatRunController _runController;
         private RunId _runId;
         private MonsterMovementMode _movementMode;
@@ -57,8 +61,9 @@ namespace CursorHunter.Combat
         {
             if (!_isConfigured || _target == null || !_target.BelongsTo(_runId) ||
                 _runController == null || !_runController.IsRunActive ||
-                _runController.IsPaused)
+                _runController.CurrentRunId != _runId)
             {
+                ReleaseShieldEffect();
                 if (_target != null)
                 {
                     _target.SetMoving(false);
@@ -68,7 +73,7 @@ namespace CursorHunter.Combat
 
             float elapsedSeconds = _runController.ElapsedSeconds;
             float deltaSeconds = elapsedSeconds - _lastElapsedSeconds;
-            if (deltaSeconds <= 0f || float.IsNaN(deltaSeconds) ||
+            if (_runController.IsPaused || deltaSeconds <= 0f || float.IsNaN(deltaSeconds) ||
                 float.IsInfinity(deltaSeconds))
             {
                 _target.SetMoving(false);
@@ -98,7 +103,13 @@ namespace CursorHunter.Combat
 
             _lastElapsedSeconds = elapsedSeconds;
             AdvanceSpecialAbility(elapsedSeconds);
+            UpdateShieldEffect(elapsedSeconds, deltaSeconds);
             _target.SetMoving(_isMoveAction && movedInCurrentAction);
+        }
+
+        private void OnDisable()
+        {
+            ReleaseShieldEffect();
         }
 
         internal void StopForHit(float durationSeconds)
@@ -188,6 +199,7 @@ namespace CursorHunter.Combat
             ulong behaviorSeed)
         {
             _isConfigured = false;
+            ReleaseShieldEffect();
             if (target == null || runController == null || !target.IsActive)
             {
                 return false;
@@ -384,6 +396,57 @@ namespace CursorHunter.Combat
             if (_target != null)
             {
                 _target.SetShielded(shielded, _specialAbilityStrength);
+            }
+            if (!shielded)
+            {
+                ReleaseShieldEffect();
+            }
+        }
+
+        private void UpdateShieldEffect(float elapsedSeconds, float deltaSeconds)
+        {
+            if (!_isShielded || shieldEffectPrefab == null)
+            {
+                return;
+            }
+
+            if (_shieldEffect == null)
+            {
+                _shieldEffect = _runController.RentShieldEffect(shieldEffectPrefab, visualRoot);
+            }
+
+            float remaining = _specialEffectEndsAt - elapsedSeconds;
+            float activeTime = Mathf.Max(0.2f, _specialAbilityDurationSeconds) - remaining;
+            float grow = Mathf.SmoothStep(0.15f, 1f, activeTime / ShieldGrowSeconds);
+            float shrink = Mathf.SmoothStep(0f, 1f, remaining / ShieldShrinkSeconds);
+            Transform effect = _shieldEffect.transform;
+            effect.localScale = shieldEffectPrefab.transform.localScale * (grow * shrink);
+
+            if (!_shieldEffect.gameObject.activeSelf)
+            {
+                effect.localPosition = visualRoot.InverseTransformPoint(
+                    hitArea.TransformPoint(hitAreaCollider.offset)) + shieldEffectPrefab.transform.localPosition;
+                _shieldEffect.gameObject.SetActive(true);
+                // Prime the continuous emitters so the shield is visible on activation.
+                _shieldEffect.Simulate(0.12f, true, true, false);
+                return;
+            }
+
+            // Simulate leaves the particles paused between combat ticks.
+            _shieldEffect.Simulate(deltaSeconds, true, false, false);
+        }
+
+        private void ReleaseShieldEffect()
+        {
+            ParticleSystem effect = _shieldEffect;
+            _shieldEffect = null;
+            if (effect == null) return;
+
+            effect.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            effect.gameObject.SetActive(false);
+            if (_runController != null)
+            {
+                _runController.ReturnShieldEffect(shieldEffectPrefab, effect);
             }
         }
 
