@@ -16,6 +16,7 @@ MonoBehaviour:
   displayName: 갑옷병사
   prefabKey: Golem/Golem_Iron
   visualPrefab: {fileID: 1262332049845763274, guid: cbdaa21cc641e4c6284c48dbb9017356, type: 3}
+  baseStatsAreFinalValues: 1
   baseStats:
     maxHealth: 24
     spawnIntervalSeconds: 1.5
@@ -25,7 +26,7 @@ MonoBehaviour:
     hitAreaWidth: 1
     hitAreaHeight: 1.2
     garnetReward: 7
-    bonusDropCurrencyId: gem.amethyst
+    bonusDropCurrencyId: "gem.amethyst"
     bonusDropAmount: 3
     bonusDropChancePercent: 100
   behaviorProfiles:

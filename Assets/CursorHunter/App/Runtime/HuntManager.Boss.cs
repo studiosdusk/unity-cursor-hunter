@@ -12,7 +12,6 @@ namespace CursorHunter.App
         [SerializeField] private BossHealthPresenter bossHealth;
         private bool _lastRunWasBoss, _lastBossSucceeded;
         private int _lastBossStage, _sessionHighestBossStage;
-        private RunResult _pendingBossSettlement;
         public bool IsBossDeathPlaying => monsterSpawner != null && monsterSpawner.IsBossDeathPlaying;
         public int HighestBossStageCleared => connectTraitScreenToCombat && progressionController != null
             ? progressionController.HighestBossStageCleared : _sessionHighestBossStage;
@@ -33,7 +32,7 @@ namespace CursorHunter.App
                 return;
             }
             // Finish an already earned payout before resetting its stage record.
-            if (!TrySavePendingBossReward() ||
+            if (!TrySavePendingRunRewards() ||
                 progressionController != null && !progressionController.TryResetBossProgress())
             {
                 Debug.LogWarning("보스 진행도 초기화를 저장하지 못했습니다. 다시 시도해 주세요.", this);
@@ -49,7 +48,6 @@ namespace CursorHunter.App
             _lastBossStage = 0;
             _lastRunWasBoss = false;
             _lastBossSucceeded = false;
-            _pendingBossSettlement = default;
         }
 
         public void BeginBossStage(int stage)
@@ -73,7 +71,7 @@ namespace CursorHunter.App
 
         public void ContinueFromResult()
         {
-            if (!TrySavePendingBossReward()) return;
+            if (!TrySavePendingRunRewards()) return;
             if (!_lastRunWasBoss || !_lastBossSucceeded) { ReplayLastRun(); return; }
             if (_lastBossStage < BossDefinition.StageCount) BeginBossStage(_lastBossStage + 1);
             else BeginPrototypeRun();
@@ -81,17 +79,13 @@ namespace CursorHunter.App
 
         public void OpenUpgrades()
         {
-            if (!TrySavePendingBossReward()) return;
+            if (!TrySavePendingRunRewards()) return;
             ResetPrototypeRun();
             testPanelToggleController?.HideTestPanel();
             uiRootController?.ShowTrait();
         }
 
-        public bool TrySavePendingBossReward()
-        {
-            if (!_pendingBossSettlement.RunId.IsValid) return true;
-            SettleRunRewards(_pendingBossSettlement);
-            return !_pendingBossSettlement.RunId.IsValid;
-        }
+        // Preserve the existing public entry point for Inspector/external callers.
+        public bool TrySavePendingBossReward() => TrySavePendingRunRewards();
     }
 }

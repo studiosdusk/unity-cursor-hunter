@@ -60,6 +60,9 @@ namespace CursorHunter.Combat
             new Stack<FlameExhaustHitEffect>(80);
 
         private CombatRunController _combat;
+        internal BattlefieldArea Battlefield => _combat != null ? _combat.Battlefield : null;
+        internal float MotionScale => _combat != null ? _combat.SpatialMotionScale : 1f;
+
         private SeededRandom _random;
         private RunId _runId;
         private ContactFilter2D _enemyFilter;
@@ -216,6 +219,8 @@ namespace CursorHunter.Combat
                 !sourceCursorHitArea.gameObject.activeInHierarchy ||
                 !sourceCursorHitArea.enabled ||
                 !sourceCursorVisual.gameObject.activeInHierarchy)
+                return;
+            if (Battlefield != null && !Battlefield.Contains(sourceCursorHitArea.transform.position))
                 return;
             if (_freeProjectiles.Count == 0)
             {

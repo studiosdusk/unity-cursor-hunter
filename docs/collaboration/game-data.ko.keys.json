@@ -2,10 +2,10 @@
   "schemaVersion(스냅샷 스키마 버전)": 4,
   "balanceVersion(밸런스 버전)": 4,
   "stats(스탯)": {
-    "attackPower(공격력)": 1,
+    "attackPower(공격력)": 2,
     "attackRadiusWorldUnits(자동 공격 반경)": 1.7253809,
     "attackCooldownSeconds(자동 공격 쿨타임)": 0.8,
-    "criticalChancePercent(치명타 확률)": 0,
+    "criticalChancePercent(치명타 확률)": 5,
     "bossDamageMultiplier(보스 피해 배율)": 1,
     "normalFieldDurationSeconds(일반 필드 제한 시간)": 15
   },

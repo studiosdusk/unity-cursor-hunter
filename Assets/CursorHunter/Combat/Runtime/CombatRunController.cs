@@ -14,9 +14,16 @@ namespace CursorHunter.Combat
     [DisallowMultipleComponent]
     public sealed partial class CombatRunController : MonoBehaviour
     {
+        private const int MaxIdleShieldEffectsPerPrefab = 80;
+
         [SerializeField] private LayerMask enemyLayers = -1;
         [SerializeField, Min(32)] private int overlapBufferCapacity = 256;
         [SerializeField] private PlayerCombatStatsRuntime playerCombatStatsRuntime;
+        [SerializeField] private BattlefieldArea battlefield;
+
+        public BattlefieldArea Battlefield => battlefield;
+        public float SpatialSkillScale => battlefield != null ? battlefield.SkillScale : 1f;
+        public float SpatialMotionScale => battlefield != null ? battlefield.MotionScale : 1f;
 
         private Collider2D[] _overlapBuffer;
         private readonly HashSet<ICombatTarget> _uniqueTargets =
@@ -36,6 +43,8 @@ namespace CursorHunter.Combat
         private readonly List<string> _relicAwards = new List<string>(20);
         private readonly HashSet<string> _relicAwardIds =
             new HashSet<string>(StringComparer.Ordinal);
+        private readonly Dictionary<ParticleSystem, Stack<ParticleSystem>> _idleShieldEffects =
+            new Dictionary<ParticleSystem, Stack<ParticleSystem>>();
 
         private RunRequest _runRequest;
         private readonly List<IRunSkillController> _skillControllers =
@@ -60,6 +69,7 @@ namespace CursorHunter.Combat
         private bool _isPrepared;
         private bool _isRunning;
         private bool _isPaused;
+        private bool _isEntering;
         private bool _completionRequested;
         private bool _abortRequested;
         private bool _hasInvalidSkillControllerSet;
@@ -77,10 +87,11 @@ namespace CursorHunter.Combat
         public RunId CurrentRunId => _isRunning ? _runRequest.RunId : default;
 
         public bool IsRunning =>
-            _isRunning && !_isPaused && !_completionRequested && !_abortRequested;
+            _isRunning && !IsPaused && !_completionRequested && !_abortRequested;
         public bool IsRunActive =>
             _isRunning && !_completionRequested && !_abortRequested;
-        public bool IsPaused => _isPaused;
+        public bool IsPaused => _isPaused || _isEntering;
+        public bool IsEntering => _isRunning && _isEntering;
         public float ElapsedSeconds => _elapsedSeconds;
         public float RemainingSeconds =>
             _isRunning
@@ -148,6 +159,39 @@ namespace CursorHunter.Combat
             AdvanceTime(Time.deltaTime);
         }
 
+        internal ParticleSystem RentShieldEffect(ParticleSystem prefab, Transform parent)
+        {
+            if (_idleShieldEffects.TryGetValue(prefab, out Stack<ParticleSystem> idle))
+            {
+                while (idle.TryPop(out ParticleSystem effect))
+                {
+                    if (effect == null) continue;
+                    effect.transform.SetParent(parent, false);
+                    return effect;
+                }
+            }
+
+            return Instantiate(prefab, parent);
+        }
+
+        internal void ReturnShieldEffect(ParticleSystem prefab, ParticleSystem effect)
+        {
+            if (!_idleShieldEffects.TryGetValue(prefab, out Stack<ParticleSystem> idle))
+            {
+                idle = new Stack<ParticleSystem>();
+                _idleShieldEffects.Add(prefab, idle);
+            }
+
+            if (idle.Count >= MaxIdleShieldEffectsPerPrefab)
+            {
+                Destroy(effect.gameObject);
+                return;
+            }
+
+            effect.transform.SetParent(transform, false);
+            idle.Push(effect);
+        }
+
         /// <summary>
         /// Advances the combat clock. Keeping this small seam public makes the
         /// duration boundary deterministic in tests without changing the
@@ -155,7 +199,7 @@ namespace CursorHunter.Combat
         /// </summary>
         public void AdvanceTime(float deltaSeconds)
         {
-            if (!_isRunning || _isPaused || _completionRequested || _abortRequested ||
+            if (!_isRunning || IsPaused || _completionRequested || _abortRequested ||
                 deltaSeconds <= 0f || float.IsNaN(deltaSeconds) ||
                 float.IsInfinity(deltaSeconds))
             {
@@ -252,6 +296,7 @@ namespace CursorHunter.Combat
             _isPrepared = true;
             _isRunning = false;
             _isPaused = false;
+            _isEntering = false;
             _completionRequested = false;
             _abortRequested = false;
             return true;
@@ -260,7 +305,7 @@ namespace CursorHunter.Combat
         /// <summary>
         /// Opens the combat clock after all other run participants prepared.
         /// </summary>
-        public bool CommitStart()
+        public bool CommitStart(bool waitForEntrance = false)
         {
             if (!_isPrepared || _isRunning)
             {
@@ -269,8 +314,17 @@ namespace CursorHunter.Combat
 
             _isPrepared = false;
             _isRunning = true;
+            _isEntering = waitForEntrance;
             playerCombatStatsRuntime.SetRunActive(true);
             PresentationReset?.Invoke();
+            return true;
+        }
+
+        public bool FinishEntrance()
+        {
+            if (!IsEntering || _completionRequested || _abortRequested) return false;
+            _isEntering = false;
+            ResetAttackPath();
             return true;
         }
 
@@ -286,6 +340,7 @@ namespace CursorHunter.Combat
 
             _isPrepared = false;
             _isPaused = false;
+            _isEntering = false;
             _completionRequested = false;
             _abortRequested = false;
             _lastBasicHitAt.Clear();
@@ -302,7 +357,7 @@ namespace CursorHunter.Combat
 
         public bool PauseRun()
         {
-            if (!_isRunning || _isPaused || _completionRequested || _abortRequested)
+            if (!_isRunning || IsPaused || _completionRequested || _abortRequested)
             {
                 return false;
             }
@@ -338,7 +393,8 @@ namespace CursorHunter.Combat
         /// </summary>
         public bool TryAttack(Collider2D attackCollider, bool includeMovementPath = true)
         {
-            if (!IsRunning || attackCollider == null || !attackCollider.enabled)
+            if (!IsRunning || attackCollider == null || !attackCollider.enabled ||
+                !attackCollider.gameObject.activeInHierarchy)
             {
                 ResetAttackPath();
                 return false;
@@ -351,6 +407,12 @@ namespace CursorHunter.Combat
             }
 
             Physics2D.SyncTransforms();
+
+            if (battlefield != null && !battlefield.Contains(attackCollider.bounds.center))
+            {
+                ResetAttackPath();
+                return false;
+            }
 
             ContactFilter2D contactFilter = new ContactFilter2D
             {
@@ -757,7 +819,7 @@ namespace CursorHunter.Combat
             RunSettlementPolicy settlementPolicy,
             out RunResult result)
         {
-            if (!_isRunning)
+            if (!_isRunning || _isEntering)
             {
                 result = default;
                 return false;
@@ -765,6 +827,7 @@ namespace CursorHunter.Combat
 
             _isRunning = false;
             _isPaused = false;
+            _isEntering = false;
             _completionRequested = false;
             _abortRequested = false;
             _lastBasicHitAt.Clear();
@@ -792,6 +855,7 @@ namespace CursorHunter.Combat
 
             _isRunning = false;
             _isPaused = false;
+            _isEntering = false;
             _completionRequested = false;
             _abortRequested = false;
             _lastBasicHitAt.Clear();

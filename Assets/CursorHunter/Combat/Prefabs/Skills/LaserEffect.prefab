@@ -51,6 +51,10 @@ MonoBehaviour:
   referenceFieldHeightWorldUnits: 24
   visualWidthMultiplier: 3
   visualHeightMultiplier: 3
+  beamMaterial: {fileID: 2100000, guid: ef693aa39a9c43e4bd3159184f82ed5c, type: 2}
+  diagonalWidthWorldUnits: 1.6
+  telegraphFraction: 0.18
+  firingFraction: 0.32
 --- !u!1 &300100
 GameObject:
   m_ObjectHideFlags: 0

@@ -100,7 +100,7 @@ namespace CursorHunter.Combat.Tests
             yield return null;
             Assert.That(skill.IsPetVisible, Is.True);
             Assert.That(ring.activeInHierarchy, Is.True);
-            Assert.That(_pet.transform.position.x, Is.GreaterThan(-1.5f));
+            target.transform.position = _pet.transform.position + Vector3.right * 4f;
             SortingGroup sortingGroup = _pet.GetComponent<SortingGroup>();
             Assert.That(sortingGroup, Is.Not.Null);
             Assert.That(sortingGroup.sortingLayerID, Is.Zero);

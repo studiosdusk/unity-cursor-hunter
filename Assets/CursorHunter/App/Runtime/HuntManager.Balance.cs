@@ -82,6 +82,11 @@ namespace CursorHunter.App
                 }
                 result.Monsters.Add(monster);
             }
+            if (current == null && monsterDefinition != null && !result.Monsters.Exists(monster => monster.Enabled))
+            {
+                MonsterBalanceSettings starter = result.Monsters.Find(monster => monster.MonsterId == monsterDefinition.MonsterId);
+                if (starter != null) starter.Enabled = true;
+            }
             result.Monsters.Sort((first, second) => string.CompareOrdinal(first.MonsterId, second.MonsterId));
             CombatBalanceSettings retained = _combatBalanceSettings?.Clone();
             if (IsBossCombatActive && retained != null)
@@ -314,6 +319,12 @@ namespace CursorHunter.App
                 Debug.LogWarning(error, this);
                 return;
             }
+            // Older drafts and live edits can leave all species off. Use the
+            // scene's starter for the next run without changing the draft.
+            if (enabled.Count == 0 && monsterDefinition != null &&
+                _balanceTemplates.ContainsKey(monsterDefinition.MonsterId))
+                enabled.Add(monsterDefinition.MonsterId);
+
             float testDuration = boss != null ? BossDefinition.DurationSeconds : player != null
                 ? GetRunDuration(RunMode.NormalField, player, durationSeconds, RelicCombatModifiers.From(player.Relics))
                 : settings.DurationSeconds;
@@ -336,6 +347,7 @@ namespace CursorHunter.App
             _lastRunWasBoss = boss != null;
             _lastBossStage = boss == null ? 0 : boss.Stage;
             _lastBossSucceeded = false;
+            RefreshRetireButton();
             if (boss != null) bossHealth?.Show(combatRunController, monsterSpawner.BossTarget, boss);
             else bossHealth?.Hide();
             _runUsesTraitScreen = player != null;
@@ -350,6 +362,7 @@ namespace CursorHunter.App
                 runHud.Initialize();
                 runHud.ShowRunning(combatRunController, monsterSpawner);
             }
+            StartEntrancePresentation();
         }
 
         private bool IsBalanceResult(RunResult result) => _balanceRunId.IsValid && result.RunId == _balanceRunId;

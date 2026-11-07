@@ -5,6 +5,7 @@ using CursorHunter.Contracts;
 using CursorHunter.Data;
 using CursorHunter.Progression;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace CursorHunter.App
 {
@@ -30,6 +31,7 @@ namespace CursorHunter.App
         [SerializeField] private TestPanelToggleController testPanelToggleController;
         [SerializeField] private AppUiRootController uiRootController;
         [SerializeField] private TraitScreenController progressionController;
+        [SerializeField] private Button retireButton;
 
         [Header("Trait integration")]
         [SerializeField, Tooltip("Use the exact unlocked and upgraded values from the Trait screen in normal combat.")]
@@ -53,6 +55,7 @@ namespace CursorHunter.App
         private bool _pausedForInspection;
         private bool _runUsesTraitScreen;
         private CombatStageDefinition _lastStartedStage;
+        private RunResult _pendingRunSettlement;
         private readonly HashSet<RunId> _settledRunIds =
             new HashSet<RunId>();
 #if UNITY_EDITOR
@@ -64,6 +67,7 @@ namespace CursorHunter.App
             ResolveReferences();
             SyncCursorCombatStatDefaults();
             EnsureRunCoordinator();
+            RefreshRetireButton();
         }
 
         private void ResolveReferences()
@@ -139,6 +143,8 @@ namespace CursorHunter.App
             ResolveReferences();
             EnsureRunCoordinator();
             SubscribeToCoordinator();
+            RefreshRetireButton();
+            if (uiRootController != null) uiRootController.ScreenChanged += HandleEntranceScreenChanged;
         }
 
         /// <summary>
@@ -188,7 +194,7 @@ namespace CursorHunter.App
         private void BeginRun(CombatStageDefinition stage, BossDefinition boss)
         {
             ResolveReferences();
-            if (!TrySavePendingBossReward()) return;
+            if (!TrySavePendingRunRewards()) return;
             EnsureRunCoordinator();
             SubscribeToCoordinator();
 
@@ -209,6 +215,12 @@ namespace CursorHunter.App
 
             PlayerCombatStatsRuntime runtimeStats =
                 combatRunController.PlayerCombatStatsRuntime;
+            if (playEntranceSequence && battlePresentation == null)
+            {
+                Debug.LogError("Stage entrance requires the authored battle popup presentation.", this);
+                return;
+            }
+            _runCoordinator.DeferCombatStart = playEntranceSequence;
             _runUsesTraitScreen = false;
 #if UNITY_EDITOR
             if (_combatBalanceSettings != null)
@@ -408,6 +420,8 @@ namespace CursorHunter.App
                 if (boss != null) bossHealth.Show(combatRunController, monsterSpawner.BossTarget, boss);
                 else bossHealth.Hide();
             }
+            RefreshRetireButton();
+            StartEntrancePresentation();
         }
 
         private void SyncCursorCombatStatDefaults()
@@ -471,11 +485,12 @@ namespace CursorHunter.App
         }
 
         /// <summary>
-        /// Ends the current prototype run from the test panel.
+        /// RetireButton OnClick: end the run once and present its earned rewards.
         /// </summary>
         public void EndPrototypeRun()
         {
-            if (_runCoordinator == null || !_runCoordinator.IsActive)
+            if (_runCoordinator == null || !_runCoordinator.IsActive ||
+                combatRunController == null || !combatRunController.IsRunActive || IsPlayingEntrance)
             {
                 return;
             }
@@ -485,12 +500,21 @@ namespace CursorHunter.App
                 RunSettlementPolicy.Eligible);
         }
 
+        private void RefreshRetireButton()
+        {
+            if (retireButton != null)
+                retireButton.interactable = isActiveAndEnabled &&
+                    _runCoordinator != null && _runCoordinator.IsActive &&
+                    combatRunController != null && combatRunController.IsRunActive && !IsPlayingEntrance;
+        }
+
         /// <summary>
         /// Stops the current test run, removes spawned monsters, hides the
         /// cursor, and clears the prototype HUD without showing a result.
         /// </summary>
         public void ResetPrototypeRun()
         {
+            CancelEntrancePresentation();
             bossHealth?.Hide();
             if (_runCoordinator != null && _runCoordinator.IsActive)
             {
@@ -517,6 +541,7 @@ namespace CursorHunter.App
             {
                 progressionController.ClearActiveRunSnapshot();
             }
+            RefreshRetireButton();
         }
 
         /// <summary>
@@ -526,6 +551,7 @@ namespace CursorHunter.App
         /// </summary>
         public void ReturnToMainMenu()
         {
+            if (!TrySavePendingRunRewards()) return;
             ResetPrototypeRun();
 
             if (testPanelToggleController != null)
@@ -542,7 +568,7 @@ namespace CursorHunter.App
         /// <summary>Opens research directly from an eligible player's battle result.</summary>
         public void ReturnToResearch()
         {
-            if (!TrySavePendingBossReward()) return;
+            if (!TrySavePendingRunRewards()) return;
             ReturnToMainMenu();
             if (connectTraitScreenToCombat && progressionController != null)
             {
@@ -562,6 +588,7 @@ namespace CursorHunter.App
             if (runHud != null)
                 runHud.SetTraitConnectionEnabled(connectTraitScreenToCombat);
             ReconcileInspectionPause();
+            RefreshRetireButton();
             if (_runCoordinator == null ||
                 !_runCoordinator.IsActive ||
                 combatRunController == null ||
@@ -588,6 +615,18 @@ namespace CursorHunter.App
                 _pausedForInspection = false;
                 return;
             }
+            bool shouldPause = ShouldPauseForInspection();
+            if (shouldPause && _runCoordinator.State == RunState.Running)
+                _pausedForInspection = _runCoordinator.Pause();
+            else if (!shouldPause && _pausedForInspection)
+            {
+                _runCoordinator.Resume();
+                _pausedForInspection = false;
+            }
+        }
+
+        private bool ShouldPauseForInspection()
+        {
             bool shouldPause =
 #if UNITY_EDITOR
                 (!_ignoreFocusPauseForAutomatedPlayModeTest && !Application.isFocused) ||
@@ -601,17 +640,12 @@ namespace CursorHunter.App
                     !UnityEditorInternal.InternalEditorUtility.isApplicationActive) ||
                     (connectTraitScreenToCombat && progressionController != null && progressionController.IsSummaryOpen);
 #endif
-            if (shouldPause && _runCoordinator.State == RunState.Running)
-                _pausedForInspection = _runCoordinator.Pause();
-            else if (!shouldPause && _pausedForInspection)
-            {
-                _runCoordinator.Resume();
-                _pausedForInspection = false;
-            }
+            return shouldPause;
         }
 
         private void HandleRunCompleted(RunResult result)
         {
+            RefreshRetireButton();
             SettleRunRewards(result);
             _lastBossSucceeded = result.BossDefeated;
             if (result.BossDefeated
@@ -637,6 +671,7 @@ namespace CursorHunter.App
 
         private void HandleRunAborted(RunResult result)
         {
+            RefreshRetireButton();
             SettleRunRewards(result);
             _lastBossSucceeded = false;
             bossHealth?.Hide();
@@ -648,7 +683,7 @@ namespace CursorHunter.App
 
             if (runHud != null &&
                 (result.SettlementPolicy == RunSettlementPolicy.Eligible ||
-                 result.Mode == RunMode.Boss && result.EndReason == RunEndReason.UserExit))
+                 result.EndReason == RunEndReason.UserExit))
             {
                 runHud.ShowResult(result);
             }
@@ -678,19 +713,31 @@ namespace CursorHunter.App
                 : progressionController.GrantRunRewards(result.Rewards, result.RelicAwards))
             {
                 _settledRunIds.Add(result.RunId);
-                if (result.BossDefeated) _pendingBossSettlement = default;
+                if (_pendingRunSettlement.RunId == result.RunId)
+                    _pendingRunSettlement = default;
             }
             else
             {
-                if (result.BossDefeated) _pendingBossSettlement = result;
+                _pendingRunSettlement = result;
                 Debug.LogWarning(
                     $"Run '{result.RunId}' produced rewards, but progression settlement could not be saved.",
                     this);
             }
         }
 
+        /// <summary>Keep the result available until its currency and relic payout is saved.</summary>
+        public bool TrySavePendingRunRewards()
+        {
+            if (!_pendingRunSettlement.RunId.IsValid) return true;
+            SettleRunRewards(_pendingRunSettlement);
+            return !_pendingRunSettlement.RunId.IsValid;
+        }
+
         private void OnDisable()
         {
+            CancelEntrancePresentation();
+            if (uiRootController != null) uiRootController.ScreenChanged -= HandleEntranceScreenChanged;
+            if (retireButton != null) retireButton.interactable = false;
             if (_runCoordinator != null && _runCoordinator.IsActive)
             {
                 _runCoordinator.Abort(

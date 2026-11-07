@@ -16,6 +16,7 @@ MonoBehaviour:
   displayName: 벌집
   prefabKey: Skeleton/Skeleton_Soldier
   visualPrefab: {fileID: 6119787576993411367, guid: c765c82675dd40f39d034c792f4c568b, type: 3}
+  baseStatsAreFinalValues: 1
   baseStats:
     maxHealth: 45
     spawnIntervalSeconds: 1.8
@@ -25,7 +26,7 @@ MonoBehaviour:
     hitAreaWidth: 1
     hitAreaHeight: 1.2
     garnetReward: 9
-    bonusDropCurrencyId: gem.sapphire
+    bonusDropCurrencyId: "gem.sapphire"
     bonusDropAmount: 5
     bonusDropChancePercent: 100
   behaviorProfiles:

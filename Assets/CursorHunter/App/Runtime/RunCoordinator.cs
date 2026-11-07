@@ -43,6 +43,7 @@ namespace CursorHunter.App
         public bool IsActive => _session != null && _session.IsActive;
 
         public RunSession Session => _session;
+        public bool DeferCombatStart { get; set; }
 
         public bool MarkAsBalanceTest()
         {
@@ -264,7 +265,7 @@ namespace CursorHunter.App
                 }
 
                 SpawnStartResult spawnStartResult =
-                    _monsterSpawner.StartRun(request, spawnPlan, enabledMonsterIds);
+                    _monsterSpawner.StartRun(request, spawnPlan, enabledMonsterIds, DeferCombatStart);
                 if (!spawnStartResult.Succeeded)
                 {
                     return FailStart(
@@ -277,7 +278,7 @@ namespace CursorHunter.App
                         out failureReason);
                 }
 
-                if (!_combatRunController.CommitStart())
+                if (!_combatRunController.CommitStart(DeferCombatStart))
                 {
                     return FailStart(
                         session,
@@ -291,7 +292,7 @@ namespace CursorHunter.App
                 combatPrepared = false;
                 combatStarted = true;
 
-                if (!session.CommitStart())
+                if (!DeferCombatStart && !session.CommitStart())
                 {
                     return FailStart(
                         session,
@@ -321,7 +322,7 @@ namespace CursorHunter.App
             RunSettlementPolicy settlementPolicy)
         {
             if (_discardRewards) settlementPolicy = RunSettlementPolicy.Discard;
-            if (_disposed || _session == null || !_session.IsActive)
+            if (_disposed || _session == null || !_session.IsActive || _session.State == RunState.Starting)
             {
                 return false;
             }
@@ -342,6 +343,14 @@ namespace CursorHunter.App
             _monsterSpawner.StopRun(finishBossDeathAnimation: result.BossDefeated);
             Completed?.Invoke(result);
             return true;
+        }
+
+        public bool FinishEntrance()
+        {
+            if (_disposed || _session == null || _session.State != RunState.Starting ||
+                !_monsterSpawner.IsInitialEntranceComplete ||
+                !_combatRunController.FinishEntrance()) return false;
+            return _session.CommitStart();
         }
 
         public bool Pause()

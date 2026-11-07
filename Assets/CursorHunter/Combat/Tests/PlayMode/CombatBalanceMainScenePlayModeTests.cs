@@ -111,6 +111,7 @@ namespace CursorHunter.Combat.Tests
             yield return null;
             yield return null;
             var hunt = Object.FindFirstObjectByType<HuntManager>();
+            typeof(HuntManager).GetField("playEntranceSequence", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(hunt, false);
             typeof(HuntManager).GetField("connectTraitScreenToCombat",
                 BindingFlags.Instance | BindingFlags.NonPublic).SetValue(hunt, false);
             var combat = Object.FindFirstObjectByType<CombatRunController>();
@@ -154,6 +155,44 @@ namespace CursorHunter.Combat.Tests
         }
 
         [UnityTest]
+        public IEnumerator MainBalanceStartsWithTheSceneStarterWhenTheDraftHasNoEnabledMonsters()
+        {
+#if UNITY_EDITOR
+            _scene = UnityEditor.SceneManagement.EditorSceneManager.LoadSceneInPlayMode(
+                "Assets/CursorHunter/App/Scenes/Main.unity",
+                new LoadSceneParameters(LoadSceneMode.Additive));
+            yield return null;
+            yield return null;
+
+            var hunt = Object.FindFirstObjectByType<HuntManager>();
+            var spawner = Object.FindFirstObjectByType<MonsterSpawner>();
+            CombatBalanceSettings settings = hunt.CaptureCombatBalanceSettings();
+            const string starterId = "monster.01";
+            Assert.That(settings.UsePlayerProgression, Is.True);
+            foreach (MonsterBalanceSettings monster in settings.Monsters)
+            {
+                Assert.That(monster.Enabled, Is.EqualTo(monster.MonsterId == starterId));
+                monster.Enabled = false;
+            }
+            settings.Monsters.Find(monster => monster.MonsterId == starterId).MaxHealth = 123L;
+            Assert.That(hunt.TrySetCombatBalanceSettings(settings, out string error), Is.True, error);
+
+            hunt.BeginPrototypeRun();
+
+            Assert.That(hunt.IsCombatBalanceTestActive, Is.True);
+            foreach (MonsterBalanceSettings monster in settings.Monsters)
+                Assert.That(spawner.IsSpeciesEnabled(monster.MonsterId), Is.EqualTo(monster.MonsterId == starterId));
+            var target = Object.FindFirstObjectByType<MonsterCombatTarget>();
+            Assert.That(target, Is.Not.Null);
+            Assert.That(target.MonsterId, Is.EqualTo(starterId));
+            Assert.That(target.MaxHealth, Is.EqualTo(123L));
+#else
+            Assert.Ignore("Requires Editor PlayMode.");
+            yield break;
+#endif
+        }
+
+        [UnityTest]
         public IEnumerator MainUsesDirectValuesUpdatesSameRunAndNeverSettlesTestRewards()
         {
 #if UNITY_EDITOR
@@ -163,6 +202,7 @@ namespace CursorHunter.Combat.Tests
             yield return null;
             yield return null;
             var hunt = Object.FindFirstObjectByType<HuntManager>();
+            typeof(HuntManager).GetField("playEntranceSequence", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(hunt, false);
             typeof(HuntManager).GetField("connectTraitScreenToCombat",
                 BindingFlags.Instance | BindingFlags.NonPublic).SetValue(hunt, false);
             var combat = Object.FindFirstObjectByType<CombatRunController>();

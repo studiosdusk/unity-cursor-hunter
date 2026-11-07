@@ -130,6 +130,7 @@ namespace CursorHunter.Combat
             HeadshotRuntimeStat next)
         {
             if (!_active) return;
+            transform.localScale = _baseScale * _owner.EffectiveRadiusMultiplier;
             if (!_exploded)
                 _explodeAt = SkillBalanceMath.Retime(_explodeAt, now,
                     previous.ExplosionDelaySeconds, next.ExplosionDelaySeconds);

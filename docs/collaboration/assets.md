@@ -23,6 +23,14 @@
 
 ## 재사용 방식
 
+2026-11-07 Main 하늘 배경은 게임 소유
+[IsometricSkyBackdrop.prefab](../../Assets/CursorHunter/Combat/Prefabs/Maps/IsometricSkyBackdrop.prefab)을 사용한다.
+원본은 `GUI Pro-SimpleCasual/ResourcesData/Sprites/Demo` 아래의
+`Demo_Background/Background_01.png`와 `Demo_Image/Image_Cloud_00.png`, `Image_Cloud_01.png`다.
+`IsometricSky_Unlit.mat`과 SpriteRenderer tint로 청록색 톤을 만들며 원본 이미지/임포터는 보존한다.
+구름 4개는 맵 뒤에서 천천히 이동하고 전투 일시정지 때 정지한다.
+조정 방법은 [맵 README](../../Assets/CursorHunter/Combat/Prefabs/Maps/README.md#하늘-배경)에 기록했다.
+
 2026-10-28 젬 수집은 Main의 `GemstoneCollectionController`가
 [GemstoneFlyView.prefab](../../Assets/CursorHunter/App/Prefabs/GemstoneFlyView.prefab)을 미리 풀링하고
 기존 `GemstoneIconCatalog`의 Sprite를 종류별로 지정한다. 소/중/대는 1/5/10을 나타내며
@@ -74,6 +82,7 @@ Dead 클립을 Override하고, 나머지는 원본 Animator를 사용한다.
 | monster.behavior-profile.circular | Data | [Circular.asset](../../Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Circular.asset) |
 | monster.behavior-profile.vanish | Data | [Vanish.asset](../../Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Vanish.asset) |
 | monster.behavior-profile.shield | Data | [Shield.asset](../../Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Shield.asset) |
+| monster.shield-effect | Combat | [MonsterShieldEffect.prefab](../../Assets/CursorHunter/Combat/Prefabs/Vfx/MonsterShieldEffect.prefab) · [FX_AirBall_B 원본](../../Assets/DownLoadAssets/Eric%20VFX%20Studio/Game%20VFX%20-%20Shield%20Collection/Prefabs/URP/FX_AirBall_B.prefab) |
 | monster.behavior-profile.teleport | Data | [Teleport.asset](../../Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Teleport.asset) |
 | monster.behavior-profile.healer | Data | [Healer.asset](../../Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Healer.asset) |
 | monster.behavior-profile.resurrector | Data | [Resurrector.asset](../../Assets/CursorHunter/Data/Resources/MonsterBehaviorProfiles/Resurrector.asset) |

@@ -1,14 +1,16 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
 
 namespace CursorHunter.App
 {
     /// <summary>
-    /// Controls the world-space cursor used by Main.unity's test panel.
+    /// Controls Main's world-space cursor anchor and its overlay above the HUD.
     ///
     /// The cursor follows the mouse on the gameplay XY plane. The skin visual
     /// is a child of the attack Collider2D transform and inherits its range
     /// scale; CursorSkinController fits each sprite without changing the hit area.
+    /// The overlay follows that fitted visual while the collider remains in world space.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class MainCursorController : MonoBehaviour
@@ -26,6 +28,25 @@ namespace CursorHunter.App
         private GameObject _cursorObject;
         private Vector3 _baseCursorScale;
         private bool _customCursorActive;
+        private float _spatialScale = 1f;
+        private SpriteRenderer _cursorVisual;
+        private Canvas _cursorCanvas;
+        private Image _cursorOverlay;
+
+        public void SetSpatialScale(float value)
+        {
+            _spatialScale = Mathf.Max(0.01f, value);
+            ApplyRangeMultiplier();
+        }
+
+        public void SetWindowCursorVisible(bool visible)
+        {
+            if (!_customCursorActive) return;
+            Cursor.visible = !visible;
+            if (_cursorObject != null && _cursorObject.activeSelf != visible)
+                _cursorObject.SetActive(visible);
+            RefreshCursorOverlay();
+        }
 
         public bool IsCustomCursorActive => _customCursorActive;
 
@@ -53,6 +74,9 @@ namespace CursorHunter.App
             {
                 worldCamera = Camera.main;
             }
+
+            CreateCursorOverlay();
+            Canvas.willRenderCanvases += RefreshCursorOverlay;
 
             if (_cursorTransform == null)
             {
@@ -90,6 +114,7 @@ namespace CursorHunter.App
             }
 
             RefreshCursorPosition();
+            RefreshCursorOverlay();
         }
 
         /// <summary>
@@ -115,6 +140,59 @@ namespace CursorHunter.App
             {
                 _cursorObject.SetActive(false);
             }
+            RefreshCursorOverlay();
+        }
+
+        private void CreateCursorOverlay()
+        {
+            _cursorVisual = GetComponent<CursorSkinController>()?.VisualRenderer;
+            if (_cursorVisual == null || worldCamera == null) return;
+            var canvasObject = new GameObject("CursorOverlay", typeof(RectTransform), typeof(Canvas));
+            canvasObject.transform.SetParent(transform, false);
+            _cursorCanvas = canvasObject.GetComponent<Canvas>();
+            _cursorCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            _cursorCanvas.sortingOrder = short.MaxValue;
+            _cursorCanvas.targetDisplay = worldCamera.targetDisplay;
+            var imageObject = new GameObject("CursorVisual", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            imageObject.transform.SetParent(canvasObject.transform, false);
+            _cursorOverlay = imageObject.GetComponent<Image>();
+            _cursorOverlay.raycastTarget = false;
+            _cursorOverlay.maskable = false;
+            _cursorOverlay.rectTransform.anchorMin = Vector2.zero;
+            _cursorOverlay.rectTransform.anchorMax = Vector2.zero;
+            _cursorCanvas.enabled = false;
+        }
+
+        // Run after the skin's LateUpdate so its size, pivot and breathing stay in sync.
+        // The world renderer remains available to cursor-copy skills and the hit area stays in world space.
+        private void RefreshCursorOverlay()
+        {
+            if (_cursorCanvas == null || _cursorVisual == null) return;
+            bool visible = isActiveAndEnabled && _customCursorActive &&
+                _cursorObject != null && _cursorObject.activeInHierarchy &&
+                _cursorVisual.enabled && _cursorVisual.sprite != null && worldCamera != null;
+            _cursorCanvas.enabled = visible;
+            _cursorVisual.forceRenderingOff = visible;
+            if (!visible) return;
+
+            Sprite sprite = _cursorVisual.sprite;
+            Transform visual = _cursorVisual.transform;
+            Vector2 size = sprite.rect.size / sprite.pixelsPerUnit;
+            Vector2 center = (sprite.rect.size * 0.5f - sprite.pivot) / sprite.pixelsPerUnit;
+            Vector3 screenCenter = worldCamera.WorldToScreenPoint(visual.TransformPoint(center));
+            Vector3 screenRight = worldCamera.WorldToScreenPoint(
+                visual.TransformPoint(center + Vector2.right * size.x * 0.5f));
+            Vector3 screenUp = worldCamera.WorldToScreenPoint(
+                visual.TransformPoint(center + Vector2.up * size.y * 0.5f));
+            Vector2 right = screenRight - screenCenter;
+            Vector2 up = screenUp - screenCenter;
+            _cursorOverlay.sprite = sprite;
+            _cursorOverlay.color = _cursorVisual.color;
+            RectTransform rect = _cursorOverlay.rectTransform;
+            rect.anchoredPosition = screenCenter;
+            rect.sizeDelta = new Vector2(right.magnitude * 2f, up.magnitude * 2f);
+            rect.localRotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(right.y, right.x) * Mathf.Rad2Deg);
+            rect.localScale = new Vector3(_cursorVisual.flipX ? -1f : 1f, _cursorVisual.flipY ? -1f : 1f, 1f);
         }
 
         /// <summary>
@@ -180,11 +258,14 @@ namespace CursorHunter.App
                 _baseCursorScale = _cursorTransform.localScale;
             }
 
-            _cursorTransform.localScale = _baseCursorScale * rangeMultiplier;
+            _cursorTransform.localScale = _baseCursorScale * (rangeMultiplier * _spatialScale);
         }
 
         private void OnDestroy()
         {
+            Canvas.willRenderCanvases -= RefreshCursorOverlay;
+            if (_cursorVisual != null) _cursorVisual.forceRenderingOff = false;
+            if (_cursorCanvas != null) Destroy(_cursorCanvas.gameObject);
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
         }
@@ -197,6 +278,8 @@ namespace CursorHunter.App
             {
                 _cursorObject.SetActive(false);
             }
+
+            RefreshCursorOverlay();
 
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;

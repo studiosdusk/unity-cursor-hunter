@@ -16,6 +16,7 @@ MonoBehaviour:
   displayName: 가면유령
   prefabKey: Alien/Alien_Vampire
   visualPrefab: {fileID: 988590369048469843, guid: 2192b96d6284417c942207acdea3157c, type: 3}
+  baseStatsAreFinalValues: 1
   baseStats:
     maxHealth: 17
     spawnIntervalSeconds: 1.35
@@ -25,7 +26,7 @@ MonoBehaviour:
     hitAreaWidth: 1
     hitAreaHeight: 1.2
     garnetReward: 6
-    bonusDropCurrencyId: gem.amethyst
+    bonusDropCurrencyId: "gem.amethyst"
     bonusDropAmount: 3
     bonusDropChancePercent: 100
   behaviorProfiles:

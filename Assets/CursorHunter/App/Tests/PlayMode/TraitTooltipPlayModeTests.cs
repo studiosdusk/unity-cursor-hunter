@@ -51,6 +51,7 @@ namespace CursorHunter.App.Tests
             yield return null;
             yield return null;
             _app = FindInScene<AppUiRootController>();
+            Set(FindInScene<HuntManager>(), "playEntranceSequence", false);
             _trait = FindInScene<TraitScreenController>();
             _events = FindInScene<EventSystem>();
             Assert.That(_app.CurrentScreen, Is.EqualTo(UiScreenId.MainMenu));
@@ -938,7 +939,7 @@ namespace CursorHunter.App.Tests
 
             MonsterCombatTarget stump = monsters["monster.01"];
             stump.transform.position = Vector3.zero;
-            Assert.That(stump.ApplyDamage(combat.CurrentRunId, 5L, out _, out _), Is.True);
+            Assert.That(stump.ApplyDamage(combat.CurrentRunId, 1L, out _, out _), Is.True);
             long damagedHp = stump.CurrentHealth;
             monsters["monster.09"].transform.position = Vector3.zero;
             Call(monsters["monster.09"].GetComponent<MonsterBehaviorController>(), "Update");
@@ -1361,6 +1362,9 @@ namespace CursorHunter.App.Tests
 
         private static T Get<T>(object target, string field) => (T)target.GetType()
             .GetField(field, BindingFlags.Instance | BindingFlags.NonPublic).GetValue(target);
+
+        private static void Set(object target, string field, object value) => target.GetType()
+            .GetField(field, BindingFlags.Instance | BindingFlags.NonPublic).SetValue(target, value);
 
         private static T ReadProperty<T>(object target, string property) => (T)target.GetType()
             .GetProperty(property, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)

@@ -33,6 +33,7 @@ namespace CursorHunter.App.Tests
             yield return null;
             yield return null;
             _hunt = Object.FindFirstObjectByType<HuntManager>();
+            Set(_hunt, "playEntranceSequence", false); // This fixture exercises terminal presentation in isolation.
             _view = Object.FindFirstObjectByType<BattleResultPresentation>();
             Assert.That(_view, Is.Not.Null);
             Assert.That(_view.IsVisible, Is.False);
@@ -46,6 +47,49 @@ namespace CursorHunter.App.Tests
             if (_hunt != null) _hunt.ResetPrototypeRun();
             if (_scene.IsValid() && _scene.isLoaded) yield return SceneManager.UnloadSceneAsync(_scene);
             Assert.That(PlayerPrefs.GetString("cursor_hunter.progression.v1", "missing"), Is.EqualTo(_profile));
+        }
+
+        [UnityTest]
+        public IEnumerator StartPopupScalesContinuouslyOnceAndRepeatedShowDoesNotRestartIt()
+        {
+            Object.FindFirstObjectByType<AppUiRootController>().EnterCombat();
+            Set(_view, "popupSeconds", 0.4f);
+            Set(_view, "holdSeconds", 0.3f);
+            RectTransform popup = Get<RectTransform>(_view, "timeOutPopup");
+            var runId = CursorHunter.Contracts.RunId.Create();
+            _view.ShowStart(runId);
+            float previous = popup.localScale.x;
+            int intermediateFrames = 0;
+            bool repeated = false;
+            var samples = new System.Collections.Generic.List<float> { previous };
+            float deadline = Time.realtimeSinceStartup + 2f;
+            while (_view.IsShowingStart && Time.realtimeSinceStartup < deadline)
+            {
+                yield return null;
+                float scale = popup.localScale.x;
+                samples.Add(scale);
+                Assert.That(scale, Is.GreaterThanOrEqualTo(previous - 0.0001f),
+                    "The popup must not shrink or begin a second ramp.");
+                if (scale > 0.82f && scale < 0.999f) intermediateFrames++;
+                if (!repeated && intermediateFrames > 2 && Get<float>(_view, "_clock") > 0.15f)
+                {
+                    repeated = true;
+                    float clock = Get<float>(_view, "_clock");
+                    _view.ShowStart(runId);
+                    Assert.That(popup.localScale.x, Is.EqualTo(scale).Within(0.0001f));
+                    Assert.That(Get<float>(_view, "_clock"), Is.EqualTo(clock),
+                        "The same run's announcement must not reset its animation clock.");
+                }
+                previous = scale;
+            }
+            if (System.Environment.GetEnvironmentVariable("CURSOR_HUNTER_POPUP_TRACE") == "1")
+                System.IO.File.WriteAllText("/private/tmp/cursor-hunter-popup-scale.txt",
+                    string.Join(",", samples.Select(value => value.ToString("0.0000", CultureInfo.InvariantCulture))));
+            Assert.That(intermediateFrames, Is.GreaterThan(2),
+                "A visible popup must pass through intermediate scales rather than jump from 82% to 100%.");
+            Assert.That(repeated, Is.True);
+            Assert.That(_view.IsShowingStart, Is.False);
+            Assert.That(popup.localScale, Is.EqualTo(Vector3.one));
         }
 
         [UnityTest]

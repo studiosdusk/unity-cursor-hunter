@@ -50,6 +50,8 @@ namespace CursorHunter.Combat
         private readonly Stack<ThunderEffect> _free = new Stack<ThunderEffect>(2);
 
         private CombatRunController _combat;
+        internal float SpatialScale => _combat != null ? _combat.SpatialSkillScale : 1f;
+
         private SeededRandom _random;
         private RunId _runId;
         private float _nextCastAt;
@@ -187,7 +189,8 @@ namespace CursorHunter.Combat
             if (_runtime.RadiusWorldUnits <= 0f || !IsCurrentRun(runId)) return;
 
             Vector2 center = target.transform.position;
-            float radiusSquared = _runtime.RadiusWorldUnits * _runtime.RadiusWorldUnits;
+            float radius = _runtime.RadiusWorldUnits * SpatialScale;
+            float radiusSquared = radius * radius;
             MonsterCombatTarget.CollectActiveForRun(_runId, _eligibleTargets);
             _uniqueSplashTargets.Clear();
             for (int index = 0; index < _eligibleTargets.Count; index++)

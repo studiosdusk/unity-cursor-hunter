@@ -47,6 +47,7 @@ namespace CursorHunter.Combat.Tests
             // This fixture verifies the explicit authored/sandbox path. The
             // player path is exercised by TraitTooltipPlayModeTests.
             SetField(_hunt, "connectTraitScreenToCombat", false);
+            SetField(_hunt, "playEntranceSequence", false);
             SetField(_hunt, "defaultStage", UnityEditor.AssetDatabase.LoadAssetAtPath<CombatStageDefinition>(
                 "Assets/CursorHunter/App/Stages/Stage01.asset"));
             _hunt.ClearCombatBalanceSettings();
@@ -121,6 +122,7 @@ namespace CursorHunter.Combat.Tests
             Assert.That((float)Field(_hunt, "durationSeconds"), Is.EqualTo(expectedDuration));
             _hunt.ResetPrototypeRun();
             SetField(_hunt, "connectTraitScreenToCombat", false);
+            SetField(_hunt, "playEntranceSequence", false);
 
             _hunt.BeginPrototypeRun();
             RunView second = CaptureRun();

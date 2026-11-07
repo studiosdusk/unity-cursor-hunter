@@ -68,6 +68,7 @@ MonoBehaviour:
   visualRoot: {fileID: 400001}
   hitArea: {fileID: 200001}
   hitAreaCollider: {fileID: 200002}
+  shieldEffectPrefab: {fileID: 8297747836202857896, guid: 08e33ea20ad644ab97e84eef02f7087a, type: 3}
 --- !u!1 &200000
 GameObject:
   m_ObjectHideFlags: 0

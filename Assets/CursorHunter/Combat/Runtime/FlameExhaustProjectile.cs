@@ -38,7 +38,7 @@ namespace CursorHunter.Combat
             _direction = direction;
             _lastTickAt = now;
             _expiresAt = now + duration;
-            _speed = speed;
+            _speed = speed * owner.MotionScale;
             _areaRadiusMultiplier = Mathf.Max(0.01f, areaRadiusMultiplier);
             _hitTargets.Clear();
             _active = true;
@@ -76,6 +76,15 @@ namespace CursorHunter.Combat
             Vector2 movement = _direction * (_speed * delta);
             float distance = movement.magnitude;
             float radius = hitArea.radius;
+            bool leftField = false;
+            BattlefieldArea field = _owner.Battlefield;
+            if (field != null)
+            {
+                if (!field.Contains(start)) return false;
+                leftField = field.Trace(start, movement, 0f, out float fraction, out _);
+                movement *= fraction;
+                distance = movement.magnitude;
+            }
             if (distance > 0f)
             {
                 _sweepHits.Clear();
@@ -100,7 +109,7 @@ namespace CursorHunter.Combat
                     return false;
             }
 
-            return now < _expiresAt;
+            return !leftField && now < _expiresAt;
         }
 
         private void TryHit(Collider2D collider)
@@ -121,7 +130,7 @@ namespace CursorHunter.Combat
             if (!_active) return;
             _expiresAt = SkillBalanceMath.Retime(_expiresAt, now,
                 previous.ProjectileDurationSeconds, next.ProjectileDurationSeconds);
-            _speed = next.SpeedWorldUnitsPerSecond;
+            _speed = next.SpeedWorldUnitsPerSecond * _owner.MotionScale;
             RefreshGeometry(sourceHitArea, sourceVisual, next.CursorSizeRatio,
                 next.HitRadiusMultiplier, _areaRadiusMultiplier);
         }

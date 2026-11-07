@@ -16,6 +16,7 @@ MonoBehaviour:
   displayName: Slime
   prefabKey: walker_stump
   visualPrefab: {fileID: 5377580900226821509, guid: 76b40faaa9f5b364486f174c85bc38f5, type: 3}
+  baseStatsAreFinalValues: 1
   baseStats:
     maxHealth: 30
     spawnIntervalSeconds: 1.5

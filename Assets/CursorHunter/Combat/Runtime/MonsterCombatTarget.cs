@@ -328,6 +328,12 @@ namespace CursorHunter.Combat
             InitializeMovementAnimation();
         }
 
+        internal void SetBattlefield(BattlefieldArea field)
+        {
+            ResolveBehaviorController();
+            _behaviorController?.SetBattlefield(field);
+        }
+
         public bool ConfigureMovement(
             SpawnSnapshot snapshot,
             CombatRunController runController,
