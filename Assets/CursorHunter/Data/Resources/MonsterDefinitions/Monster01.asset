@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Monster01
   m_EditorClassIdentifier: CursorHunter.Data::CursorHunter.Data.MonsterDefinition
   monsterId: monster.01
-  displayName: 그루터기
+  displayName: "\uADF8\uB8E8\uD130\uAE30"
   prefabKey: Walker/Walker_Stump
   visualPrefab: {fileID: 5377580900226821509, guid: 76b40faaa9f5b364486f174c85bc38f5, type: 3}
   baseStats:
@@ -28,5 +28,6 @@ MonoBehaviour:
     bonusDropCurrencyId: gem.garnet
     bonusDropAmount: 0
     bonusDropChancePercent: 0
+  baseStatsAreFinalValues: 0
   behaviorProfiles:
   - {fileID: 11400000, guid: 75d93b8c58314c00931fce8caf12af10, type: 2}

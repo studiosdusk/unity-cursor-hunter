@@ -14799,6 +14799,63 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 1
+--- !u!1001 &857890663
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 1623793523330435967, guid: d174a9f203cdd4de58dc081efb6f8b16, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -0.2981043
+      objectReference: {fileID: 0}
+    - target: {fileID: 1623793523330435967, guid: d174a9f203cdd4de58dc081efb6f8b16, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.018790722
+      objectReference: {fileID: 0}
+    - target: {fileID: 1623793523330435967, guid: d174a9f203cdd4de58dc081efb6f8b16, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1623793523330435967, guid: d174a9f203cdd4de58dc081efb6f8b16, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1623793523330435967, guid: d174a9f203cdd4de58dc081efb6f8b16, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1623793523330435967, guid: d174a9f203cdd4de58dc081efb6f8b16, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1623793523330435967, guid: d174a9f203cdd4de58dc081efb6f8b16, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1623793523330435967, guid: d174a9f203cdd4de58dc081efb6f8b16, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1623793523330435967, guid: d174a9f203cdd4de58dc081efb6f8b16, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1623793523330435967, guid: d174a9f203cdd4de58dc081efb6f8b16, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9162987810015929550, guid: d174a9f203cdd4de58dc081efb6f8b16, type: 3}
+      propertyPath: m_Name
+      value: IsometricGrassland
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: d174a9f203cdd4de58dc081efb6f8b16, type: 3}
 --- !u!1 &877415317
 GameObject:
   m_ObjectHideFlags: 0
@@ -39408,6 +39465,7 @@ MonoBehaviour:
   horizontalPadding: 0.02
   bottomPadding: 0.09
   topPadding: 0.15
+  initialEntranceSeconds: 1
   globalAliveLimit: 80
 --- !u!114 &2188000012
 MonoBehaviour:
@@ -39443,6 +39501,8 @@ MonoBehaviour:
   - {fileID: 11400000, guid: f0bfaaf084cf4548a61dda641b5f216a, type: 2}
   - {fileID: 11400000, guid: c52186376ee148edbc2e0245ab0999de, type: 2}
   bossHealth: {fileID: 2188000113}
+  playEntranceSequence: 1
+  battlePresentation: {fileID: 2188000112}
   cursorController: {fileID: 2188000003}
   combatRunController: {fileID: 2188000010}
   monsterSpawner: {fileID: 2188000011}
@@ -39451,8 +39511,6 @@ MonoBehaviour:
   uiRootController: {fileID: 2188000111}
   progressionController: {fileID: 760100001}
   retireButton: {fileID: 1919589632}
-  playEntranceSequence: 1
-  battlePresentation: {fileID: 2188000112}
   connectTraitScreenToCombat: 1
   defaultStage: {fileID: 0}
   monsterDefinition: {fileID: 11400000, guid: 7afc7c4d89551704be3531d7298dc4c6, type: 2}
@@ -45367,7 +45425,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 2147483647
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &5235206343754101663
 Transform:
   m_ObjectHideFlags: 0
@@ -47784,7 +47842,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 2147483647
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!1 &8621294668648282013
 GameObject:
   m_ObjectHideFlags: 0
@@ -48403,3 +48461,4 @@ SceneRoots:
   - {fileID: 1281932086}
   - {fileID: 671216247}
   - {fileID: 957873801}
+  - {fileID: 857890663}

@@ -1307,3 +1307,16 @@
 
 - `CombatRunController`가 프리팹별 방어막 이펙트 풀을 소유한다. 빈 풀에서만 새로 생성하며 만료·사망·비활성화·런 정리 시 파티클을 비우고 반납한다. 같은 씬의 다른 개체와 다음 런에서 재사용하며, 프리팹별 유휴 인스턴스는 최대 80개를 보관한다.
 - 격리된 Unity 6000.3.13f1의 PlayMode 2개에서 개체 간 재사용, 동시 발동, 활성 개체 파괴, 재도전 재사용과 Main 몬스터 특성 실행을 확인했다. 협업 구조 검사와 `git diff --check`가 통과했다.
+
+### 2026-11-05 · App — 빈 몬스터 설정으로 밸런스 테스트 시작
+
+- Main에는 기본 스테이지가 없고 초기 데이터의 몬스터 생성이 모두 꺼져 있어 새 밸런스 설정으로 일반 테스트를 시작할 수 없었다. `HuntManager.Balance.cs`는 새 설정에 씬 기본 몬스터인 그루터기(`monster.01`)를 선택한다. 모든 종이 꺼진 기존 설정으로 시작할 때도 그루터기에 해당 설정의 수치를 적용해 생성한다.
+- 격리된 Unity 6000.3.13f1에서 밸런스·입장 PlayMode 14개가 통과했다. 협업 구조 검사와 `git diff --check`도 통과했다.
+
+### 2026-11-07 · Combat — 아이소메트릭 초원 프리팹 시안
+
+- `Combat/Prefabs/Maps/IsometricGrassland.prefab`을 독립된 외형 검토용 프리팹으로 추가했다. Main의 현재 `Map_6_Neolithic Age/field_a` 바닥색과 흰 꽃을 재사용하고, 같은 맵 패키지의 작은 돌과 얇은 흙 단면을 조합했다. 꽃 18개와 돌 13개는 충돌 없는 장식이며 나무·건물은 포함하지 않는다.
+- 기존 바닥의 SpriteRenderer Simple 모드, 202 × 111 px / 100 PPU, Scale `(26, 27, 1)`로 계산한 경계는 52.52 × 29.97 유닛이다. 비율을 유지하고 현재 Main 카메라의 Orthographic Size 12, 기본 16:9 화면에서 전체 외곽이 보이도록 70%인 36.764 × 20.979 유닛으로 구성했다. 흙 단면은 0.6 유닛이다.
+- 바닥용 두 Sprite 에셋은 원본 텍스처를 참조하고 투명 여백 1 px만 제외한다. 정적 Transform 조합과 URP 2D Unlit 재질을 사용해 별도 생성 스크립트나 조명 없이 표시된다. 루트 SortingGroup은 Default/-10, 모든 오브젝트는 Ignore Raycast이며 Collider·Rigidbody·Animator·런타임 스크립트가 없다.
+- 사용자가 씬에 직접 배치해 채택 여부를 판단하도록 Main 씬, 원본 에셋, 스폰·이동 경계 및 전투 코드는 변경하지 않았다. 배치법과 크기 기준은 `Combat/Prefabs/Maps/README.md`에 기록했다. 마름모 이동 영역 연결은 최종 채택 후 별도 작업이다.
+- 격리된 Unity 6000.3.13f1에서 현재 프로젝트의 URP 2D 렌더러·Linear 색공간으로 생성하고, Unity 재시작 후 프리팹 로드, 참조 누락 없음, 바닥 크기, 38개 SpriteRenderer 및 스크립트·Collider 부재를 확인했다. 같은 Main 카메라 설정의 1920 × 1080 렌더는 `screenshots/isometric-grassland-preview.png`에 보관했다. 실제 Main Play Mode는 실행하지 않았다.
