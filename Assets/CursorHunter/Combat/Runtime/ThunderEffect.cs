@@ -17,11 +17,13 @@ namespace CursorHunter.Combat
         private float _returnAt;
         private bool _struck;
         private bool _active;
+        private Vector3 _baseScale;
 
         public bool IsActive => _active;
 
         private void Awake()
         {
+            _baseScale = transform.localScale;
             CacheParticles();
             _hitPoint = transform.Find("Visual_FX_Cartoon_Thunder/Particle System/HitPoint");
         }
@@ -45,6 +47,7 @@ namespace CursorHunter.Combat
         {
             CacheParticles();
             _owner = owner;
+            transform.localScale = _baseScale * owner.SpatialScale;
             _runId = runId;
             _target = target;
             _impactAt = now + impactDelay;
@@ -132,6 +135,7 @@ namespace CursorHunter.Combat
             _target = null;
             _runId = default;
             _struck = false;
+            transform.localScale = _baseScale;
             if (_particles != null)
             {
                 for (int i = 0; i < _particles.Length; i++)

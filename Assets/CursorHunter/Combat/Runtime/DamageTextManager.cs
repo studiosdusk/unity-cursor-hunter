@@ -165,7 +165,8 @@ namespace CursorHunter.Combat
             int slotIndex = _free[--_freeCount];
             Slot slot = _slots[slotIndex];
             slot.Target = hit.Target;
-            slot.Origin = hit.WorldPosition + spawnOffset;
+            slot.Origin = hit.WorldPosition + spawnOffset * (combatRunController.Battlefield != null
+                ? combatRunController.Battlefield.SkillScale : 1f);
             slot.Critical = hit.IsCritical;
             slot.Damage = hit.DisplayDamage;
             slot.Age = 0f;
@@ -237,6 +238,11 @@ namespace CursorHunter.Combat
                 Mathf.SmoothStep(0f, 1f, (t - 0.1f) / 0.18f));
             float fade = Mathf.SmoothStep(0f, 1f, (t - fadeStart) / (1f - fadeStart));
             scale *= Mathf.Lerp(1f, 0.94f, fade) * (slot.Critical ? criticalScale : normalScale);
+            if (combatRunController.Battlefield != null)
+            {
+                scale *= combatRunController.Battlefield.DamageTextScale;
+                offset *= combatRunController.Battlefield.SkillScale;
+            }
             slot.View.SetPose(slot.Origin + offset, scale, 1f - fade);
         }
 

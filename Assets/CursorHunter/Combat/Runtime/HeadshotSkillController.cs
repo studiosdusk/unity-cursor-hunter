@@ -51,6 +51,10 @@ namespace CursorHunter.Combat
             new HashSet<MonsterCombatTarget>();
 
         private CombatRunController _combat;
+        internal float SpatialScale => _combat != null ? _combat.SpatialSkillScale : 1f;
+        internal float EffectiveRadiusMultiplier => _runtime.RadiusMultiplier *
+            (_combat != null ? _combat.AreaSkillRadiusMultiplier : 1f) * SpatialScale;
+
         private SeededRandom _random;
         private RunId _runId;
         private float _nextCastAt;
@@ -167,7 +171,7 @@ namespace CursorHunter.Combat
             next.Activate(this, _runId, target, now,
                 _runtime.ExplosionDelaySeconds,
                 _runtime.EffectDurationSeconds,
-                _runtime.RadiusMultiplier * _combat.AreaSkillRadiusMultiplier);
+                EffectiveRadiusMultiplier);
             _active.Add(next);
             _nextCastAt = now + _combat.ResolveAutoSkillCooldown(
                 _runtime.CooldownSeconds);

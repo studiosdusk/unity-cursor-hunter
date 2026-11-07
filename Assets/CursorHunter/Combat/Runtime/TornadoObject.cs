@@ -63,7 +63,26 @@ namespace CursorHunter.Combat
             transform.position = new Vector3(position.x, position.y, transform.position.z);
             _direction = owner.RandomDirection();
             gameObject.SetActive(true);
+            KeepInsideField();
             SetVisualPaused(false, true);
+        }
+
+        private float FieldInset
+        {
+            get
+            {
+                Vector2 scale = hitbox.transform.lossyScale;
+                Vector2 half = Vector2.Scale(hitbox.size * 0.5f, scale);
+                Vector2 offset = (Vector2)hitbox.transform.TransformPoint(hitbox.offset) - (Vector2)transform.position;
+                return half.magnitude + offset.magnitude + _owner.Battlefield.GroundMargin;
+            }
+        }
+
+        private void KeepInsideField()
+        {
+            if (_owner.Battlefield == null) return;
+            Vector2 p = _owner.Battlefield.Clamp(transform.position, FieldInset);
+            transform.position = new Vector3(p.x, p.y, transform.position.z);
         }
 
         internal bool Tick(float now, Rect fieldBounds)
@@ -98,19 +117,30 @@ namespace CursorHunter.Combat
             float moveSpeed = _owner.MoveSpeedWorldUnitsPerSecond;
             if (_stoppedUntil <= 0f && delta > 0f && moveSpeed > 0f)
             {
-                Vector2 next = (Vector2)transform.position + _direction * (moveSpeed * delta);
-                if (next.x < fieldBounds.xMin || next.x > fieldBounds.xMax)
+                if (_owner.Battlefield != null)
                 {
-                    _direction.x = -_direction.x;
+                    if (!_owner.Battlefield.Fits(FieldInset)) return false;
+                    Vector2 velocity = _direction * moveSpeed;
+                    Vector2 p = _owner.Battlefield.MoveReflected(transform.position, ref velocity, delta, FieldInset);
+                    _direction = velocity.normalized;
+                    transform.position = new Vector3(p.x, p.y, transform.position.z);
                 }
-                if (next.y < fieldBounds.yMin || next.y > fieldBounds.yMax)
+                else
                 {
-                    _direction.y = -_direction.y;
+                    Vector2 next = (Vector2)transform.position + _direction * (moveSpeed * delta);
+                    if (next.x < fieldBounds.xMin || next.x > fieldBounds.xMax)
+                    {
+                        _direction.x = -_direction.x;
+                    }
+                    if (next.y < fieldBounds.yMin || next.y > fieldBounds.yMax)
+                    {
+                        _direction.y = -_direction.y;
+                    }
+                    next = (Vector2)transform.position + _direction * (moveSpeed * delta);
+                    next.x = Mathf.Clamp(next.x, fieldBounds.xMin, fieldBounds.xMax);
+                    next.y = Mathf.Clamp(next.y, fieldBounds.yMin, fieldBounds.yMax);
+                    transform.position = new Vector3(next.x, next.y, transform.position.z);
                 }
-                next = (Vector2)transform.position + _direction * (moveSpeed * delta);
-                next.x = Mathf.Clamp(next.x, fieldBounds.xMin, fieldBounds.xMax);
-                next.y = Mathf.Clamp(next.y, fieldBounds.yMin, fieldBounds.yMax);
-                transform.position = new Vector3(next.x, next.y, transform.position.z);
             }
 
             transform.localScale = _shrinkOutSeconds > 0f
@@ -162,10 +192,12 @@ namespace CursorHunter.Combat
             _shrinkOutSeconds = Mathf.Clamp(next.ShrinkOutSeconds, 0f,
                 next.DurationSeconds);
             _damage = next.Damage;
+            _areaRadiusMultiplier = _owner.EffectiveRadiusMultiplier;
             transform.localScale = _shrinkOutSeconds > 0f
                 ? _baseScale * _areaRadiusMultiplier *
                     Mathf.Clamp01((_expiresAt - now) / _shrinkOutSeconds)
                 : _baseScale * _areaRadiusMultiplier;
+            KeepInsideField();
         }
 
         internal void ReturnToPool()

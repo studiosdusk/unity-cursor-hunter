@@ -14851,6 +14851,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: IsometricGrassland
       objectReference: {fileID: 0}
+    - target: {fileID: 9162987810015929550, guid: d174a9f203cdd4de58dc081efb6f8b16, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -23353,8 +23357,8 @@ Camera:
   m_GameObject: {fileID: 1273511512}
   m_Enabled: 1
   serializedVersion: 2
-  m_ClearFlags: 1
-  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
+  m_ClearFlags: 2
+  m_BackGroundColor: {r: 0.035, g: 0.11, b: 0.14, a: 1}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0
@@ -24195,6 +24199,26 @@ PrefabInstance:
       propertyPath: m_Name
       value: FlameExhaustSkillController
       objectReference: {fileID: 0}
+    - target: {fileID: 183643787152222627, guid: a18f2540445db4baeb1591f73b373812, type: 3}
+      propertyPath: baseStat.FirstCastDelaySeconds
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 183643787152222627, guid: a18f2540445db4baeb1591f73b373812, type: 3}
+      propertyPath: baseStat.SpeedWorldUnitsPerSecond
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 183643787152222627, guid: a18f2540445db4baeb1591f73b373812, type: 3}
+      propertyPath: baseStat.HitRadiusMultiplier
+      value: 1.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 183643787152222627, guid: a18f2540445db4baeb1591f73b373812, type: 3}
+      propertyPath: baseStat.DamageMultiplier
+      value: 11
+      objectReference: {fileID: 0}
+    - target: {fileID: 183643787152222627, guid: a18f2540445db4baeb1591f73b373812, type: 3}
+      propertyPath: baseStat.HitEffectDurationSeconds
+      value: 0.8
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -24233,6 +24257,18 @@ PrefabInstance:
       propertyPath: baseStat.MoveSpeedWorldUnitsPerSecond
       value: 10
       objectReference: {fileID: 0}
+    - target: {fileID: 200002, guid: 7e0b7f29e00d4ad5b386346e462b55a7, type: 3}
+      propertyPath: baseStat.FirstCastDelaySeconds
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 200002, guid: 7e0b7f29e00d4ad5b386346e462b55a7, type: 3}
+      propertyPath: baseStat.DamageMultiplier
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 200002, guid: 7e0b7f29e00d4ad5b386346e462b55a7, type: 3}
+      propertyPath: baseStat.SameTargetHitCooldownSeconds
+      value: 0.5
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -24266,6 +24302,22 @@ PrefabInstance:
     - target: {fileID: 200002, guid: b21218ff7ac644739e1ee81958f02e56, type: 3}
       propertyPath: baseStat.CooldownSeconds
       value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 200002, guid: b21218ff7ac644739e1ee81958f02e56, type: 3}
+      propertyPath: baseStat.FirstCastDelaySeconds
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 200002, guid: b21218ff7ac644739e1ee81958f02e56, type: 3}
+      propertyPath: baseStat.EffectDurationSeconds
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 200002, guid: b21218ff7ac644739e1ee81958f02e56, type: 3}
+      propertyPath: baseStat.SizeMultiplier
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 200002, guid: b21218ff7ac644739e1ee81958f02e56, type: 3}
+      propertyPath: baseStat.DamageMultiplier
+      value: 11
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -39444,6 +39496,7 @@ MonoBehaviour:
     m_Bits: 4294967295
   overlapBufferCapacity: 256
   playerCombatStatsRuntime: {fileID: 2188000122}
+  battlefield: {fileID: 2188999001}
 --- !u!114 &2188000011
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -39756,6 +39809,9 @@ MonoBehaviour:
     root: {fileID: 597259907}
   - screenId: 5
     root: {fileID: 2059559603}
+    additionalRoots:
+    - {fileID: 2188999002}
+    - {fileID: 2188999101}
   initialScreen: 0
 --- !u!114 &2188000112
 MonoBehaviour:
@@ -39919,7 +39975,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6c191fa2c7204c3383641e0dca737b3a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: CursorHunter.Combat::CursorHunter.Combat.PlayerCombatStatsDefaults
-  attackPower: 10
+  attackPower: 2
   attackRadiusWorldUnits: 1.7253809
   attackCooldownSeconds: 0.8
   autoAttackEnabled: 1
@@ -40093,6 +40149,50 @@ PrefabInstance:
       propertyPath: baseStat.MoveSpeedWorldUnitsPerSecond
       value: 4
       objectReference: {fileID: 0}
+    - target: {fileID: 100002, guid: 6c0b154b29c24f6fb996f9d64d28c6b0, type: 3}
+      propertyPath: baseStat.Count
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 100002, guid: 6c0b154b29c24f6fb996f9d64d28c6b0, type: 3}
+      propertyPath: baseStat.DurationSeconds
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 100002, guid: 6c0b154b29c24f6fb996f9d64d28c6b0, type: 3}
+      propertyPath: baseStat.DamageMultiplier
+      value: 7
+      objectReference: {fileID: 0}
+    - target: {fileID: 100002, guid: 6c0b154b29c24f6fb996f9d64d28c6b0, type: 3}
+      propertyPath: baseStat.RadiusMultiplier
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 100002, guid: 6c0b154b29c24f6fb996f9d64d28c6b0, type: 3}
+      propertyPath: baseStat.CooldownSeconds
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 100002, guid: 6c0b154b29c24f6fb996f9d64d28c6b0, type: 3}
+      propertyPath: baseStat.FirstCastDelaySeconds
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 100002, guid: 6c0b154b29c24f6fb996f9d64d28c6b0, type: 3}
+      propertyPath: baseStat.HitIntervalSeconds
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 100002, guid: 6c0b154b29c24f6fb996f9d64d28c6b0, type: 3}
+      propertyPath: baseStat.DirectionChangeSeconds
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 100002, guid: 6c0b154b29c24f6fb996f9d64d28c6b0, type: 3}
+      propertyPath: baseStat.StopChanceOnDirectionChange
+      value: 0.25
+      objectReference: {fileID: 0}
+    - target: {fileID: 100002, guid: 6c0b154b29c24f6fb996f9d64d28c6b0, type: 3}
+      propertyPath: baseStat.StopDurationSeconds
+      value: 0.75
+      objectReference: {fileID: 0}
+    - target: {fileID: 100002, guid: 6c0b154b29c24f6fb996f9d64d28c6b0, type: 3}
+      propertyPath: baseStat.ShrinkOutSeconds
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -40122,6 +40222,34 @@ PrefabInstance:
     - target: {fileID: 100001, guid: c283c7ef8add4497a2666a076d4221e2, type: 3}
       propertyPath: m_LocalPosition.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 100002, guid: c283c7ef8add4497a2666a076d4221e2, type: 3}
+      propertyPath: baseStat.CooldownSeconds
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 100002, guid: c283c7ef8add4497a2666a076d4221e2, type: 3}
+      propertyPath: baseStat.FirstCastDelaySeconds
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 100002, guid: c283c7ef8add4497a2666a076d4221e2, type: 3}
+      propertyPath: baseStat.ExplosionDelaySeconds
+      value: 1.15
+      objectReference: {fileID: 0}
+    - target: {fileID: 100002, guid: c283c7ef8add4497a2666a076d4221e2, type: 3}
+      propertyPath: baseStat.EffectDurationSeconds
+      value: 2.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 100002, guid: c283c7ef8add4497a2666a076d4221e2, type: 3}
+      propertyPath: baseStat.SplashDamageMultiplier
+      value: 7
+      objectReference: {fileID: 0}
+    - target: {fileID: 100002, guid: c283c7ef8add4497a2666a076d4221e2, type: 3}
+      propertyPath: baseStat.BossDamageMultiplier
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 100002, guid: c283c7ef8add4497a2666a076d4221e2, type: 3}
+      propertyPath: baseStat.RadiusMultiplier
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -40157,6 +40285,30 @@ PrefabInstance:
       propertyPath: baseStat.CooldownSeconds
       value: 3
       objectReference: {fileID: 0}
+    - target: {fileID: 100002, guid: e02fac92204840f3b67d812feb1ae407, type: 3}
+      propertyPath: baseStat.FirstCastDelaySeconds
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 100002, guid: e02fac92204840f3b67d812feb1ae407, type: 3}
+      propertyPath: baseStat.ImpactDelaySeconds
+      value: 0.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 100002, guid: e02fac92204840f3b67d812feb1ae407, type: 3}
+      propertyPath: baseStat.EffectDurationSeconds
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 100002, guid: e02fac92204840f3b67d812feb1ae407, type: 3}
+      propertyPath: baseStat.DamageMultiplier
+      value: 9
+      objectReference: {fileID: 0}
+    - target: {fileID: 100002, guid: e02fac92204840f3b67d812feb1ae407, type: 3}
+      propertyPath: baseStat.RadiusWorldUnits
+      value: 1.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 100002, guid: e02fac92204840f3b67d812feb1ae407, type: 3}
+      propertyPath: baseStat.RadiusMultiplier
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -40187,6 +40339,30 @@ PrefabInstance:
       propertyPath: worldCamera
       value: 
       objectReference: {fileID: 1273511514}
+    - target: {fileID: 100002, guid: 3be6ee6328fa4db0afd3f8b88c6eca64, type: 3}
+      propertyPath: baseStat.SimultaneousHits
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 100002, guid: 3be6ee6328fa4db0afd3f8b88c6eca64, type: 3}
+      propertyPath: baseStat.DamageMultiplier
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 100002, guid: 3be6ee6328fa4db0afd3f8b88c6eca64, type: 3}
+      propertyPath: baseStat.AttackIntervalSeconds
+      value: 1.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 100002, guid: 3be6ee6328fa4db0afd3f8b88c6eca64, type: 3}
+      propertyPath: baseStat.MoveSpeedWorldUnitsPerSecond
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 100002, guid: 3be6ee6328fa4db0afd3f8b88c6eca64, type: 3}
+      propertyPath: baseStat.DetectionRadiusWorldUnits
+      value: 24
+      objectReference: {fileID: 0}
+    - target: {fileID: 100002, guid: 3be6ee6328fa4db0afd3f8b88c6eca64, type: 3}
+      propertyPath: baseStat.AttackRangeWorldUnits
+      value: 1.5
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -48444,6 +48620,56 @@ Transform:
   m_Children: []
   m_Father: {fileID: 603742185294599784}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2188999001 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 114900000000000001, guid: d174a9f203cdd4de58dc081efb6f8b16, type: 3}
+  m_PrefabInstance: {fileID: 857890663}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 98d1aad553904f8380c2d2ee913db89a, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: CursorHunter.Combat::CursorHunter.Combat.BattlefieldArea
+--- !u!1 &2188999002 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 9162987810015929550, guid: d174a9f203cdd4de58dc081efb6f8b16, type: 3}
+  m_PrefabInstance: {fileID: 857890663}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &2188999101 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 100000, guid: 50c4ee16d2ba4660a23d310d73be0af1, type: 3}
+  m_PrefabInstance: {fileID: 2188999100}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1001 &2188999100
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 100000, guid: 50c4ee16d2ba4660a23d310d73be0af1, type: 3}
+      propertyPath: m_Name
+      value: IsometricSkyBackdrop
+      objectReference: {fileID: 0}
+    - target: {fileID: 100000, guid: 50c4ee16d2ba4660a23d310d73be0af1, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 100002, guid: 50c4ee16d2ba4660a23d310d73be0af1, type: 3}
+      propertyPath: worldCamera
+      value:
+      objectReference: {fileID: 1273511514}
+    - target: {fileID: 100002, guid: 50c4ee16d2ba4660a23d310d73be0af1, type: 3}
+      propertyPath: combat
+      value:
+      objectReference: {fileID: 2188000010}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 50c4ee16d2ba4660a23d310d73be0af1, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -48462,3 +48688,4 @@ SceneRoots:
   - {fileID: 671216247}
   - {fileID: 957873801}
   - {fileID: 857890663}
+  - {fileID: 2188999100}

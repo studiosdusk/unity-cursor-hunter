@@ -602,6 +602,7 @@ namespace CursorHunter.Combat
                     target = instance.AddComponent<MonsterCombatTarget>();
                 }
 
+                target.SetBattlefield(combatRunController.Battlefield);
                 target.Initialize(_spawnSnapshot, _runId);
                 if (!target.IsActive)
                 {
@@ -757,6 +758,14 @@ namespace CursorHunter.Combat
 
         private bool TryGetSpawnPosition(out Vector3 spawnPosition)
         {
+            BattlefieldArea field = combatRunController != null ? combatRunController.Battlefield : null;
+            if (field != null)
+            {
+                float inset = field.MonsterInset(_spawnSnapshot);
+                Vector2 point = field.Sample(_random.NextFloat(0f, 1f), _random.NextFloat(0f, 1f), inset);
+                spawnPosition = new Vector3(point.x, point.y, spawnPlaneZ);
+                return field.Fits(inset);
+            }
             if (worldCamera == null)
             {
                 spawnPosition = Vector3.zero;
@@ -794,6 +803,14 @@ namespace CursorHunter.Combat
         private bool TryGetMovementBounds(SpawnSnapshot snapshot, out Bounds movementBounds)
         {
             movementBounds = default;
+            BattlefieldArea field = combatRunController != null ? combatRunController.Battlefield : null;
+            if (field != null)
+            {
+                Rect area = field.WorldBounds;
+                movementBounds = new Bounds(new Vector3(area.center.x, area.center.y, spawnPlaneZ),
+                    new Vector3(area.width, area.height, 0f));
+                return field.Fits(field.MonsterInset(snapshot));
+            }
             if (worldCamera == null)
             {
                 return false;

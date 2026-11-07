@@ -19,6 +19,11 @@ namespace CursorHunter.Combat
         [SerializeField] private LayerMask enemyLayers = -1;
         [SerializeField, Min(32)] private int overlapBufferCapacity = 256;
         [SerializeField] private PlayerCombatStatsRuntime playerCombatStatsRuntime;
+        [SerializeField] private BattlefieldArea battlefield;
+
+        public BattlefieldArea Battlefield => battlefield;
+        public float SpatialSkillScale => battlefield != null ? battlefield.SkillScale : 1f;
+        public float SpatialMotionScale => battlefield != null ? battlefield.MotionScale : 1f;
 
         private Collider2D[] _overlapBuffer;
         private readonly HashSet<ICombatTarget> _uniqueTargets =
@@ -388,7 +393,8 @@ namespace CursorHunter.Combat
         /// </summary>
         public bool TryAttack(Collider2D attackCollider, bool includeMovementPath = true)
         {
-            if (!IsRunning || attackCollider == null || !attackCollider.enabled)
+            if (!IsRunning || attackCollider == null || !attackCollider.enabled ||
+                !attackCollider.gameObject.activeInHierarchy)
             {
                 ResetAttackPath();
                 return false;
@@ -401,6 +407,12 @@ namespace CursorHunter.Combat
             }
 
             Physics2D.SyncTransforms();
+
+            if (battlefield != null && !battlefield.Contains(attackCollider.bounds.center))
+            {
+                ResetAttackPath();
+                return false;
+            }
 
             ContactFilter2D contactFilter = new ContactFilter2D
             {

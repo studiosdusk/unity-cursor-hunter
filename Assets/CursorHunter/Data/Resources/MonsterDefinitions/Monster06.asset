@@ -16,6 +16,7 @@ MonoBehaviour:
   displayName: 눈요정
   prefabKey: Cactus/Cactus_Snow
   visualPrefab: {fileID: 2366199099267442288, guid: 8e35244d7f64461daee3c604a24c0b9c, type: 3}
+  baseStatsAreFinalValues: 1
   baseStats:
     maxHealth: 31
     spawnIntervalSeconds: 1.65
@@ -25,7 +26,7 @@ MonoBehaviour:
     hitAreaWidth: 1
     hitAreaHeight: 1.2
     garnetReward: 8
-    bonusDropCurrencyId: gem.sapphire
+    bonusDropCurrencyId: "gem.sapphire"
     bonusDropAmount: 5
     bonusDropChancePercent: 100
   behaviorProfiles:

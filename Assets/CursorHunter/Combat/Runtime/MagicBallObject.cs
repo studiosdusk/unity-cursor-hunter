@@ -80,6 +80,14 @@ namespace CursorHunter.Combat
             transform.position = new Vector3(
                 Mathf.Lerp(movementBounds.xMin, movementBounds.xMax, spawnFraction.x),
                 Mathf.Lerp(movementBounds.yMin, movementBounds.yMax, spawnFraction.y), z);
+            if (owner.Battlefield != null)
+            {
+                float radius = FieldRadius + owner.Battlefield.GroundMargin;
+                if (!owner.Battlefield.Fits(radius)) { ReturnToPool(); return false; }
+                Vector2 offset = BoundaryOffset;
+                Vector2 point = owner.Battlefield.Sample(spawnFraction.x, spawnFraction.y, radius) - offset;
+                transform.position = new Vector3(point.x, point.y, z);
+            }
             _active = true;
             SetVisualPaused(false, true);
             return true;
@@ -96,6 +104,16 @@ namespace CursorHunter.Combat
             movementBounds = Rect.MinMaxRect(minX, minY, maxX, maxY);
             return minX < maxX && minY < maxY;
         }
+
+        private float BoundaryRadius => boundaryCollider.radius * Mathf.Max(
+            Mathf.Abs(boundaryCollider.transform.lossyScale.x), Mathf.Abs(boundaryCollider.transform.lossyScale.y));
+        private Vector2 BoundaryOffset => (Vector2)boundaryCollider.transform.TransformPoint(boundaryCollider.offset) -
+            (Vector2)transform.position;
+        private float FieldRadius => Mathf.Max(BoundaryRadius,
+            hitbox.radius * Mathf.Max(Mathf.Abs(hitbox.transform.lossyScale.x),
+                Mathf.Abs(hitbox.transform.lossyScale.y)) +
+            Vector2.Distance(boundaryCollider.transform.TransformPoint(boundaryCollider.offset),
+                hitbox.transform.TransformPoint(hitbox.offset)));
 
         internal void Tick(float now, Rect fieldBounds, ContactFilter2D filter,
             float speed, float sameTargetCooldown)
@@ -117,6 +135,14 @@ namespace CursorHunter.Combat
             Vector2 position = transform.position;
             position.x = Mathf.Clamp(position.x, minX, maxX);
             position.y = Mathf.Clamp(position.y, minY, maxY);
+            BattlefieldArea field = _owner.Battlefield;
+            Vector2 bodyOffset = BoundaryOffset;
+            float inset = FieldRadius + (field != null ? field.GroundMargin : 0f);
+            if (field != null)
+            {
+                if (!field.Fits(inset)) { ReturnToPool(); return; }
+                position = field.Clamp((Vector2)transform.position + bodyOffset, inset) - bodyOffset;
+            }
             _hitsThisFrame.Clear();
             float remaining = Mathf.Max(0f, now - _lastTickAt);
             _lastTickAt = now;
@@ -131,6 +157,14 @@ namespace CursorHunter.Combat
                     : _direction.y < 0f ? (minY - position.y) / (_direction.y * speed)
                     : float.PositiveInfinity;
                 float step = Mathf.Min(remaining, Mathf.Max(0f, Mathf.Min(tx, ty)));
+                Vector2 wallNormal = Vector2.zero;
+                bool hitWall = false;
+                if (field != null)
+                {
+                    hitWall = field.Trace(position + bodyOffset, _direction * (speed * remaining),
+                        inset, out float fraction, out wallNormal);
+                    step = remaining * fraction;
+                }
                 float distance = step * speed;
                 if (distance > 0f)
                 {
@@ -145,6 +179,13 @@ namespace CursorHunter.Combat
                 }
                 bool hitX = tx <= step + 0.000001f;
                 bool hitY = ty <= step + 0.000001f;
+                if (field != null)
+                {
+                    if (!hitWall) break;
+                    _direction = Vector2.Reflect(_direction, wallNormal).normalized;
+                    position = field.Clamp(position + bodyOffset - wallNormal * 0.0001f, inset) - bodyOffset;
+                    continue;
+                }
                 position.x = Mathf.Clamp(position.x, minX, maxX);
                 position.y = Mathf.Clamp(position.y, minY, maxY);
                 Vector2 xNormal = _direction.x > 0f ? Vector2.left : Vector2.right;

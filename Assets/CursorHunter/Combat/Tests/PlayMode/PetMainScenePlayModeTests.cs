@@ -75,9 +75,8 @@ namespace CursorHunter.Combat.Tests
 
             Assert.That(controller.IsPetVisible, Is.True);
             Vector3 spawnPosition = pet.position;
-            Vector3 spawnViewport = worldCamera.WorldToViewportPoint(spawnPosition);
-            Assert.That(spawnViewport.x, Is.InRange(0.08f, 0.92f));
-            Assert.That(spawnViewport.y, Is.InRange(0.15f, 0.8f));
+            Assert.That(combat.Battlefield, Is.Not.Null);
+            Assert.That(combat.Battlefield.Contains(pet.position), Is.True);
             Assert.That(spawnPosition.z, Is.EqualTo(spawnPlaneZ));
             cursorAnchor.position = new Vector3(-100f, -100f, 0f);
             combat.AdvanceTime(0.2f);
@@ -122,9 +121,8 @@ namespace CursorHunter.Combat.Tests
             Assert.That(controller.IsPetVisible, Is.True);
             Assert.That(pet.position, Is.Not.EqualTo(spawnPosition),
                 "A new run seed must choose a fresh starting position.");
-            spawnViewport = worldCamera.WorldToViewportPoint(pet.position);
-            Assert.That(spawnViewport.x, Is.InRange(0.08f, 0.92f));
-            Assert.That(spawnViewport.y, Is.InRange(0.15f, 0.8f));
+            Assert.That(combat.Battlefield, Is.Not.Null);
+            Assert.That(combat.Battlefield.Contains(pet.position), Is.True);
             Assert.That(pet.position.z, Is.EqualTo(spawnPlaneZ));
             Assert.That(combat.TryAbortRun(RunEndReason.UserExit,
                 default, out _), Is.True);

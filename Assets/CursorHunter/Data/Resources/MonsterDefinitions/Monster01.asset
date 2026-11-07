@@ -19,15 +19,15 @@ MonoBehaviour:
   baseStats:
     maxHealth: 5
     spawnIntervalSeconds: 0.75
-    packSize: 1
+    packSize: 2
     moveSpeed: 0.45
     visualScale: 1
     hitAreaWidth: 1
     hitAreaHeight: 1.2
     garnetReward: 3
-    bonusDropCurrencyId: gem.garnet
+    bonusDropCurrencyId: "gem.garnet"
     bonusDropAmount: 0
     bonusDropChancePercent: 0
-  baseStatsAreFinalValues: 0
+  baseStatsAreFinalValues: 1
   behaviorProfiles:
   - {fileID: 11400000, guid: 75d93b8c58314c00931fce8caf12af10, type: 2}

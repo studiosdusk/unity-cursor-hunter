@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace CursorHunter.Combat
 {
-    /// <summary>Owns the laser cast clock and its pooled vertical beams.</summary>
+    /// <summary>Owns the laser cast clock and its pooled piercing beams.</summary>
     [DefaultExecutionOrder(1000)]
     [DisallowMultipleComponent]
     public sealed class LaserSkillController : MonoBehaviour, IRunSkillController, ISkillBalanceController
@@ -48,7 +48,13 @@ namespace CursorHunter.Combat
 
         private readonly List<LaserEffect> _active = new List<LaserEffect>(2);
         private readonly Stack<LaserEffect> _free = new Stack<LaserEffect>(2);
+        private readonly List<MonsterCombatTarget> _candidates = new List<MonsterCombatTarget>(128);
         private CombatRunController _combat;
+        internal BattlefieldArea Battlefield => _combat != null ? _combat.Battlefield : null;
+        internal float SpatialScale => _combat != null ? _combat.SpatialSkillScale : 1f;
+        internal float EffectiveSizeMultiplier => _runtime.SizeMultiplier *
+            (_combat != null ? _combat.AreaSkillRadiusMultiplier : 1f) * SpatialScale;
+
         private SeededRandom _random;
         private RunId _runId;
         private LaserRuntimeStat _runtime;
@@ -79,6 +85,7 @@ namespace CursorHunter.Combat
             StopSkill();
             if (combat == null || !runId.IsValid || effectPrefab == null ||
                 !effectPrefab.HasHitbox) return false;
+            if (combat.Battlefield != null && !effectPrefab.HasDiagonalVisual) return false;
             if (!string.IsNullOrEmpty(skill.SkillId) &&
                 (skill.SkillId != SkillId || !skill.IsValid)) return false;
             if (worldCamera == null) worldCamera = Camera.main;
@@ -170,15 +177,28 @@ namespace CursorHunter.Combat
             }
 
             LaserEffect next = _free.Pop();
-            next.Activate(this, _runId, fieldBounds,
-                _random.NextFloat(0f, 1f), spawnPlaneZ, now,
-                _runtime.EffectDurationSeconds, _runtime.SizeMultiplier *
-                    _combat.AreaSkillRadiusMultiplier);
-            _active.Add(next);
             _nextCastAt = now + _combat.ResolveAutoSkillCooldown(
                 _runtime.CooldownSeconds);
             _hasCast = true;
-            CombatAudioFeedback.PlaySkill(SkillId);
+            if (Battlefield != null)
+            {
+                if (!TryChooseBeamPath(out Vector2 point, out Vector2 direction) ||
+                    !next.ActivateDiagonal(this, _runId, point, direction, spawnPlaneZ,
+                        now, _runtime.EffectDurationSeconds))
+                {
+                    next.ReturnToPool();
+                    _free.Push(next);
+                    return;
+                }
+            }
+            else
+            {
+                next.Activate(this, _runId, fieldBounds,
+                    _random.NextFloat(0f, 1f), spawnPlaneZ, now,
+                    _runtime.EffectDurationSeconds, EffectiveSizeMultiplier);
+                CombatAudioFeedback.PlaySkill(SkillId);
+            }
+            _active.Add(next);
             Physics2D.SyncTransforms();
             if (!next.Tick(now, _enemyFilter) && _active.Remove(next))
             {
@@ -187,9 +207,42 @@ namespace CursorHunter.Combat
             }
         }
 
+        private bool TryChooseBeamPath(out Vector2 point, out Vector2 direction)
+        {
+            BattlefieldArea field = Battlefield;
+            int firstAxis = (int)(_random.NextUInt64() % 2);
+            float width = effectPrefab.DiagonalWidth(EffectiveSizeMultiplier) *
+                LaserBeamVisual.HaloWidthMultiplier;
+            MonsterCombatTarget.CollectActiveForRun(_runId, _candidates);
+            int count = _candidates.Count;
+            int first = count == 0 ? 0 : (int)(_random.NextUInt64() % (ulong)count);
+            for (int axis = 0; axis < 2; axis++)
+            {
+                direction = field.GetGroundAxis((firstAxis + axis) % 2);
+                for (int i = 0; i < count; i++)
+                {
+                    MonsterCombatTarget target = _candidates[(first + i) % count];
+                    point = target.GetClosestHitPoint(target.transform.position);
+                    if (field.Contains(point) &&
+                        field.TryGetBeamSegment(point, direction, width, out Vector2 start, out Vector2 end) &&
+                        Vector2.Dot(point - start, direction) >= 0f &&
+                        Vector2.Dot(end - point, direction) >= 0f)
+                    {
+                        _candidates.Clear();
+                        return true;
+                    }
+                }
+            }
+            _candidates.Clear();
+            point = field.transform.position;
+            direction = field.GetGroundAxis(firstAxis);
+            return field.TryGetBeamSegment(point, direction, width, out _, out _);
+        }
+
         private bool TryGetFieldBounds(out Rect bounds)
         {
             bounds = default;
+            if (Battlefield != null) { bounds = Battlefield.WorldBounds; return true; }
             if (worldCamera == null) return false;
             float distance = Mathf.Abs(spawnPlaneZ - worldCamera.transform.position.z);
             Vector3 bottomLeft = worldCamera.ViewportToWorldPoint(
@@ -308,6 +361,7 @@ namespace CursorHunter.Combat
                 _free.Push(effect);
             }
             _active.Clear();
+            _candidates.Clear();
             _combat = null;
             _random = null;
             _runId = default;

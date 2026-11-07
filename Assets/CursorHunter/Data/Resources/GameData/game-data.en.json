@@ -2,10 +2,10 @@
   "schemaVersion": 4,
   "balanceVersion": 4,
   "stats": {
-    "attackPower": 1,
+    "attackPower": 2,
     "attackRadiusWorldUnits": 1.7253809,
     "attackCooldownSeconds": 0.8,
-    "criticalChancePercent": 0,
+    "criticalChancePercent": 5,
     "bossDamageMultiplier": 1,
     "normalFieldDurationSeconds": 15
   },

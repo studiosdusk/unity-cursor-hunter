@@ -47,6 +47,13 @@ namespace CursorHunter.Combat
         private bool _isConfigured;
         private bool _isVanished;
         private bool _isShielded;
+        private BattlefieldArea _battlefield;
+        private float _groundInset;
+        private Vector3 _authoredHitPosition;
+        private Vector2 _authoredHitOffset;
+        private bool _cachedHitPose;
+
+        internal void SetBattlefield(BattlefieldArea field) => _battlefield = field;
 
         internal bool IsHitStopped =>
             _isConfigured && _runController != null &&
@@ -159,11 +166,21 @@ namespace CursorHunter.Combat
                 return false;
             }
 
-            visualRoot.localScale = Vector3.one * snapshot.VisualScale;
+            if (!_cachedHitPose)
+            {
+                _authoredHitPosition = hitArea.localPosition;
+                _authoredHitOffset = hitAreaCollider.offset;
+                _cachedHitPose = true;
+            }
+            float spatialScale = _battlefield != null ? _battlefield.MonsterScale(snapshot.MonsterId) : 1f;
+            _groundInset = _battlefield != null ? _battlefield.MonsterInset(snapshot) : 0f;
+            visualRoot.localScale = Vector3.one * (snapshot.VisualScale * spatialScale);
+            hitArea.localPosition = _authoredHitPosition * spatialScale;
+            hitAreaCollider.offset = _authoredHitOffset * spatialScale;
             hitArea.localScale = Vector3.one;
             hitAreaCollider.size = new Vector2(
                 snapshot.HitAreaWidth,
-                snapshot.HitAreaHeight);
+                snapshot.HitAreaHeight) * spatialScale;
             return true;
         }
 
@@ -181,10 +198,18 @@ namespace CursorHunter.Combat
             Vector3 scale = visualRoot.localScale;
             scale.x *= facing;
             visualRoot.localScale = scale;
-            _moveSpeed = snapshot.MoveSpeed;
+            _moveSpeed = snapshot.MoveSpeed * (_battlefield != null ? _battlefield.MotionScale : 1f);
             if (_velocity.sqrMagnitude > 0f) _velocity = _velocity.normalized * _moveSpeed;
             _boundsMin = movementBounds.min;
             _boundsMax = movementBounds.max;
+            if (_battlefield != null)
+            {
+                SetRootPosition(transform.position);
+                _orbitCenter = _battlefield.Clamp(_orbitCenter, _groundInset);
+                _orbitRadius = Mathf.Min(_orbitRadius, Mathf.Max(0f,
+                    _battlefield.Clearance(_orbitCenter) - _groundInset));
+                _specialAbilityRadius = snapshot.SpecialAbilityRadius * _battlefield.SkillScale;
+            }
             // Position, current action, hit stop, and special ability state intentionally survive.
         }
 
@@ -206,6 +231,7 @@ namespace CursorHunter.Combat
             }
 
             ResolveHierarchy();
+            _battlefield = runController.Battlefield;
             if (visualRoot == null || hitArea == null || hitAreaCollider == null ||
                 !ApplyPresentation(snapshot))
             {
@@ -216,7 +242,7 @@ namespace CursorHunter.Combat
             _runController = runController;
             _runId = target.RunId;
             _movementMode = snapshot.MovementMode;
-            _moveSpeed = snapshot.MoveSpeed;
+            _moveSpeed = snapshot.MoveSpeed * runController.SpatialMotionScale;
             _boundsMin = movementBounds.min;
             _boundsMax = movementBounds.max;
             _lastElapsedSeconds = runController.ElapsedSeconds;
@@ -224,7 +250,7 @@ namespace CursorHunter.Combat
             _specialAbility = snapshot.SpecialAbility;
             _specialAbilityIntervalSeconds = snapshot.SpecialAbilityIntervalSeconds;
             _specialAbilityDurationSeconds = snapshot.SpecialAbilityDurationSeconds;
-            _specialAbilityRadius = snapshot.SpecialAbilityRadius;
+            _specialAbilityRadius = snapshot.SpecialAbilityRadius * runController.SpatialSkillScale;
             _specialAbilityStrength = snapshot.SpecialAbilityStrength;
             _nextSpecialAbilityAt = _lastElapsedSeconds +
                 _specialAbilityIntervalSeconds;
@@ -240,7 +266,7 @@ namespace CursorHunter.Combat
             Vector3 initialPosition = transform.position;
             initialPosition.x = Mathf.Clamp(initialPosition.x, _boundsMin.x, _boundsMax.x);
             initialPosition.y = Mathf.Clamp(initialPosition.y, _boundsMin.y, _boundsMax.y);
-            transform.position = initialPosition;
+            SetRootPosition(_battlefield != null ? (Vector2)transform.position : (Vector2)initialPosition);
             _target.RefreshVisualSorting();
 
             _velocity = Vector2.zero;
@@ -252,8 +278,10 @@ namespace CursorHunter.Combat
                 float availableRadius = Mathf.Min(
                     Mathf.Min(_orbitCenter.x - _boundsMin.x, _boundsMax.x - _orbitCenter.x),
                     Mathf.Min(_orbitCenter.y - _boundsMin.y, _boundsMax.y - _orbitCenter.y));
+                if (_battlefield != null)
+                    availableRadius = _battlefield.Clearance(_orbitCenter) - _groundInset;
                 _orbitRadius = Mathf.Clamp(
-                    snapshot.OrbitRadius,
+                    snapshot.OrbitRadius * runController.SpatialSkillScale,
                     0f,
                     Mathf.Max(0f, availableRadius));
                 SetRootPosition(_orbitCenter + DirectionFromDegrees(_orbitAngleDegrees) * _orbitRadius);
@@ -267,6 +295,12 @@ namespace CursorHunter.Combat
 
         private void AdvanceBoundedWander(float deltaSeconds)
         {
+            if (_battlefield != null)
+            {
+                SetRootPosition(_battlefield.MoveReflected(transform.position,
+                    ref _velocity, deltaSeconds, _groundInset));
+                return;
+            }
             Vector3 position = transform.position;
             float velocityX = _velocity.x;
             float velocityY = _velocity.y;
@@ -465,6 +499,9 @@ namespace CursorHunter.Combat
                 destination = new Vector2(
                     _actionRandom.NextFloat(_boundsMin.x, _boundsMax.x),
                     _actionRandom.NextFloat(_boundsMin.y, _boundsMax.y));
+                if (_battlefield != null)
+                    destination = _battlefield.Sample(_actionRandom.NextFloat(0f, 1f),
+                        _actionRandom.NextFloat(0f, 1f), _groundInset);
                 if ((destination - previous).sqrMagnitude >= minimumDistanceSquared)
                 {
                     break;
@@ -531,6 +568,7 @@ namespace CursorHunter.Combat
 
         private void SetRootPosition(Vector2 position)
         {
+            if (_battlefield != null) position = _battlefield.Clamp(position, _groundInset);
             Vector3 rootPosition = transform.position;
             rootPosition.x = position.x;
             rootPosition.y = position.y;

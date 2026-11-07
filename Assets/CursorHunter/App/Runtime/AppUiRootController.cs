@@ -19,6 +19,8 @@ namespace CursorHunter.App
     {
         [SerializeField] private UiScreenId screenId;
         [SerializeField] private GameObject root;
+        [Tooltip("World scenery or other roots that share this screen's visibility without inheriting its UI transform.")]
+        [SerializeField] private GameObject[] additionalRoots = Array.Empty<GameObject>();
 
         public UiScreenId ScreenId => screenId;
 
@@ -32,6 +34,10 @@ namespace CursorHunter.App
             {
                 root.SetActive(isVisible);
             }
+            if (additionalRoots == null) return;
+            foreach (GameObject additionalRoot in additionalRoots)
+                if (additionalRoot != null && additionalRoot.activeSelf != isVisible)
+                    additionalRoot.SetActive(isVisible);
         }
     }
 

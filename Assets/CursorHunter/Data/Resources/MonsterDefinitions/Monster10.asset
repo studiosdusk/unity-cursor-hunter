@@ -16,6 +16,7 @@ MonoBehaviour:
   displayName: 판도라 상자
   prefabKey: Walker/Walker_Box
   visualPrefab: {fileID: 1055932428988400584, guid: e0389eacbc514615a1b54ebbc2a3ac40, type: 3}
+  baseStatsAreFinalValues: 1
   baseStats:
     maxHealth: 75
     spawnIntervalSeconds: 2.25
@@ -25,7 +26,7 @@ MonoBehaviour:
     hitAreaWidth: 1
     hitAreaHeight: 1.2
     garnetReward: 12
-    bonusDropCurrencyId: gem.dragon
+    bonusDropCurrencyId: "gem.dragon"
     bonusDropAmount: 1
     bonusDropChancePercent: 100
   behaviorProfiles:

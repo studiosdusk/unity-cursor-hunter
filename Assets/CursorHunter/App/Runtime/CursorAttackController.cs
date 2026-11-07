@@ -79,7 +79,7 @@ namespace CursorHunter.App
             ResolveReferences();
             SyncCursorAttackRange();
 
-            if (!CanAttack())
+            if (cursorController == null || !cursorController.IsCustomCursorActive)
             {
                 ResetAttackPath();
                 return;
@@ -88,6 +88,7 @@ namespace CursorHunter.App
             Mouse mouse = Mouse.current;
             if (mouse == null || !Application.isFocused)
             {
+                cursorController.SetWindowCursorVisible(false);
                 ResetAttackPath();
                 return;
             }
@@ -96,10 +97,17 @@ namespace CursorHunter.App
             if (screenPosition.x < 0f || screenPosition.y < 0f ||
                 screenPosition.x > Screen.width || screenPosition.y > Screen.height)
             {
+                cursorController.SetWindowCursorVisible(false);
                 ResetAttackPath();
                 return;
             }
 
+            cursorController.SetWindowCursorVisible(true);
+            if (!CanAttack())
+            {
+                ResetAttackPath();
+                return;
+            }
             TryPerformAttack(false);
         }
 
@@ -124,6 +132,8 @@ namespace CursorHunter.App
             }
 
             PlayerCombatStatsRuntime stats = combatRunController.PlayerCombatStatsRuntime;
+            cursorController.SetSpatialScale(combatRunController.Battlefield != null
+                ? combatRunController.Battlefield.CursorScale : 1f);
             if (stats == null || !combatRunController.IsRunActive)
             {
                 return;
@@ -177,6 +187,13 @@ namespace CursorHunter.App
             }
 
             if (!cursorController.RefreshCursorPosition())
+            {
+                ResetAttackPath();
+                return;
+            }
+
+            BattlefieldArea field = combatRunController.Battlefield;
+            if (field != null && !field.Contains(cursorController.CursorWorldPosition))
             {
                 ResetAttackPath();
                 return;

@@ -66,6 +66,12 @@ namespace CursorHunter.Combat
             new HashSet<MonsterCombatTarget>(128);
         private Collider2D[] _overlapBuffer;
         private CombatRunController _combat;
+        internal BattlefieldArea Battlefield => _combat != null ? _combat.Battlefield : null;
+        internal float SpatialScale => _combat != null ? _combat.SpatialSkillScale : 1f;
+        internal float MotionScale => _combat != null ? _combat.SpatialMotionScale : 1f;
+        internal float EffectiveRadiusMultiplier => _runtime.RadiusMultiplier *
+            (_combat != null ? _combat.AreaSkillRadiusMultiplier : 1f) * SpatialScale;
+
         private SeededRandom _random;
         private RunId _runId;
         private float _nextCastAt;
@@ -84,7 +90,7 @@ namespace CursorHunter.Combat
         public int ActiveObjectCount => _active.Count;
         public int PooledObjectCount => _active.Count + _free.Count;
         internal float MoveSpeedWorldUnitsPerSecond =>
-            _runtime.MoveSpeedWorldUnitsPerSecond;
+            _runtime.MoveSpeedWorldUnitsPerSecond * MotionScale;
         internal bool IsAcquiredForRun(bool savedAcquired) =>
             _balance != null ? _balance.Enabled :
             savedAcquired || Application.isEditor && editorSkillAcquired;
@@ -221,13 +227,15 @@ namespace CursorHunter.Combat
                 Vector2 position = new Vector2(
                     _random.NextFloat(bounds.xMin, bounds.xMax),
                     _random.NextFloat(bounds.yMin, bounds.yMax));
+                if (Battlefield != null)
+                    position = Battlefield.Sample(_random.NextFloat(0f, 1f), _random.NextFloat(0f, 1f));
                 instance.Activate(this, _runId, position, now,
                     _runtime.DurationSeconds, _runtime.DirectionChangeSeconds,
                     _runtime.HitIntervalSeconds,
                     _runtime.StopChanceOnDirectionChange,
                     _runtime.StopDurationSeconds,
                     _runtime.ShrinkOutSeconds, _runtime.Damage,
-                    _runtime.RadiusMultiplier * _combat.AreaSkillRadiusMultiplier);
+                    EffectiveRadiusMultiplier);
                 _active.Add(instance);
             }
         }
@@ -235,6 +243,7 @@ namespace CursorHunter.Combat
         private bool TryGetFieldBounds(out Rect bounds)
         {
             bounds = default;
+            if (Battlefield != null) { bounds = Battlefield.WorldBounds; return true; }
             if (worldCamera == null) return false;
             float distance = Mathf.Abs(spawnPlaneZ - worldCamera.transform.position.z);
             Vector3 bottomLeft = worldCamera.ViewportToWorldPoint(

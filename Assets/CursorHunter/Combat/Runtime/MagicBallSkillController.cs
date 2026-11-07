@@ -56,6 +56,12 @@ namespace CursorHunter.Combat
         };
 
         private CombatRunController _combat;
+        internal BattlefieldArea Battlefield => _combat != null ? _combat.Battlefield : null;
+        internal float SpatialScale => Battlefield != null ? Battlefield.MagicBallScale : 1f;
+        internal float MotionScale => _combat != null ? _combat.SpatialMotionScale : 1f;
+        internal float EffectiveSizeMultiplier => _runtime.SizeMultiplier *
+            (_combat != null ? _combat.AreaSkillRadiusMultiplier : 1f) * SpatialScale;
+
         private MagicBallObject _ball;
         private SeededRandom _random;
         private RunId _runId;
@@ -162,19 +168,19 @@ namespace CursorHunter.Combat
                     _random.NextFloat(0f, 1f), _random.NextFloat(0f, 1f));
                 if (!_ball.Activate(this, _runId, fieldBounds, spawnFraction,
                     spawnPlaneZ, startingDirections[directionIndex].normalized,
-                    now, _runtime.SizeMultiplier *
-                        _combat.AreaSkillRadiusMultiplier)) return;
+                    now, EffectiveSizeMultiplier)) return;
                 CombatAudioFeedback.PlaySkill(SkillId);
             }
             Physics2D.SyncTransforms();
             _ball.Tick(now, fieldBounds, _enemyFilter,
-                _runtime.MoveSpeedWorldUnitsPerSecond,
+                _runtime.MoveSpeedWorldUnitsPerSecond * MotionScale,
                 _runtime.SameTargetHitCooldownSeconds);
         }
 
         private bool TryGetFieldBounds(out Rect bounds)
         {
             bounds = default;
+            if (Battlefield != null) { bounds = Battlefield.WorldBounds; return true; }
             if (worldCamera == null) return false;
             float distance = Mathf.Abs(spawnPlaneZ - worldCamera.transform.position.z);
             Vector3 bottomLeft = worldCamera.ViewportToWorldPoint(
@@ -260,7 +266,7 @@ namespace CursorHunter.Combat
                 _castAt = SkillBalanceMath.Retime(_castAt, now,
                     previous.FirstCastDelaySeconds, _runtime.FirstCastDelaySeconds);
             else _ball.RefreshBalance(now, previous.SameTargetHitCooldownSeconds,
-                _runtime.SameTargetHitCooldownSeconds, _runtime.SizeMultiplier);
+                _runtime.SameTargetHitCooldownSeconds, EffectiveSizeMultiplier);
             return true;
         }
 
