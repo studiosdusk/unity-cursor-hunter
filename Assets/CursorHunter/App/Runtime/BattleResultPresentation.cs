@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using CursorHunter.Contracts;
 using CursorHunter.Data;
+using CursorHunter.Progression;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
@@ -50,6 +52,7 @@ namespace CursorHunter.App
         [SerializeField] private HuntManager huntManager;
         [SerializeField] private AppUiRootController uiRoot;
         [SerializeField] private CombatGemstoneList collection;
+        [SerializeField] private TraitScreenController progression;
 
         [Header("Timing (unscaled seconds)")]
         [SerializeField, Min(0.05f)] private float popupSeconds = 0.15f;
@@ -64,7 +67,7 @@ namespace CursorHunter.App
         public bool IsReady => _phase == Phase.Ready;
         private bool IsBossPresentationRunning =>
             collection != null && collection.IsFinishingCollection || huntManager != null && huntManager.IsBossDeathPlaying;
-        private enum Phase { Hidden, Start, StartDismiss, BossLoot, TimeOut, Dismiss, Rewards, Buttons, Ready }
+        private enum Phase { Hidden, Start, StartDismiss, BossLoot, TimeOut, Dismiss, Rewards, RelicDiscovery, Buttons, Ready }
         public bool IsShowingStart => _phase == Phase.Start || _phase == Phase.StartDismiss;
         private bool _startPaused;
         private Phase _phase;
@@ -73,6 +76,9 @@ namespace CursorHunter.App
         private bool _navigating;
         private int _visibleRewardCount;
         private Sequence _buttonSequence;
+        private Sequence _relicDiscoverySequence;
+        private Sequence _relicDiscoveryIntroSequence;
+        private GameObject _relicDiscoveryOverlay;
         private AudioSource _countTickSource;
         private AudioClip _countTickClip;
         private RunResult _currentResult;
@@ -92,6 +98,8 @@ namespace CursorHunter.App
             retryButton.onClick.AddListener(Retry);
             skipButton.onClick.AddListener(CompleteReveal);
             resultSkipButton.onClick.AddListener(CompleteReveal);
+            if (progression == null)
+                progression = FindFirstObjectByType<TraitScreenController>(FindObjectsInactive.Include);
             CreateCountTickAudio();
             Hide();
         }
@@ -183,6 +191,12 @@ namespace CursorHunter.App
             _phase = Phase.Hidden;
             _buttonSequence?.Kill(false);
             _buttonSequence = null;
+            _relicDiscoverySequence?.Kill(false);
+            _relicDiscoverySequence = null;
+            _relicDiscoveryIntroSequence?.Kill(false);
+            _relicDiscoveryIntroSequence = null;
+            if (_relicDiscoveryOverlay != null) Destroy(_relicDiscoveryOverlay);
+            _relicDiscoveryOverlay = null;
             _clock = 0f;
             _runId = default;
             _hasCurrentResult = false;
@@ -301,7 +315,7 @@ namespace CursorHunter.App
         {
             if (_phase == Phase.Hidden) return;
             FitLayout();
-            if (_phase == Phase.Ready || _phase == Phase.Buttons) return;
+            if (_phase == Phase.Ready || _phase == Phase.Buttons || _phase == Phase.RelicDiscovery) return;
             if (IsShowingStart && (_startPaused || Time.timeScale <= 0f)) return;
             _clock += Time.unscaledDeltaTime;
             switch (_phase)
@@ -427,6 +441,41 @@ namespace CursorHunter.App
             // The timeout must remain a distinct beat; clicks never bypass it or navigate.
             if (_phase != Phase.Rewards) return;
             RenderRewards(RevealDuration);
+            if (HasRelicDiscovery())
+            {
+                BeginRelicDiscovery();
+                return;
+            }
+            RevealResultActions();
+        }
+
+        private bool HasRelicDiscovery() => _currentResult.SettlementPolicy == RunSettlementPolicy.Eligible &&
+            _currentResult.RelicAwards != null && _currentResult.RelicAwards.Count > 0;
+
+        private void BeginRelicDiscovery()
+        {
+            if (_phase != Phase.Rewards || !HasRelicDiscovery()) return;
+            _phase = Phase.RelicDiscovery;
+            CreateRelicDiscoveryOverlay();
+            // Never strand the result screen if the authored UI root is unavailable.
+            if (_relicDiscoveryOverlay == null)
+                RevealResultActions();
+        }
+
+        private void DismissRelicDiscovery()
+        {
+            if (_phase != Phase.RelicDiscovery) return;
+            _relicDiscoverySequence?.Kill(false);
+            _relicDiscoverySequence = null;
+            _relicDiscoveryIntroSequence?.Kill(false);
+            _relicDiscoveryIntroSequence = null;
+            if (_relicDiscoveryOverlay != null) Destroy(_relicDiscoveryOverlay);
+            _relicDiscoveryOverlay = null;
+            RevealResultActions();
+        }
+
+        private void RevealResultActions()
+        {
             Next(Phase.Buttons);
             actions.alpha = 1f;
             hint.gameObject.SetActive(false);
@@ -444,6 +493,238 @@ namespace CursorHunter.App
                 .Append(upgradeButton.transform.DOScale(Vector3.one, seconds).SetEase(Ease.OutBack, 0.8f))
                 .Append(retryButton.transform.DOScale(Vector3.one, seconds).SetEase(Ease.OutBack, 0.8f))
                 .OnComplete(FinishButtonReveal);
+        }
+
+        private void CreateRelicDiscoveryOverlay()
+        {
+            if (overlay == null || _relicDiscoveryOverlay != null) return;
+            RectTransform parent = overlay.transform as RectTransform;
+            if (parent == null) return;
+
+            GameObject root = new GameObject("RelicDiscoveryCelebration",
+                typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(CanvasGroup));
+            _relicDiscoveryOverlay = root;
+            RectTransform rootRect = root.transform as RectTransform;
+            rootRect.SetParent(parent, false);
+            rootRect.anchorMin = Vector2.zero;
+            rootRect.anchorMax = Vector2.one;
+            rootRect.offsetMin = Vector2.zero;
+            rootRect.offsetMax = Vector2.zero;
+            rootRect.SetAsLastSibling();
+            Image dimmer = root.GetComponent<Image>();
+            dimmer.color = new Color(0.005f, 0.008f, 0.02f, 0.86f);
+            dimmer.raycastTarget = true;
+            CanvasGroup group = root.GetComponent<CanvasGroup>();
+            group.alpha = 0f;
+            group.interactable = true;
+            group.blocksRaycasts = true;
+
+            float panelWidth = Mathf.Min(820f, Mathf.Max(460f, parent.rect.width - 56f));
+            float panelHeight = Mathf.Min(680f, Mathf.Max(420f, parent.rect.height - 48f));
+            Image popupImage = timeOutPopup != null ? timeOutPopup.GetComponent<Image>() : null;
+            GameObject panelObject = new GameObject("RelicDiscoveryPanel",
+                typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Outline), typeof(Shadow));
+            RectTransform panel = panelObject.transform as RectTransform;
+            panel.SetParent(rootRect, false);
+            panel.anchorMin = panel.anchorMax = panel.pivot = new Vector2(0.5f, 0.5f);
+            panel.anchoredPosition = Vector2.zero;
+            panel.sizeDelta = new Vector2(panelWidth, panelHeight);
+            panel.localScale = Vector3.one * 0.90f;
+            Image panelImage = panelObject.GetComponent<Image>();
+            panelImage.sprite = popupImage != null ? popupImage.sprite : null;
+            panelImage.type = panelImage.sprite != null ? Image.Type.Sliced : Image.Type.Simple;
+            panelImage.color = new Color(0.035f, 0.028f, 0.04f, 0.98f);
+            panelImage.raycastTarget = true;
+            Outline border = panelObject.GetComponent<Outline>();
+            border.effectColor = new Color(0.79f, 0.70f, 0.53f, 0.78f);
+            border.effectDistance = new Vector2(1.5f, -2f);
+            Shadow shadow = panelObject.GetComponent<Shadow>();
+            shadow.effectColor = new Color(0f, 0f, 0f, 0.76f);
+            shadow.effectDistance = new Vector2(6f, -8f);
+
+            Sprite glowSprite = null;
+            if (progression != null)
+                progression.GetRelicDiscoveryEffectSprites(out glowSprite, out _, out _);
+
+            float viewportHeight = Mathf.Max(260f, panelHeight - 164f);
+            RectTransform viewport = CreateCelebrationRect("RelicAwardViewport", panel,
+                new Vector2(0.08f, 0.5f), new Vector2(0.92f, 0.5f),
+                new Vector2(0f, 30f), new Vector2(-12f, viewportHeight), new Vector2(0.5f, 0.5f));
+            Image viewportImage = viewport.gameObject.AddComponent<Image>();
+            viewportImage.color = new Color(0f, 0f, 0f, 0.01f);
+            viewportImage.raycastTarget = true;
+            viewport.gameObject.AddComponent<RectMask2D>();
+
+            RectTransform content = CreateCelebrationRect("RelicAwardContent", viewport,
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                Vector2.zero, Vector2.zero, new Vector2(0.5f, 0.5f));
+            _relicDiscoverySequence?.Kill(false);
+            _relicDiscoverySequence = DOTween.Sequence().SetUpdate(true);
+            HorizontalLayoutGroup row = content.gameObject.AddComponent<HorizontalLayoutGroup>();
+            row.spacing = 18f;
+            row.padding = new RectOffset(12, 12, 8, 8);
+            row.childAlignment = TextAnchor.MiddleCenter;
+            row.childControlWidth = false;
+            row.childControlHeight = false;
+            row.childForceExpandWidth = false;
+            row.childForceExpandHeight = false;
+            ContentSizeFitter contentSizer = content.gameObject.AddComponent<ContentSizeFitter>();
+            contentSizer.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+            contentSizer.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            ScrollRect scroller = viewport.gameObject.AddComponent<ScrollRect>();
+            scroller.viewport = viewport;
+            scroller.content = content;
+            scroller.horizontal = true;
+            scroller.vertical = false;
+            scroller.movementType = ScrollRect.MovementType.Clamped;
+            scroller.scrollSensitivity = 34f;
+
+            IReadOnlyList<string> awards = _currentResult.RelicAwards;
+            int count = awards == null ? 0 : awards.Count;
+            float itemWidth = Mathf.Clamp(
+                (panelWidth - 96f) / Mathf.Max(1, Mathf.Min(count, 3)), 220f, 320f);
+            for (int i = 0; i < count; i++)
+                CreateRelicAwardCard(content, awards[i], itemWidth, viewportHeight, glowSprite);
+            Canvas.ForceUpdateCanvases();
+            scroller.horizontalNormalizedPosition = 0.5f;
+
+            Button confirm = CreateCelebrationButton("RelicDiscoveryConfirm", panel,
+                new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
+                new Vector2(0f, 24f), new Vector2(Mathf.Min(360f, panelWidth - 80f), 58f),
+                "확인");
+            confirm.onClick.AddListener(DismissRelicDiscovery);
+            confirm.transform.localScale = Vector3.one;
+
+            group.alpha = 0f;
+            _relicDiscoveryIntroSequence = DOTween.Sequence().SetUpdate(true)
+                .Append(DOTween.To(() => group.alpha, value => group.alpha = value, 1f, 0.20f)
+                    .SetTarget(group))
+                .Join(panel.DOScale(Vector3.one, 0.34f).SetEase(Ease.OutCubic));
+        }
+
+        private void CreateRelicAwardCard(
+            RectTransform parent,
+            string relicId,
+            float itemWidth,
+            float itemHeight,
+            Sprite glowSprite)
+        {
+            GameObject itemObject = new GameObject(
+                "RelicAward_" + relicId,
+                typeof(RectTransform), typeof(LayoutElement));
+            RectTransform item = itemObject.transform as RectTransform;
+            item.SetParent(parent, false);
+            LayoutElement element = itemObject.GetComponent<LayoutElement>();
+            element.preferredWidth = itemWidth;
+            element.preferredHeight = itemHeight;
+            item.sizeDelta = new Vector2(itemWidth, itemHeight);
+
+            string title = relicId;
+            Sprite icon = null;
+            if (progression != null)
+                progression.TryGetRelicPresentation(relicId, out title, out icon);
+
+            float iconSize = Mathf.Clamp(Mathf.Min(itemWidth * 0.78f, itemHeight * 0.64f), 150f, 260f);
+            if (glowSprite != null)
+            {
+                RectTransform halo = CreateCelebrationImage("RelicHalo", item, glowSprite,
+                    new Color(1f, 0.66f, 0.27f, 0.42f),
+                    new Vector2(0f, 32f), new Vector2(iconSize * 1.55f, iconSize * 1.55f));
+                halo.localScale = Vector3.one * 0.94f;
+                Image haloImage = halo.GetComponent<Image>();
+                if (_relicDiscoverySequence == null)
+                    _relicDiscoverySequence = DOTween.Sequence().SetUpdate(true);
+                _relicDiscoverySequence.Join(halo.DOScale(Vector3.one * 1.08f, 1.15f)
+                        .SetEase(Ease.InOutSine).SetLoops(-1, LoopType.Yoyo))
+                    .Join(DOTween.To(() => haloImage.color.a, alpha =>
+                        {
+                            Color color = haloImage.color;
+                            color.a = alpha;
+                            haloImage.color = color;
+                        }, 0.66f, 1.15f).SetEase(Ease.InOutSine).SetLoops(-1, LoopType.Yoyo));
+            }
+            if (icon != null)
+            {
+                RectTransform relicIcon = CreateCelebrationImage("Icon", item, icon,
+                    Color.white, new Vector2(0f, 38f), new Vector2(iconSize, iconSize));
+                relicIcon.GetComponent<Image>().preserveAspect = true;
+                relicIcon.localScale = Vector3.one * 0.86f;
+                _relicDiscoverySequence?.Join(relicIcon.DOScale(Vector3.one, 0.32f)
+                    .SetEase(Ease.OutBack, 0.65f));
+            }
+            CreateCelebrationText("Name", item, title, 26,
+                new Color(1f, 0.93f, 0.78f, 1f),
+                new Vector2(0f, -itemHeight * 0.34f), new Vector2(itemWidth - 24f, 52f), true);
+        }
+
+        private RectTransform CreateCelebrationImage(string name, Transform parent, Sprite sprite,
+            Color tint, Vector2 position, Vector2 size)
+        {
+            RectTransform rect = CreateCelebrationRect(name, parent,
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), position, size,
+                new Vector2(0.5f, 0.5f));
+            Image image = rect.gameObject.AddComponent<Image>();
+            image.sprite = sprite;
+            image.color = tint;
+            image.preserveAspect = true;
+            image.raycastTarget = false;
+            return rect;
+        }
+
+        private TMP_Text CreateCelebrationText(string name, Transform parent, string value,
+            float size, Color color, Vector2 position, Vector2 dimensions, bool bold)
+        {
+            RectTransform rect = CreateCelebrationRect(name, parent,
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), position,
+                dimensions, new Vector2(0.5f, 0.5f));
+            TextMeshProUGUI text = rect.gameObject.AddComponent<TextMeshProUGUI>();
+            text.font = LocalizedTypography.GetFont(null);
+            text.fontSize = size;
+            text.fontStyle = bold ? FontStyles.Bold : FontStyles.Normal;
+            text.color = color;
+            text.alignment = TextAlignmentOptions.Center;
+            text.textWrappingMode = TextWrappingModes.Normal;
+            text.overflowMode = TextOverflowModes.Ellipsis;
+            text.text = value ?? string.Empty;
+            text.raycastTarget = false;
+            return text;
+        }
+
+        private Button CreateCelebrationButton(string name, Transform parent,
+            Vector2 anchorMin, Vector2 anchorMax, Vector2 position, Vector2 size, string label)
+        {
+            RectTransform rect = CreateCelebrationRect(name, parent, anchorMin, anchorMax,
+                position, size, new Vector2(0.5f, 0.5f));
+            Image image = rect.gameObject.AddComponent<Image>();
+            Image popupImage = timeOutPopup != null ? timeOutPopup.GetComponent<Image>() : null;
+            image.sprite = popupImage != null ? popupImage.sprite : null;
+            image.type = image.sprite != null ? Image.Type.Sliced : Image.Type.Simple;
+            image.color = new Color(0.13f, 0.14f, 0.14f, 1f);
+            image.raycastTarget = true;
+            Outline outline = rect.gameObject.AddComponent<Outline>();
+            outline.effectColor = new Color(0.72f, 0.72f, 0.62f, 0.88f);
+            outline.effectDistance = new Vector2(2f, -2f);
+            Button button = rect.gameObject.AddComponent<Button>();
+            button.targetGraphic = image;
+            button.transition = Selectable.Transition.ColorTint;
+            CreateCelebrationText("Label", rect, label, 22f, Color.white,
+                Vector2.zero, size - new Vector2(22f, 12f), true);
+            return button;
+        }
+
+        private static RectTransform CreateCelebrationRect(string name, Transform parent,
+            Vector2 anchorMin, Vector2 anchorMax, Vector2 position, Vector2 size, Vector2 pivot)
+        {
+            GameObject child = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer));
+            RectTransform rect = child.transform as RectTransform;
+            rect.SetParent(parent, false);
+            rect.anchorMin = anchorMin;
+            rect.anchorMax = anchorMax;
+            rect.pivot = pivot;
+            rect.anchoredPosition = position;
+            rect.sizeDelta = size;
+            return rect;
         }
 
         private void FinishButtonReveal()

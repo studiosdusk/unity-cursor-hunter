@@ -25,9 +25,10 @@ MonoBehaviour:
     visualScale: 1
     hitAreaWidth: 1
     hitAreaHeight: 1.2
+    experienceReward: 3
     garnetReward: 7
     bonusDropCurrencyId: "gem.amethyst"
-    bonusDropAmount: 3
+    bonusDropAmount: 2
     bonusDropChancePercent: 100
   behaviorProfiles:
   - {fileID: 11400000, guid: ac42c96b714f44d19200eeaebfee7fc7, type: 2}

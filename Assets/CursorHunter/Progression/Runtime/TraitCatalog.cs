@@ -28,6 +28,8 @@ namespace CursorHunter.Progression
         [SerializeField] private string valueLabel;
         [SerializeField, Min(0)] private int cost = 10;
         [SerializeField] private string costGemstoneId = "gem.garnet";
+        [SerializeField] private List<TraitGemstoneCost> costRequirements =
+            new List<TraitGemstoneCost>();
         [SerializeField] private string prerequisiteNodeId;
         [SerializeField] private bool startsUnlocked;
         [SerializeField] private bool acquisitionOnly;
@@ -40,6 +42,7 @@ namespace CursorHunter.Progression
         public string CostGemstoneId => string.IsNullOrEmpty(costGemstoneId)
             ? "gem.garnet"
             : costGemstoneId;
+        public IReadOnlyList<TraitGemstoneCost> CostRequirements => costRequirements;
         public string PrerequisiteNodeId => prerequisiteNodeId;
         public bool StartsUnlocked => startsUnlocked;
         public bool AcquisitionOnly => acquisitionOnly;
@@ -79,10 +82,34 @@ namespace CursorHunter.Progression
             return this;
         }
 
+        public TraitNodeDefinition WithCostRequirements(IEnumerable<TraitGemstoneCost> requirements)
+        {
+            costRequirements = requirements == null
+                ? new List<TraitGemstoneCost>()
+                : new List<TraitGemstoneCost>(requirements);
+            return this;
+        }
+
         public TraitNodeDefinition AsDropOnly()
         {
             acquisitionOnly = true;
             return this;
+        }
+    }
+
+    [Serializable]
+    public sealed class TraitGemstoneCost
+    {
+        [SerializeField] private string gemstoneId;
+        [SerializeField, Min(1)] private int amount;
+
+        public string GemstoneId => gemstoneId;
+        public int Amount => Mathf.Max(1, amount);
+
+        public TraitGemstoneCost(string id, int requiredAmount)
+        {
+            gemstoneId = id;
+            amount = Mathf.Max(1, requiredAmount);
         }
     }
 
@@ -358,10 +385,21 @@ namespace CursorHunter.Progression
                     source.tab == "monsters" ? new Color(.46f, .79f, .6f) : new Color(.98f, .76f, .24f);
                 var category = new TraitCategoryDefinition(source.id, document.FindEntity(source.id).displayName, accent);
                 foreach (var entry in source.nodes)
-                    category.AddNode(new TraitNodeDefinition(entry.id, entry.displayName, entry.description,
+                {
+                    var node = new TraitNodeDefinition(entry.id, entry.displayName, entry.description,
                         entry.valueLabel, entry.cost,
                         GameInformationBuilder.IsInitiallyPurchased(document, source, entry))
-                        .WithCostGemstone(entry.currencyId).WithPrerequisite(entry.prerequisiteNodeId));
+                        .WithCostGemstone(entry.currencyId).WithPrerequisite(entry.prerequisiteNodeId);
+                    if (entry.costs != null && entry.costs.Length > 0)
+                    {
+                        var requirements = new List<TraitGemstoneCost>(entry.costs.Length);
+                        for (int i = 0; i < entry.costs.Length; i++)
+                            requirements.Add(new TraitGemstoneCost(
+                                entry.costs[i].currencyId, entry.costs[i].amount));
+                        node.WithCostRequirements(requirements);
+                    }
+                    category.AddNode(node);
+                }
                 switch (source.tab)
                 {
                     case "stats": catalog.statCategories.Add(category); break;

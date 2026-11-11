@@ -46,7 +46,7 @@
       "id": "monster.01",
       "enabled": false,
       "productionCount": 2,
-      "hitPoints": 5,
+      "hitPoints": 10,
       "spawnIntervalSeconds": 0.75,
       "garnetReward": 3,
       "gemstoneId": "gem.garnet",
@@ -86,7 +86,7 @@
       "spawnIntervalSeconds": 1.35,
       "garnetReward": 6,
       "gemstoneId": "gem.amethyst",
-      "gemstoneAmount": 3,
+      "gemstoneAmount": 2,
       "gemstoneChancePercent": 100,
       "behaviorType": 0
     },
@@ -98,7 +98,7 @@
       "spawnIntervalSeconds": 1.5,
       "garnetReward": 7,
       "gemstoneId": "gem.amethyst",
-      "gemstoneAmount": 3,
+      "gemstoneAmount": 2,
       "gemstoneChancePercent": 100,
       "behaviorType": 0
     },
@@ -110,7 +110,7 @@
       "spawnIntervalSeconds": 1.65,
       "garnetReward": 8,
       "gemstoneId": "gem.sapphire",
-      "gemstoneAmount": 5,
+      "gemstoneAmount": 1,
       "gemstoneChancePercent": 100,
       "behaviorType": 0
     },
@@ -122,7 +122,7 @@
       "spawnIntervalSeconds": 1.8,
       "garnetReward": 9,
       "gemstoneId": "gem.sapphire",
-      "gemstoneAmount": 5,
+      "gemstoneAmount": 1,
       "gemstoneChancePercent": 100,
       "behaviorType": 0
     },
@@ -134,8 +134,8 @@
       "spawnIntervalSeconds": 1.95,
       "garnetReward": 10,
       "gemstoneId": "gem.diamond",
-      "gemstoneAmount": 3,
-      "gemstoneChancePercent": 100,
+      "gemstoneAmount": 1,
+      "gemstoneChancePercent": 50,
       "behaviorType": 0
     },
     {
@@ -147,7 +147,7 @@
       "garnetReward": 11,
       "gemstoneId": "gem.dragon",
       "gemstoneAmount": 1,
-      "gemstoneChancePercent": 100,
+      "gemstoneChancePercent": 20,
       "behaviorType": 0
     },
     {
@@ -159,7 +159,7 @@
       "garnetReward": 12,
       "gemstoneId": "gem.dragon",
       "gemstoneAmount": 1,
-      "gemstoneChancePercent": 100,
+      "gemstoneChancePercent": 20,
       "behaviorType": 0
     }
   ],
@@ -205,88 +205,88 @@
       "id": "relic.red_potion",
       "owned": false,
       "sourceMonsterId": "monster.01",
-      "dropChancePercent": 10,
+      "dropChancePercent": 2.5,
       "effectId": "cursorAttackDamagePercent",
-      "effectValue": 5,
+      "effectValue": 10,
       "effectValue2": 0
     },
     {
       "id": "relic.blue_potion",
       "owned": false,
       "sourceMonsterId": "monster.01",
-      "dropChancePercent": 4,
+      "dropChancePercent": 1,
       "effectId": "autoSkillDamagePercent",
-      "effectValue": 5,
+      "effectValue": 10,
       "effectValue2": 0
     },
     {
       "id": "relic.monster_meat",
       "owned": false,
       "sourceMonsterId": "monster.02",
-      "dropChancePercent": 10,
+      "dropChancePercent": 2.5,
       "effectId": "petDamagePercent",
-      "effectValue": 10,
+      "effectValue": 20,
       "effectValue2": 0
     },
     {
       "id": "relic.thief_shoes",
       "owned": false,
       "sourceMonsterId": "monster.02",
-      "dropChancePercent": 4,
+      "dropChancePercent": 1,
       "effectId": "petMoveSpeedPercent",
-      "effectValue": 15,
+      "effectValue": 30,
       "effectValue2": 0
     },
     {
       "id": "relic.archers_bow",
       "owned": false,
       "sourceMonsterId": "monster.03",
-      "dropChancePercent": 10,
+      "dropChancePercent": 2.5,
       "effectId": "petAttackIntervalReductionPercent",
-      "effectValue": 10,
+      "effectValue": 20,
       "effectValue2": 0
     },
     {
       "id": "relic.warrior_armor",
       "owned": false,
       "sourceMonsterId": "monster.03",
-      "dropChancePercent": 4,
+      "dropChancePercent": 1,
       "effectId": "normalFieldDurationBonusSeconds",
-      "effectValue": 2,
+      "effectValue": 4,
       "effectValue2": 0
     },
     {
       "id": "relic.wizards_hat",
       "owned": false,
       "sourceMonsterId": "monster.04",
-      "dropChancePercent": 10,
+      "dropChancePercent": 2.5,
       "effectId": "areaSkillRadiusPercent",
-      "effectValue": 8,
+      "effectValue": 16,
       "effectValue2": 0
     },
     {
       "id": "relic.valor_ring",
       "owned": false,
       "sourceMonsterId": "monster.04",
-      "dropChancePercent": 4,
+      "dropChancePercent": 1,
       "effectId": "criticalDamageMultiplierBonus",
-      "effectValue": 0.25,
+      "effectValue": 0.5,
       "effectValue2": 0
     },
     {
       "id": "relic.lucky_dice",
       "owned": false,
       "sourceMonsterId": "monster.05",
-      "dropChancePercent": 10,
+      "dropChancePercent": 2.5,
       "effectId": "petDoubleDamageChancePercent",
-      "effectValue": 10,
+      "effectValue": 20,
       "effectValue2": 0
     },
     {
       "id": "relic.kraken_eye",
       "owned": false,
       "sourceMonsterId": "monster.05",
-      "dropChancePercent": 4,
+      "dropChancePercent": 1,
       "effectId": "lowHealthExecuteChancePercent",
       "effectValue": 50,
       "effectValue2": 30
@@ -295,90 +295,90 @@
       "id": "relic.four_leaf_clover",
       "owned": false,
       "sourceMonsterId": "monster.06",
-      "dropChancePercent": 10,
-      "effectId": "bonusGemDropChancePercent",
-      "effectValue": 10,
+      "dropChancePercent": 2.5,
+      "effectId": "relicDropChanceBonusPercent",
+      "effectValue": 1,
       "effectValue2": 0
     },
     {
       "id": "relic.ancient_book",
       "owned": false,
       "sourceMonsterId": "monster.06",
-      "dropChancePercent": 4,
-      "effectId": "petAttackRadiusPercent",
-      "effectValue": 20,
+      "dropChancePercent": 1,
+      "effectId": "cursorAttackIntervalReductionPercent",
+      "effectValue": 40,
       "effectValue2": 0
     },
     {
       "id": "relic.adventurers_bag",
       "owned": false,
       "sourceMonsterId": "monster.07",
-      "dropChancePercent": 10,
+      "dropChancePercent": 2.5,
       "effectId": "garnetKillRewardPercent",
-      "effectValue": 10,
+      "effectValue": 20,
       "effectValue2": 0
     },
     {
       "id": "relic.compass",
       "owned": false,
       "sourceMonsterId": "monster.07",
-      "dropChancePercent": 4,
-      "effectId": "petDetectionRadiusPercent",
-      "effectValue": 15,
+      "dropChancePercent": 1,
+      "effectId": "petAttackRadiusPercent",
+      "effectValue": 30,
       "effectValue2": 0
     },
     {
       "id": "relic.megaphone",
       "owned": false,
       "sourceMonsterId": "monster.08",
-      "dropChancePercent": 10,
+      "dropChancePercent": 2.5,
       "effectId": "monsterSpawnIntervalReductionPercent",
-      "effectValue": 5,
+      "effectValue": 10,
       "effectValue2": 0
     },
     {
       "id": "relic.telescope",
       "owned": false,
       "sourceMonsterId": "monster.08",
-      "dropChancePercent": 4,
+      "dropChancePercent": 1,
       "effectId": "cursorAttackRadiusPercent",
-      "effectValue": 10,
+      "effectValue": 20,
       "effectValue2": 0
     },
     {
       "id": "relic.stone",
       "owned": false,
       "sourceMonsterId": "monster.09",
-      "dropChancePercent": 10,
+      "dropChancePercent": 2.5,
       "effectId": "fullHealthFirstHitDamagePercent",
-      "effectValue": 15,
+      "effectValue": 30,
       "effectValue2": 0
     },
     {
       "id": "relic.rainbow_feather",
       "owned": false,
       "sourceMonsterId": "monster.09",
-      "dropChancePercent": 4,
+      "dropChancePercent": 1,
       "effectId": "autoSkillCooldownReductionPercent",
-      "effectValue": 5,
+      "effectValue": 10,
       "effectValue2": 0
     },
     {
       "id": "relic.scales_of_judgment",
       "owned": false,
       "sourceMonsterId": "monster.10",
-      "dropChancePercent": 10,
+      "dropChancePercent": 2.5,
       "effectId": "bossDamagePercent",
-      "effectValue": 10,
+      "effectValue": 20,
       "effectValue2": 0
     },
     {
       "id": "relic.treasure_chest",
       "owned": false,
       "sourceMonsterId": "monster.10",
-      "dropChancePercent": 4,
+      "dropChancePercent": 1,
       "effectId": "monsterKillRewardPercent",
-      "effectValue": 15,
+      "effectValue": 30,
       "effectValue2": 0
     }
   ],
@@ -390,8 +390,8 @@
   },
   "rules": {
     "criticalDamageMultiplier": 2,
-    "globalAliveLimit": 80,
-    "perMonsterAliveLimit": 80,
+    "globalAliveLimit": 160,
+    "perMonsterAliveLimit": 160,
     "bossFieldDurationSeconds": 30
   }
 }

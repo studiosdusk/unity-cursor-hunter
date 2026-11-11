@@ -203,9 +203,8 @@ namespace CursorHunter.App
                         return false;
                     }
 
-                    SpawnSnapshot snapshot = rule.Monster.CreateSnapshotWithProductionBonus(
-                        runSnapshot.PerMonsterAliveLimit,
-                        resolved.Value.ProductionBonusCount);
+                    SpawnSnapshot snapshot = rule.Monster.CreateSnapshot(runSnapshot.PerMonsterAliveLimit)
+                        .WithCombatBalance(resolved.Value);
                     if (!snapshot.IsValid)
                     {
                         error = "Stage monster has invalid final stats: " + rule.Monster.MonsterId;

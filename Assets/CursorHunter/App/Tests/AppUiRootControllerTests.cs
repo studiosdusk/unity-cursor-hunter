@@ -9,16 +9,6 @@ namespace CursorHunter.App.Tests
     {
         private readonly List<GameObject> _objects =
             new List<GameObject>();
-        private const string TutorialKey = "cursor_hunter.progression.v1.starter-tutorial-complete";
-        private int? _tutorialComplete;
-
-        [SetUp]
-        public void UseEstablishedProfileForNavigationTests()
-        {
-            _tutorialComplete = PlayerPrefs.HasKey(TutorialKey) ? PlayerPrefs.GetInt(TutorialKey) : (int?)null;
-            PlayerPrefs.SetInt(TutorialKey, 1);
-        }
-
         [TearDown]
         public void TearDown()
         {
@@ -31,9 +21,7 @@ namespace CursorHunter.App.Tests
             }
 
             _objects.Clear();
-            if (_tutorialComplete.HasValue) PlayerPrefs.SetInt(TutorialKey, _tutorialComplete.Value);
-            else PlayerPrefs.DeleteKey(TutorialKey);
-            PlayerPrefs.Save();
+
         }
 
         [Test]
@@ -41,8 +29,8 @@ namespace CursorHunter.App.Tests
         {
             AppUiRootController controller = CreateController();
 
-            Assert.That(controller.CurrentScreen, Is.EqualTo(UiScreenId.MainMenu));
-            Assert.That(IsActive("MainMenu"), Is.True);
+            Assert.That(controller.CurrentScreen, Is.EqualTo(UiScreenId.Trait));
+            Assert.That(IsActive("Trait"), Is.True);
             Assert.That(IsActive("FieldSelect"), Is.False);
             Assert.That(IsActive("Combat"), Is.False);
         }
@@ -57,7 +45,7 @@ namespace CursorHunter.App.Tests
 
             controller.ShowFieldSelect();
             Assert.That(controller.CurrentScreen, Is.EqualTo(UiScreenId.FieldSelect));
-            Assert.That(IsActive("MainMenu"), Is.False);
+            Assert.That(IsActive("Trait"), Is.False);
             Assert.That(IsActive("FieldSelect"), Is.True);
             Assert.That(IsActive("Combat"), Is.False);
 
@@ -71,7 +59,7 @@ namespace CursorHunter.App.Tests
                 transitions,
                 Is.EqualTo(new[]
                 {
-                    "MainMenu->FieldSelect",
+                    "Trait->FieldSelect",
                     "FieldSelect->Combat"
                 }));
         }
@@ -81,7 +69,7 @@ namespace CursorHunter.App.Tests
             GameObject controllerObject = CreateObject("UiRootController");
             controllerObject.SetActive(false);
 
-            GameObject mainMenu = CreateObject("MainMenu");
+            GameObject mainMenu = CreateObject("Trait");
             GameObject fieldSelect = CreateObject("FieldSelect");
             GameObject combat = CreateObject("Combat");
 
@@ -90,7 +78,7 @@ namespace CursorHunter.App.Tests
                 "screenBindings",
                 new[]
                 {
-                    CreateBinding(UiScreenId.MainMenu, mainMenu),
+                    CreateBinding(UiScreenId.Trait, mainMenu),
                     CreateBinding(UiScreenId.FieldSelect, fieldSelect),
                     CreateBinding(UiScreenId.Combat, combat)
                 });
@@ -98,7 +86,6 @@ namespace CursorHunter.App.Tests
             controllerObject.SetActive(true);
             AppUiRootController controller =
                 controllerObject.GetComponent<AppUiRootController>();
-            controller.ShowMainMenu();
             return controller;
         }
 

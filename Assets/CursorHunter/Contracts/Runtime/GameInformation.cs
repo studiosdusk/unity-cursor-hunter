@@ -7,6 +7,8 @@ namespace CursorHunter.Contracts
     [Serializable]
     public sealed class GameInformation
     {
+        public const int MaximumAliveMonsters = 160;
+
         public int schemaVersion;
         public int balanceVersion;
         public StatInformation stats;
@@ -31,9 +33,9 @@ namespace CursorHunter.Contracts
                 stats.normalFieldDurationSeconds < 15f || stats.normalFieldDurationSeconds > 30f)
                 return Fail("Invalid stats or field duration (15..30 seconds).", out error);
             if (rules == null || !Positive(rules.criticalDamageMultiplier) || rules.criticalDamageMultiplier < 1f ||
-                !Positive(rules.bossFieldDurationSeconds) || rules.globalAliveLimit < 1 || rules.globalAliveLimit > 80 ||
+                !Positive(rules.bossFieldDurationSeconds) || rules.globalAliveLimit < 1 || rules.globalAliveLimit > MaximumAliveMonsters ||
                 rules.perMonsterAliveLimit < 1 || rules.perMonsterAliveLimit > rules.globalAliveLimit)
-                return Fail("Invalid combat rules (maximum 80 alive targets).", out error);
+                return Fail($"Invalid combat rules (maximum {MaximumAliveMonsters} alive targets).", out error);
             if (relicDropRules.maxPerKill != 1 ||
                 relicDropRules.candidatePolicy != "unownedOnly" ||
                 relicDropRules.resolution != "sumFixedChanceThenWeightedPick" ||
@@ -96,9 +98,9 @@ namespace CursorHunter.Contracts
                 "petMoveSpeedPercent", "petAttackIntervalReductionPercent",
                 "normalFieldDurationBonusSeconds", "areaSkillRadiusPercent",
                 "criticalDamageMultiplierBonus", "petDoubleDamageChancePercent",
-                "lowHealthExecuteChancePercent", "bonusGemDropChancePercent",
-                "petAttackRadiusPercent", "garnetKillRewardPercent",
-                "petDetectionRadiusPercent", "monsterSpawnIntervalReductionPercent",
+                "lowHealthExecuteChancePercent", "relicDropChanceBonusPercent",
+                "cursorAttackIntervalReductionPercent", "garnetKillRewardPercent",
+                "petAttackRadiusPercent", "monsterSpawnIntervalReductionPercent",
                 "cursorAttackRadiusPercent", "fullHealthFirstHitDamagePercent",
                 "autoSkillCooldownReductionPercent", "bossDamagePercent",
                 "monsterKillRewardPercent"

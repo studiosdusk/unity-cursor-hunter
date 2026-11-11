@@ -67,7 +67,7 @@ Dead 클립을 Override하고, 나머지는 원본 Animator를 사용한다.
 | gem.diamond | Progression | [ItemIcon_Gem_Pentagon_Green.png](../../Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Icon_ItemIcons/512/ItemIcon_Gem_Pentagon_Green.png) *(프로토타입 임시 색상)* |
 | ui.trait.node | Progression | 런타임 4면 선 + 평면 Image (`TraitScreenController.cs`) |
 | ui.trait.drag-cursor | Progression | 별도 커서 에셋을 사용하지 않음 — 보드 드래그 중에도 운영체제 기본 포인터 모양과 크기를 유지 |
-| ui.trait.tabs | Progression | [TabMenu_Top_White.prefab](../../Assets/DownLoadAssets/GUI-CasualFantasy/Prefabs/Prefabs_Component_UI_Etc/TabMenu_Top_White.prefab) |
+| ui.trait.tabs | Progression | 상단 연구/특성/유물 프레임: [회색](../../Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Frame/ItemFrame01_Demo_Gray.png) / [초록](../../Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Frame/ItemFrame01_Demo_Green.png) / [보라](../../Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Frame/ItemFrame01_Demo_Purple.png) |
 | ui.boss.hp | App | 사용자가 Main에 배치한 [BossSlider.prefab](../../Assets/DownLoadAssets/Casual_GUI/GUI%20Pro-SimpleCasual/Prefabs/BossSlider.prefab). `BossHealthPresenter`가 결과창 기준의 굵은 한글 제목·Rubik 숫자·전용 SDF 테두리를 적용한다. 바 배치와 공급사 원본은 유지하고 두 텍스트의 가로 영역만 런타임에서 확장한다. |
 | ui.font.numeric | Data | [Rubik-SemiBold SDF.asset](../../Assets/DownLoadAssets/Casual_GUI/GUI%20Pro-SimpleCasual/ResourcesData/Fonts/Rubik-SemiBold%20SDF.asset). 기존 결과창의 숫자 글꼴을 `TypographySettings.numericFont` 기본값으로 지정하고 BossSlider 체력 숫자에 사용한다. 한글 제목은 `sourceFont`/`localeFonts`와 Bold를 사용한다. |
 | boss.shared-root | Combat | [BossRoot.prefab](../../Assets/CursorHunter/Combat/Prefabs/Monsters/BossRoot.prefab). 공통 전투 판정·행동을 사용하고 BossDefinition의 외형을 합성. |

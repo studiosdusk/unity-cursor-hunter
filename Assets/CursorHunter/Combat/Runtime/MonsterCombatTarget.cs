@@ -71,6 +71,7 @@ namespace CursorHunter.Combat
         private long _maxHealth;
         private long _currentHealth;
         private long _garnetReward;
+        private long _experienceReward;
         private string _bonusDropCurrencyId;
         private long _bonusDropAmount;
         private float _bonusDropChancePercent;
@@ -105,6 +106,7 @@ namespace CursorHunter.Combat
         public long MaxHealth => _maxHealth;
         public long CurrentHealth => _currentHealth;
         public long GarnetReward => _garnetReward;
+        public long ExperienceReward => _experienceReward;
         public string BonusDropCurrencyId => _bonusDropCurrencyId ?? string.Empty;
         public long BonusDropAmount => _bonusDropAmount;
         public float BonusDropChancePercent => _bonusDropChancePercent;
@@ -260,6 +262,7 @@ namespace CursorHunter.Combat
             _maxHealth = snapshot.MaxHealth;
             _currentHealth = snapshot.MaxHealth;
             _garnetReward = snapshot.GarnetReward;
+            _experienceReward = snapshot.ExperienceReward;
             _bonusDropCurrencyId = snapshot.BonusDropCurrencyId;
             _bonusDropAmount = snapshot.BonusDropAmount;
             _bonusDropChancePercent = snapshot.BonusDropChancePercent;
@@ -382,6 +385,7 @@ namespace CursorHunter.Combat
             _currentHealth = ScaleRemainingHealth(_currentHealth, _maxHealth, snapshot.MaxHealth);
             _maxHealth = snapshot.MaxHealth;
             _garnetReward = snapshot.GarnetReward;
+            _experienceReward = snapshot.ExperienceReward;
             _bonusDropCurrencyId = snapshot.BonusDropCurrencyId;
             _bonusDropAmount = snapshot.BonusDropAmount;
             _bonusDropChancePercent = snapshot.BonusDropChancePercent;

@@ -60,6 +60,7 @@ namespace CursorHunter.Combat
         private LaserRuntimeStat _runtime;
         private ContactFilter2D _enemyFilter;
         private float _nextCastAt;
+        private int _castCount = 1;
         private bool _configured;
         private SkillBalanceSettings _balance;
         private SeededRandom _balanceRandom;
@@ -96,6 +97,7 @@ namespace CursorHunter.Combat
             _random = new SeededRandom(seed ^ 0x4C41534552UL);
             if (_balance != null) skill = default;
             _runtime = new LaserRuntimeStat(BalanceBasis, skill);
+            _castCount = Mathf.Min(5, SkillStatMath.AddCount(1, skill, "count"));
             _hasCast = false;
             _nextCastAt = combat.ElapsedSeconds + _runtime.FirstCastDelaySeconds;
             _enemyFilter = new ContactFilter2D
@@ -109,7 +111,7 @@ namespace CursorHunter.Combat
             _poolWarningLogged = false;
 
             int needed = SkillBalanceMath.PoolNeed(_runtime.EffectDurationSeconds,
-                _runtime.CooldownSeconds, maximumPooledEffects);
+                _runtime.CooldownSeconds, maximumPooledEffects, _castCount);
             while (PooledEffectCount < needed)
             {
                 LaserEffect instance = Instantiate(effectPrefab, transform);
@@ -176,34 +178,39 @@ namespace CursorHunter.Combat
                 return;
             }
 
-            LaserEffect next = _free.Pop();
             _nextCastAt = now + _combat.ResolveAutoSkillCooldown(
                 _runtime.CooldownSeconds);
             _hasCast = true;
-            if (Battlefield != null)
+            for (int i = 0; i < _castCount && _free.Count > 0; i++)
             {
-                if (!TryChooseBeamPath(out Vector2 point, out Vector2 direction) ||
-                    !next.ActivateDiagonal(this, _runId, point, direction, spawnPlaneZ,
-                        now, _runtime.EffectDurationSeconds))
+                LaserEffect next = _free.Pop();
+                if (Battlefield != null)
+                {
+                    if (!TryChooseBeamPath(out Vector2 point, out Vector2 direction) ||
+                        !next.ActivateDiagonal(this, _runId, point, direction, spawnPlaneZ,
+                            now, _runtime.EffectDurationSeconds))
+                    {
+                        next.ReturnToPool();
+                        _free.Push(next);
+                        continue;
+                    }
+                }
+                else
+                {
+                    next.Activate(this, _runId, fieldBounds,
+                        _random.NextFloat(0f, 1f), spawnPlaneZ, now,
+                        _runtime.EffectDurationSeconds, EffectiveSizeMultiplier);
+                    if (i == 0) CombatAudioFeedback.PlaySkill(SkillId);
+                }
+                _active.Add(next);
+                Physics2D.SyncTransforms();
+                bool alive = next.Tick(now, _enemyFilter);
+                if (!IsCurrentRun(runId)) return;
+                if (!alive && _active.Remove(next))
                 {
                     next.ReturnToPool();
                     _free.Push(next);
-                    return;
                 }
-            }
-            else
-            {
-                next.Activate(this, _runId, fieldBounds,
-                    _random.NextFloat(0f, 1f), spawnPlaneZ, now,
-                    _runtime.EffectDurationSeconds, EffectiveSizeMultiplier);
-                CombatAudioFeedback.PlaySkill(SkillId);
-            }
-            _active.Add(next);
-            Physics2D.SyncTransforms();
-            if (!next.Tick(now, _enemyFilter) && _active.Remove(next))
-            {
-                next.ReturnToPool();
-                _free.Push(next);
             }
         }
 
@@ -334,7 +341,7 @@ namespace CursorHunter.Combat
                     if (_active[i] != null)
                         _active[i].RefreshBalance(now, previous, _runtime, bounds);
             int needed = SkillBalanceMath.PoolNeed(_runtime.EffectDurationSeconds,
-                _runtime.CooldownSeconds, maximumPooledEffects);
+                _runtime.CooldownSeconds, maximumPooledEffects, _castCount);
             while (PooledEffectCount < needed)
             {
                 LaserEffect instance = Instantiate(effectPrefab, transform);

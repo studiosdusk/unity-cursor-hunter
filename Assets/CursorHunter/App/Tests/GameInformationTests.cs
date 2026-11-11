@@ -47,9 +47,9 @@ namespace CursorHunter.App.Tests
                 "petMoveSpeedPercent", "petAttackIntervalReductionPercent",
                 "normalFieldDurationBonusSeconds", "areaSkillRadiusPercent",
                 "criticalDamageMultiplierBonus", "petDoubleDamageChancePercent",
-                "lowHealthExecuteChancePercent", "bonusGemDropChancePercent",
-                "petAttackRadiusPercent", "garnetKillRewardPercent",
-                "petDetectionRadiusPercent", "monsterSpawnIntervalReductionPercent",
+                "lowHealthExecuteChancePercent", "relicDropChanceBonusPercent",
+                "cursorAttackIntervalReductionPercent", "garnetKillRewardPercent",
+                "petAttackRadiusPercent", "monsterSpawnIntervalReductionPercent",
                 "cursorAttackRadiusPercent", "fullHealthFirstHitDamagePercent",
                 "autoSkillCooldownReductionPercent", "bossDamagePercent",
                 "monsterKillRewardPercent"

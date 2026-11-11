@@ -25,9 +25,10 @@ MonoBehaviour:
     visualScale: 2
     hitAreaWidth: 1.8
     hitAreaHeight: 2.16
+    experienceReward: 7
     garnetReward: 10
     bonusDropCurrencyId: "gem.diamond"
-    bonusDropAmount: 3
-    bonusDropChancePercent: 100
+    bonusDropAmount: 1
+    bonusDropChancePercent: 50
   behaviorProfiles:
   - {fileID: 11400000, guid: 01a7d3c08a6e4d03b4b2771043f81329, type: 2}

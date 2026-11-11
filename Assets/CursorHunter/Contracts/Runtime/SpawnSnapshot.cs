@@ -52,7 +52,8 @@ namespace CursorHunter.Contracts
             float specialAbilityIntervalSeconds = 4f,
             float specialAbilityDurationSeconds = 1f,
             float specialAbilityRadius = 3f,
-            float specialAbilityStrength = 0.3f)
+            float specialAbilityStrength = 0.3f,
+            long experienceReward = 0L)
         {
             MonsterId = monsterId ?? string.Empty;
             PrefabKey = prefabKey ?? string.Empty;
@@ -85,6 +86,7 @@ namespace CursorHunter.Contracts
                 ? specialAbilityRadius
                 : 3f;
             SpecialAbilityStrength = SanitizeUnit(specialAbilityStrength);
+            ExperienceReward = Math.Max(0L, experienceReward);
         }
 
         public string MonsterId { get; }
@@ -110,6 +112,21 @@ namespace CursorHunter.Contracts
         public float SpecialAbilityDurationSeconds { get; }
         public float SpecialAbilityRadius { get; }
         public float SpecialAbilityStrength { get; }
+        public long ExperienceReward { get; }
+
+        /// <summary>Applies resolved research balance while preserving the species' presentation and abilities.</summary>
+        public SpawnSnapshot WithCombatBalance(MonsterCombatSnapshot balance)
+        {
+            float chance = balance.BonusDropChancePercent;
+            return new SpawnSnapshot(
+                MonsterId, PrefabKey, balance.HitPoints, balance.SpawnIntervalSeconds,
+                balance.ProductionCount, AliveLimit, balance.GarnetReward,
+                balance.BonusDropCurrencyId, chance > 0f ? balance.BonusDropAmount : 0L,
+                chance, BehaviorType, MovementMode, MoveSpeed, VisualScale, HitAreaWidth,
+                HitAreaHeight, OrbitRadius, OrbitAngularSpeedDegrees, SpecialAbility,
+                SpecialAbilityIntervalSeconds, SpecialAbilityDurationSeconds,
+                SpecialAbilityRadius, SpecialAbilityStrength, ExperienceReward);
+        }
 
         public SpawnSnapshot WithSpawnInterval(float spawnIntervalSeconds)
         {
@@ -120,7 +137,7 @@ namespace CursorHunter.Contracts
                 VisualScale, HitAreaWidth, HitAreaHeight, OrbitRadius,
                 OrbitAngularSpeedDegrees, SpecialAbility,
                 SpecialAbilityIntervalSeconds, SpecialAbilityDurationSeconds,
-                SpecialAbilityRadius, SpecialAbilityStrength);
+                SpecialAbilityRadius, SpecialAbilityStrength, ExperienceReward);
         }
 
         public bool IsValid =>
@@ -133,6 +150,7 @@ namespace CursorHunter.Contracts
             PackSize > 0 &&
             AliveLimit > 0 &&
             GarnetReward >= 0L &&
+            ExperienceReward >= 0L &&
             BonusDropAmount >= 0L &&
             (BonusDropAmount == 0L ||
              (!string.IsNullOrWhiteSpace(BonusDropCurrencyId) &&

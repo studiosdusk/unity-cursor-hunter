@@ -21,6 +21,7 @@ namespace CursorHunter.Data
         [SerializeField, Min(0.01f)] private float hitAreaWidth = 1f;
         [SerializeField, Min(0.01f)] private float hitAreaHeight = 1.2f;
         [SerializeField, Min(0)] private long garnetReward = 3;
+        [SerializeField, Min(0)] private long experienceReward = 2;
         [SerializeField] private string bonusDropCurrencyId = string.Empty;
         [SerializeField, Min(0)] private long bonusDropAmount;
         [SerializeField, Range(0f, 100f)] private float bonusDropChancePercent;
@@ -35,6 +36,7 @@ namespace CursorHunter.Data
         public float HitAreaWidth => IsFinitePositive(hitAreaWidth) ? hitAreaWidth : 1f;
         public float HitAreaHeight => IsFinitePositive(hitAreaHeight) ? hitAreaHeight : 1.2f;
         public long GarnetReward => Math.Max(0L, garnetReward);
+        public long ExperienceReward => Math.Max(0L, experienceReward);
         public string BonusDropCurrencyId => bonusDropCurrencyId ?? string.Empty;
         public long BonusDropAmount => Math.Max(0L, bonusDropAmount);
         public float BonusDropChancePercent => SanitizePercent(bonusDropChancePercent);
@@ -51,6 +53,7 @@ namespace CursorHunter.Data
             hitAreaWidth = IsFinitePositive(hitAreaWidth) ? hitAreaWidth : 1f;
             hitAreaHeight = IsFinitePositive(hitAreaHeight) ? hitAreaHeight : 1.2f;
             garnetReward = Math.Max(0L, garnetReward);
+            experienceReward = Math.Max(0L, experienceReward);
             bonusDropCurrencyId = string.IsNullOrWhiteSpace(bonusDropCurrencyId)
                 ? string.Empty
                 : bonusDropCurrencyId.Trim();
@@ -238,7 +241,8 @@ namespace CursorHunter.Data
                 specialAbilityIntervalSeconds,
                 specialAbilityDurationSeconds,
                 specialAbilityRadius,
-                specialAbilityStrength);
+                specialAbilityStrength,
+                stats.ExperienceReward);
         }
 
         /// <summary>

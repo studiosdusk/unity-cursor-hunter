@@ -127,7 +127,7 @@ def validate_documents():
         assert stats["attackRadiusWorldUnits"] > 0 and stats["attackCooldownSeconds"] >= .05
         assert 0 <= stats["criticalChancePercent"] <= 100 and stats["bossDamageMultiplier"] > 0
         assert 15 <= stats["normalFieldDurationSeconds"] <= 30
-        assert 1 <= rules["perMonsterAliveLimit"] <= rules["globalAliveLimit"] <= 80
+        assert 1 <= rules["perMonsterAliveLimit"] <= rules["globalAliveLimit"] <= 160
         assert rules["criticalDamageMultiplier"] >= 1 and rules["bossFieldDurationSeconds"] > 0
         entities = {entry["id"]: entry for entry in document["entities"]}
         assert len(entities) == len(document["entities"])

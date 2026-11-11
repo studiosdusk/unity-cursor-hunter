@@ -18,6 +18,7 @@ namespace CursorHunter.Data
         [SerializeField] private GameObject visualPrefab;
         [Header("Common boss stats")]
         [SerializeField, Min(1)] private long maxHealth = 750;
+        [SerializeField, Min(0)] private long experienceReward = 40;
         [SerializeField, Min(0.01f)] private float moveSpeed = 0.6f;
         [SerializeField, Min(0.01f)] private float visualScale = 2f;
         [SerializeField] private Vector2 hitArea = new Vector2(1.8f, 2.1f);
@@ -44,6 +45,7 @@ namespace CursorHunter.Data
 
         public int Stage => stage;
         public string BossId => bossId;
+        public long ExperienceReward => Math.Max(0L, experienceReward) + 10L * Math.Max(1, stage);
         public string DefaultDisplayName => displayName;
         public string DisplayName => GetDisplayName(LocalizationCatalog.Language);
         public string GetDisplayName(string language) => LocalizedText.Find(localizedNames, language) ?? displayName;

@@ -73,7 +73,11 @@ namespace CursorHunter.Progression
                             var skill = skills[category.id];
                             if (node.operation == "enable") skill.enabled = true;
                             else if (node.operation == "add")
+                            {
                                 AddSkillUpgrade(skill, node.statId, (float)node.value);
+                                if (node.bonusCastCount > 0)
+                                    AddSkillUpgrade(skill, "count", node.bonusCastCount);
+                            }
                             break;
                     }
                 }

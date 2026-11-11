@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using CursorHunter.Contracts;
 using UnityEngine;
 
@@ -62,7 +63,8 @@ namespace CursorHunter.Combat
         internal float EffectiveSizeMultiplier => _runtime.SizeMultiplier *
             (_combat != null ? _combat.AreaSkillRadiusMultiplier : 1f) * SpatialScale;
 
-        private MagicBallObject _ball;
+        private readonly List<MagicBallObject> _balls = new List<MagicBallObject>(5);
+        private int _castCount = 1;
         private SeededRandom _random;
         private RunId _runId;
         private MagicBallRuntimeStat _runtime;
@@ -74,7 +76,7 @@ namespace CursorHunter.Combat
         private RunId _balanceRandomRun;
         private bool _visualsPaused;
 
-        public bool BallIsActive => _ball != null && _ball.IsActive;
+        public bool BallIsActive => _balls.Exists(ball => ball != null && ball.IsActive);
         internal bool IsAcquiredForRun(bool savedAcquired) =>
             _balance != null ? _balance.Enabled :
             savedAcquired || Application.isEditor && editorSkillAcquired;
@@ -123,10 +125,12 @@ namespace CursorHunter.Combat
                 useTriggers = true
             };
             _enemyFilter.SetLayerMask(combat.EnemyLayers);
-            if (_ball == null)
+            _castCount = Mathf.Min(5, SkillStatMath.AddCount(1, skill, "count"));
+            while (_balls.Count < _castCount)
             {
-                _ball = Instantiate(ballPrefab, transform);
-                _ball.ReturnToPool();
+                MagicBallObject ball = Instantiate(ballPrefab, transform);
+                ball.ReturnToPool();
+                _balls.Add(ball);
             }
             _configured = true;
             _visualsPaused = false;
@@ -147,7 +151,7 @@ namespace CursorHunter.Combat
                 if (!_visualsPaused && BallIsActive)
                 {
                     _visualsPaused = true;
-                    _ball.SetVisualPaused(true);
+                    foreach (MagicBallObject ball in _balls) if (ball.IsActive) ball.SetVisualPaused(true);
                 }
                 return;
             }
@@ -155,26 +159,35 @@ namespace CursorHunter.Combat
             if (_visualsPaused)
             {
                 _visualsPaused = false;
-                _ball.SetVisualPaused(false);
+                foreach (MagicBallObject ball in _balls) if (ball.IsActive) ball.SetVisualPaused(false);
             }
 
             float now = _combat.ElapsedSeconds;
             if (!TryGetFieldBounds(out Rect fieldBounds)) return;
-            if (!BallIsActive)
+            if (now < _castAt) return;
+            bool spawned = false;
+            for (int i = 0; i < _castCount; i++)
             {
-                if (now < _castAt) return;
+                MagicBallObject ball = _balls[i];
+                if (ball.IsActive) continue;
                 int directionIndex = (int)(_random.NextUInt64() % 8UL);
                 Vector2 spawnFraction = new Vector2(
                     _random.NextFloat(0f, 1f), _random.NextFloat(0f, 1f));
-                if (!_ball.Activate(this, _runId, fieldBounds, spawnFraction,
+                spawned |= ball.Activate(this, _runId, fieldBounds, spawnFraction,
                     spawnPlaneZ, startingDirections[directionIndex].normalized,
-                    now, EffectiveSizeMultiplier)) return;
-                CombatAudioFeedback.PlaySkill(SkillId);
+                    now, EffectiveSizeMultiplier);
             }
+            if (spawned) CombatAudioFeedback.PlaySkill(SkillId);
             Physics2D.SyncTransforms();
-            _ball.Tick(now, fieldBounds, _enemyFilter,
-                _runtime.MoveSpeedWorldUnitsPerSecond * MotionScale,
-                _runtime.SameTargetHitCooldownSeconds);
+            RunId runId = _runId;
+            for (int i = 0; i < _castCount; i++)
+            {
+                if (!_balls[i].IsActive) continue;
+                _balls[i].Tick(now, fieldBounds, _enemyFilter,
+                    _runtime.MoveSpeedWorldUnitsPerSecond * MotionScale,
+                    _runtime.SameTargetHitCooldownSeconds);
+                if (!IsCurrentRun(runId)) return;
+            }
         }
 
         private bool TryGetFieldBounds(out Rect bounds)
@@ -265,8 +278,10 @@ namespace CursorHunter.Combat
             if (!BallIsActive)
                 _castAt = SkillBalanceMath.Retime(_castAt, now,
                     previous.FirstCastDelaySeconds, _runtime.FirstCastDelaySeconds);
-            else _ball.RefreshBalance(now, previous.SameTargetHitCooldownSeconds,
-                _runtime.SameTargetHitCooldownSeconds, EffectiveSizeMultiplier);
+            else foreach (MagicBallObject ball in _balls)
+                if (ball.IsActive)
+                    ball.RefreshBalance(now, previous.SameTargetHitCooldownSeconds,
+                        _runtime.SameTargetHitCooldownSeconds, EffectiveSizeMultiplier);
             return true;
         }
 
@@ -292,7 +307,7 @@ namespace CursorHunter.Combat
 
         internal void StopSkill()
         {
-            if (_ball != null) _ball.ReturnToPool();
+            foreach (MagicBallObject ball in _balls) if (ball != null) ball.ReturnToPool();
             _combat = null;
             _random = null;
             _runId = default;
