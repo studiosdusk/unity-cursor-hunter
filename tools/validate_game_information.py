@@ -151,9 +151,9 @@ def main():
     check(bool(re.search(r"(?m)^\s*BossDamageMultiplier: 3(?:\.0)?\s*$", headshot_prefab)),
           "Headshot prefab boss bonus must match the runtime baseline")
     check(bool(re.search(
-        r"m_EditorClassIdentifier: CursorHunter\.Combat::CursorHunter\.Combat\.PlayerCombatStatsDefaults\s+attackPower: 10",
+        r"m_EditorClassIdentifier: CursorHunter\.Combat::CursorHunter\.Combat\.PlayerCombatStatsDefaults\s+attackPower: " + str(example["stats"]["attackPower"]) + r"\b",
         (BASE / "App/Scenes/Main.unity").read_text())),
-        "Main authored attack power must stay 10 for the Queen Bee two-hit baseline")
+        "Main authored attack power must match the game data baseline")
     known_currencies = {"gem.garnet"}
     override_controllers = {}
     animation_clips = {}
@@ -179,51 +179,42 @@ def main():
         if starting_balances else -1
     )
     starting_garnet_value = int(starting_garnet.group(1)) if starting_garnet else -1
-    starter_tutorial_node_ids = [
-        "stat.attack.01",
-        "stat.radius.01",
-        "stat.cooldown.01",
-        "stat.critical.01",
-        "stat.fieldDuration.01",
-        "monster.01",
-    ]
-    starter_tutorial_nodes = [
-        progression_nodes[node_id]
-        for node_id in starter_tutorial_node_ids
-        if node_id in progression_nodes
-    ]
-    tutorial_controller = (
-        BASE / "Progression/Runtime/TraitScreenController.cs").read_text()
-    tutorial_array = re.search(
-        r"StarterTutorialNodeIds\s*=\s*\{([\s\S]*?)\};",
-        tutorial_controller)
-    controller_tutorial_order = (
-        re.findall(r'"([^"]+)"', tutorial_array.group(1))
-        if tutorial_array else [])
-    right_click_step = re.search(
-        r"IsStarterTutorialRightClickStep\(TraitNodeDefinition node\)\s*\{([\s\S]*?)\n        \}",
-        tutorial_controller)
-    right_click_step_id = (
-        re.search(r'node\.Id,\s*"([^"]+)"', right_click_step.group(1))[1]
-        if right_click_step and re.search(r'node\.Id,\s*"([^"]+)"', right_click_step.group(1))
-        else None
-    )
     information_garnet = next(
-        (gem.get("amount", 0) for gem in example["gemstones"]
-         if gem.get("id") == "gem.garnet"),
+        (gem.get("amount", 0) for gem in example["gemstones"] if gem.get("id") == "gem.garnet"),
         -1,
     )
-    check(all(node_id in progression_nodes for node_id in starter_tutorial_node_ids),
-          "All starter tutorial research steps must exist")
-    check(controller_tutorial_order == starter_tutorial_node_ids,
-          "Starter tutorial order must include only basic stats and Stump")
-    check(all(node.get("cost", 0) == 0 for node in starter_tutorial_nodes),
-          "Every mandatory starter tutorial research must be free")
-    check(progression_nodes.get("monster.01", {}).get("operation") == "enable",
-          "Starter onboarding must explicitly unlock the basic Stump monster")
-    check(right_click_step_id in starter_tutorial_node_ids and
-          progression_nodes.get(right_click_step_id, {}).get("cost") == 0,
-          "The mandatory right-click practice must use a free tutorial node")
+    check(progression_nodes.get("monster.01", {}).get("operation") == "enable" and
+          progression_nodes["monster.01"]["cost"] == 0,
+          "The first monster must be a free research")
+    check(math.ceil(example["monsters"][0]["hitPoints"] /
+                                   example["stats"]["attackPower"]) in (4, 5),
+          "Starter monster must need four or five basic hits")
+    available = {"gem.garnet"}
+    attained = set()
+    sources = {monster["id"]: monster for monster in example["monsters"]}
+    while True:
+        next_nodes = set()
+        for node_id, node in progression_nodes.items():
+            costs = node.get("costs", [])
+            if costs:
+                check(sum(cost["amount"] for cost in costs) == node["cost"] and
+                      len({cost["currencyId"] for cost in costs}) == len(costs) and
+                      all(cost["currencyId"] in gems for cost in costs),
+                      f"Invalid multi-currency cost: {node_id}")
+            needs = {cost["currencyId"] for cost in costs} if costs else (
+                {node["currencyId"]} if node["cost"] else set())
+            parent = node.get("prerequisiteNodeId")
+            if node_id not in attained and (not parent or parent in attained) and needs <= available:
+                next_nodes.add(node_id)
+        if not next_nodes:
+            break
+        attained.update(next_nodes)
+        for node_id in next_nodes & sources.keys():
+            source = sources[node_id]
+            if source["gemstoneAmount"] > 0 and source["gemstoneChancePercent"] > 0:
+                available.add(source["gemstoneId"])
+    check(attained == progression_nodes.keys(),
+          "Unreachable research: " + ", ".join(sorted(progression_nodes.keys() - attained)))
     check(starting_garnet_value == information_garnet,
           "Main scene startingGarnet must match the runtime game-data starting wallet")
     check(starting_garnet_balance == information_garnet,
@@ -292,7 +283,7 @@ def main():
 
             if monster["gemstoneAmount"] > 0:
                 raw_currency = asset_scalar("bonusDropCurrencyId")
-                check(raw_currency == monster["gemstoneId"],
+                check(raw_currency.strip('"') == monster["gemstoneId"],
                       f"Growth/combat gemstone ID mismatch: {expected_id}")
 
             display_name = re.search(r"(?m)^  displayName: (.+)$", text)
@@ -403,8 +394,8 @@ def main():
         stump_asset_text = stump_definition.read_text()
         stump_pack_size = re.search(r"(?m)^    packSize: (\d+)$", stump_asset_text)
         stump_interval = re.search(r"(?m)^    spawnIntervalSeconds: ([^\s]+)$", stump_asset_text)
-        check(bool(stump_pack_size) and int(stump_pack_size.group(1)) == 1,
-              "Stump combat definition must use one base member before progression bonus")
+        check(bool(stump_pack_size) and int(stump_pack_size.group(1)) == 2,
+              "Stump combat definition must use two base members")
         check(bool(stump_interval) and
               math.isclose(float(stump_interval.group(1)), 0.75,
                            rel_tol=0.0, abs_tol=0.0001),
@@ -538,7 +529,7 @@ def main():
                         errors.append(f"C# syntax: {path.relative_to(ROOT)}:{node.start_point.row+1} {node.type}")
                     stack.extend(node.children)
     if errors: raise SystemExit("\n".join(errors))
-    print("PASS: JSON sections, MonsterDefinition baselines, Stump production, starter onboarding order, currency/prerequisite-based skill and monster progression, 10 monsters, seven skill IDs, 20 combat relic definitions, currency reachability, prefab IDs, TMP, scene and render settings" + (", C# syntax" if args.syntax else ""))
+    print("PASS: JSON sections, MonsterDefinition baselines, Stump production, starter hit count, mixed currency reachability and skill and monster progression, 10 monsters, seven skill IDs, 20 combat relic definitions, currency reachability, prefab IDs, TMP, scene and render settings" + (", C# syntax" if args.syntax else ""))
     print("Unity import, semantic compilation and gameplay were NOT run.")
 
 if __name__ == "__main__":

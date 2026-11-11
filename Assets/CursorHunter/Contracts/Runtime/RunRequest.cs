@@ -18,7 +18,9 @@ namespace CursorHunter.Contracts
             ulong seed,
             float durationSeconds,
             int bossStage = 0,
-            ResourceRewardSnapshot[] bossClearRewards = null)
+            ResourceRewardSnapshot[] bossClearRewards = null,
+            long bossExperienceReward = 0L,
+            int fieldTier = 1)
         {
             if (!runId.IsValid)
             {
@@ -55,6 +57,10 @@ namespace CursorHunter.Contracts
             Mode = mode;
             BossId = bossId ?? string.Empty;
             BossStage = mode == RunMode.Boss ? bossStage : 0;
+            if (bossExperienceReward < 0L)
+                throw new ArgumentOutOfRangeException(nameof(bossExperienceReward));
+            BossExperienceReward = mode == RunMode.Boss ? bossExperienceReward : 0L;
+            FieldTier = Math.Max(1, Math.Min(5, fieldTier));
             if (bossClearRewards != null && bossClearRewards.Length > 0)
             {
                 if (mode != RunMode.Boss) throw new ArgumentException("Only boss runs have clear rewards.", nameof(bossClearRewards));
@@ -91,6 +97,24 @@ namespace CursorHunter.Contracts
         public RunMode Mode { get; }
         public string BossId { get; }
         public int BossStage { get; }
+        public long BossExperienceReward { get; }
+        public int FieldTier { get; }
+        public float FieldGemstoneRewardMultiplier => FieldTier switch
+        {
+            2 => 1.10f,
+            3 => 1.20f,
+            4 => 1.35f,
+            5 => 1.50f,
+            _ => 1f
+        };
+        public float FieldExperienceMultiplier => FieldTier switch
+        {
+            2 => 1.05f,
+            3 => 1.10f,
+            4 => 1.20f,
+            5 => 1.30f,
+            _ => 1f
+        };
         private readonly IReadOnlyList<ResourceRewardSnapshot> _bossClearRewards;
         public IReadOnlyList<ResourceRewardSnapshot> BossClearRewards =>
             _bossClearRewards ?? Array.Empty<ResourceRewardSnapshot>();
@@ -101,6 +125,7 @@ namespace CursorHunter.Contracts
             RunId.IsValid &&
             SchemaVersion > 0 &&
             BalanceVersion > 0 &&
+            FieldTier >= 1 && FieldTier <= 5 &&
             DurationSeconds > 0f &&
             (Mode != RunMode.NormalField || DurationSeconds <= 30f) &&
             !float.IsNaN(DurationSeconds) &&

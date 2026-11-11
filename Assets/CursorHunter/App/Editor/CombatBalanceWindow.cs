@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using CursorHunter.Combat;
+using CursorHunter.Contracts;
 using CursorHunter.Data;
 using UnityEditor;
 using UnityEngine;
@@ -596,7 +597,7 @@ namespace CursorHunter.App.Editor
 
         private void DrawMonsters()
         {
-            DrawingDraft.GlobalAliveLimit = IntRow("전체 생존 상한 (마리)", DrawingDraft.GlobalAliveLimit, DrawingActual?.GlobalAliveLimit, 1, 80);
+            DrawingDraft.GlobalAliveLimit = IntRow("전체 생존 상한 (마리)", DrawingDraft.GlobalAliveLimit, DrawingActual?.GlobalAliveLimit, 1, GameInformation.MaximumAliveMonsters);
             DrawingDraft.PerMonsterAliveLimit = IntRow("종별 공통 생존 상한 (마리)", DrawingDraft.PerMonsterAliveLimit, DrawingActual?.PerMonsterAliveLimit, 1, Math.Max(1, DrawingDraft.GlobalAliveLimit));
             EditorGUILayout.Space(6);
             if (DrawingDraft.Monsters == null || DrawingDraft.Monsters.Count == 0)

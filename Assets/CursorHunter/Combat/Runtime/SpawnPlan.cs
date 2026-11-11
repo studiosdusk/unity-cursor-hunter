@@ -57,7 +57,7 @@ namespace CursorHunter.Combat
             }
 
             _entries = Array.AsReadOnly(copy);
-            GlobalAliveLimit = Math.Max(1, Math.Min(80, globalAliveLimit));
+            GlobalAliveLimit = Math.Max(1, Math.Min(GameInformation.MaximumAliveMonsters, globalAliveLimit));
         }
 
         public int GlobalAliveLimit { get; }

@@ -14,39 +14,8 @@ namespace CursorHunter.Progression
     public static class TraitProgressionStore
     {
         private const string SaveKey = "cursor_hunter.progression.v1";
-        private const int CurrentVersion = 6;
+        private const int CurrentVersion = 10;
         private const string LegacyBackupKey = SaveKey + ".before-v6";
-        private const string StarterTutorialKey = SaveKey + ".starter-tutorial-complete";
-        private const string StarterTutorialStartedKey = SaveKey + ".starter-tutorial-started";
-
-        public static bool HasCompletedStarterTutorial =>
-            PlayerPrefs.GetInt(StarterTutorialKey, 0) == 1;
-
-        public static bool ShouldShowStarterTutorial =>
-            !HasCompletedStarterTutorial &&
-            (PlayerPrefs.GetInt(StarterTutorialStartedKey, 0) == 1 ||
-             !PlayerPrefs.HasKey(SaveKey));
-
-        public static void BeginStarterTutorial()
-        {
-            if (HasCompletedStarterTutorial) return;
-            PlayerPrefs.SetInt(StarterTutorialStartedKey, 1);
-            PlayerPrefs.Save();
-        }
-
-        public static void CompleteStarterTutorial()
-        {
-            PlayerPrefs.SetInt(StarterTutorialKey, 1);
-            PlayerPrefs.DeleteKey(StarterTutorialStartedKey);
-            PlayerPrefs.Save();
-        }
-
-        public static void ResetStarterTutorial()
-        {
-            PlayerPrefs.DeleteKey(StarterTutorialKey);
-            PlayerPrefs.SetInt(StarterTutorialStartedKey, 1);
-            PlayerPrefs.Save();
-        }
 
         [Serializable]
         public sealed class SaveData
@@ -57,11 +26,26 @@ namespace CursorHunter.Progression
             public List<long> gemstoneBalances = new List<long>();
             public List<string> purchasedNodeIds = new List<string>();
             public List<string> ownedRelicIds = new List<string>();
+            public List<string> unseenRelicIds = new List<string>();
+            public long experiencePoints;
+            public int availableTraitCards;
+            public int traitCardDrawCount;
+            public int selectedFieldTier = 1;
+            public List<string> ownedTraitCardIds = new List<string>();
             public List<int> spentCosts = new List<int>();
             public List<string> spentCurrencyIds = new List<string>();
+            public List<SpentCostEntry> spentCostEntries = new List<SpentCostEntry>();
             public int highestBossStageCleared;
             public List<string> settledBossRunIds = new List<string>();
             public int unlockedBossTier;
+        }
+
+        [Serializable]
+        public sealed class SpentCostEntry
+        {
+            public string nodeId;
+            public string currencyId;
+            public int amount;
         }
 
         public static bool TryLoad(out SaveData data)
@@ -92,9 +76,17 @@ namespace CursorHunter.Progression
                     new List<string>();
                 loaded.ownedRelicIds = loaded.ownedRelicIds ??
                     new List<string>();
+                loaded.unseenRelicIds = loaded.unseenRelicIds ?? new List<string>();
+                loaded.experiencePoints = Math.Max(0L, loaded.experiencePoints);
+                loaded.availableTraitCards = Math.Max(0, loaded.availableTraitCards);
+                loaded.traitCardDrawCount = Math.Max(0, loaded.traitCardDrawCount);
+                loaded.selectedFieldTier = Math.Max(1, Math.Min(5, loaded.selectedFieldTier));
+                loaded.ownedTraitCardIds = loaded.ownedTraitCardIds ?? new List<string>();
                 loaded.spentCosts = loaded.spentCosts ?? new List<int>();
                 loaded.spentCurrencyIds = loaded.spentCurrencyIds ??
                     new List<string>();
+                loaded.spentCostEntries = loaded.spentCostEntries ??
+                    new List<SpentCostEntry>();
                 loaded.highestBossStageCleared = Math.Max(0, Math.Min(20, loaded.highestBossStageCleared));
                 // Boss-branch saves predate the separate research unlock tier.
                 loaded.unlockedBossTier = Math.Max(Math.Min(5, loaded.highestBossStageCleared),
@@ -119,7 +111,14 @@ namespace CursorHunter.Progression
             int unlockedBossTier = 0,
             IEnumerable<string> ownedRelicIds = null,
             int highestBossStageCleared = 0,
-            IEnumerable<string> settledBossRunIds = null)
+            IEnumerable<string> settledBossRunIds = null,
+            IEnumerable<string> unseenRelicIds = null,
+            long experiencePoints = 0L,
+            int availableTraitCards = 0,
+            int traitCardDrawCount = 0,
+            int selectedFieldTier = 1,
+            IEnumerable<string> ownedTraitCardIds = null,
+            IReadOnlyDictionary<string, List<SpentCostEntry>> spentCostEntries = null)
         {
             SaveData data = new SaveData
             {
@@ -128,8 +127,15 @@ namespace CursorHunter.Progression
                 gemstoneBalances = CopyBalances(gemstoneBalances),
                 purchasedNodeIds = CopyIds(purchasedNodeIds),
                 ownedRelicIds = CopyIds(ownedRelicIds),
+                unseenRelicIds = CopyIds(unseenRelicIds),
+                experiencePoints = Math.Max(0L, experiencePoints),
+                availableTraitCards = Math.Max(0, availableTraitCards),
+                traitCardDrawCount = Math.Max(0, traitCardDrawCount),
+                selectedFieldTier = Math.Max(1, Math.Min(5, selectedFieldTier)),
+                ownedTraitCardIds = CopyRepeatedIds(ownedTraitCardIds),
                 spentCosts = new List<int>(),
                 spentCurrencyIds = new List<string>(),
+                spentCostEntries = new List<SpentCostEntry>(),
                 unlockedBossTier = Math.Max(0, Math.Min(5, unlockedBossTier)),
                 highestBossStageCleared = Math.Max(0, Math.Min(20, highestBossStageCleared)),
                 settledBossRunIds = CopyIds(settledBossRunIds)
@@ -149,6 +155,26 @@ namespace CursorHunter.Progression
                     spentCurrencyIds.TryGetValue(nodeId, out string currency)
                         ? currency ?? string.Empty
                         : string.Empty);
+            }
+
+            if (spentCostEntries != null)
+            {
+                foreach (KeyValuePair<string, List<SpentCostEntry>> pair in spentCostEntries)
+                {
+                    if (string.IsNullOrWhiteSpace(pair.Key) || pair.Value == null) continue;
+                    for (int i = 0; i < pair.Value.Count; i++)
+                    {
+                        SpentCostEntry entry = pair.Value[i];
+                        if (entry == null || string.IsNullOrWhiteSpace(entry.currencyId) || entry.amount <= 0)
+                            continue;
+                        data.spentCostEntries.Add(new SpentCostEntry
+                        {
+                            nodeId = pair.Key,
+                            currencyId = entry.currencyId,
+                            amount = entry.amount
+                        });
+                    }
+                }
             }
 
             try
@@ -185,8 +211,6 @@ namespace CursorHunter.Progression
         public static void Clear()
         {
             PlayerPrefs.DeleteKey(SaveKey);
-            PlayerPrefs.DeleteKey(StarterTutorialKey);
-            PlayerPrefs.DeleteKey(StarterTutorialStartedKey);
             PlayerPrefs.Save();
         }
 
@@ -203,6 +227,16 @@ namespace CursorHunter.Progression
                 copy.Add(Math.Max(0L, source[i]));
             }
 
+            return copy;
+        }
+
+
+        private static List<string> CopyRepeatedIds(IEnumerable<string> source)
+        {
+            var copy = new List<string>();
+            if (source == null) return copy;
+            foreach (string id in source)
+                if (!string.IsNullOrWhiteSpace(id)) copy.Add(id);
             return copy;
         }
 

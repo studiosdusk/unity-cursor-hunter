@@ -82,6 +82,7 @@ namespace CursorHunter.Contracts
 
         public static bool IsAllowed(string skillId, string statId)
         {
+            if (statId == "count") return IsKnownSkill(skillId) && skillId != "skill.pet_baby_dragon";
             if (statId == "cooldownSeconds")
                 return IsKnownSkill(skillId) && skillId != "skill.magic_ball" &&
                     skillId != "skill.pet_baby_dragon";
@@ -332,7 +333,7 @@ namespace CursorHunter.Contracts
             RelicCombatSnapshot[] relics = null,
             RelicDropRulesCombatSnapshot relicDropRules = default)
         {
-            GlobalAliveLimit = Math.Max(1, Math.Min(80, globalAliveLimit));
+            GlobalAliveLimit = Math.Max(1, Math.Min(160, globalAliveLimit));
             PerMonsterAliveLimit = Math.Max(1, Math.Min(GlobalAliveLimit, perMonsterAliveLimit));
             BossFieldDurationSeconds = bossFieldDurationSeconds;
             SourceJson = sourceJson ?? string.Empty;
@@ -374,7 +375,7 @@ namespace CursorHunter.Contracts
             Combat.IsValid &&
             CursorStatBonuses.IsValid &&
             RelicDropRules.IsValid &&
-            GlobalAliveLimit >= 1 && GlobalAliveLimit <= 80 &&
+            GlobalAliveLimit >= 1 && GlobalAliveLimit <= 160 &&
             PerMonsterAliveLimit >= 1 && PerMonsterAliveLimit <= GlobalAliveLimit &&
             BossFieldDurationSeconds > 0f && !float.IsNaN(BossFieldDurationSeconds) && !float.IsInfinity(BossFieldDurationSeconds) &&
             AreValid(_skills) &&

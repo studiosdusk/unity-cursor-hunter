@@ -31,7 +31,13 @@
             "prerequisiteNodeId": "stat.attack.01",
             "startsUnlocked": false,
             "operation": "add",
-            "value": 2
+            "value": 2,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 160
+              }
+            ]
           },
           {
             "id": "stat.attack.03",
@@ -43,7 +49,17 @@
             "prerequisiteNodeId": "stat.attack.02",
             "startsUnlocked": false,
             "operation": "add",
-            "value": 2
+            "value": 2,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 130
+              },
+              {
+                "currencyId": "gem.topaz",
+                "amount": 130
+              }
+            ]
           },
           {
             "id": "stat.attack.04",
@@ -55,79 +71,177 @@
             "prerequisiteNodeId": "stat.attack.03",
             "startsUnlocked": false,
             "operation": "add",
-            "value": 3
+            "value": 3,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 180
+              },
+              {
+                "currencyId": "gem.topaz",
+                "amount": 180
+              }
+            ]
           },
           {
             "id": "stat.attack.05",
             "displayName": "Attack Power 5",
             "description": "Add 3 attack power.",
             "valueLabel": "+3",
-            "cost": 280,
+            "cost": 560,
             "currencyId": "gem.amethyst",
             "prerequisiteNodeId": "stat.attack.04",
             "startsUnlocked": false,
             "operation": "add",
-            "value": 3
+            "value": 3,
+            "costs": [
+              {
+                "currencyId": "gem.topaz",
+                "amount": 280
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 280
+              }
+            ]
           },
           {
             "id": "stat.attack.06",
             "displayName": "Attack Power 6",
             "description": "Add 4 attack power.",
             "valueLabel": "+4",
-            "cost": 340,
+            "cost": 680,
             "currencyId": "gem.amethyst",
             "prerequisiteNodeId": "stat.attack.05",
             "startsUnlocked": false,
             "operation": "add",
-            "value": 4
+            "value": 4,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 226
+              },
+              {
+                "currencyId": "gem.topaz",
+                "amount": 226
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 228
+              }
+            ]
           },
           {
             "id": "stat.attack.07",
             "displayName": "Attack Power 7",
             "description": "Add 4 attack power.",
             "valueLabel": "+4",
-            "cost": 1060,
+            "cost": 2120,
             "currencyId": "gem.sapphire",
             "prerequisiteNodeId": "stat.attack.06",
             "startsUnlocked": false,
             "operation": "add",
-            "value": 4
+            "value": 4,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 530
+              },
+              {
+                "currencyId": "gem.topaz",
+                "amount": 530
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 530
+              },
+              {
+                "currencyId": "gem.sapphire",
+                "amount": 530
+              }
+            ]
           },
           {
             "id": "stat.attack.08",
             "displayName": "Attack Power 8",
             "description": "Add 5 attack power.",
             "valueLabel": "+5",
-            "cost": 1220,
+            "cost": 2440,
             "currencyId": "gem.sapphire",
             "prerequisiteNodeId": "stat.attack.07",
             "startsUnlocked": false,
             "operation": "add",
-            "value": 5
+            "value": 5,
+            "costs": [
+              {
+                "currencyId": "gem.topaz",
+                "amount": 812
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 814
+              },
+              {
+                "currencyId": "gem.sapphire",
+                "amount": 814
+              }
+            ]
           },
           {
             "id": "stat.attack.09",
             "displayName": "Attack Power 9",
             "description": "Add 6 attack power.",
             "valueLabel": "+6",
-            "cost": 740,
+            "cost": 1480,
             "currencyId": "gem.diamond",
             "prerequisiteNodeId": "stat.attack.08",
             "startsUnlocked": false,
             "operation": "add",
-            "value": 6
+            "value": 6,
+            "costs": [
+              {
+                "currencyId": "gem.sapphire",
+                "amount": 740
+              },
+              {
+                "currencyId": "gem.diamond",
+                "amount": 740
+              }
+            ]
           },
           {
             "id": "stat.attack.10",
             "displayName": "Attack Power 10",
             "description": "Add 6 attack power.",
             "valueLabel": "+6",
-            "cost": 960,
+            "cost": 1920,
             "currencyId": "gem.dragon",
             "prerequisiteNodeId": "stat.attack.09",
             "startsUnlocked": false,
             "operation": "add",
-            "value": 6
+            "value": 6,
+            "costs": [
+              {
+                "currencyId": "gem.topaz",
+                "amount": 384
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 384
+              },
+              {
+                "currencyId": "gem.sapphire",
+                "amount": 384
+              },
+              {
+                "currencyId": "gem.diamond",
+                "amount": 384
+              },
+              {
+                "currencyId": "gem.dragon",
+                "amount": 384
+              }
+            ]
           }
         ]
       },
@@ -157,7 +271,13 @@
             "prerequisiteNodeId": "stat.radius.01",
             "startsUnlocked": false,
             "operation": "add",
-            "value": 0.1
+            "value": 0.1,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 160
+              }
+            ]
           },
           {
             "id": "stat.radius.03",
@@ -169,7 +289,17 @@
             "prerequisiteNodeId": "stat.radius.02",
             "startsUnlocked": false,
             "operation": "add",
-            "value": 0.1
+            "value": 0.1,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 130
+              },
+              {
+                "currencyId": "gem.topaz",
+                "amount": 130
+              }
+            ]
           },
           {
             "id": "stat.radius.04",
@@ -181,91 +311,195 @@
             "prerequisiteNodeId": "stat.radius.03",
             "startsUnlocked": false,
             "operation": "add",
-            "value": 0.1
+            "value": 0.1,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 180
+              },
+              {
+                "currencyId": "gem.topaz",
+                "amount": 180
+              }
+            ]
           },
           {
             "id": "stat.radius.05",
             "displayName": "Attack Radius 5",
             "description": "Add 0.1u to the cursor attack radius.",
             "valueLabel": "+0.1u",
-            "cost": 280,
+            "cost": 560,
             "currencyId": "gem.amethyst",
             "prerequisiteNodeId": "stat.radius.04",
             "startsUnlocked": false,
             "operation": "add",
-            "value": 0.1
+            "value": 0.1,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 186
+              },
+              {
+                "currencyId": "gem.topaz",
+                "amount": 186
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 188
+              }
+            ]
           },
           {
             "id": "stat.radius.06",
             "displayName": "Attack Radius 6",
             "description": "Add 0.1u to the cursor attack radius.",
             "valueLabel": "+0.1u",
-            "cost": 340,
+            "cost": 680,
             "currencyId": "gem.amethyst",
             "prerequisiteNodeId": "stat.radius.05",
             "startsUnlocked": false,
             "operation": "add",
-            "value": 0.1
+            "value": 0.1,
+            "costs": [
+              {
+                "currencyId": "gem.topaz",
+                "amount": 340
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 340
+              }
+            ]
           },
           {
             "id": "stat.radius.07",
             "displayName": "Attack Radius 7",
             "description": "Add 0.15u to the cursor attack radius.",
             "valueLabel": "+0.15u",
-            "cost": 1060,
+            "cost": 2120,
             "currencyId": "gem.sapphire",
             "prerequisiteNodeId": "stat.radius.06",
             "startsUnlocked": false,
             "operation": "add",
-            "value": 0.15
+            "value": 0.15,
+            "costs": [
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 1060
+              },
+              {
+                "currencyId": "gem.sapphire",
+                "amount": 1060
+              }
+            ]
           },
           {
             "id": "stat.radius.08",
             "displayName": "Attack Radius 8",
             "description": "Add 0.2u to the cursor attack radius.",
             "valueLabel": "+0.2u",
-            "cost": 1220,
+            "cost": 2440,
             "currencyId": "gem.sapphire",
             "prerequisiteNodeId": "stat.radius.07",
             "startsUnlocked": false,
             "operation": "add",
-            "value": 0.2
+            "value": 0.2,
+            "costs": [
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 1220
+              },
+              {
+                "currencyId": "gem.sapphire",
+                "amount": 1220
+              }
+            ]
           },
           {
             "id": "stat.radius.09",
             "displayName": "Attack Radius 9",
             "description": "Add 0.25u to the cursor attack radius.",
             "valueLabel": "+0.25u",
-            "cost": 740,
+            "cost": 1480,
             "currencyId": "gem.diamond",
             "prerequisiteNodeId": "stat.radius.08",
             "startsUnlocked": false,
             "operation": "add",
-            "value": 0.25
+            "value": 0.25,
+            "costs": [
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 492
+              },
+              {
+                "currencyId": "gem.sapphire",
+                "amount": 494
+              },
+              {
+                "currencyId": "gem.diamond",
+                "amount": 494
+              }
+            ]
           },
           {
             "id": "stat.radius.10",
             "displayName": "Attack Radius 10",
             "description": "Add 0.35u to the cursor attack radius.",
             "valueLabel": "+0.35u",
-            "cost": 820,
+            "cost": 1640,
             "currencyId": "gem.diamond",
             "prerequisiteNodeId": "stat.radius.09",
             "startsUnlocked": false,
             "operation": "add",
-            "value": 0.35
+            "value": 0.35,
+            "costs": [
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 546
+              },
+              {
+                "currencyId": "gem.sapphire",
+                "amount": 546
+              },
+              {
+                "currencyId": "gem.diamond",
+                "amount": 548
+              }
+            ]
           },
           {
             "id": "stat.radius.11",
             "displayName": "Attack Radius 11",
             "description": "Add 0.5u to the cursor attack radius.",
             "valueLabel": "+0.5u",
-            "cost": 1060,
+            "cost": 2120,
             "currencyId": "gem.dragon",
             "prerequisiteNodeId": "stat.radius.10",
             "startsUnlocked": false,
             "operation": "add",
-            "value": 0.5
+            "value": 0.5,
+            "costs": [
+              {
+                "currencyId": "gem.topaz",
+                "amount": 424
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 424
+              },
+              {
+                "currencyId": "gem.sapphire",
+                "amount": 424
+              },
+              {
+                "currencyId": "gem.diamond",
+                "amount": 424
+              },
+              {
+                "currencyId": "gem.dragon",
+                "amount": 424
+              }
+            ]
           }
         ]
       },
@@ -295,7 +529,17 @@
             "prerequisiteNodeId": "stat.cooldown.01",
             "startsUnlocked": false,
             "operation": "add",
-            "value": -0.08
+            "value": -0.08,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 80
+              },
+              {
+                "currencyId": "gem.topaz",
+                "amount": 80
+              }
+            ]
           },
           {
             "id": "stat.cooldown.03",
@@ -307,7 +551,21 @@
             "prerequisiteNodeId": "stat.cooldown.02",
             "startsUnlocked": false,
             "operation": "add",
-            "value": -0.08
+            "value": -0.08,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 60
+              },
+              {
+                "currencyId": "gem.topaz",
+                "amount": 60
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 60
+              }
+            ]
           },
           {
             "id": "stat.cooldown.04",
@@ -319,19 +577,51 @@
             "prerequisiteNodeId": "stat.cooldown.03",
             "startsUnlocked": false,
             "operation": "add",
-            "value": -0.08
+            "value": -0.08,
+            "costs": [
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 180
+              },
+              {
+                "currencyId": "gem.sapphire",
+                "amount": 180
+              }
+            ]
           },
           {
             "id": "stat.cooldown.05",
             "displayName": "Attack Interval 5",
             "description": "Reduce the interval between cursor attacks by 0.08s.",
             "valueLabel": "-0.08s",
-            "cost": 400,
+            "cost": 800,
             "currencyId": "gem.diamond",
             "prerequisiteNodeId": "stat.cooldown.04",
             "startsUnlocked": false,
             "operation": "add",
-            "value": -0.08
+            "value": -0.08,
+            "costs": [
+              {
+                "currencyId": "gem.topaz",
+                "amount": 160
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 160
+              },
+              {
+                "currencyId": "gem.sapphire",
+                "amount": 160
+              },
+              {
+                "currencyId": "gem.diamond",
+                "amount": 160
+              },
+              {
+                "currencyId": "gem.dragon",
+                "amount": 160
+              }
+            ]
           }
         ]
       },
@@ -361,7 +651,13 @@
             "prerequisiteNodeId": "stat.critical.01",
             "startsUnlocked": false,
             "operation": "add",
-            "value": 5
+            "value": 5,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 160
+              }
+            ]
           },
           {
             "id": "stat.critical.03",
@@ -373,7 +669,17 @@
             "prerequisiteNodeId": "stat.critical.02",
             "startsUnlocked": false,
             "operation": "add",
-            "value": 5
+            "value": 5,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 130
+              },
+              {
+                "currencyId": "gem.topaz",
+                "amount": 130
+              }
+            ]
           },
           {
             "id": "stat.critical.04",
@@ -385,55 +691,137 @@
             "prerequisiteNodeId": "stat.critical.03",
             "startsUnlocked": false,
             "operation": "add",
-            "value": 5
+            "value": 5,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 120
+              },
+              {
+                "currencyId": "gem.topaz",
+                "amount": 120
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 120
+              }
+            ]
           },
           {
             "id": "stat.critical.05",
             "displayName": "Critical Chance 5",
             "description": "Add 5 percentage points to critical chance.",
             "valueLabel": "+5%",
-            "cost": 740,
+            "cost": 1480,
             "currencyId": "gem.sapphire",
             "prerequisiteNodeId": "stat.critical.04",
             "startsUnlocked": false,
             "operation": "add",
-            "value": 5
+            "value": 5,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 370
+              },
+              {
+                "currencyId": "gem.topaz",
+                "amount": 370
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 370
+              },
+              {
+                "currencyId": "gem.sapphire",
+                "amount": 370
+              }
+            ]
           },
           {
             "id": "stat.critical.06",
             "displayName": "Critical Chance 6",
             "description": "Add 5 percentage points to critical chance.",
             "valueLabel": "+5%",
-            "cost": 560,
+            "cost": 1120,
             "currencyId": "gem.sapphire",
             "prerequisiteNodeId": "stat.critical.05",
             "startsUnlocked": false,
             "operation": "add",
-            "value": 5
+            "value": 5,
+            "costs": [
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 560
+              },
+              {
+                "currencyId": "gem.sapphire",
+                "amount": 560
+              }
+            ]
           },
           {
             "id": "stat.critical.07",
             "displayName": "Critical Chance 7",
             "description": "Add 5 percentage points to critical chance.",
             "valueLabel": "+5%",
-            "cost": 560,
+            "cost": 1120,
             "currencyId": "gem.diamond",
             "prerequisiteNodeId": "stat.critical.06",
             "startsUnlocked": false,
             "operation": "add",
-            "value": 5
+            "value": 5,
+            "costs": [
+              {
+                "currencyId": "gem.topaz",
+                "amount": 280
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 280
+              },
+              {
+                "currencyId": "gem.sapphire",
+                "amount": 280
+              },
+              {
+                "currencyId": "gem.diamond",
+                "amount": 280
+              }
+            ]
           },
           {
             "id": "stat.critical.08",
             "displayName": "Critical Chance 8",
             "description": "Add 10 percentage points to critical chance.",
             "valueLabel": "+10%",
-            "cost": 760,
+            "cost": 1520,
             "currencyId": "gem.dragon",
             "prerequisiteNodeId": "stat.critical.07",
             "startsUnlocked": false,
             "operation": "add",
-            "value": 10
+            "value": 10,
+            "costs": [
+              {
+                "currencyId": "gem.topaz",
+                "amount": 304
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 304
+              },
+              {
+                "currencyId": "gem.sapphire",
+                "amount": 304
+              },
+              {
+                "currencyId": "gem.diamond",
+                "amount": 304
+              },
+              {
+                "currencyId": "gem.dragon",
+                "amount": 304
+              }
+            ]
           }
         ]
       },
@@ -463,7 +851,17 @@
             "prerequisiteNodeId": "stat.fieldDuration.01",
             "startsUnlocked": false,
             "operation": "set",
-            "value": 20
+            "value": 20,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 80
+              },
+              {
+                "currencyId": "gem.topaz",
+                "amount": 80
+              }
+            ]
           },
           {
             "id": "stat.fieldDuration.03",
@@ -475,7 +873,21 @@
             "prerequisiteNodeId": "stat.fieldDuration.02",
             "startsUnlocked": false,
             "operation": "set",
-            "value": 25
+            "value": 25,
+            "costs": [
+              {
+                "currencyId": "gem.topaz",
+                "amount": 140
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 140
+              },
+              {
+                "currencyId": "gem.sapphire",
+                "amount": 140
+              }
+            ]
           },
           {
             "id": "stat.fieldDuration.04",
@@ -487,7 +899,29 @@
             "prerequisiteNodeId": "stat.fieldDuration.03",
             "startsUnlocked": false,
             "operation": "set",
-            "value": 30
+            "value": 30,
+            "costs": [
+              {
+                "currencyId": "gem.topaz",
+                "amount": 72
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 72
+              },
+              {
+                "currencyId": "gem.sapphire",
+                "amount": 72
+              },
+              {
+                "currencyId": "gem.diamond",
+                "amount": 72
+              },
+              {
+                "currencyId": "gem.dragon",
+                "amount": 72
+              }
+            ]
           }
         ]
       },
@@ -505,7 +939,17 @@
             "prerequisiteNodeId": "stat.attack.01",
             "startsUnlocked": false,
             "operation": "add",
-            "value": 0.1
+            "value": 0.1,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 50
+              },
+              {
+                "currencyId": "gem.topaz",
+                "amount": 50
+              }
+            ]
           },
           {
             "id": "stat.boss.02",
@@ -517,7 +961,17 @@
             "prerequisiteNodeId": "stat.boss.01",
             "startsUnlocked": false,
             "operation": "add",
-            "value": 0.15
+            "value": 0.15,
+            "costs": [
+              {
+                "currencyId": "gem.topaz",
+                "amount": 70
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 70
+              }
+            ]
           },
           {
             "id": "stat.boss.03",
@@ -529,7 +983,25 @@
             "prerequisiteNodeId": "stat.boss.02",
             "startsUnlocked": false,
             "operation": "add",
-            "value": 0.2
+            "value": 0.2,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 120
+              },
+              {
+                "currencyId": "gem.topaz",
+                "amount": 120
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 120
+              },
+              {
+                "currencyId": "gem.sapphire",
+                "amount": 120
+              }
+            ]
           },
           {
             "id": "stat.boss.04",
@@ -541,19 +1013,59 @@
             "prerequisiteNodeId": "stat.boss.03",
             "startsUnlocked": false,
             "operation": "add",
-            "value": 0.25
+            "value": 0.25,
+            "costs": [
+              {
+                "currencyId": "gem.topaz",
+                "amount": 85
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 85
+              },
+              {
+                "currencyId": "gem.sapphire",
+                "amount": 85
+              },
+              {
+                "currencyId": "gem.diamond",
+                "amount": 85
+              }
+            ]
           },
           {
             "id": "stat.boss.05",
             "displayName": "Boss Damage Multiplier 5",
             "description": "Add 0.3x to boss damage.",
             "valueLabel": "+0.3x",
-            "cost": 500,
+            "cost": 1000,
             "currencyId": "gem.dragon",
             "prerequisiteNodeId": "stat.boss.04",
             "startsUnlocked": false,
             "operation": "add",
-            "value": 0.3
+            "value": 0.3,
+            "costs": [
+              {
+                "currencyId": "gem.topaz",
+                "amount": 200
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 200
+              },
+              {
+                "currencyId": "gem.sapphire",
+                "amount": 200
+              },
+              {
+                "currencyId": "gem.diamond",
+                "amount": 200
+              },
+              {
+                "currencyId": "gem.dragon",
+                "amount": 200
+              }
+            ]
           }
         ]
       },
@@ -571,7 +1083,13 @@
             "prerequisiteNodeId": "stat.attack.01",
             "startsUnlocked": false,
             "operation": "enable",
-            "value": 1
+            "value": 1,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 160
+              }
+            ]
           },
           {
             "id": "skill.pet_baby_dragon.damage.01",
@@ -584,7 +1102,13 @@
             "startsUnlocked": false,
             "operation": "add",
             "statId": "damage",
-            "value": 1
+            "value": 1,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 200
+              }
+            ]
           },
           {
             "id": "skill.pet_baby_dragon.simultaneousHits.01",
@@ -597,7 +1121,13 @@
             "startsUnlocked": false,
             "operation": "add",
             "statId": "simultaneousHits",
-            "value": 1
+            "value": 1,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 280
+              }
+            ]
           },
           {
             "id": "skill.pet_baby_dragon.damage.02",
@@ -610,7 +1140,17 @@
             "startsUnlocked": false,
             "operation": "add",
             "statId": "damage",
-            "value": 1
+            "value": 1,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 120
+              },
+              {
+                "currencyId": "gem.topaz",
+                "amount": 120
+              }
+            ]
           },
           {
             "id": "skill.pet_baby_dragon.simultaneousHits.02",
@@ -623,7 +1163,21 @@
             "startsUnlocked": false,
             "operation": "add",
             "statId": "simultaneousHits",
-            "value": 1
+            "value": 1,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 106
+              },
+              {
+                "currencyId": "gem.topaz",
+                "amount": 107
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 107
+              }
+            ]
           },
           {
             "id": "skill.pet_baby_dragon.damage.03",
@@ -636,7 +1190,29 @@
             "startsUnlocked": false,
             "operation": "add",
             "statId": "damage",
-            "value": 0.5
+            "value": 0.5,
+            "costs": [
+              {
+                "currencyId": "gem.topaz",
+                "amount": 120
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 120
+              },
+              {
+                "currencyId": "gem.sapphire",
+                "amount": 120
+              },
+              {
+                "currencyId": "gem.diamond",
+                "amount": 120
+              },
+              {
+                "currencyId": "gem.dragon",
+                "amount": 120
+              }
+            ]
           }
         ]
       },
@@ -649,51 +1225,110 @@
             "displayName": "Magic Ball",
             "description": "Learn after improving the Baby Dragon companion.",
             "valueLabel": "Unlock skill",
-            "cost": 240,
+            "cost": 480,
             "currencyId": "gem.topaz",
             "prerequisiteNodeId": "skill.pet_baby_dragon.damage.01",
             "startsUnlocked": false,
             "operation": "enable",
-            "value": 1
+            "value": 1,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 360
+              },
+              {
+                "currencyId": "gem.topaz",
+                "amount": 120
+              }
+            ]
           },
           {
             "id": "skill.magic_ball.damage.01",
             "displayName": "Magic Ball Damage 1",
             "description": "Increase Magic Ball damage by 1.",
-            "valueLabel": "Damage +1",
+            "valueLabel": "+2",
             "cost": 360,
             "currencyId": "gem.sapphire",
             "prerequisiteNodeId": "skill.magic_ball",
             "startsUnlocked": false,
             "operation": "add",
             "statId": "damage",
-            "value": 1.0
+            "value": 2,
+            "costs": [
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 180
+              },
+              {
+                "currencyId": "gem.sapphire",
+                "amount": 180
+              }
+            ],
+            "bonusCastCount": 1
           },
           {
             "id": "skill.magic_ball.radius.01",
             "displayName": "Magic Ball Radius 1",
             "description": "Increase Magic Ball skill area by 10%.",
-            "valueLabel": "Range +10%",
+            "valueLabel": "+0.2",
             "cost": 400,
             "currencyId": "gem.sapphire",
             "prerequisiteNodeId": "skill.magic_ball.damage.01",
             "startsUnlocked": false,
             "operation": "add",
             "statId": "radius",
-            "value": 0.1
+            "value": 0.2,
+            "costs": [
+              {
+                "currencyId": "gem.topaz",
+                "amount": 133
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 133
+              },
+              {
+                "currencyId": "gem.sapphire",
+                "amount": 134
+              }
+            ],
+            "bonusCastCount": 1
           },
           {
             "id": "skill.magic_ball.damage.02",
             "displayName": "Magic Ball Damage 2",
             "description": "Increase Magic Ball damage by 0.5.",
-            "valueLabel": "Damage +0.5",
+            "valueLabel": "+3",
             "cost": 680,
             "currencyId": "gem.diamond",
             "prerequisiteNodeId": "skill.magic_ball.radius.01",
             "startsUnlocked": false,
             "operation": "add",
             "statId": "damage",
-            "value": 0.5
+            "value": 3,
+            "costs": [
+              {
+                "currencyId": "gem.topaz",
+                "amount": 136
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 136
+              },
+              {
+                "currencyId": "gem.sapphire",
+                "amount": 136
+              },
+              {
+                "currencyId": "gem.diamond",
+                "amount": 136
+              },
+              {
+                "currencyId": "gem.dragon",
+                "amount": 136
+              }
+            ],
+            "bonusCastCount": 2
           }
         ]
       },
@@ -706,51 +1341,102 @@
             "displayName": "Tornado",
             "description": "Learn after Magic Ball. Tornadoes repeatedly damage monsters in their area.",
             "valueLabel": "Unlock skill",
-            "cost": 320,
+            "cost": 1200,
             "currencyId": "gem.amethyst",
             "prerequisiteNodeId": "skill.magic_ball",
             "startsUnlocked": false,
             "operation": "enable",
-            "value": 1
+            "value": 1,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 720
+              },
+              {
+                "currencyId": "gem.topaz",
+                "amount": 320
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 160
+              }
+            ]
           },
           {
             "id": "skill.tornado.damage.01",
             "displayName": "Tornado Damage 1",
             "description": "Increase Tornado damage by 1.",
-            "valueLabel": "Damage +1",
-            "cost": 240,
+            "valueLabel": "+3",
+            "cost": 360,
             "currencyId": "gem.garnet",
             "prerequisiteNodeId": "skill.tornado",
             "startsUnlocked": false,
             "operation": "add",
             "statId": "damage",
-            "value": 1.0
+            "value": 3,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 360
+              }
+            ],
+            "bonusCastCount": 1
           },
           {
             "id": "skill.tornado.radius.01",
             "displayName": "Tornado Radius 1",
             "description": "Increase Tornado skill area by 10%.",
-            "valueLabel": "Range +10%",
-            "cost": 280,
+            "valueLabel": "+0.2",
+            "cost": 420,
             "currencyId": "gem.garnet",
             "prerequisiteNodeId": "skill.tornado.damage.01",
             "startsUnlocked": false,
             "operation": "add",
             "statId": "radius",
-            "value": 0.1
+            "value": 0.2,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 420
+              }
+            ],
+            "bonusCastCount": 1
           },
           {
             "id": "skill.tornado.damage.02",
             "displayName": "Tornado Damage 2",
             "description": "Increase Tornado damage by 0.5.",
-            "valueLabel": "Damage +0.5",
-            "cost": 360,
+            "valueLabel": "+4",
+            "cost": 540,
             "currencyId": "gem.topaz",
             "prerequisiteNodeId": "skill.tornado.radius.01",
             "startsUnlocked": false,
             "operation": "add",
             "statId": "damage",
-            "value": 0.5
+            "value": 4,
+            "costs": [
+              {
+                "currencyId": "gem.topaz",
+                "amount": 108
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 108
+              },
+              {
+                "currencyId": "gem.sapphire",
+                "amount": 108
+              },
+              {
+                "currencyId": "gem.diamond",
+                "amount": 108
+              },
+              {
+                "currencyId": "gem.dragon",
+                "amount": 108
+              }
+            ],
+            "bonusCastCount": 2
           }
         ]
       },
@@ -763,51 +1449,110 @@
             "displayName": "Headshot",
             "description": "Learn after Magic Ball. Marks a target before a powerful explosion.",
             "valueLabel": "Unlock skill",
-            "cost": 320,
+            "cost": 1240,
             "currencyId": "gem.amethyst",
             "prerequisiteNodeId": "skill.magic_ball",
             "startsUnlocked": false,
             "operation": "enable",
-            "value": 1
+            "value": 1,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 720
+              },
+              {
+                "currencyId": "gem.topaz",
+                "amount": 360
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 160
+              }
+            ]
           },
           {
             "id": "skill.headshot.damage.01",
             "displayName": "Headshot Damage 1",
             "description": "Increase Headshot skill damage by 1.",
-            "valueLabel": "Damage +1",
-            "cost": 280,
+            "valueLabel": "+4",
+            "cost": 490,
             "currencyId": "gem.topaz",
             "prerequisiteNodeId": "skill.headshot",
             "startsUnlocked": false,
             "operation": "add",
             "statId": "damage",
-            "value": 1.0
+            "value": 4,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 245
+              },
+              {
+                "currencyId": "gem.topaz",
+                "amount": 245
+              }
+            ],
+            "bonusCastCount": 1
           },
           {
             "id": "skill.headshot.radius.01",
             "displayName": "Headshot Radius 1",
             "description": "Increase Headshot skill area by 10%.",
-            "valueLabel": "Range +10%",
-            "cost": 320,
+            "valueLabel": "+0.2",
+            "cost": 560,
             "currencyId": "gem.topaz",
             "prerequisiteNodeId": "skill.headshot.damage.01",
             "startsUnlocked": false,
             "operation": "add",
             "statId": "radius",
-            "value": 0.1
+            "value": 0.2,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 280
+              },
+              {
+                "currencyId": "gem.topaz",
+                "amount": 280
+              }
+            ],
+            "bonusCastCount": 1
           },
           {
             "id": "skill.headshot.damage.02",
             "displayName": "Headshot Damage 2",
             "description": "Increase Headshot skill damage by 0.5.",
-            "valueLabel": "Damage +0.5",
-            "cost": 440,
+            "valueLabel": "+5",
+            "cost": 770,
             "currencyId": "gem.amethyst",
             "prerequisiteNodeId": "skill.headshot.radius.01",
             "startsUnlocked": false,
             "operation": "add",
             "statId": "damage",
-            "value": 0.5
+            "value": 5,
+            "costs": [
+              {
+                "currencyId": "gem.topaz",
+                "amount": 154
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 154
+              },
+              {
+                "currencyId": "gem.sapphire",
+                "amount": 154
+              },
+              {
+                "currencyId": "gem.diamond",
+                "amount": 154
+              },
+              {
+                "currencyId": "gem.dragon",
+                "amount": 154
+              }
+            ],
+            "bonusCastCount": 2
           }
         ]
       },
@@ -820,51 +1565,114 @@
             "displayName": "Thunder",
             "description": "Learn after advancing Headshot. Lightning strikes one random monster and nearby enemies.",
             "valueLabel": "Unlock skill",
-            "cost": 360,
+            "cost": 1230,
             "currencyId": "gem.sapphire",
             "prerequisiteNodeId": "skill.headshot.damage.01",
             "startsUnlocked": false,
             "operation": "enable",
-            "value": 1
+            "value": 1,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 600
+              },
+              {
+                "currencyId": "gem.topaz",
+                "amount": 360
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 180
+              },
+              {
+                "currencyId": "gem.sapphire",
+                "amount": 90
+              }
+            ]
           },
           {
             "id": "skill.thunder.damage.01",
             "displayName": "Thunder Damage 1",
             "description": "Increase Thunder damage by 1.",
-            "valueLabel": "Damage +1",
-            "cost": 280,
+            "valueLabel": "+5",
+            "cost": 560,
             "currencyId": "gem.topaz",
             "prerequisiteNodeId": "skill.thunder",
             "startsUnlocked": false,
             "operation": "add",
             "statId": "damage",
-            "value": 1.0
+            "value": 5,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 280
+              },
+              {
+                "currencyId": "gem.topaz",
+                "amount": 280
+              }
+            ],
+            "bonusCastCount": 1
           },
           {
             "id": "skill.thunder.radius.01",
             "displayName": "Thunder Radius 1",
             "description": "Increase Thunder skill area by 10%.",
-            "valueLabel": "Range +10%",
-            "cost": 320,
+            "valueLabel": "+0.2",
+            "cost": 640,
             "currencyId": "gem.topaz",
             "prerequisiteNodeId": "skill.thunder.damage.01",
             "startsUnlocked": false,
             "operation": "add",
             "statId": "radius",
-            "value": 0.1
+            "value": 0.2,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 320
+              },
+              {
+                "currencyId": "gem.topaz",
+                "amount": 320
+              }
+            ],
+            "bonusCastCount": 1
           },
           {
             "id": "skill.thunder.damage.02",
             "displayName": "Thunder Damage 2",
             "description": "Increase Thunder damage by 0.5.",
-            "valueLabel": "Damage +0.5",
-            "cost": 440,
+            "valueLabel": "+6",
+            "cost": 880,
             "currencyId": "gem.amethyst",
             "prerequisiteNodeId": "skill.thunder.radius.01",
             "startsUnlocked": false,
             "operation": "add",
             "statId": "damage",
-            "value": 0.5
+            "value": 6,
+            "costs": [
+              {
+                "currencyId": "gem.topaz",
+                "amount": 176
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 176
+              },
+              {
+                "currencyId": "gem.sapphire",
+                "amount": 176
+              },
+              {
+                "currencyId": "gem.diamond",
+                "amount": 176
+              },
+              {
+                "currencyId": "gem.dragon",
+                "amount": 176
+              }
+            ],
+            "bonusCastCount": 2
           }
         ]
       },
@@ -877,51 +1685,122 @@
             "displayName": "Flame Exhaust",
             "description": "Learn after advancing Thunder. A flame projectile attacks monsters.",
             "valueLabel": "Unlock skill",
-            "cost": 480,
+            "cost": 1835,
             "currencyId": "gem.diamond",
             "prerequisiteNodeId": "skill.thunder.damage.01",
             "startsUnlocked": false,
             "operation": "enable",
-            "value": 1
+            "value": 1,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 900
+              },
+              {
+                "currencyId": "gem.topaz",
+                "amount": 500
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 250
+              },
+              {
+                "currencyId": "gem.sapphire",
+                "amount": 125
+              },
+              {
+                "currencyId": "gem.diamond",
+                "amount": 60
+              }
+            ]
           },
           {
             "id": "skill.flame_exhaust.damage.01",
             "displayName": "Flame Exhaust Damage 1",
             "description": "Increase Flame Exhaust damage by 1.",
-            "valueLabel": "Damage +1",
-            "cost": 320,
+            "valueLabel": "+6",
+            "cost": 800,
             "currencyId": "gem.amethyst",
             "prerequisiteNodeId": "skill.flame_exhaust",
             "startsUnlocked": false,
             "operation": "add",
             "statId": "damage",
-            "value": 1.0
+            "value": 6,
+            "costs": [
+              {
+                "currencyId": "gem.topaz",
+                "amount": 400
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 400
+              }
+            ],
+            "bonusCastCount": 1
           },
           {
             "id": "skill.flame_exhaust.radius.01",
             "displayName": "Flame Exhaust Radius 1",
             "description": "Increase Flame Exhaust skill area by 10%.",
-            "valueLabel": "Range +10%",
-            "cost": 360,
+            "valueLabel": "+0.2",
+            "cost": 900,
             "currencyId": "gem.amethyst",
             "prerequisiteNodeId": "skill.flame_exhaust.damage.01",
             "startsUnlocked": false,
             "operation": "add",
             "statId": "radius",
-            "value": 0.1
+            "value": 0.2,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 300
+              },
+              {
+                "currencyId": "gem.topaz",
+                "amount": 300
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 300
+              }
+            ],
+            "bonusCastCount": 1
           },
           {
             "id": "skill.flame_exhaust.damage.02",
             "displayName": "Flame Exhaust Damage 2",
             "description": "Increase Flame Exhaust damage by 0.5.",
-            "valueLabel": "Damage +0.5",
-            "cost": 520,
+            "valueLabel": "+7",
+            "cost": 1300,
             "currencyId": "gem.sapphire",
             "prerequisiteNodeId": "skill.flame_exhaust.radius.01",
             "startsUnlocked": false,
             "operation": "add",
             "statId": "damage",
-            "value": 0.5
+            "value": 7,
+            "costs": [
+              {
+                "currencyId": "gem.topaz",
+                "amount": 260
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 260
+              },
+              {
+                "currencyId": "gem.sapphire",
+                "amount": 260
+              },
+              {
+                "currencyId": "gem.diamond",
+                "amount": 260
+              },
+              {
+                "currencyId": "gem.dragon",
+                "amount": 260
+              }
+            ],
+            "bonusCastCount": 2
           }
         ]
       },
@@ -934,51 +1813,130 @@
             "displayName": "Laser",
             "description": "Learn after advancing Thunder. A laser beam damages monsters it touches.",
             "valueLabel": "Unlock skill",
-            "cost": 480,
+            "cost": 2300,
             "currencyId": "gem.diamond",
             "prerequisiteNodeId": "skill.thunder.damage.01",
             "startsUnlocked": false,
             "operation": "enable",
-            "value": 1
+            "value": 1,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 1100
+              },
+              {
+                "currencyId": "gem.topaz",
+                "amount": 600
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 300
+              },
+              {
+                "currencyId": "gem.sapphire",
+                "amount": 180
+              },
+              {
+                "currencyId": "gem.diamond",
+                "amount": 120
+              }
+            ]
           },
           {
             "id": "skill.laser.damage.01",
             "displayName": "Laser Damage 1",
             "description": "Increase Laser damage by 1.",
-            "valueLabel": "Damage +1",
-            "cost": 400,
+            "valueLabel": "+7",
+            "cost": 1200,
             "currencyId": "gem.diamond",
             "prerequisiteNodeId": "skill.laser",
             "startsUnlocked": false,
             "operation": "add",
             "statId": "damage",
-            "value": 1.0
+            "value": 7,
+            "costs": [
+              {
+                "currencyId": "gem.topaz",
+                "amount": 300
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 300
+              },
+              {
+                "currencyId": "gem.sapphire",
+                "amount": 300
+              },
+              {
+                "currencyId": "gem.diamond",
+                "amount": 300
+              }
+            ],
+            "bonusCastCount": 1
           },
           {
             "id": "skill.laser.radius.01",
             "displayName": "Laser Radius 1",
             "description": "Increase Laser skill area by 10%.",
-            "valueLabel": "Range +10%",
-            "cost": 440,
+            "valueLabel": "+0.2",
+            "cost": 1320,
             "currencyId": "gem.diamond",
             "prerequisiteNodeId": "skill.laser.damage.01",
             "startsUnlocked": false,
             "operation": "add",
             "statId": "radius",
-            "value": 0.1
+            "value": 0.2,
+            "costs": [
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 438
+              },
+              {
+                "currencyId": "gem.sapphire",
+                "amount": 441
+              },
+              {
+                "currencyId": "gem.diamond",
+                "amount": 441
+              }
+            ],
+            "bonusCastCount": 1
           },
           {
             "id": "skill.laser.damage.02",
             "displayName": "Laser Damage 2",
             "description": "Increase Laser damage by 0.5.",
-            "valueLabel": "Damage +0.5",
-            "cost": 760,
+            "valueLabel": "+8",
+            "cost": 2280,
             "currencyId": "gem.dragon",
             "prerequisiteNodeId": "skill.laser.radius.01",
             "startsUnlocked": false,
             "operation": "add",
             "statId": "damage",
-            "value": 0.5
+            "value": 8,
+            "costs": [
+              {
+                "currencyId": "gem.topaz",
+                "amount": 456
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 456
+              },
+              {
+                "currencyId": "gem.sapphire",
+                "amount": 456
+              },
+              {
+                "currencyId": "gem.diamond",
+                "amount": 456
+              },
+              {
+                "currencyId": "gem.dragon",
+                "amount": 456
+              }
+            ],
+            "bonusCastCount": 2
           }
         ]
       },
@@ -1002,37 +1960,55 @@
             "id": "monster.01.production.01",
             "displayName": "Production 2",
             "description": "Increase Stump production to 3 monsters per wave.",
-            "valueLabel": "Spawn 3 per wave",
+            "valueLabel": "3 per wave",
             "cost": 200,
             "currencyId": "gem.garnet",
             "prerequisiteNodeId": "monster.01",
             "startsUnlocked": false,
             "operation": "set",
-            "value": 3
+            "value": 3,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 200
+              }
+            ]
           },
           {
             "id": "monster.01.production.02",
             "displayName": "Production 3",
             "description": "Increase Stump production to 4 monsters per wave.",
-            "valueLabel": "Spawn 4 per wave",
+            "valueLabel": "4 per wave",
             "cost": 400,
             "currencyId": "gem.garnet",
             "prerequisiteNodeId": "monster.01.production.01",
             "startsUnlocked": false,
             "operation": "set",
-            "value": 4
+            "value": 4,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 400
+              }
+            ]
           },
           {
             "id": "monster.01.production.03",
             "displayName": "Production 5",
             "description": "Increase Stump production to 5 monsters per wave.",
-            "valueLabel": "Spawn 5 per wave",
+            "valueLabel": "5 per wave",
             "cost": 800,
             "currencyId": "gem.garnet",
             "prerequisiteNodeId": "monster.01.production.02",
             "startsUnlocked": false,
             "operation": "set",
-            "value": 5
+            "value": 5,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 800
+              }
+            ]
           }
         ]
       },
@@ -1050,43 +2026,79 @@
             "prerequisiteNodeId": "monster.01",
             "startsUnlocked": false,
             "operation": "enable",
-            "value": 1
+            "value": 1,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 180
+              }
+            ]
           },
           {
             "id": "monster.02.production.01",
             "displayName": "Production 2",
             "description": "Spawn 2 monsters per spawn opportunity.",
-            "valueLabel": "2",
+            "valueLabel": "3 per wave",
             "cost": 100,
             "currencyId": "gem.topaz",
             "prerequisiteNodeId": "monster.02",
             "startsUnlocked": false,
             "operation": "set",
-            "value": 2
+            "value": 3,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 50
+              },
+              {
+                "currencyId": "gem.topaz",
+                "amount": 50
+              }
+            ]
           },
           {
             "id": "monster.02.production.02",
             "displayName": "Production 3",
             "description": "Spawn 3 monsters per spawn opportunity.",
-            "valueLabel": "3",
+            "valueLabel": "5 per wave",
             "cost": 200,
             "currencyId": "gem.topaz",
             "prerequisiteNodeId": "monster.02.production.01",
             "startsUnlocked": false,
             "operation": "set",
-            "value": 3
+            "value": 5,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 100
+              },
+              {
+                "currencyId": "gem.topaz",
+                "amount": 100
+              }
+            ]
           },
           {
             "id": "monster.02.production.03",
             "displayName": "Production 5",
             "description": "Spawn 5 monsters per spawn opportunity.",
-            "valueLabel": "5",
+            "valueLabel": "8 per wave",
             "cost": 300,
             "currencyId": "gem.topaz",
             "prerequisiteNodeId": "monster.02.production.02",
             "startsUnlocked": false,
             "operation": "set",
-            "value": 5
+            "value": 8,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 150
+              },
+              {
+                "currencyId": "gem.topaz",
+                "amount": 150
+              }
+            ]
           }
         ]
       },
@@ -1104,43 +2116,83 @@
             "prerequisiteNodeId": "monster.02",
             "startsUnlocked": false,
             "operation": "enable",
-            "value": 1
+            "value": 1,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 120
+              },
+              {
+                "currencyId": "gem.topaz",
+                "amount": 120
+              }
+            ]
           },
           {
             "id": "monster.03.production.01",
             "displayName": "Production 2",
             "description": "Spawn 2 monsters per spawn opportunity.",
-            "valueLabel": "2",
+            "valueLabel": "3 per wave",
             "cost": 100,
             "currencyId": "gem.topaz",
             "prerequisiteNodeId": "monster.03",
             "startsUnlocked": false,
             "operation": "set",
-            "value": 2
+            "value": 3,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 50
+              },
+              {
+                "currencyId": "gem.topaz",
+                "amount": 50
+              }
+            ]
           },
           {
             "id": "monster.03.production.02",
             "displayName": "Production 3",
             "description": "Spawn 3 monsters per spawn opportunity.",
-            "valueLabel": "3",
+            "valueLabel": "5 per wave",
             "cost": 200,
             "currencyId": "gem.topaz",
             "prerequisiteNodeId": "monster.03.production.01",
             "startsUnlocked": false,
             "operation": "set",
-            "value": 3
+            "value": 5,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 100
+              },
+              {
+                "currencyId": "gem.topaz",
+                "amount": 100
+              }
+            ]
           },
           {
             "id": "monster.03.production.03",
             "displayName": "Production 5",
             "description": "Spawn 5 monsters per spawn opportunity.",
-            "valueLabel": "5",
+            "valueLabel": "8 per wave",
             "cost": 300,
             "currencyId": "gem.topaz",
             "prerequisiteNodeId": "monster.03.production.02",
             "startsUnlocked": false,
             "operation": "set",
-            "value": 5
+            "value": 8,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 150
+              },
+              {
+                "currencyId": "gem.topaz",
+                "amount": 150
+              }
+            ]
           }
         ]
       },
@@ -1153,48 +2205,88 @@
             "displayName": "Mask Ghost",
             "description": "Periodically vanishes and returns, avoiding attacks while hidden.",
             "valueLabel": "Enable monster",
-            "cost": 300,
+            "cost": 600,
             "currencyId": "gem.topaz",
             "prerequisiteNodeId": "monster.03",
             "startsUnlocked": false,
             "operation": "enable",
-            "value": 1
+            "value": 1,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 300
+              },
+              {
+                "currencyId": "gem.topaz",
+                "amount": 300
+              }
+            ]
           },
           {
             "id": "monster.04.production.01",
             "displayName": "Production 2",
             "description": "Spawn 2 monsters per spawn opportunity.",
-            "valueLabel": "2",
-            "cost": 100,
+            "valueLabel": "4 per wave",
+            "cost": 200,
             "currencyId": "gem.amethyst",
             "prerequisiteNodeId": "monster.04",
             "startsUnlocked": false,
             "operation": "set",
-            "value": 2
+            "value": 4,
+            "costs": [
+              {
+                "currencyId": "gem.topaz",
+                "amount": 100
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 100
+              }
+            ]
           },
           {
             "id": "monster.04.production.02",
             "displayName": "Production 3",
             "description": "Spawn 3 monsters per spawn opportunity.",
-            "valueLabel": "3",
-            "cost": 200,
+            "valueLabel": "7 per wave",
+            "cost": 400,
             "currencyId": "gem.amethyst",
             "prerequisiteNodeId": "monster.04.production.01",
             "startsUnlocked": false,
             "operation": "set",
-            "value": 3
+            "value": 7,
+            "costs": [
+              {
+                "currencyId": "gem.topaz",
+                "amount": 200
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 200
+              }
+            ]
           },
           {
             "id": "monster.04.production.03",
             "displayName": "Production 5",
             "description": "Spawn 5 monsters per spawn opportunity.",
-            "valueLabel": "5",
-            "cost": 300,
+            "valueLabel": "12 per wave",
+            "cost": 600,
             "currencyId": "gem.amethyst",
             "prerequisiteNodeId": "monster.04.production.02",
             "startsUnlocked": false,
             "operation": "set",
-            "value": 5
+            "value": 12,
+            "costs": [
+              {
+                "currencyId": "gem.topaz",
+                "amount": 300
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 300
+              }
+            ]
           }
         ]
       },
@@ -1207,48 +2299,104 @@
             "displayName": "Armored Soldier",
             "description": "Raises a shield intermittently to reduce incoming damage.",
             "valueLabel": "Enable monster",
-            "cost": 360,
+            "cost": 720,
             "currencyId": "gem.amethyst",
             "prerequisiteNodeId": "monster.04",
             "startsUnlocked": false,
             "operation": "enable",
-            "value": 1
+            "value": 1,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 240
+              },
+              {
+                "currencyId": "gem.topaz",
+                "amount": 240
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 240
+              }
+            ]
           },
           {
             "id": "monster.05.production.01",
             "displayName": "Production 2",
             "description": "Spawn 2 monsters per spawn opportunity.",
-            "valueLabel": "2",
-            "cost": 100,
+            "valueLabel": "4 per wave",
+            "cost": 200,
             "currencyId": "gem.amethyst",
             "prerequisiteNodeId": "monster.05",
             "startsUnlocked": false,
             "operation": "set",
-            "value": 2
+            "value": 4,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 66
+              },
+              {
+                "currencyId": "gem.topaz",
+                "amount": 66
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 68
+              }
+            ]
           },
           {
             "id": "monster.05.production.02",
             "displayName": "Production 3",
             "description": "Spawn 3 monsters per spawn opportunity.",
-            "valueLabel": "3",
-            "cost": 200,
+            "valueLabel": "7 per wave",
+            "cost": 400,
             "currencyId": "gem.amethyst",
             "prerequisiteNodeId": "monster.05.production.01",
             "startsUnlocked": false,
             "operation": "set",
-            "value": 3
+            "value": 7,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 132
+              },
+              {
+                "currencyId": "gem.topaz",
+                "amount": 134
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 134
+              }
+            ]
           },
           {
             "id": "monster.05.production.03",
             "displayName": "Production 5",
             "description": "Spawn 5 monsters per spawn opportunity.",
-            "valueLabel": "5",
-            "cost": 300,
+            "valueLabel": "12 per wave",
+            "cost": 600,
             "currencyId": "gem.amethyst",
             "prerequisiteNodeId": "monster.05.production.02",
             "startsUnlocked": false,
             "operation": "set",
-            "value": 5
+            "value": 12,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 200
+              },
+              {
+                "currencyId": "gem.topaz",
+                "amount": 200
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 200
+              }
+            ]
           }
         ]
       },
@@ -1261,48 +2409,100 @@
             "displayName": "Snow Fairy",
             "description": "Teleports to another position at intervals.",
             "valueLabel": "Enable monster",
-            "cost": 420,
+            "cost": 840,
             "currencyId": "gem.amethyst",
             "prerequisiteNodeId": "monster.05",
             "startsUnlocked": false,
             "operation": "enable",
-            "value": 1
+            "value": 1,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 280
+              },
+              {
+                "currencyId": "gem.topaz",
+                "amount": 280
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 280
+              }
+            ]
           },
           {
             "id": "monster.06.production.01",
             "displayName": "Production 2",
             "description": "Spawn 2 monsters per spawn opportunity.",
-            "valueLabel": "2",
-            "cost": 100,
+            "valueLabel": "4 per wave",
+            "cost": 200,
             "currencyId": "gem.sapphire",
             "prerequisiteNodeId": "monster.06",
             "startsUnlocked": false,
             "operation": "set",
-            "value": 2
+            "value": 4,
+            "costs": [
+              {
+                "currencyId": "gem.topaz",
+                "amount": 66
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 66
+              },
+              {
+                "currencyId": "gem.sapphire",
+                "amount": 68
+              }
+            ]
           },
           {
             "id": "monster.06.production.02",
             "displayName": "Production 3",
             "description": "Spawn 3 monsters per spawn opportunity.",
-            "valueLabel": "3",
-            "cost": 200,
+            "valueLabel": "7 per wave",
+            "cost": 400,
             "currencyId": "gem.sapphire",
             "prerequisiteNodeId": "monster.06.production.01",
             "startsUnlocked": false,
             "operation": "set",
-            "value": 3
+            "value": 7,
+            "costs": [
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 200
+              },
+              {
+                "currencyId": "gem.sapphire",
+                "amount": 200
+              }
+            ]
           },
           {
             "id": "monster.06.production.03",
             "displayName": "Production 5",
             "description": "Spawn 5 monsters per spawn opportunity.",
-            "valueLabel": "5",
-            "cost": 300,
+            "valueLabel": "12 per wave",
+            "cost": 600,
             "currencyId": "gem.sapphire",
             "prerequisiteNodeId": "monster.06.production.02",
             "startsUnlocked": false,
             "operation": "set",
-            "value": 5
+            "value": 12,
+            "costs": [
+              {
+                "currencyId": "gem.topaz",
+                "amount": 200
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 200
+              },
+              {
+                "currencyId": "gem.sapphire",
+                "amount": 200
+              }
+            ]
           }
         ]
       },
@@ -1315,48 +2515,104 @@
             "displayName": "Beehive",
             "description": "Has unusually high health.",
             "valueLabel": "Enable monster",
-            "cost": 480,
+            "cost": 960,
             "currencyId": "gem.sapphire",
             "prerequisiteNodeId": "monster.06",
             "startsUnlocked": false,
             "operation": "enable",
-            "value": 1
+            "value": 1,
+            "costs": [
+              {
+                "currencyId": "gem.topaz",
+                "amount": 320
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 320
+              },
+              {
+                "currencyId": "gem.sapphire",
+                "amount": 320
+              }
+            ]
           },
           {
             "id": "monster.07.production.01",
             "displayName": "Production 2",
             "description": "Spawn 2 monsters per spawn opportunity.",
-            "valueLabel": "2",
-            "cost": 100,
+            "valueLabel": "4 per wave",
+            "cost": 200,
             "currencyId": "gem.sapphire",
             "prerequisiteNodeId": "monster.07",
             "startsUnlocked": false,
             "operation": "set",
-            "value": 2
+            "value": 4,
+            "costs": [
+              {
+                "currencyId": "gem.topaz",
+                "amount": 66
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 66
+              },
+              {
+                "currencyId": "gem.sapphire",
+                "amount": 68
+              }
+            ]
           },
           {
             "id": "monster.07.production.02",
             "displayName": "Production 3",
             "description": "Spawn 3 monsters per spawn opportunity.",
-            "valueLabel": "3",
-            "cost": 200,
+            "valueLabel": "8 per wave",
+            "cost": 400,
             "currencyId": "gem.sapphire",
             "prerequisiteNodeId": "monster.07.production.01",
             "startsUnlocked": false,
             "operation": "set",
-            "value": 3
+            "value": 8,
+            "costs": [
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 200
+              },
+              {
+                "currencyId": "gem.sapphire",
+                "amount": 200
+              }
+            ]
           },
           {
             "id": "monster.07.production.03",
             "displayName": "Production 5",
             "description": "Spawn 5 monsters per spawn opportunity.",
-            "valueLabel": "5",
-            "cost": 300,
+            "valueLabel": "16 per wave",
+            "cost": 600,
             "currencyId": "gem.sapphire",
             "prerequisiteNodeId": "monster.07.production.02",
             "startsUnlocked": false,
             "operation": "set",
-            "value": 5
+            "value": 16,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 150
+              },
+              {
+                "currencyId": "gem.topaz",
+                "amount": 150
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 150
+              },
+              {
+                "currencyId": "gem.sapphire",
+                "amount": 150
+              }
+            ]
           }
         ]
       },
@@ -1369,48 +2625,120 @@
             "displayName": "Golem",
             "description": "A very large monster with a wide hit area.",
             "valueLabel": "Enable monster",
-            "cost": 540,
+            "cost": 1080,
             "currencyId": "gem.sapphire",
             "prerequisiteNodeId": "monster.07",
             "startsUnlocked": false,
             "operation": "enable",
-            "value": 1
+            "value": 1,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 270
+              },
+              {
+                "currencyId": "gem.topaz",
+                "amount": 270
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 270
+              },
+              {
+                "currencyId": "gem.sapphire",
+                "amount": 270
+              }
+            ]
           },
           {
             "id": "monster.08.production.01",
             "displayName": "Production 2",
             "description": "Spawn 2 monsters per spawn opportunity.",
-            "valueLabel": "2",
-            "cost": 200,
+            "valueLabel": "4 per wave",
+            "cost": 400,
             "currencyId": "gem.diamond",
             "prerequisiteNodeId": "monster.08",
             "startsUnlocked": false,
             "operation": "set",
-            "value": 2
+            "value": 4,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 80
+              },
+              {
+                "currencyId": "gem.topaz",
+                "amount": 80
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 80
+              },
+              {
+                "currencyId": "gem.sapphire",
+                "amount": 80
+              },
+              {
+                "currencyId": "gem.diamond",
+                "amount": 80
+              }
+            ]
           },
           {
             "id": "monster.08.production.02",
             "displayName": "Production 3",
             "description": "Spawn 3 monsters per spawn opportunity.",
-            "valueLabel": "3",
-            "cost": 400,
+            "valueLabel": "8 per wave",
+            "cost": 800,
             "currencyId": "gem.diamond",
             "prerequisiteNodeId": "monster.08.production.01",
             "startsUnlocked": false,
             "operation": "set",
-            "value": 3
+            "value": 8,
+            "costs": [
+              {
+                "currencyId": "gem.topaz",
+                "amount": 200
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 200
+              },
+              {
+                "currencyId": "gem.sapphire",
+                "amount": 200
+              },
+              {
+                "currencyId": "gem.diamond",
+                "amount": 200
+              }
+            ]
           },
           {
             "id": "monster.08.production.03",
             "displayName": "Production 5",
             "description": "Spawn 5 monsters per spawn opportunity.",
-            "valueLabel": "5",
-            "cost": 600,
+            "valueLabel": "16 per wave",
+            "cost": 1200,
             "currencyId": "gem.diamond",
             "prerequisiteNodeId": "monster.08.production.02",
             "startsUnlocked": false,
             "operation": "set",
-            "value": 5
+            "value": 16,
+            "costs": [
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 400
+              },
+              {
+                "currencyId": "gem.sapphire",
+                "amount": 400
+              },
+              {
+                "currencyId": "gem.diamond",
+                "amount": 400
+              }
+            ]
           }
         ]
       },
@@ -1423,48 +2751,100 @@
             "displayName": "Ember Bud",
             "description": "Periodically heals nearby monsters.",
             "valueLabel": "Enable monster",
-            "cost": 1200,
+            "cost": 2400,
             "currencyId": "gem.diamond",
             "prerequisiteNodeId": "monster.08",
             "startsUnlocked": false,
             "operation": "enable",
-            "value": 1
+            "value": 1,
+            "costs": [
+              {
+                "currencyId": "gem.garnet",
+                "amount": 480
+              },
+              {
+                "currencyId": "gem.topaz",
+                "amount": 480
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 480
+              },
+              {
+                "currencyId": "gem.sapphire",
+                "amount": 480
+              },
+              {
+                "currencyId": "gem.diamond",
+                "amount": 480
+              }
+            ]
           },
           {
             "id": "monster.09.production.01",
             "displayName": "Production 2",
             "description": "Spawn 2 monsters per spawn opportunity.",
-            "valueLabel": "2",
-            "cost": 100,
+            "valueLabel": "4 per wave",
+            "cost": 200,
             "currencyId": "gem.dragon",
             "prerequisiteNodeId": "monster.09",
             "startsUnlocked": false,
             "operation": "set",
-            "value": 2
+            "value": 4,
+            "costs": [
+              {
+                "currencyId": "gem.diamond",
+                "amount": 100
+              },
+              {
+                "currencyId": "gem.dragon",
+                "amount": 100
+              }
+            ]
           },
           {
             "id": "monster.09.production.02",
             "displayName": "Production 3",
             "description": "Spawn 3 monsters per spawn opportunity.",
-            "valueLabel": "3",
-            "cost": 200,
+            "valueLabel": "8 per wave",
+            "cost": 400,
             "currencyId": "gem.dragon",
             "prerequisiteNodeId": "monster.09.production.01",
             "startsUnlocked": false,
             "operation": "set",
-            "value": 3
+            "value": 8,
+            "costs": [
+              {
+                "currencyId": "gem.diamond",
+                "amount": 200
+              },
+              {
+                "currencyId": "gem.dragon",
+                "amount": 200
+              }
+            ]
           },
           {
             "id": "monster.09.production.03",
             "displayName": "Production 5",
             "description": "Spawn 5 monsters per spawn opportunity.",
-            "valueLabel": "5",
-            "cost": 200,
+            "valueLabel": "16 per wave",
+            "cost": 400,
             "currencyId": "gem.dragon",
             "prerequisiteNodeId": "monster.09.production.02",
             "startsUnlocked": false,
             "operation": "set",
-            "value": 5
+            "value": 16,
+            "costs": [
+              {
+                "currencyId": "gem.diamond",
+                "amount": 200
+              },
+              {
+                "currencyId": "gem.dragon",
+                "amount": 200
+              }
+            ]
           }
         ]
       },
@@ -1477,48 +2857,112 @@
             "displayName": "Pandora's Box",
             "description": "Periodically revives nearby defeated monsters.",
             "valueLabel": "Enable monster",
-            "cost": 660,
+            "cost": 1320,
             "currencyId": "gem.dragon",
             "prerequisiteNodeId": "monster.09",
             "startsUnlocked": false,
             "operation": "enable",
-            "value": 1
+            "value": 1,
+            "costs": [
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 330
+              },
+              {
+                "currencyId": "gem.sapphire",
+                "amount": 330
+              },
+              {
+                "currencyId": "gem.diamond",
+                "amount": 330
+              },
+              {
+                "currencyId": "gem.dragon",
+                "amount": 330
+              }
+            ]
           },
           {
             "id": "monster.10.production.01",
             "displayName": "Production 2",
             "description": "Spawn 2 monsters per spawn opportunity.",
-            "valueLabel": "2",
-            "cost": 100,
+            "valueLabel": "4 per wave",
+            "cost": 200,
             "currencyId": "gem.dragon",
             "prerequisiteNodeId": "monster.10",
             "startsUnlocked": false,
             "operation": "set",
-            "value": 2
+            "value": 4,
+            "costs": [
+              {
+                "currencyId": "gem.sapphire",
+                "amount": 66
+              },
+              {
+                "currencyId": "gem.diamond",
+                "amount": 66
+              },
+              {
+                "currencyId": "gem.dragon",
+                "amount": 68
+              }
+            ]
           },
           {
             "id": "monster.10.production.02",
             "displayName": "Production 3",
             "description": "Spawn 3 monsters per spawn opportunity.",
-            "valueLabel": "3",
-            "cost": 200,
+            "valueLabel": "8 per wave",
+            "cost": 400,
             "currencyId": "gem.dragon",
             "prerequisiteNodeId": "monster.10.production.01",
             "startsUnlocked": false,
             "operation": "set",
-            "value": 3
+            "value": 8,
+            "costs": [
+              {
+                "currencyId": "gem.topaz",
+                "amount": 80
+              },
+              {
+                "currencyId": "gem.amethyst",
+                "amount": 80
+              },
+              {
+                "currencyId": "gem.sapphire",
+                "amount": 80
+              },
+              {
+                "currencyId": "gem.diamond",
+                "amount": 80
+              },
+              {
+                "currencyId": "gem.dragon",
+                "amount": 80
+              }
+            ]
           },
           {
             "id": "monster.10.production.03",
             "displayName": "Production 5",
             "description": "Spawn 5 monsters per spawn opportunity.",
-            "valueLabel": "5",
-            "cost": 300,
+            "valueLabel": "16 per wave",
+            "cost": 600,
             "currencyId": "gem.dragon",
             "prerequisiteNodeId": "monster.10.production.02",
             "startsUnlocked": false,
             "operation": "set",
-            "value": 5
+            "value": 16,
+            "costs": [
+              {
+                "currencyId": "gem.diamond",
+                "amount": 300
+              },
+              {
+                "currencyId": "gem.dragon",
+                "amount": 300
+              }
+            ]
           }
         ]
       }

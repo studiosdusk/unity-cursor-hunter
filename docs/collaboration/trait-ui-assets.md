@@ -146,6 +146,11 @@ Combat에서는 Data를 직접 참조하지 않고 App UI에서 아이콘을 연
 | `combatBackgroundSprite` | `Assets/DownLoadAssets/Casual_GUI/GUI Pro-SimpleCasual/ResourcesData/Sprites/Demo/Demo_Background/Background_00.png` (2048×1152) | 성 풍경. 낮은 밝기·청회색 저채도 막 + 남색 그라데이션 + 가장자리 비네팅 |
 | `panelSprite` | `Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Frame/BasicFrame_SquareSolid01_Demo01.png` | 호환용 직렬화 참조. 주요 패널은 평면 색상 사용 |
 | `tabSprite` / `tabFocusSprite` | `Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/UI_Etc/TabMenu_Top_Demo_Bg.png` / `TabMenu_Top_Demo_Focus.png` | 탭 상태 |
+| `researchCategoryTabFrame` | `Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Frame/ItemFrame01_Demo_Gray.png` | 상단 연구 카테고리 프레임 |
+| `talentCategoryTabFrame` | `Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Frame/ItemFrame01_Demo_Green.png` | 상단 특성 카테고리 프레임 |
+| `relicCategoryTabFrame` | `Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Frame/ItemFrame01_Demo_Purple.png` | 상단 유물 카테고리 프레임 |
+| `researchTabIcon` | `Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Icon_ItemIcons/512/ItemIcon_Book02_Brown.png` | 연구 카테고리 |
+| `talentTabIcon` | `Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Icon_ItemIcons/512/ItemIcon_Medalstand.png` | 특성 카테고리 |
 | `nodeSprite` / `nodePurchasedSprite` | 레거시 샘플 | 런타임 미사용. 모든 노드는 평면 정사각 셀 |
 | `nodeAccentSprite` | `Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Frame/BasicFrame_SquareOutline02_White.png` | 예약 참조. 실제 선은 런타임 4면 Image |
 | `gemIcon` | `Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Icon_ItemIcons/512/ItemIcon_Gem_Pentagon_Red.png` | 폴백 젬 아이콘 |
@@ -165,6 +170,8 @@ Combat에서는 Data를 직접 참조하지 않고 App UI에서 아이콘을 연
 
 ### 화면 스타일
 
+- 상단 카테고리는 `연구`, `특성`, `유물` 세 개로 표시한다. 연구/특성/유물은 각각 회색/초록/보라색 `ItemFrame01_Demo` 9-slice 스프라이트를 프레임으로 사용한다. 현재 탭은 밝은 프레임, 나머지 탭은 어둡게 보여준다. 연구 아이콘은 512px `ItemIcon_Book02_Brown.png`, 특성 아이콘은 512px `ItemIcon_Medalstand.png`다. 지역 선택은 상단 탭이 아니라 `일반 전투`를 누른 뒤 진입하는 지역 선택 화면에서 한다.
+- 밸런스 패치, 연구 배치 편집, 테스트 도구는 화면 좌측 하단에 모은다. 유물 그리드의 왼쪽 시작 여백은 보유 젬스톤/현재 전투 능력치 패널보다 넓게 잡아 두 패널과 카드가 겹치지 않게 한다.
 - 노드 셀은 `84×84` 정사각형이며 회색·원형·아이콘별 카드 테두리를 사용하지 않는다.
 - 상태는 셀의 네 변 런타임 선(구매 완료 초록, 구매 가능 카테고리 색, 잠금 남색)으로만 구분한다.
 - 연결선은 흰색에 카테고리 색상을 14% 섞은 `Image`이며 입력을 가로채지 않는다.

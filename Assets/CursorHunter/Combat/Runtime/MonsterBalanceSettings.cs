@@ -53,8 +53,8 @@ namespace CursorHunter.Combat
                 error = "몬스터 ID와 원본 전투 데이터가 일치하지 않습니다.";
             else if (MaxHealth < 1L || GarnetReward < 0L || BonusDropAmount < 0L)
                 error = "HP는 1 이상, 보상은 0 이상이어야 합니다.";
-            else if (!Positive(SpawnIntervalSeconds) || PackSize < 1 || aliveLimit < 1 || aliveLimit > 80)
-                error = "생성 간격과 마릿수는 양수, 생존 상한은 1~80이어야 합니다.";
+            else if (!Positive(SpawnIntervalSeconds) || PackSize < 1 || aliveLimit < 1 || aliveLimit > GameInformation.MaximumAliveMonsters)
+                error = $"생성 간격과 마릿수는 양수, 생존 상한은 1~{GameInformation.MaximumAliveMonsters}이어야 합니다.";
             else if (!Positive(MoveSpeed) || !Positive(VisualScale) ||
                      !Positive(HitAreaWidth) || !Positive(HitAreaHeight))
                 error = "이동 속도·크기·피격 영역은 유한한 양수여야 합니다.";
@@ -76,7 +76,7 @@ namespace CursorHunter.Combat
                 VisualScale, HitAreaWidth, HitAreaHeight, reference.OrbitRadius,
                 reference.OrbitAngularSpeedDegrees, reference.SpecialAbility,
                 reference.SpecialAbilityIntervalSeconds, reference.SpecialAbilityDurationSeconds,
-                reference.SpecialAbilityRadius, reference.SpecialAbilityStrength);
+                reference.SpecialAbilityRadius, reference.SpecialAbilityStrength, reference.ExperienceReward);
             if (snapshot.IsValid) return true;
             error = "몬스터의 최종 전투 데이터가 유효하지 않습니다.";
             return false;

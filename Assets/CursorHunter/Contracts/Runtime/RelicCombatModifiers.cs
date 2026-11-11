@@ -31,7 +31,9 @@ namespace CursorHunter.Contracts
             float fullHealthFirstHitDamagePercent = 0f,
             float autoSkillCooldownReductionPercent = 0f,
             float bossDamagePercent = 0f,
-            float monsterKillRewardPercent = 0f)
+            float monsterKillRewardPercent = 0f,
+            float cursorAttackIntervalReductionPercent = 0f,
+            float relicDropChanceBonusPercent = 0f)
         {
             CursorAttackDamagePercent = cursorAttackDamagePercent;
             AutoSkillDamagePercent = autoSkillDamagePercent;
@@ -54,6 +56,8 @@ namespace CursorHunter.Contracts
             AutoSkillCooldownReductionPercent = autoSkillCooldownReductionPercent;
             BossDamagePercent = bossDamagePercent;
             MonsterKillRewardPercent = monsterKillRewardPercent;
+            CursorAttackIntervalReductionPercent = cursorAttackIntervalReductionPercent;
+            RelicDropChanceBonusPercent = relicDropChanceBonusPercent;
         }
 
         public float CursorAttackDamagePercent { get; }
@@ -77,6 +81,8 @@ namespace CursorHunter.Contracts
         public float AutoSkillCooldownReductionPercent { get; }
         public float BossDamagePercent { get; }
         public float MonsterKillRewardPercent { get; }
+        public float CursorAttackIntervalReductionPercent { get; }
+        public float RelicDropChanceBonusPercent { get; }
 
         public float CursorAttackDamageMultiplier => Multiplier(CursorAttackDamagePercent);
         public float AutoSkillDamageMultiplier => Multiplier(AutoSkillDamagePercent);
@@ -95,15 +101,25 @@ namespace CursorHunter.Contracts
 
         public CombatSnapshot ApplyTo(CombatSnapshot value)
         {
+            float attackIntervalMultiplier =
+                1f - ClampPercent(CursorAttackIntervalReductionPercent, 95f) / 100f;
+            float attackCooldown = value.AttackCooldownSeconds > 0f
+                ? Math.Max(CursorCombatStatLimits.MinimumAttackCooldownSeconds,
+                    value.AttackCooldownSeconds * attackIntervalMultiplier)
+                : value.AttackCooldownSeconds;
+            float autoAttackInterval = value.AutoAttackIntervalSeconds > 0f
+                ? Math.Max(CursorCombatStatLimits.MinimumAttackCooldownSeconds,
+                    value.AutoAttackIntervalSeconds * attackIntervalMultiplier)
+                : value.AutoAttackIntervalSeconds;
             return new CombatSnapshot(
                 value.AttackPower,
                 value.RangeMultiplier * CursorAttackRadiusMultiplier,
-                value.AttackCooldownSeconds,
+                attackCooldown,
                 value.HitsPerBundle,
                 value.CriticalChancePercent,
                 value.BossDamageMultiplier * BossDamageMultiplier,
                 value.AutoAttackEnabled,
-                value.AutoAttackIntervalSeconds,
+                autoAttackInterval,
                 value.CriticalDamageMultiplier + CriticalDamageMultiplierBonus);
         }
 
@@ -133,6 +149,8 @@ namespace CursorHunter.Contracts
             float autoSkillCooldownReduction = 0f;
             float bossDamage = 0f;
             float monsterKillReward = 0f;
+            float cursorAttackIntervalReduction = 0f;
+            float relicDropChanceBonus = 0f;
 
             for (int i = 0; i < relics.Count; i++)
             {
@@ -167,6 +185,8 @@ namespace CursorHunter.Contracts
                     case "autoSkillCooldownReductionPercent": autoSkillCooldownReduction += relic.EffectValue; break;
                     case "bossDamagePercent": bossDamage += relic.EffectValue; break;
                     case "monsterKillRewardPercent": monsterKillReward += relic.EffectValue; break;
+                    case "cursorAttackIntervalReductionPercent": cursorAttackIntervalReduction += relic.EffectValue; break;
+                    case "relicDropChanceBonusPercent": relicDropChanceBonus += relic.EffectValue; break;
                     default:
                         throw new ArgumentException(
                             "Unknown relic combat effect: " + relic.EffectId, nameof(relics));
@@ -179,7 +199,8 @@ namespace CursorHunter.Contracts
                 petDoubleDamage, lowHealthExecuteChance, lowHealthExecuteThreshold,
                 bonusGemDropChance, petAttackRadius, garnetReward, petDetectionRadius,
                 spawnIntervalReduction, cursorAttackRadius, fullHealthFirstHitDamage,
-                autoSkillCooldownReduction, bossDamage, monsterKillReward);
+                autoSkillCooldownReduction, bossDamage, monsterKillReward,
+                cursorAttackIntervalReduction, relicDropChanceBonus);
         }
 
         private static float Multiplier(float percent) => 1f + Math.Max(0f, percent) / 100f;

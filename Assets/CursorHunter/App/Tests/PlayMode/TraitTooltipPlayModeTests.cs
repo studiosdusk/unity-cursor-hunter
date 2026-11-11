@@ -54,7 +54,7 @@ namespace CursorHunter.App.Tests
             Set(FindInScene<HuntManager>(), "playEntranceSequence", false);
             _trait = FindInScene<TraitScreenController>();
             _events = FindInScene<EventSystem>();
-            Assert.That(_app.CurrentScreen, Is.EqualTo(UiScreenId.MainMenu));
+            Assert.That(_app.CurrentScreen, Is.EqualTo(UiScreenId.Trait));
             _app.ShowTrait();
             yield return null;
             yield return null;
@@ -81,53 +81,14 @@ namespace CursorHunter.App.Tests
         }
 
         [UnityTest]
-        public IEnumerator TraitBackButtonUsesTheFieldBackButtonPrefabGeometryAndArtwork()
+        public IEnumerator StatScreenOpensDirectlyWithBothBattleButtons()
         {
             yield return null;
-            RectTransform runtimeRoot = Get<RectTransform>(_trait, "_runtimeRoot");
-            Button traitBack = runtimeRoot.Find("BackButton").GetComponent<Button>();
-            Button fieldBack = _scene.GetRootGameObjects()
-                .SelectMany(root => root.GetComponentsInChildren<Button>(true))
-                .FirstOrDefault(button => button.gameObject.name == "Button_Side01_Demo");
-
-            Assert.That(fieldBack, Is.Not.Null);
-            Assert.That(traitBack, Is.Not.Null);
-            Assert.That(traitBack.GetComponent<Image>().sprite,
-                Is.SameAs(fieldBack.GetComponent<Image>().sprite));
-
-            RectTransform fieldRect = fieldBack.transform as RectTransform;
-            RectTransform traitRect = traitBack.transform as RectTransform;
-            Assert.That(traitRect.anchorMin, Is.EqualTo(fieldRect.anchorMin));
-            Assert.That(traitRect.anchorMax, Is.EqualTo(fieldRect.anchorMax));
-            Assert.That(traitRect.pivot, Is.EqualTo(fieldRect.pivot));
-            Assert.That(traitRect.sizeDelta, Is.EqualTo(fieldRect.sizeDelta));
-            Assert.That(traitRect.anchoredPosition.x,
-                Is.EqualTo(fieldRect.anchoredPosition.x).Within(0.01f));
-            Assert.That(traitRect.anchoredPosition.y,
-                Is.EqualTo(fieldRect.anchoredPosition.y).Within(0.01f));
-
-            Image traitIcon = traitBack.transform.Find("Icon").GetComponent<Image>();
-            Image fieldIcon = fieldBack.transform.Find("Icon").GetComponent<Image>();
-            Assert.That(traitIcon.sprite, Is.SameAs(fieldIcon.sprite));
-            RectTransform traitIconRect = traitIcon.transform as RectTransform;
-            RectTransform fieldIconRect = fieldIcon.transform as RectTransform;
-            Assert.That(traitIconRect.sizeDelta, Is.EqualTo(fieldIconRect.sizeDelta));
-            Assert.That(traitIconRect.anchoredPosition.x,
-                Is.EqualTo(fieldIconRect.anchoredPosition.x).Within(0.01f));
-            Assert.That(traitIconRect.anchoredPosition.y,
-                Is.EqualTo(fieldIconRect.anchoredPosition.y).Within(0.01f));
-
-            Shadow traitShadow = traitBack.GetComponent<Shadow>();
-            Shadow fieldShadow = fieldBack.GetComponent<Shadow>();
-            Assert.That(traitShadow.effectColor, Is.EqualTo(fieldShadow.effectColor));
-            Assert.That(traitShadow.effectDistance, Is.EqualTo(fieldShadow.effectDistance));
-            Assert.That(traitBack.colors.normalColor, Is.EqualTo(fieldBack.colors.normalColor));
-            Assert.That(traitBack.colors.highlightedColor, Is.EqualTo(fieldBack.colors.highlightedColor));
-            Assert.That(traitBack.colors.pressedColor, Is.EqualTo(fieldBack.colors.pressedColor));
-
-            TraitProgressionStore.CompleteStarterTutorial();
-            traitBack.onClick.Invoke();
-            Assert.That(_app.CurrentScreen, Is.EqualTo(UiScreenId.MainMenu));
+            RectTransform root = Get<RectTransform>(_trait, "_runtimeRoot");
+            Assert.That(_app.CurrentScreen, Is.EqualTo(UiScreenId.Trait));
+            Assert.That(root.Find("EnterCombatButton").GetComponent<Button>(), Is.Not.Null);
+            Assert.That(root.Find("EnterBossCombatButton").GetComponent<Button>(), Is.Not.Null);
+            Assert.That(root.Find("BackButton"), Is.Null);
         }
 
         [UnityTest]
@@ -150,122 +111,6 @@ namespace CursorHunter.App.Tests
             AssertRainbowFrame(purchasedFinalNode);
         }
 
-        [UnityTest]
-        public IEnumerator GuideCardsStayAboveOrUpperLeftOfTheirFocusedControls()
-        {
-            if (SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Null)
-                Assert.Ignore("Guide resolution/raycast validation requires a GPU; run this fixture without -nographics.");
-            foreach (Vector2Int size in new[]
-                { new Vector2Int(1920, 1080), new Vector2Int(1280, 720), new Vector2Int(1280, 960) })
-            {
-                foreach (int phase in new[] { 3, 1 })
-                {
-                    typeof(AppUiRootController).GetField("_starterGuidePhase",
-                        BindingFlags.Instance | BindingFlags.NonPublic).SetValue(_app, phase);
-                    _app.ShowMainMenu();
-                    yield return CheckGuidePlacement(
-                        Get<RectTransform>(_app, "_starterGuideOverlay"),
-                        Get<Button>(_app, "_starterGuideButton").transform as RectTransform,
-                        Get<RectTransform>(_app, "_starterGuideCard"),
-                        () => typeof(AppUiRootController).GetMethod("UpdateStarterGuideSpotlight",
-                            BindingFlags.Instance | BindingFlags.NonPublic).Invoke(_app, null),
-                        size, "menu-" + phase);
-                }
-                _app.ShowTrait();
-                yield return null;
-                yield return CheckGuidePlacement(
-                    Get<GameObject>(_trait, "_starterTutorialOverlay").transform as RectTransform,
-                    Get<RectTransform>(_trait, "_starterTutorialTarget"),
-                    Get<RectTransform>(_trait, "_starterTutorialCard"),
-                    () => typeof(TraitScreenController).GetMethod("UpdateStarterTutorialSpotlightLayout",
-                        BindingFlags.Instance | BindingFlags.NonPublic).Invoke(_trait, null),
-                    size, "research");
-            }
-        }
-
-        private IEnumerator CheckGuidePlacement(
-            RectTransform overlay, RectTransform focus, RectTransform popup,
-            System.Action refresh, Vector2Int size, string label)
-        {
-            Assert.That(overlay, Is.Not.Null);
-            Assert.That(focus, Is.Not.Null);
-            Camera camera = FindInScene<Camera>();
-            Canvas canvas = overlay.GetComponentInParent<Canvas>().rootCanvas;
-            RenderMode previousMode = canvas.renderMode;
-            Camera previousCamera = canvas.worldCamera;
-            float previousDistance = canvas.planeDistance;
-            RenderTexture previousTarget = camera.targetTexture;
-            var render = new RenderTexture(size.x, size.y, 24);
-            try
-            {
-                camera.targetTexture = render;
-                canvas.renderMode = RenderMode.ScreenSpaceCamera;
-                canvas.worldCamera = camera;
-                canvas.planeDistance = 1f;
-                yield return null;
-                yield return null;
-                Canvas.ForceUpdateCanvases();
-                refresh();
-                foreach (TMP_Text text in popup.GetComponentsInChildren<TMP_Text>()) text.ForceMeshUpdate();
-                Canvas.ForceUpdateCanvases();
-
-                string directory = System.Environment.GetEnvironmentVariable("CURSOR_HUNTER_GUIDE_CAPTURE");
-                if (!string.IsNullOrEmpty(directory))
-                {
-                    System.IO.Directory.CreateDirectory(directory);
-                    camera.Render();
-                    RenderTexture previousActive = RenderTexture.active;
-                    RenderTexture.active = render;
-                    var image = new Texture2D(size.x, size.y, TextureFormat.RGB24, false);
-                    image.ReadPixels(new Rect(0, 0, size.x, size.y), 0, 0);
-                    image.Apply();
-                    RenderTexture.active = previousActive;
-                    System.IO.File.WriteAllBytes(System.IO.Path.Combine(directory,
-                        label + "-" + size.x + "x" + size.y + ".png"), image.EncodeToPNG());
-                    Object.Destroy(image);
-                }
-
-                Rect target = RelativeRect(overlay, focus);
-                Rect card = RelativeRect(overlay, popup);
-                Rect bounds = overlay.rect;
-                bool above = card.yMin >= target.yMax + 10f &&
-                    card.xMax > target.xMin && card.xMin < target.xMax;
-                bool upperLeft = card.xMax <= target.xMin - 10f && card.center.y >= target.center.y;
-                Assert.That(above || upperLeft, Is.True,
-                    label + " " + size + ": guide must stay above/upper-left. Target=" + target + " card=" + card);
-                Assert.That(card.Overlaps(target), Is.False);
-                Assert.That(card.xMin, Is.GreaterThanOrEqualTo(bounds.xMin + 8f));
-                Assert.That(card.xMax, Is.LessThanOrEqualTo(bounds.xMax - 8f));
-                Assert.That(card.yMin, Is.GreaterThanOrEqualTo(bounds.yMin + 8f));
-                Assert.That(card.yMax, Is.LessThanOrEqualTo(bounds.yMax - 8f));
-                var pointer = new PointerEventData(_events)
-                {
-                    position = RectTransformUtility.WorldToScreenPoint(
-                        camera, focus.TransformPoint(focus.rect.center))
-                };
-                var hits = new List<RaycastResult>();
-                _events.RaycastAll(pointer, hits);
-                Assert.That(hits.Count, Is.GreaterThan(0));
-                Transform hit = hits[0].gameObject.transform;
-                Assert.That(hit == focus || hit.IsChildOf(focus), Is.True,
-                    "The full-screen spotlight must leave the guided control clickable.");
-                foreach (TMP_Text text in popup.GetComponentsInChildren<TMP_Text>())
-                {
-                    Assert.That(text.rectTransform.rect.width, Is.GreaterThan(0f), text.name);
-                    Assert.That(text.isTextOverflowing, Is.False, text.name + " must remain readable.");
-                }
-            }
-            finally
-            {
-                camera.targetTexture = previousTarget;
-                canvas.renderMode = previousMode;
-                canvas.worldCamera = previousCamera;
-                canvas.planeDistance = previousDistance;
-                render.Release();
-                Object.Destroy(render);
-            }
-        }
-
         private static Rect RelativeRect(RectTransform space, RectTransform rect)
         {
             var corners = new Vector3[4];
@@ -284,27 +129,15 @@ namespace CursorHunter.App.Tests
         [UnityTest]
         public IEnumerator HoverShowsCompactTooltipWithActionDescriptionAndCost()
         {
-            Assert.That(Get<RectTransform>(_trait, "_nodeContent").localScale.x,
-                Is.EqualTo(1.48f).Within(0.01f));
             Hover("stat.attack.01");
             AssertTooltipVisible();
-            Assert.That(Get<RectTransform>(_trait, "_starterTutorialCard").gameObject.activeSelf, Is.False);
             Exit("stat.attack.01");
             yield return new WaitForSecondsRealtime(0.36f);
             Assert.That(Get<RectTransform>(_trait, "_tooltipRoot").gameObject.activeSelf, Is.False);
-            Assert.That(Get<RectTransform>(_trait, "_starterTutorialCard").gameObject.activeSelf, Is.True);
 
             RightClick("stat.attack.01");
             yield return null;
-            Hover("stat.cooldown.01"); // Visible, but radius is the current guide step.
-            AssertTooltipVisible();
-            Assert.That(Get<Button>(_trait, "_tooltipUpgradeButton").gameObject.activeSelf, Is.False);
-            RightClick("stat.cooldown.01");
-            Assert.That(Purchased.Contains("stat.cooldown.01"), Is.False);
-
-            TraitProgressionStore.CompleteStarterTutorial();
             _trait.SetProgressionSnapshot(1000L, 0);
-            _trait.GuideStarterResearch();
             Call(_trait, "HideNodeTooltip");
             Hover("stat.attack.02");
             AssertTooltipVisible();
@@ -337,80 +170,21 @@ namespace CursorHunter.App.Tests
         }
 
         [UnityTest]
-        public IEnumerator StarterOnboardingRequiresOnlyFreeResearchAndTeachesRightClick()
+        public IEnumerator FreeStarterResearchSupportsNormalRightClick()
         {
-            const string freeRightClickStep = "stat.radius.01";
-            const string paidResearch = "stat.attack.02";
             long balance = Get<long>(_trait, "_garnetBalance");
-
             RightClick("stat.attack.01");
             yield return null;
-            Assert.That(Get<string>(_trait, "_starterTutorialTargetId"),
-                Is.EqualTo(freeRightClickStep));
-            Assert.That(Get<TextMeshProUGUI>(_trait, "_starterTutorialMessage").text,
-                Does.Contain("우클릭"));
-
-            Node(freeRightClickStep).GetComponent<Button>().onClick.Invoke();
-            Get<Button>(_trait, "_starterTutorialActionButton").onClick.Invoke();
-            Get<Button>(_trait, "_tooltipUpgradeButton").onClick.Invoke();
-            Assert.That(Purchased.Contains(freeRightClickStep), Is.False,
-                "The free right-click practice must not be bypassed by the tooltip button.");
+            RightClick("monster.01");
+            yield return null;
+            Assert.That(Purchased.Contains("monster.01"), Is.True);
             Assert.That(Get<long>(_trait, "_garnetBalance"), Is.EqualTo(balance));
-            AssertTooltipVisible();
-            Assert.That(Get<Button>(_trait, "_tooltipUpgradeButton").interactable, Is.False);
-
-            RightClick(freeRightClickStep);
-            yield return null;
-            Assert.That(Purchased.Contains(freeRightClickStep), Is.True);
-            Assert.That(Get<long>(_trait, "_garnetBalance"), Is.EqualTo(balance),
-                "Free tutorial research must not consume gemstones.");
-            Assert.That(Get<string>(_trait, "_starterTutorialTargetId"),
-                Is.EqualTo("stat.cooldown.01"));
-
-            RightClick(paidResearch);
-            yield return null;
-            Assert.That(Purchased.Contains(paidResearch), Is.False,
-                "Paid research must not be required or purchasable through a different tutorial target.");
-            Assert.That(Get<long>(_trait, "_garnetBalance"), Is.EqualTo(balance));
-
-            foreach (string id in new[]
-                { "stat.cooldown.01", "stat.critical.01", "stat.fieldDuration.01", "monster.01" })
-            {
-                RightClick(id);
-                yield return null;
-                Assert.That(Get<long>(_trait, "_garnetBalance"), Is.EqualTo(balance));
-            }
-
-            Assert.That(ReadProperty<bool>(_trait, "HasCompletedStarterOnboarding"), Is.True);
-            Assert.That(_trait.CanStartPlayerCombat, Is.True,
-                "Free starter research and Stump must be enough to begin combat.");
-            Assert.That(Purchased.Contains("stat.radius.02"), Is.False,
-                "Paid cursor-range research must remain optional after onboarding.");
-
-            _app.CloseTrait();
-            Assert.That(TraitProgressionStore.HasCompletedStarterTutorial, Is.True);
-            _app.ShowTrait();
-            yield return null;
-            yield return null;
-            Assert.That(Get<bool>(_trait, "_starterTutorialActive"), Is.False,
-                "Reopening Trait after onboarding must restore normal research controls.");
-            Hover("skill.pet_baby_dragon");
-            AssertTooltipVisible();
-            yield return CaptureTooltipAtResolutions("tooltip-pet-skill");
-            string petAction = Get<TextMeshProUGUI>(_trait, "_tooltipType").text;
-            Assert.That(petAction, Does.Contain("배우기"));
-            Assert.That(Get<TextMeshProUGUI>(_trait, "_tooltipDescription").text,
-                Does.Not.Contain("첫 번째로 배울 수 있는"));
-            Assert.That(Purchased.Contains("skill.pet_baby_dragon"), Is.False,
-                "Pet research remains optional after the mandatory tutorial ends.");
-            Assert.That(Get<Image>(_trait, "_tooltipCurrencyIcon").gameObject.activeSelf, Is.True);
+            Assert.That(_trait.CanStartPlayerCombat, Is.True);
         }
 
         [UnityTest]
         public IEnumerator EveryResearchTooltipFitsOnTheSmallestSupportedScreen()
         {
-            TraitProgressionStore.CompleteStarterTutorial();
-            _trait.GuideStarterResearch();
             Call(_trait, "UpgradeAllNodesForTesting");
             yield return null;
             var catalog = Get<TraitCatalog>(_trait, "_activeCatalog");
@@ -460,12 +234,18 @@ namespace CursorHunter.App.Tests
             }
             Assert.That(Get<long>(_trait, "_garnetBalance"),
                 Is.EqualTo(startingBalance - expectedGarnetSpend));
-            _app.CloseTrait();
-            Assert.That(_app.CurrentScreen, Is.EqualTo(UiScreenId.MainMenu));
-            Get<Button>(_app, "_starterGuideButton").onClick.Invoke();
-            Assert.That(_app.CurrentScreen, Is.EqualTo(UiScreenId.FieldSelect));
             ProgressionCombatSnapshot expected = _trait.CreateCombatSnapshot();
-            Get<Button>(_app, "_starterGuideButton").onClick.Invoke();
+            _trait.RequestCombat();
+            Assert.That(_app.CurrentScreen, Is.EqualTo(UiScreenId.Trait),
+                "General combat opens the region selector before entering the run.");
+            Assert.That(combat.IsRunActive, Is.False);
+            RectTransform nodeContent = Get<RectTransform>(_trait, "_nodeContent");
+            Button selectDefaultRegion = nodeContent.Find("FieldCard_1/SelectField_1").GetComponent<Button>();
+            Assert.That(selectDefaultRegion.interactable, Is.True);
+            selectDefaultRegion.onClick.Invoke();
+            Button startGeneralCombat = nodeContent.Find("StartSelectedFieldCombat").GetComponent<Button>();
+            Assert.That(startGeneralCombat.interactable, Is.True);
+            startGeneralCombat.onClick.Invoke();
             Assert.That(_app.CurrentScreen, Is.EqualTo(UiScreenId.Combat));
             Assert.That(combat.IsRunActive, Is.True);
             Assert.That(combat.CombatSnapshot, Is.EqualTo(expected.Combat));
@@ -541,8 +321,6 @@ namespace CursorHunter.App.Tests
         [UnityTest]
         public IEnumerator BossProgressDoesNotGateSkillsOrMoveExistingNodes()
         {
-            TraitProgressionStore.CompleteStarterTutorial();
-            _trait.GuideStarterResearch();
             RightClick("stat.attack.01");
             yield return null;
             string[] allSkills = { "skill.pet_baby_dragon", "skill.tornado", "skill.thunder",
@@ -684,10 +462,8 @@ namespace CursorHunter.App.Tests
         }
 
         [UnityTest]
-        public IEnumerator AllTwentyRelicsHaveArtAndCloseThroughTheRealButtonOrBackdropRaycast()
+        public IEnumerator AllTwentyRelicsShowNewUntilTheirCardIsOpened()
         {
-            TraitProgressionStore.CompleteStarterTutorial();
-            _trait.GuideStarterResearch();
             Call(_trait, "ShowRelicCollection", false);
             yield return null;
             var content = Get<RectTransform>(_trait, "_nodeContent");
@@ -700,23 +476,15 @@ namespace CursorHunter.App.Tests
             {
                 Call(_trait, "SetTestRelicObtained", index, true);
                 yield return null;
-                yield return new WaitForSecondsRealtime(.5f);
-                var overlay = Get<GameObject>(_trait, "_relicRevealOverlay");
-                Assert.That(overlay, Is.Not.Null, "Missing reveal for relic " + index);
-                Assert.That(overlay.transform.Find("RelicRevealFocus/RevealTitle").GetComponent<TMP_Text>().text,
-                    Does.Not.StartWith("유물 "));
-                Assert.That(overlay.transform.Find("RelicRevealFocus/RevealIcon").GetComponent<Image>().sprite,
-                    Is.Not.Null);
-                Assert.That(overlay.transform.Find("RelicRevealFocus/RevealDescription").GetComponent<TMP_Text>().text,
-                    Does.Not.Contain("준비 중"));
-                if (index == 0) yield return CaptureCurrentFrame("relic-reveal");
-                var target = index % 2 == 0
-                    ? overlay.transform.Find("RelicRevealFocus/RelicRevealConfirm") as RectTransform
-                    : overlay.transform as RectTransform;
-                Vector2 localPoint = index % 2 == 0 ? target.rect.center : target.rect.min + Vector2.one * 12f;
-                RaycastClick(target, localPoint);
-                Assert.That(Get<GameObject>(_trait, "_relicRevealOverlay"), Is.Null,
-                    "The reveal must close on the same click, relic " + index);
+                Transform card = content.Find("RelicSlot_" + (index + 1).ToString("00"));
+                Assert.That(card.Find("NewRelicBadge"), Is.Not.Null);
+                Assert.That(Get<GameObject>(_trait, "_relicDetailOverlay"), Is.Null);
+                card.GetComponent<Button>().onClick.Invoke();
+                Assert.That(Get<GameObject>(_trait, "_relicDetailOverlay"), Is.Not.Null);
+                Call(_trait, "CloseRelicDetail");
+                yield return null;
+                card = content.Find("RelicSlot_" + (index + 1).ToString("00"));
+                Assert.That(card.Find("NewRelicBadge"), Is.Null);
                 yield return null;
             }
             Assert.That(_trait.CreateCombatSnapshot().Relics.All(relic => relic.Owned), Is.True);
@@ -760,13 +528,10 @@ namespace CursorHunter.App.Tests
             Call(_trait, "SaveProgressionState");
             PlayerPrefs.DeleteKey(ProfileKey + ".starter-tutorial-started");
             PlayerPrefs.DeleteKey(ProfileKey + ".starter-tutorial-complete");
-            Assert.That(TraitProgressionStore.ShouldShowStarterTutorial, Is.False);
-            _trait.GuideStarterResearch();
             _app.CloseTrait();
             FindInScene<HuntManager>().BeginPrototypeRun();
             Assert.That(FindInScene<CombatRunController>().IsRunActive, Is.True,
                 "Existing saves must not be blocked by a newly added onboarding purchase.");
-            Assert.That(Get<bool>(_trait, "_starterTutorialActive"), Is.False);
             FindInScene<HuntManager>().ReturnToMainMenu();
             yield return null;
         }
@@ -826,8 +591,6 @@ namespace CursorHunter.App.Tests
         [UnityTest]
         public IEnumerator EveryMonsterTooltipShowsItsNameTraitAndKillRewards()
         {
-            TraitProgressionStore.CompleteStarterTutorial();
-            _trait.GuideStarterResearch();
             Call(_trait, "UpgradeAllNodesForTesting");
 
             string[] names =
@@ -898,8 +661,6 @@ namespace CursorHunter.App.Tests
         [UnityTest]
         public IEnumerator MonsterProfilesExecuteVanishShieldTeleportHealingAndSingleRewardRevival()
         {
-            TraitProgressionStore.CompleteStarterTutorial();
-            _trait.GuideStarterResearch();
             Call(_trait, "UpgradeAllNodesForTesting");
             Purchased.RemoveWhere(id => id.StartsWith("skill."));
             FindInScene<MainCursorController>().enabled = false;
@@ -964,8 +725,6 @@ namespace CursorHunter.App.Tests
         [UnityTest]
         public IEnumerator ResearchWheelAndDragAreBoundedAndDoNotJumpAcrossTheBoard()
         {
-            TraitProgressionStore.CompleteStarterTutorial();
-            _trait.GuideStarterResearch();
             RightClick("stat.attack.01");
             yield return null;
             var viewport = Get<RectTransform>(_trait, "_nodeViewport");
@@ -998,69 +757,18 @@ namespace CursorHunter.App.Tests
         }
 
         [UnityTest]
-        public IEnumerator CurrencyExchangeWorksWithoutItsMonsterAndPersistsTheExactHundredToOnePayout()
+        public IEnumerator CurrencyExchangeIsAbsentFromTheGemstonePanel()
         {
-            TraitProgressionStore.CompleteStarterTutorial();
-            _trait.GuideStarterResearch();
-            RightClick("stat.attack.01");
-            yield return null;
-            RightClick("monster.01");
             _trait.SetProgressionSnapshot(1000L, new long[] { 1000, 0, 0, 0, 0, 0 }, 1);
             yield return null;
             var panel = Get<RectTransform>(_trait, "_gemstonePanel");
             Assert.That(panel, Is.Not.Null);
-            Assert.That(Purchased.Contains("monster.02"), Is.False,
-                "The next-tier exchange must not require its supply monster to be unlocked.");
-            var exchange = panel.Find("GemstoneList/Gemstone_gem.garnet/ExchangeToNextTier")
-                .GetComponent<TraitGemstoneExchangeHoldInput>();
-            Assert.That(exchange, Is.Not.Null);
-            long before = Get<long>(_trait, "_garnetBalance");
-            exchange.OnPointerDown(new PointerEventData(_events)
-                { button = PointerEventData.InputButton.Left });
-            exchange.OnPointerUp(new PointerEventData(_events)
-                { button = PointerEventData.InputButton.Left });
-            Assert.That(Get<long>(_trait, "_garnetBalance"), Is.EqualTo(before - 100L));
-            Assert.That(Get<long[]>(_trait, "_gemstoneBalances")[1], Is.EqualTo(1L));
+            Assert.That(panel.Find("GemstoneList/Gemstone_gem.garnet/ExchangeToNextTier"), Is.Null);
+            Assert.That(Get<long>(_trait, "_garnetBalance"), Is.EqualTo(1000L));
+            Assert.That(Get<long[]>(_trait, "_gemstoneBalances")[1], Is.EqualTo(0L));
             Assert.That(TraitProgressionStore.TryLoad(out var save), Is.True);
-            Assert.That(save.garnetBalance, Is.EqualTo(before - 100L));
-            Assert.That(save.gemstoneBalances[1], Is.EqualTo(1L));
-        }
-
-        [UnityTest]
-        public IEnumerator CurrencyExchangeRepeatsWhileHeldAndStopsOnRelease()
-        {
-            TraitProgressionStore.CompleteStarterTutorial();
-            _trait.GuideStarterResearch();
-            RightClick("stat.attack.01");
-            yield return null;
-            _trait.SetProgressionSnapshot(1000L, new long[] { 1000, 0, 0, 0, 0, 0 }, 1);
-            yield return null;
-
-            var panel = Get<RectTransform>(_trait, "_gemstonePanel");
-            var exchange = panel.Find("GemstoneList/Gemstone_gem.garnet/ExchangeToNextTier")
-                .GetComponent<TraitGemstoneExchangeHoldInput>();
-            long garnetBefore = Get<long>(_trait, "_garnetBalance");
-            long topazBefore = Get<long[]>(_trait, "_gemstoneBalances")[1];
-            var pointer = new PointerEventData(_events)
-                { button = PointerEventData.InputButton.Left };
-
-            exchange.OnPointerDown(pointer);
-            yield return new WaitForSecondsRealtime(.52f);
-            exchange.OnPointerUp(pointer);
-
-            long garnetAfterRelease = Get<long>(_trait, "_garnetBalance");
-            long topazAfterRelease = Get<long[]>(_trait, "_gemstoneBalances")[1];
-            Assert.That(garnetAfterRelease, Is.LessThanOrEqualTo(garnetBefore - 200L),
-                "A sustained press should exchange repeatedly after the initial payout.");
-            Assert.That(topazAfterRelease, Is.GreaterThanOrEqualTo(topazBefore + 2L));
-
-            yield return new WaitForSecondsRealtime(.25f);
-            Assert.That(Get<long>(_trait, "_garnetBalance"), Is.EqualTo(garnetAfterRelease),
-                "Releasing the pointer must stop all further exchange ticks.");
-            Assert.That(Get<long[]>(_trait, "_gemstoneBalances")[1], Is.EqualTo(topazAfterRelease));
-            Assert.That(TraitProgressionStore.TryLoad(out var save), Is.True);
-            Assert.That(save.garnetBalance, Is.EqualTo(garnetAfterRelease));
-            Assert.That(save.gemstoneBalances[1], Is.EqualTo(topazAfterRelease));
+            Assert.That(save.garnetBalance, Is.EqualTo(1000L));
+            Assert.That(save.gemstoneBalances[1], Is.EqualTo(0L));
         }
 
         [UnityTest]
@@ -1345,8 +1053,6 @@ namespace CursorHunter.App.Tests
             RectTransform popup = Get<RectTransform>(_trait, "_tooltipRoot");
             Assert.That(popup.gameObject.activeInHierarchy, Is.True);
             Assert.That(Get<TextMeshProUGUI>(_trait, "_tooltipTitle").text, Is.Not.Empty);
-            Assert.That(popup.GetSiblingIndex(),
-                Is.GreaterThan(Get<GameObject>(_trait, "_starterTutorialOverlay").transform.GetSiblingIndex()));
         }
 
         private T FindInScene<T>() where T : Component

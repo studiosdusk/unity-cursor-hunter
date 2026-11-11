@@ -171,7 +171,6 @@ namespace CursorHunter.App
                 if (!progressionController.CanStartPlayerCombat)
                 {
                     uiRootController?.ShowTrait();
-                    progressionController.GuideStarterResearch();
                     return;
                 }
             }
@@ -353,7 +352,11 @@ namespace CursorHunter.App
                 CreateRunSeed(),
                 runDurationSeconds,
                 boss == null ? 0 : boss.Stage,
-                boss == null ? null : boss.CreateClearRewards());
+                boss == null ? null : boss.CreateClearRewards(),
+                boss == null ? 0L : boss.ExperienceReward,
+                boss == null && connectTraitScreenToCombat && progressionController != null
+                    ? progressionController.SelectedFieldTier
+                    : 1);
 
             string failureReason;
             bool started = connectTraitScreenToCombat
@@ -701,6 +704,7 @@ namespace CursorHunter.App
             if (result.SettlementPolicy != RunSettlementPolicy.Eligible ||
                 ((result.Rewards == null || result.Rewards.Count == 0) &&
                  (result.RelicAwards == null || result.RelicAwards.Count == 0) &&
+                 result.ExperienceEarned <= 0L &&
                  !result.BossDefeated) ||
                 progressionController == null ||
                 _settledRunIds.Contains(result.RunId))
@@ -710,7 +714,7 @@ namespace CursorHunter.App
 
             if (result.BossDefeated
                 ? progressionController.GrantBossClear(result)
-                : progressionController.GrantRunRewards(result.Rewards, result.RelicAwards))
+                : progressionController.GrantRunRewards(result.Rewards, result.RelicAwards, result.ExperienceEarned))
             {
                 _settledRunIds.Add(result.RunId);
                 if (_pendingRunSettlement.RunId == result.RunId)
@@ -842,12 +846,8 @@ namespace CursorHunter.App
                             "Missing visual definition: " + monster.MonsterId);
                         return false;
                     }
-                    // Definition BaseStats + composable species profiles are
-                    // authoritative for combat values. Progression contributes
-                    // unlock state and the resolved production count only.
-                    SpawnSnapshot snapshot = definition.CreateSnapshotWithProductionBonus(
-                        progressionSnapshot.PerMonsterAliveLimit,
-                        monster.ProductionBonusCount);
+                    SpawnSnapshot snapshot = definition.CreateSnapshot(
+                        progressionSnapshot.PerMonsterAliveLimit).WithCombatBalance(monster);
                     snapshot = ApplyRelicSpawnInterval(snapshot, progressionSnapshot);
                     if (!snapshot.IsValid)
                     {
@@ -1056,7 +1056,8 @@ namespace CursorHunter.App
                     authored.SpecialAbilityIntervalSeconds,
                     authored.SpecialAbilityDurationSeconds,
                     authored.SpecialAbilityRadius,
-                    authored.SpecialAbilityStrength);
+                    authored.SpecialAbilityStrength,
+                    authored.ExperienceReward);
             }
 
             return authored;

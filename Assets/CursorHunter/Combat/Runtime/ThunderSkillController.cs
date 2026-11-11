@@ -56,6 +56,7 @@ namespace CursorHunter.Combat
         private RunId _runId;
         private float _nextCastAt;
         private ThunderRuntimeStat _runtime;
+        private int _castCount = 1;
         private bool _configured;
         private SkillBalanceSettings _balance;
         private SeededRandom _balanceRandom;
@@ -85,6 +86,7 @@ namespace CursorHunter.Combat
             _random = new SeededRandom(seed ^ 0x5448554E444552UL);
             if (_balance != null) skill = default;
             _runtime = new ThunderRuntimeStat(BalanceBasis, skill);
+            _castCount = Mathf.Min(5, SkillStatMath.AddCount(1, skill, "count"));
             _hasCast = false;
             _nextCastAt = combat.ElapsedSeconds + _runtime.FirstCastDelaySeconds;
             _configured = true;
@@ -92,7 +94,7 @@ namespace CursorHunter.Combat
             _poolWarningLogged = false;
 
             int needed = SkillBalanceMath.PoolNeed(_runtime.EffectDurationSeconds,
-                _runtime.CooldownSeconds, maximumPooledEffects);
+                _runtime.CooldownSeconds, maximumPooledEffects, _castCount);
             while (PooledEffectCount < needed)
             {
                 ThunderEffect instance = Instantiate(effectPrefab, transform);
@@ -161,13 +163,17 @@ namespace CursorHunter.Combat
                 return;
             }
 
-            int index = (int)(_random.NextUInt64() % (ulong)_eligibleTargets.Count);
-            MonsterCombatTarget target = _eligibleTargets[index];
-            ThunderEffect next = _free.Pop();
-            next.Activate(this, _runId, target, now,
-                _runtime.ImpactDelaySeconds,
-                _runtime.EffectDurationSeconds);
-            _active.Add(next);
+            for (int i = 0; i < _castCount && _free.Count > 0 && _eligibleTargets.Count > 0; i++)
+            {
+                int index = (int)(_random.NextUInt64() % (ulong)_eligibleTargets.Count);
+                MonsterCombatTarget target = _eligibleTargets[index];
+                _eligibleTargets.RemoveAt(index);
+                ThunderEffect next = _free.Pop();
+                next.Activate(this, _runId, target, now,
+                    _runtime.ImpactDelaySeconds,
+                    _runtime.EffectDurationSeconds);
+                _active.Add(next);
+            }
             _nextCastAt = now + _combat.ResolveAutoSkillCooldown(
                 _runtime.CooldownSeconds);
             _hasCast = true;
@@ -286,7 +292,7 @@ namespace CursorHunter.Combat
             for (int i = 0; i < _active.Count; i++)
                 if (_active[i] != null) _active[i].RefreshBalance(now, previous, _runtime);
             int needed = SkillBalanceMath.PoolNeed(_runtime.EffectDurationSeconds,
-                _runtime.CooldownSeconds, maximumPooledEffects);
+                _runtime.CooldownSeconds, maximumPooledEffects, _castCount);
             while (PooledEffectCount < needed)
             {
                 ThunderEffect instance = Instantiate(effectPrefab, transform);

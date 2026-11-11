@@ -25,9 +25,10 @@ MonoBehaviour:
     visualScale: 1
     hitAreaWidth: 1
     hitAreaHeight: 1.2
+    experienceReward: 4
     garnetReward: 9
     bonusDropCurrencyId: "gem.sapphire"
-    bonusDropAmount: 5
+    bonusDropAmount: 1
     bonusDropChancePercent: 100
   behaviorProfiles:
   - {fileID: 11400000, guid: ae22e549ee464746876ea87545e33da2, type: 2}

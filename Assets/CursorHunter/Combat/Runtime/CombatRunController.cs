@@ -65,6 +65,7 @@ namespace CursorHunter.Combat
         private bool _hasPreviousAttackCenter;
         private int _defeatedCount;
         private long _garnetEarned;
+        private long _experienceEarned;
         private long _effectiveDamage;
         private bool _isPrepared;
         private bool _isRunning;
@@ -99,6 +100,7 @@ namespace CursorHunter.Combat
                 : 0f;
         public int DefeatedCount => _defeatedCount;
         public long GarnetEarned => _garnetEarned;
+        public long ExperienceEarned => _experienceEarned;
         /// <summary>Current run earnings only; does not read or mutate the permanent wallet.</summary>
         public long GetResourceEarned(string currencyId)
         {
@@ -284,6 +286,7 @@ namespace CursorHunter.Combat
             ResetAttackPath();
             _defeatedCount = 0;
             _garnetEarned = 0;
+            _experienceEarned = 0;
             _effectiveDamage = 0;
             _resourceRewards.Clear();
             _fractionalRewardRemainders.Clear();
@@ -878,6 +881,7 @@ namespace CursorHunter.Combat
             {
                 settlementPolicy = RunSettlementPolicy.Discard;
                 _garnetEarned = 0L;
+                _experienceEarned = 0L;
                 _resourceRewards.Clear();
             }
             return new RunResult(
@@ -889,7 +893,8 @@ namespace CursorHunter.Combat
                 _garnetEarned,
                 _effectiveDamage,
                 CreateResourceRewards(),
-                _relicAwards);
+                _relicAwards,
+                _experienceEarned);
         }
 
         private bool ApplyBundle(ICombatTarget target, long skillDamage = 0L,
@@ -1010,7 +1015,8 @@ namespace CursorHunter.Combat
             if (normalMonsterKill && !TryScaleReward(
                     "gem.garnet",
                     garnetReward,
-                    _relicModifiers.NormalMonsterRewardMultiplier,
+                    _relicModifiers.NormalMonsterRewardMultiplier *
+                    _runRequest.FieldGemstoneRewardMultiplier,
                     out garnetReward))
             {
                 RequestAbort(RunEndReason.NumericOverflow);
@@ -1034,7 +1040,19 @@ namespace CursorHunter.Combat
                 }
                 bonusAmount = 0L;
             }
+            long experienceReward = normalMonsterKill && target is MonsterCombatTarget xpTarget
+                ? xpTarget.ExperienceReward : 0L;
+            if (normalMonsterKill && !TryScaleReward(
+                    "experience",
+                    experienceReward,
+                    _runRequest.FieldExperienceMultiplier,
+                    out experienceReward))
+            {
+                RequestAbort(RunEndReason.NumericOverflow);
+                return true;
+            }
             if (_defeatedCount == int.MaxValue ||
+                !TryAddNonNegative(_experienceEarned, experienceReward, out long nextExperienceEarned) ||
                 !TryAddNonNegative(
                     _garnetEarned,
                     garnetReward,
@@ -1052,6 +1070,7 @@ namespace CursorHunter.Combat
 
             _defeatedCount++;
             _garnetEarned = nextGarnetEarned;
+            _experienceEarned = nextExperienceEarned;
             TryRecordReward("gem.garnet", garnetReward);
             TryRecordReward(bonusId, bonusAmount);
             if (!string.IsNullOrEmpty(relicAwardId))
@@ -1059,8 +1078,8 @@ namespace CursorHunter.Combat
                 _relicAwardIds.Add(relicAwardId);
                 _relicAwards.Add(relicAwardId);
             }
-            if (garnetReward > 0L || bonusAmount > 0L)
-                NotifyKillReward(rewardPosition, hasRewardPosition, garnetReward, bonusId, bonusAmount);
+            if (garnetReward > 0L || bonusAmount > 0L || !string.IsNullOrEmpty(relicAwardId) || experienceReward > 0L)
+                NotifyKillReward(rewardPosition, hasRewardPosition, garnetReward, bonusId, bonusAmount, relicAwardId, experienceReward);
             RequestBossCompletion();
             return true;
         }
@@ -1077,7 +1096,10 @@ namespace CursorHunter.Combat
                 }
                 if (reward.CurrencyId == "gem.garnet") garnet = reward.Amount;
             }
-            if (_defeatedCount == int.MaxValue || !TryAddNonNegative(_garnetEarned, garnet, out long nextGarnet))
+            long experienceReward = _runRequest.BossExperienceReward;
+            if (_defeatedCount == int.MaxValue ||
+                !TryAddNonNegative(_garnetEarned, garnet, out long nextGarnet) ||
+                !TryAddNonNegative(_experienceEarned, experienceReward, out long nextExperience))
             {
                 RequestAbort(RunEndReason.NumericOverflow);
                 return;
@@ -1085,18 +1107,21 @@ namespace CursorHunter.Combat
             // Validate the entire payout before committing any currency.
             _defeatedCount++;
             _garnetEarned = nextGarnet;
+            _experienceEarned = nextExperience;
             foreach (ResourceRewardSnapshot reward in _runRequest.BossClearRewards)
                 TryRecordReward(reward.CurrencyId, reward.Amount);
-            NotifyKillReward(position, hasPosition, garnet, string.Empty, 0);
+            NotifyKillReward(position, hasPosition, garnet, string.Empty, 0, string.Empty, experienceReward);
             RequestBossCompletion();
         }
 
-        private void NotifyKillReward(Vector3 position, bool hasPosition, long garnet, string bonusId, long bonus)
+        private void NotifyKillReward(Vector3 position, bool hasPosition, long garnet, string bonusId,
+            long bonus, string relicAwardId = null, long experience = 0L)
         {
             try
             {
                 RewardResolved?.Invoke(new CombatRewardResolved(_runRequest.RunId,
-                    _defeatedCount, position, hasPosition, garnet, bonusId, bonus));
+                    _defeatedCount, position, hasPosition, garnet, bonusId, bonus,
+                    relicAwardId, experience));
             }
             catch (Exception exception)
             {
@@ -1124,14 +1149,18 @@ namespace CursorHunter.Combat
                 return null;
             }
 
-            float totalChance = SumEligibleRelicDropChance(
+            float baseChance = SumEligibleRelicDropChance(
                 sourceMonsterId, _relicSnapshots, _relicAwardIds);
 
-            if (totalChance <= 0f || !PassesRelicDropRoll(
+            float totalChance = Mathf.Min(100f,
+                baseChance + _relicModifiers.RelicDropChanceBonusPercent);
+            if (baseChance <= 0f || totalChance <= 0f || !PassesRelicDropRoll(
                     _relicRandom.NextFloat(0f, 100f), totalChance))
                 return null;
 
-            float selection = _relicRandom.NextFloat(0f, totalChance);
+            // Clover improves the chance that something drops, while each
+            // unowned relic keeps its authored fixed weight in the selection.
+            float selection = _relicRandom.NextFloat(0f, baseChance);
             return SelectRelicDropCandidate(
                 sourceMonsterId, _relicSnapshots, _relicAwardIds, selection);
         }
@@ -1312,10 +1341,13 @@ namespace CursorHunter.Combat
             }
 
             resolvedAmount = amount;
+            float rewardMultiplier = _relicModifiers.AllNormalMonsterRewardMultiplier;
+            if (currencyId.StartsWith("gem.", StringComparison.Ordinal))
+                rewardMultiplier *= _runRequest.FieldGemstoneRewardMultiplier;
             if (isNormalMonsterKill && !TryScaleReward(
                     currencyId,
                     resolvedAmount,
-                    _relicModifiers.AllNormalMonsterRewardMultiplier,
+                    rewardMultiplier,
                     out resolvedAmount))
             {
                 return false;

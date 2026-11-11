@@ -47,7 +47,16 @@ namespace CursorHunter.App
             public float NextLaunch;
             public bool Empty => Large == 0 && Medium == 0 && Small == 0;
         }
+
+        private sealed class RelicFlight
+        {
+            public GemstoneFlyView View;
+            public RectTransform Destination;
+            public Action Arrived;
+        }
+
         private Queue<Pending> _queue;
+        private readonly List<RelicFlight> _relicFlights = new List<RelicFlight>();
         private GemstoneFlyView[] _pool;
         private GemstoneCounterPresenter[] _counters;
         private Sprite[] _sprites;
@@ -312,10 +321,10 @@ namespace CursorHunter.App
             if (!_ready || seconds <= 0f || float.IsNaN(seconds) || float.IsInfinity(seconds)) return;
             bool paused = !_hasFocus || (!_preview && !_finishing && combat != null && combat.IsPaused);
             PauseAudio(paused);
-            if (paused || (!_runId.IsValid && !_preview)) return;
+            if (paused || (!_runId.IsValid && !_preview && _relicFlights.Count == 0)) return;
             RefreshSettings(); UpdateDestinations();
             _clock += seconds;
-            if (!_finishing) LaunchPending();
+            if (_runId.IsValid && !_finishing) LaunchPending();
             _soundRow = -1;
             for (int i = 0; i < _pool.Length; i++)
             {
@@ -332,11 +341,12 @@ namespace CursorHunter.App
             {
                 _counters[i].Advance(seconds, _destinations[i]); settling |= _counters[i].Settling;
             }
+            AdvanceRelicFlights(seconds);
             PlayArrivalSound();
             if (_finishing)
             {
                 _finishLeft -= seconds;
-                if (_finishLeft <= 0f || _active == 0 && !settling) FinishNow();
+                if (_finishLeft <= 0f || _active == 0 && _relicFlights.Count == 0 && !settling) FinishNow();
             }
             else if (_preview && _active == 0 && _queue.Count == 0 && !settling)
             {
@@ -344,6 +354,79 @@ namespace CursorHunter.App
                 if (_previewHold >= 1.5f) CancelPresentation(false);
             }
         }
+
+        /// <summary>Animates a newly found relic from its world position into the HUD collection.</summary>
+        public bool PresentRelicDrop(Sprite icon, Vector3 worldPosition, bool hasWorldPosition,
+            RectTransform destination, Action arrived)
+        {
+            if (icon == null || destination == null || !isActiveAndEnabled || !Initialize())
+                return false;
+
+            RefreshSettings();
+            Canvas.ForceUpdateCanvases();
+            UpdateDestinations();
+            GemstoneFlyView view = Instantiate(flyPrefab, effectRoot);
+            view.Initialize();
+            Vector2 origin = WorldToEffect(worldPosition, hasWorldPosition);
+            Vector2 target = effectRoot.InverseTransformPoint(destination.position);
+            float angle = Random01() * Mathf.PI * 2f;
+            view.Launch(-1, 10L, icon, origin, target, _live,
+                angle, Between(_live.motion.scatterRadius),
+                Between(_live.motion.curvature) * (Random01() < 0.5f ? -1f : 1f),
+                Random01(), false);
+            _relicFlights.Add(new RelicFlight
+            {
+                View = view,
+                Destination = destination,
+                Arrived = arrived
+            });
+            return true;
+        }
+
+        private void AdvanceRelicFlights(float seconds)
+        {
+            for (int i = _relicFlights.Count - 1; i >= 0; i--)
+            {
+                RelicFlight flight = _relicFlights[i];
+                if (flight == null || flight.View == null || flight.Destination == null)
+                {
+                    CompleteRelicFlightAt(i, true);
+                    continue;
+                }
+
+                Vector2 destination = effectRoot.InverseTransformPoint(flight.Destination.position);
+                if (flight.View.Advance(seconds, destination,
+                        _finishing ? Mathf.Max(0.001f, _finishLeft) : 0f))
+                    CompleteRelicFlightAt(i, true);
+            }
+        }
+
+        private void CompleteRelicFlightAt(int index, bool showCollectedIcon)
+        {
+            if (index < 0 || index >= _relicFlights.Count) return;
+            RelicFlight flight = _relicFlights[index];
+            _relicFlights.RemoveAt(index);
+            if (flight != null && flight.View != null)
+            {
+                flight.View.Release();
+                DestroyOwned(flight.View.gameObject);
+            }
+            if (showCollectedIcon && flight != null)
+                flight.Arrived?.Invoke();
+        }
+
+        private void CompleteRelicFlights()
+        {
+            for (int i = _relicFlights.Count - 1; i >= 0; i--)
+                CompleteRelicFlightAt(i, true);
+        }
+
+        private void ClearRelicFlights()
+        {
+            for (int i = _relicFlights.Count - 1; i >= 0; i--)
+                CompleteRelicFlightAt(i, false);
+        }
+
         private void LaunchPending()
         {
             int inspected = _queue.Count, emitted = 0;

@@ -68,6 +68,7 @@ namespace CursorHunter.Combat
         private ContactFilter2D _enemyFilter;
         private float _nextCastAt;
         private FlameExhaustRuntimeStat _runtime;
+        private int _castCount = 1;
         private bool _configured;
         private SkillBalanceSettings _balance;
         private SeededRandom _balanceRandom;
@@ -103,6 +104,7 @@ namespace CursorHunter.Combat
             _random = new SeededRandom(seed ^ 0x464C414D45584UL);
             if (_balance != null) skill = default;
             _runtime = new FlameExhaustRuntimeStat(BalanceBasis, skill);
+            _castCount = Mathf.Min(5, SkillStatMath.AddCount(1, skill, "count"));
             _hasCast = false;
             _nextCastAt = combat.ElapsedSeconds + _runtime.FirstCastDelaySeconds;
             _enemyFilter = new ContactFilter2D
@@ -117,7 +119,7 @@ namespace CursorHunter.Combat
             _hitEffectPoolStarved = false;
 
             int needed = SkillBalanceMath.PoolNeed(_runtime.ProjectileDurationSeconds,
-                _runtime.CooldownSeconds, maximumPooledProjectiles);
+                _runtime.CooldownSeconds, maximumPooledProjectiles, _castCount);
             while (_activeProjectiles.Count + _freeProjectiles.Count < needed)
             {
                 FlameExhaustProjectile instance = Instantiate(projectilePrefab, transform);
@@ -232,20 +234,22 @@ namespace CursorHunter.Combat
                 return;
             }
 
-            float angle = _random.NextFloat(0f, Mathf.PI * 2f);
-            Vector2 direction = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
-            if (!physicsSynced)
-                Physics2D.SyncTransforms();
-            FlameExhaustProjectile next = _freeProjectiles.Pop();
-            next.Activate(this, _runId, sourceCursorHitArea,
-                sourceCursorVisual, direction, now,
-                _runtime.ProjectileDurationSeconds,
-                _runtime.SpeedWorldUnitsPerSecond,
-                _runtime.CursorSizeRatio, _runtime.HitRadiusMultiplier,
-                _combat.AreaSkillRadiusMultiplier);
-            _activeProjectiles.Add(next);
-            next.Tick(now, _enemyFilter);
-            if (!IsCurrentRun(runId)) return;
+            if (!physicsSynced) Physics2D.SyncTransforms();
+            for (int i = 0; i < _castCount && _freeProjectiles.Count > 0; i++)
+            {
+                float angle = _random.NextFloat(0f, Mathf.PI * 2f);
+                Vector2 direction = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
+                FlameExhaustProjectile next = _freeProjectiles.Pop();
+                next.Activate(this, _runId, sourceCursorHitArea,
+                    sourceCursorVisual, direction, now,
+                    _runtime.ProjectileDurationSeconds,
+                    _runtime.SpeedWorldUnitsPerSecond,
+                    _runtime.CursorSizeRatio, _runtime.HitRadiusMultiplier,
+                    _combat.AreaSkillRadiusMultiplier);
+                _activeProjectiles.Add(next);
+                next.Tick(now, _enemyFilter);
+                if (!IsCurrentRun(runId)) return;
+            }
             _nextCastAt = now + _combat.ResolveAutoSkillCooldown(
                 _runtime.CooldownSeconds);
             _hasCast = true;
@@ -378,7 +382,7 @@ namespace CursorHunter.Combat
                 _activeHitEffects[i].RefreshBalance(now,
                     previous.HitEffectDurationSeconds, _runtime.HitEffectDurationSeconds);
             int needed = SkillBalanceMath.PoolNeed(_runtime.ProjectileDurationSeconds,
-                _runtime.CooldownSeconds, maximumPooledProjectiles);
+                _runtime.CooldownSeconds, maximumPooledProjectiles, _castCount);
             while (_activeProjectiles.Count + _freeProjectiles.Count < needed)
             {
                 FlameExhaustProjectile instance = Instantiate(projectilePrefab, transform);

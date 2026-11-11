@@ -145,7 +145,7 @@ namespace CursorHunter.App.Tests
             _view.CompleteReveal();
             yield return WaitForReady();
             Get<Button>(_view, "upgradeButton").onClick.Invoke();
-            Assert.That(Object.FindFirstObjectByType<AppUiRootController>().CurrentScreen, Is.EqualTo(UiScreenId.MainMenu));
+            Assert.That(Object.FindFirstObjectByType<AppUiRootController>().CurrentScreen, Is.EqualTo(UiScreenId.Trait));
             Assert.That(_view.IsVisible, Is.False);
             _hunt.BeginPrototypeRun();
             Assert.That(combat.IsRunActive, Is.True);

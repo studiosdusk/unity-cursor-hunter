@@ -178,7 +178,7 @@ namespace CursorHunter.App.Tests
             _combat.AdvanceTime(30);
             yield return Ready();
             Get<Button>(_result, "upgradeButton").onClick.Invoke();
-            Assert.That(Object.FindFirstObjectByType<AppUiRootController>().CurrentScreen, Is.EqualTo(UiScreenId.MainMenu));
+            Assert.That(Object.FindFirstObjectByType<AppUiRootController>().CurrentScreen, Is.EqualTo(UiScreenId.Trait));
         }
 
         [UnityTest]
@@ -399,7 +399,7 @@ namespace CursorHunter.App.Tests
             Assert.That(_result.IsVisible, Is.False);
             Assert.That(Slider().gameObject.activeSelf, Is.False);
             Assert.That(Object.FindFirstObjectByType<GemstoneCollectionController>().ActiveCount, Is.Zero);
-            Assert.That(Object.FindFirstObjectByType<AppUiRootController>().CurrentScreen, Is.EqualTo(UiScreenId.MainMenu));
+            Assert.That(Object.FindFirstObjectByType<AppUiRootController>().CurrentScreen, Is.EqualTo(UiScreenId.Trait));
             string reset = PlayerPrefs.GetString(ProfileKey);
             Assert.That(reset, Is.EqualTo(saved.Replace("\"highestBossStageCleared\":2", "\"highestBossStageCleared\":0")),
                 "Reset must change only boss progress, not wallet, purchases, or paid receipts.");

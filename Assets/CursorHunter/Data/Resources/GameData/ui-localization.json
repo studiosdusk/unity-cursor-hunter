@@ -312,13 +312,13 @@
     },
     {
       "key": "ui.node.title.monster.production.count",
-      "ko": "{0} · 생산량 {1}마리",
-      "en": "{0} · {1} per spawn"
+      "ko": "{0} 생산량 증가",
+      "en": "{0} Spawn Increase"
     },
     {
       "key": "ui.node.title.monster.production",
-      "ko": "{0} · 생산량 증가",
-      "en": "{0} · Spawn Increase"
+      "ko": "{0} 생산량 증가",
+      "en": "{0} Spawn Increase"
     },
     {
       "key": "ui.requirement.prerequisite",
@@ -482,8 +482,8 @@
     },
     {
       "key": "ui.value.spawn.count",
-      "ko": "한 번에 {0}마리",
-      "en": "{0} per spawn"
+      "ko": "생산량: 회당 {0}마리",
+      "en": "Production: {0} per wave"
     },
     {
       "key": "ui.unit.range.suffix",

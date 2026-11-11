@@ -50,9 +50,9 @@ namespace CursorHunter.App
             else if (!Positive(BossDamageMultiplier)) error = "보스 피해 배율은 양수여야 합니다.";
             else if (!Finite(DurationSeconds) || DurationSeconds < 15f || DurationSeconds > 30f)
                 error = "일반 전투 시간은 15~30초여야 합니다.";
-            else if (GlobalAliveLimit < 1 || GlobalAliveLimit > 80 ||
+            else if (GlobalAliveLimit < 1 || GlobalAliveLimit > GameInformation.MaximumAliveMonsters ||
                 PerMonsterAliveLimit < 1 || PerMonsterAliveLimit > GlobalAliveLimit)
-                error = "전체 상한은 1~80, 종류별 공통 상한은 1~전체 상한이어야 합니다.";
+                error = $"전체 상한은 1~{GameInformation.MaximumAliveMonsters}, 종류별 공통 상한은 1~전체 상한이어야 합니다.";
             else if (Skills == null || Monsters == null) error = "스킬·몬스터 설정이 필요합니다.";
             return error.Length == 0;
         }

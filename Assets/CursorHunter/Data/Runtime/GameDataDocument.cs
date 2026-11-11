@@ -89,7 +89,7 @@ namespace CursorHunter.Data
                 {
                     if (node == null || string.IsNullOrWhiteSpace(node.id) || nodes.ContainsKey(node.id) ||
                         string.IsNullOrWhiteSpace(node.displayName) || node.cost < 0 || !currencies.Contains(node.currencyId) ||
-                        !ValidEffect(category, node))
+                        !ValidNodeCosts(node, currencies) || !ValidEffect(category, node))
                         return Fail("Invalid node/effect in " + category.id, out error);
                     if (!string.IsNullOrEmpty(node.prerequisiteNodeId) && !nodes.ContainsKey(node.prerequisiteNodeId))
                         return Fail("Nodes must follow prerequisite order: " + node.id, out error);
@@ -153,6 +153,9 @@ namespace CursorHunter.Data
         private static bool ValidEffect(UpgradeCategoryData category, UpgradeNodeData node)
         {
             if (!Finite(node.value, -1000000000000d, 1000000000000d)) return false;
+            if (node.bonusCastCount < 0 || node.bonusCastCount > 4 ||
+                (node.bonusCastCount > 0 && (category.tab != "skills" || node.operation != "add" ||
+                    !SkillStatUpgrade.IsAllowed(category.id, "count")))) return false;
             switch (category.tab)
             {
                 case "stats":
@@ -195,6 +198,18 @@ namespace CursorHunter.Data
             }
         }
 
+        private static bool ValidNodeCosts(UpgradeNodeData node, HashSet<string> currencies)
+        {
+            if (node.costs == null || node.costs.Length == 0) return true;
+            if (node.costs.Length > 5) return false;
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            foreach (UpgradeNodeCostData cost in node.costs)
+                if (cost == null || string.IsNullOrWhiteSpace(cost.currencyId) ||
+                    cost.amount <= 0 || !currencies.Contains(cost.currencyId) ||
+                    !seen.Add(cost.currencyId)) return false;
+            return true;
+        }
+
         private static bool Finite(double value, double min, double max) =>
             !double.IsNaN(value) && !double.IsInfinity(value) && value >= min && value <= max;
         private static bool Fail(string message, out string error) { error = message; return false; }
@@ -220,11 +235,18 @@ namespace CursorHunter.Data
         public string valueLabel;
         public int cost;
         public string currencyId;
+        public UpgradeNodeCostData[] costs;
         public string prerequisiteNodeId;
         public bool startsUnlocked;
         public string operation;
         public string statId;
+        public int bonusCastCount;
         public double value;
+    }
+    [Serializable] public sealed class UpgradeNodeCostData
+    {
+        public string currencyId;
+        public int amount;
     }
     [Serializable] public sealed class BossRewardData
     {

@@ -53,7 +53,8 @@ namespace CursorHunter.Contracts
             long garnetEarned,
             long effectiveDamage,
             IReadOnlyList<ResourceRewardSnapshot> rewards,
-            IReadOnlyList<string> relicAwards)
+            IReadOnlyList<string> relicAwards,
+            long experienceEarned = 0L)
         {
             if (!request.IsValid)
             {
@@ -83,6 +84,10 @@ namespace CursorHunter.Contracts
             {
                 throw new System.ArgumentOutOfRangeException(nameof(effectiveDamage));
             }
+            if (experienceEarned < 0L)
+            {
+                throw new System.ArgumentOutOfRangeException(nameof(experienceEarned));
+            }
 
             RunId = request.RunId;
             SchemaVersion = request.SchemaVersion;
@@ -96,6 +101,7 @@ namespace CursorHunter.Contracts
             DefeatedCount = defeatedCount;
             GarnetEarned = garnetEarned;
             EffectiveDamage = effectiveDamage;
+            ExperienceEarned = experienceEarned;
             Rewards = rewards == null
                 ? Array.Empty<ResourceRewardSnapshot>()
                 : CopyRewards(rewards);
@@ -117,6 +123,7 @@ namespace CursorHunter.Contracts
         public int DefeatedCount { get; }
         public long GarnetEarned { get; }
         public long EffectiveDamage { get; }
+        public long ExperienceEarned { get; }
         public IReadOnlyList<ResourceRewardSnapshot> Rewards { get; }
         public IReadOnlyList<string> RelicAwards { get; }
 

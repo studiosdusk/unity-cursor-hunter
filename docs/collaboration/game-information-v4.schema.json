@@ -263,12 +263,12 @@
         "globalAliveLimit": {
           "type": "integer",
           "minimum": 1,
-          "maximum": 80
+          "maximum": 160
         },
         "perMonsterAliveLimit": {
           "type": "integer",
           "minimum": 1,
-          "maximum": 80
+          "maximum": 160
         },
         "bossFieldDurationSeconds": {
           "type": "number",
