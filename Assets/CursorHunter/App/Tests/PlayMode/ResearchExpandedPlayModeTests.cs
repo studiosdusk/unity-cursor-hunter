@@ -73,6 +73,10 @@ namespace CursorHunter.App.Tests
                         node.rank++;
                     }
                 }
+                int tweensBeforeRefresh = DG.Tweening.DOTween.TotalActiveTweens();
+                map.RefreshNodes();
+                Assert.That(DG.Tweening.DOTween.TotalActiveTweens() - tweensBeforeRefresh, Is.LessThanOrEqualTo(map.nodes.Length),
+                    "Completed nodes use at most one looping sparkle tween each.");
                 var snapshot = map.progression.CreateCombatSnapshot();
                 Assert.That(snapshot.IsValid, Is.True);
                 Assert.That(snapshot.CursorStatBonuses.AttackPowerDelta, Is.EqualTo(35));

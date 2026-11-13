@@ -10,7 +10,7 @@ namespace CursorHunter.Progression.ResearchPrototype
     {
         public GameObject visualRoot;
         public Image[] sparkles;
-        private readonly List<Tween> animations = new List<Tween>();
+        private Tween sparkleTween;
         private readonly List<Vector3> baseScales = new List<Vector3>();
         private bool completed;
 
@@ -32,35 +32,35 @@ namespace CursorHunter.Progression.ResearchPrototype
                 var color = sparkle.color;
                 color.a = 0f;
                 sparkle.color = color;
-                if (!Application.isPlaying) continue;
-                float delay = (baseScales.Count - 1) * .48f;
-                var tween = DOTween.Sequence().SetUpdate(true).SetRecyclable(false)
-                    .AppendInterval(delay)
-                    .Append(Fade(sparkle, .9f, .28f))
-                    .Join(sparkle.transform.DOScale(basis, .28f).SetEase(Ease.OutBack))
-                    .AppendInterval(.15f)
-                    .Append(Fade(sparkle, 0f, .35f))
-                    .Join(sparkle.transform.DOScale(basis * .35f, .35f).SetEase(Ease.InSine))
-                    .AppendInterval(1.05f)
-                    .SetLoops(-1, LoopType.Restart);
-                animations.Add(tween);
             }
-        }
-
-        private static Tween Fade(Image image, float alpha, float duration)
-        {
-            return DOTween.To(() => image.color.a, value =>
+            if (!Application.isPlaying) return;
+            // One looping tween drives every sparkle on this node. Previously
+            // each sparkle kept a sequence and four child tweeners alive.
+            float elapsed = 0f;
+            const float cycle = 1.83f;
+            sparkleTween = DOTween.To(() => elapsed, value =>
             {
-                var color = image.color;
-                color.a = value;
-                image.color = color;
-            }, alpha, duration);
+                elapsed = value;
+                for (int i = 0; i < sparkles.Length && i < baseScales.Count; i++)
+                {
+                    var sparkle = sparkles[i];
+                    if (sparkle == null) continue;
+                    float t = Mathf.Repeat(elapsed - i * .48f, cycle);
+                    float intensity = t < .28f ? t / .28f : t < .43f ? 1f :
+                        t < .78f ? 1f - (t - .43f) / .35f : 0f;
+                    var color = sparkle.color;
+                    color.a = .9f * intensity;
+                    sparkle.color = color;
+                    sparkle.transform.localScale = baseScales[i] * Mathf.Lerp(.35f, 1f, intensity);
+                }
+            }, cycle, cycle).SetEase(Ease.Linear).SetLoops(-1, LoopType.Restart)
+              .SetUpdate(true).SetRecyclable(false);
         }
 
         private void StopEffect()
         {
-            foreach (var animation in animations) animation?.Kill();
-            animations.Clear();
+            sparkleTween?.Kill();
+            sparkleTween = null;
             if (sparkles != null)
                 for (int i = 0; i < sparkles.Length && i < baseScales.Count; i++)
                     if (sparkles[i] != null) sparkles[i].transform.localScale = baseScales[i];
