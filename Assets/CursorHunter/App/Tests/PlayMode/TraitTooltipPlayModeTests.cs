@@ -472,21 +472,35 @@ namespace CursorHunter.App.Tests
                 .OnScroll(new PointerEventData(_events) { position = Vector2.one * 300f, scrollDelta = Vector2.up * 8f });
             Assert.That(content.localScale, Is.EqualTo(originalScale), "Relic grid cannot zoom.");
             Assert.That(content.Cast<Transform>().Count(child => child.name.StartsWith("RelicSlot_")), Is.EqualTo(20));
+            Assert.That(_trait.TryGetRelicView("relic.missing", out _), Is.False);
+            Assert.That(_trait.MarkRelicSeen("relic.missing"), Is.False);
+            int notifications = 0;
+            _trait.RelicStateChanged += () => notifications++;
             for (int index = 0; index < 20; index++)
             {
+                string relicId = _trait.RelicCatalog.Entries[index].Id;
                 Call(_trait, "SetTestRelicObtained", index, true);
                 yield return null;
+                Assert.That(_trait.TryGetRelicView(relicId, out var newlyOwned), Is.True, relicId);
+                Assert.That(newlyOwned.IsOwned && newlyOwned.IsNew, Is.True, relicId);
                 Transform card = content.Find("RelicSlot_" + (index + 1).ToString("00"));
                 Assert.That(card.Find("NewRelicBadge"), Is.Not.Null);
                 Assert.That(Get<GameObject>(_trait, "_relicDetailOverlay"), Is.Null);
                 card.GetComponent<Button>().onClick.Invoke();
                 Assert.That(Get<GameObject>(_trait, "_relicDetailOverlay"), Is.Not.Null);
+                Assert.That(_trait.TryGetRelicView(relicId, out var viewed), Is.True);
+                Assert.That(viewed.IsOwned, Is.True);
+                Assert.That(viewed.IsNew, Is.False);
+                Assert.That(TraitProgressionStore.TryLoad(out var saved), Is.True);
+                Assert.That(saved.ownedRelicIds, Does.Contain(relicId));
+                Assert.That(saved.unseenRelicIds, Does.Not.Contain(relicId));
                 Call(_trait, "CloseRelicDetail");
                 yield return null;
                 card = content.Find("RelicSlot_" + (index + 1).ToString("00"));
                 Assert.That(card.Find("NewRelicBadge"), Is.Null);
                 yield return null;
             }
+            Assert.That(notifications, Is.EqualTo(40));
             Assert.That(_trait.CreateCombatSnapshot().Relics.All(relic => relic.Owned), Is.True);
             yield return CaptureCurrentFrame("relic-collection");
             Call(_trait, "UpgradeAllNodesForTesting");

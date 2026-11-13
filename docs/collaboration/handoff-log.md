@@ -1518,3 +1518,19 @@ Main의 TopMenu와 ButtomMenu 버튼을 한국어로 설정하고 연구·유물
 ### 2026-11-13 · 연구 노드 SO 구조 및 전투 연결
 
 기존 6개 연구 SO를 `presentation`(제목·설명·아이콘·표시 단위)과 `gameplay`(효과 대상·랭크별 누적 가산 효과·젬스톤 ID/비용)로 나누고 기존 SO GUID와 맵 배치 ID를 유지했다. Main의 새 연구는 저장된 배치별 랭크로 6종 커서 스탯을 전투 스냅샷에 반영한다. 같은 SO를 사용하는 배치의 효과는 합산하고, 레거시 연구 효과는 제외하되 구매 ID와 지출 기록은 보관한다. 보유 특성 카드의 공격 보너스도 정보와 실제 전투에 한 번 적용한다. 구매 시 SO의 비용·재화·선행 조건을 재검증하고 저장 실패 시 지갑과 랭크를 복구한다. 맵의 중복 배치 ID·누락/순환 선행 관계는 거부한다. 후속 맵 에디터 및 배치 ID 변경 마이그레이션은 아직 구현하지 않았다.
+
+### 2026-11-13 · 특성 화면 루트 씬 배치
+
+Main의 TraitPanel_Root 아래에 TraitScreen_Runtime RectTransform을 배치하고 TraitScreenController의 참조로 연결했다. 루트는 런타임에 생성하지 않으며, 기존 데이터 기반 하위 UI는 계속 초기화 시 생성한다. 협업 검증은 기존 Assets/CursorHunter/Progression/.DS_Store의 누락된 meta 때문에 실패했으며 Unity 실행 검증은 수행하지 않았다.
+
+### 2026-11-13 · 특성 화면 배경 씬 배치 진행
+
+TraitScreen_Runtime의 배경 Image와 CanvasGroup, TraitBackdropArtwork를 Main 씬에 배치했다. 배경색과 풍경 이미지의 크기·색·스프라이트는 씬에서 편집하며 컨트롤러가 실행 시 덮어쓰지 않는다. 나머지 배경 레이어와 화면별 UI는 여전히 런타임 생성·재생성되어 전체 전환은 미완료다. 협업 검증은 기존 Progression/.DS_Store의 누락 meta 때문에 실패했고 Unity Play Mode는 검증하지 않았다.
+
+### 2026-11-13 · 특성 배경 레이어 씬 배치
+
+색 보정 레이어와 비네트를 Main의 TraitScreen_Runtime 아래에 배치하고 비네트 텍스처를 Progression 소유 스프라이트로 저장했다. 두 레이어의 배치와 색은 씬에서 편집한다. 유물·특성 카드·스테이지와 기타 UI의 런타임 재생성은 아직 남아 있다. 씬 ID 및 에셋 헤더 정적 검사는 통과했으며 협업 검증은 기존 Progression/.DS_Store의 누락 meta 때문에 실패했다. Unity Play Mode 검증은 수행하지 않았다.
+
+### 2026-11-13 · 유물 표시 데이터와 보유 상태 API
+
+유물 이름과 아이콘은 RelicCollectionCatalog SO를 기준으로 조회하며 Main에 남은 동일 표시 데이터보다 우선한다. 효과 설명은 활성 전투 정보의 effectId와 effectValue/effectValue2에서 생성하므로 SO의 옛 설명 문자열은 표시 기준으로 사용하지 않는다. 새 UI는 TraitScreenController.RelicCatalog.Entries의 ID를 기준으로 TryGetRelicView를 호출해 Presentation, Description, IsOwned, IsNew를 읽고, 확인 시 MarkRelicSeen을 호출한다. 저장 성공 시 RelicStateChanged 이벤트를 발행하며 New 저장 실패 시 상태를 복구한다. 20개 데이터의 설명 매핑과 보유/New 저장 경로의 Unity 테스트를 추가했다. dotnet 프로젝트 컴파일은 통과했으나 Unity 테스트는 미실행. 협업 검증은 기존 Progression/.DS_Store meta 누락으로 실패했고 게임 데이터 검증은 기존 한국어 참고본 불일치 및 유물 effectId 스키마 불일치로 실패했다.

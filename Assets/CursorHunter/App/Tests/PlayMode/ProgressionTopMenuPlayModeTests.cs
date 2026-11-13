@@ -117,6 +117,13 @@ namespace CursorHunter.App.Tests
                 var progression = scene.GetRootGameObjects().SelectMany(root => root.GetComponentsInChildren<TraitScreenController>(true)).Single();
                 var app = scene.GetRootGameObjects().SelectMany(root => root.GetComponentsInChildren<AppUiRootController>(true)).Single();
                 var runtime = progression.transform.Find("TraitScreen_Runtime");
+                var artwork = runtime.Find("TraitBackdropArtwork").GetComponent<Image>();
+                var veil = runtime.Find("TraitBackdropDesaturation").GetComponent<Image>();
+                var atmosphere = runtime.Find("TraitBackdropAtmosphere").GetComponent<Image>();
+                var authoredColor = new Color(0.3f, 0.4f, 0.5f, 0.7f);
+                artwork.color = authoredColor;
+                var authoredPosition = new Vector2(13f, 21f);
+                veil.rectTransform.anchoredPosition = authoredPosition;
                 Assert.That(app.CurrentScreen, Is.EqualTo(UiScreenId.Trait));
                 Assert.That(top.gameObject.activeInHierarchy, Is.True);
                 Assert.That(map.gameObject.activeInHierarchy, Is.True);
@@ -158,6 +165,11 @@ namespace CursorHunter.App.Tests
                 yield return null;
                 Assert.That(field.image.sprite.name, Is.EqualTo("Btn_MenuButton_Rectangle00_s"));
                 Assert.That(runtime.GetComponentsInChildren<Transform>(false).Any(t => t.name == "FieldCard_1"), Is.True);
+                Assert.That(runtime.Find("TraitBackdropArtwork").GetComponent<Image>(), Is.SameAs(artwork));
+                Assert.That(artwork.color, Is.EqualTo(authoredColor));
+                Assert.That(runtime.Find("TraitBackdropDesaturation").GetComponent<Image>(), Is.SameAs(veil));
+                Assert.That(veil.rectTransform.anchoredPosition, Is.EqualTo(authoredPosition));
+                Assert.That(runtime.Find("TraitBackdropAtmosphere").GetComponent<Image>(), Is.SameAs(atmosphere));
                 talent.onClick.Invoke();
                 yield return null;
                 app.ShowSettings();

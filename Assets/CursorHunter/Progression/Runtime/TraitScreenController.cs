@@ -46,6 +46,8 @@ namespace CursorHunter.Progression
         [SerializeField, FormerlySerializedAs("newResearchDefaultMonster")] private bool useNewResearchSystem;
         [Tooltip("Scene-authored map supplies placement IDs and node definitions for the new research system.")]
         [SerializeField] private ResearchTestMap researchMap;
+        [Tooltip("Scene-authored container for the trait screen UI.")]
+        [SerializeField] private RectTransform runtimeRoot;
         [SerializeField] private bool testModeUnlockAll = false;
         [SerializeField] private bool testModeFreeUpgrades = false;
         [SerializeField] private UnityEvent backRequested = new UnityEvent();
@@ -124,6 +126,7 @@ namespace CursorHunter.Progression
         private bool _ownsRuntimeCatalog;
         private bool _isBuilt;
         private bool _showRelicCollection;
+        private RelicCollectionCatalog _relicPresentationCatalog;
         private bool _showTalentCollection;
         private bool _showFieldCollection;
         private TraitTab _activeTab;
@@ -260,8 +263,6 @@ namespace CursorHunter.Progression
         private bool _graphDragCursorActive;
         private Button _bulkUpgradeButton;
         private Coroutine _bulkUpgradeRoutine;
-        private Texture2D _traitBackdropTexture;
-        private Sprite _traitBackdropSprite;
         private Coroutine _fitGraphRoutine;
         private readonly List<TextMeshProUGUI> _summaryValues = new List<TextMeshProUGUI>();
         private Coroutine _transition;
@@ -291,34 +292,59 @@ namespace CursorHunter.Progression
 
         public bool TryGetRelicIcon(string relicId, out Sprite icon)
         {
-            EnsureRelicEntries();
-            for (int i = 0; i < relicEntries.Count; i++)
-            {
-                RelicDisplayEntry entry = relicEntries[i];
-                if (entry != null && string.Equals(entry.Id, relicId, StringComparison.Ordinal))
-                {
-                    icon = entry.Icon;
-                    return icon != null;
-                }
-            }
-            icon = null;
-            return false;
+            RelicCollectionCatalogEntry entry = RelicCatalog?.FindById(relicId);
+            icon = entry?.Icon;
+            return icon != null;
         }
 
         public bool TryGetRelicPresentation(string relicId, out string title, out Sprite icon)
         {
-            EnsureRelicEntries();
-            for (int i = 0; i < relicEntries.Count; i++)
+            RelicCollectionCatalogEntry entry = RelicCatalog?.FindById(relicId);
+            title = entry?.Title ?? string.Empty;
+            icon = entry?.Icon;
+            return icon != null || !string.IsNullOrWhiteSpace(title);
+        }
+
+        /// <summary>The catalog defines display order and presentation for collection views.</summary>
+        public RelicCollectionCatalog RelicCatalog => _relicPresentationCatalog != null
+            ? _relicPresentationCatalog
+            : _relicPresentationCatalog = Resources.Load<RelicCollectionCatalog>("RelicCollectionCatalog");
+
+        /// <summary>Raised after a relic ownership or New-state change is saved.</summary>
+        public event Action RelicStateChanged;
+
+        /// <summary>Reads the current profile and active combat values by stable relic ID.</summary>
+        public bool TryGetRelicView(string relicId, out RelicViewState view)
+        {
+            EnsureProgressionState();
+            view = default;
+            RelicCollectionCatalogEntry presentation = RelicCatalog?.FindById(relicId);
+            if (presentation == null || _document?.information?.relics == null) return false;
+            RelicInformation definition = null;
+            foreach (RelicInformation candidate in _document.information.relics)
+                if (candidate != null && string.Equals(candidate.id, relicId, StringComparison.Ordinal))
+                { definition = candidate; break; }
+            string description = RelicEffectDescription.Format(definition);
+            if (definition == null || string.IsNullOrEmpty(description)) return false;
+            bool owned = GetOwnedRelicIds().Contains(relicId);
+            view = new RelicViewState(presentation, description, owned,
+                owned && _unseenRelicIds.Contains(relicId));
+            return true;
+        }
+
+        /// <summary>Marks an owned relic as viewed, preserving New if saving fails.</summary>
+        public bool MarkRelicSeen(string relicId)
+        {
+            if (!TryGetRelicView(relicId, out RelicViewState view) || !view.IsOwned) return false;
+            if (!view.IsNew) return true;
+            _unseenRelicIds.Remove(relicId);
+            if (!SaveProgressionState())
             {
-                RelicDisplayEntry entry = relicEntries[i];
-                if (entry == null || !string.Equals(entry.Id, relicId, StringComparison.Ordinal)) continue;
-                title = entry.Title ?? string.Empty;
-                icon = entry.Icon;
-                return icon != null || !string.IsNullOrWhiteSpace(title);
+                _unseenRelicIds.Add(relicId);
+                return false;
             }
-            title = string.Empty;
-            icon = null;
-            return false;
+            RelicStateChanged?.Invoke();
+            return true;
         }
 
         public void GetRelicDiscoveryEffectSprites(out Sprite glow, out Sprite sparkle, out Sprite shard)
@@ -383,6 +409,14 @@ namespace CursorHunter.Progression
             public void SetObtained(bool value)
             {
                 isObtained = value;
+            }
+
+            public void SetCatalogPresentation(RelicCollectionCatalogEntry entry, string effectDescription)
+            {
+                id = entry.Id;
+                title = entry.Title;
+                icon = entry.Icon;
+                description = effectDescription;
             }
 
             public void ApplyPresentationDefaults(
@@ -520,8 +554,7 @@ namespace CursorHunter.Progression
 
         private void ApplyRelicPresentationDefaults()
         {
-            RelicCollectionCatalog defaults =
-                Resources.Load<RelicCollectionCatalog>("RelicCollectionCatalog");
+            RelicCollectionCatalog defaults = RelicCatalog;
             if (defaults == null || defaults.Entries == null)
             {
                 return;
@@ -553,7 +586,7 @@ namespace CursorHunter.Progression
                         legacyPresentation.Id,
                         legacyPresentation.Title,
                         legacyPresentation.Icon,
-                        legacyPresentation.Description);
+                        string.Empty);
                 }
             }
 
@@ -592,7 +625,7 @@ namespace CursorHunter.Progression
                                 presentation.Id,
                                 presentation.Title,
                                 presentation.Icon,
-                                presentation.Description);
+                                string.Empty);
                         }
                     }
 
@@ -624,11 +657,12 @@ namespace CursorHunter.Progression
                     continue;
                 }
 
-                entry.ApplyPresentationDefaults(
-                    presentation.Id,
-                    presentation.Title,
-                    presentation.Icon,
-                    presentation.Description);
+                RelicInformation definition = null;
+                if (definitions != null)
+                    foreach (RelicInformation candidate in definitions)
+                        if (candidate != null && string.Equals(candidate.id, entry.Id, StringComparison.Ordinal))
+                        { definition = candidate; break; }
+                entry.SetCatalogPresentation(presentation, RelicEffectDescription.Format(definition));
             }
         }
 
@@ -715,16 +749,6 @@ namespace CursorHunter.Progression
         {
             if (_summaryOverlay != null) Destroy(_summaryOverlay);
             RestoreDragCursor();
-            if (_traitBackdropSprite != null)
-            {
-                Destroy(_traitBackdropSprite);
-                _traitBackdropSprite = null;
-            }
-            if (_traitBackdropTexture != null)
-            {
-                Destroy(_traitBackdropTexture);
-                _traitBackdropTexture = null;
-            }
             if (_ownsRuntimeCatalog && _runtimeCatalog != null)
             {
                 Destroy(_runtimeCatalog);
@@ -982,7 +1006,10 @@ namespace CursorHunter.Progression
 
             RefreshAll();
             if (SaveProgressionState())
+            {
+                if (relicIndexes.Count > 0) RelicStateChanged?.Invoke();
                 return true;
+            }
 
             _garnetBalance = previousGarnet;
             _gemstoneBalances = previousGemstoneBalances;
@@ -1631,81 +1658,21 @@ namespace CursorHunter.Progression
                 return;
             }
 
-            _runtimeRoot = CreateRect(
-                "TraitScreen_Runtime",
-                transform,
-                Vector2.zero,
-                Vector2.one,
-                Vector2.zero,
-                Vector2.zero,
-                new Vector2(0.5f, 0.5f));
-
-            Image background = _runtimeRoot.gameObject.GetComponent<Image>();
-            if (background == null)
+            _runtimeRoot = runtimeRoot;
+            if (_runtimeRoot == null)
             {
-                background = _runtimeRoot.gameObject.AddComponent<Image>();
+                Debug.LogError("Trait screen root is not assigned in the scene.", this);
+                return;
             }
-            background.sprite = null;
-            background.type = Image.Type.Simple;
-            background.color = backgroundColor;
-            background.preserveAspect = false;
-            background.raycastTarget = true;
+
+            _runtimeGroup = _runtimeRoot.GetComponent<CanvasGroup>();
+            if (_runtimeRoot.GetComponent<Image>() == null || _runtimeGroup == null)
+            {
+                Debug.LogError("Trait screen root requires an Image and CanvasGroup in the scene.", this);
+                return;
+            }
             _runtimeRoot.gameObject.AddComponent<TraitTooltipDismissRelay>().Bind(this);
 
-            // Use the project's castle landscape as the board artwork. The
-            // subdued tint and the translucent atmosphere layer below keep
-            // the art visible without competing with nodes or text.
-            if (combatBackgroundSprite != null)
-            {
-                RectTransform artworkRect = CreateRect(
-                    "TraitBackdropArtwork",
-                    _runtimeRoot,
-                    Vector2.zero,
-                    Vector2.one,
-                    Vector2.zero,
-                    Vector2.zero,
-                    new Vector2(0.5f, 0.5f));
-                Image artwork = artworkRect.gameObject.AddComponent<Image>();
-                artwork.sprite = combatBackgroundSprite;
-                artwork.type = Image.Type.Simple;
-                artwork.color = new Color(0.46f, 0.53f, 0.65f, 1f);
-                artwork.preserveAspect = false;
-                artwork.raycastTarget = false;
-            }
-
-            // A charcoal-blue veil blends the artwork toward a neutral tone
-            // before the navy gradient, reducing color noise behind the nodes.
-            RectTransform desaturationRect = CreateRect(
-                "TraitBackdropDesaturation",
-                _runtimeRoot,
-                Vector2.zero,
-                Vector2.one,
-                Vector2.zero,
-                Vector2.zero,
-                new Vector2(0.5f, 0.5f));
-            RawImage desaturation = desaturationRect.gameObject.AddComponent<RawImage>();
-            desaturation.texture = Texture2D.whiteTexture;
-            desaturation.color = new Color(0.13f, 0.14f, 0.16f, 0.34f);
-            desaturation.raycastTarget = false;
-
-            // A translucent navy gradient darkens the artwork, while a soft
-            // edge vignette focuses attention on the research board.
-            RectTransform gradientRect = CreateRect(
-                "TraitBackdropAtmosphere",
-                _runtimeRoot,
-                Vector2.zero,
-                Vector2.one,
-                Vector2.zero,
-                Vector2.zero,
-                new Vector2(0.5f, 0.5f));
-            Image gradient = gradientRect.gameObject.AddComponent<Image>();
-            gradient.sprite = CreateTraitBackdropSprite();
-            gradient.type = Image.Type.Simple;
-            gradient.color = Color.white;
-            gradient.preserveAspect = false;
-            gradient.raycastTarget = false;
-
-            _runtimeGroup = _runtimeRoot.gameObject.AddComponent<CanvasGroup>();
             _runtimeGroup.interactable = true;
             _runtimeGroup.blocksRaycasts = true;
 
@@ -1731,56 +1698,6 @@ namespace CursorHunter.Progression
             UpdateHeaderForActiveView();
             Canvas.ForceUpdateCanvases();
             RefreshResponsiveHeaderLayout(true);
-        }
-
-        private Sprite CreateTraitBackdropSprite()
-        {
-            const int textureSize = 512;
-            _traitBackdropTexture = new Texture2D(
-                textureSize,
-                textureSize,
-                TextureFormat.RGBA32,
-                false,
-                false)
-            {
-                name = "TraitScreen_NavyAtmosphereVignette",
-                filterMode = FilterMode.Bilinear,
-                wrapMode = TextureWrapMode.Clamp,
-                hideFlags = HideFlags.DontSave
-            };
-
-            Color[] pixels = new Color[textureSize * textureSize];
-            Color upperNavy = new Color32(5, 11, 27, 255);
-            Color lowerNavy = new Color32(10, 17, 38, 255);
-
-            for (int y = 0; y < textureSize; y++)
-            {
-                float v = y / (float)(textureSize - 1);
-                Color vertical = Color.Lerp(upperNavy, lowerNavy, v);
-
-                for (int x = 0; x < textureSize; x++)
-                {
-                    float u = x / (float)(textureSize - 1);
-                    Color color = vertical;
-                    float edge = Mathf.Max(
-                        Mathf.Abs(u - 0.5f) * 2f,
-                        Mathf.Abs(v - 0.5f) * 2f);
-                    float vignette = Mathf.SmoothStep(0.42f, 1f, edge);
-                    color.a = Mathf.Lerp(0.52f, 0.63f, v) + vignette * 0.25f;
-                    pixels[y * textureSize + x] = color;
-                }
-            }
-
-            _traitBackdropTexture.SetPixels(pixels);
-            _traitBackdropTexture.Apply(false, true);
-            _traitBackdropSprite = Sprite.Create(
-                _traitBackdropTexture,
-                new Rect(0f, 0f, textureSize, textureSize),
-                new Vector2(0.5f, 0.5f),
-                100f);
-            _traitBackdropSprite.name = "TraitScreen_NavyAtmosphereVignetteSprite";
-            _traitBackdropSprite.hideFlags = HideFlags.DontSave;
-            return _traitBackdropSprite;
         }
 
         private void BuildHeader()
@@ -3450,6 +3367,8 @@ namespace CursorHunter.Progression
             }
 
             RelicDisplayEntry entry = relicEntries[index];
+            bool wasObtained = entry.IsObtained;
+            bool wasUnseen = !string.IsNullOrWhiteSpace(entry.Id) && _unseenRelicIds.Contains(entry.Id);
             if (!obtained && _selectedRelicIndex == index)
             {
                 CloseRelicDetail();
@@ -3464,13 +3383,22 @@ namespace CursorHunter.Progression
                 _unseenRelicIds.Remove(entry.Id);
             }
 
+            if (!SaveProgressionState())
+            {
+                entry.SetObtained(wasObtained);
+                if (wasUnseen) _unseenRelicIds.Add(entry.Id);
+                else if (!string.IsNullOrWhiteSpace(entry.Id)) _unseenRelicIds.Remove(entry.Id);
+                SetTestStatus("유물 상태를 저장하지 못했습니다.");
+                return;
+            }
+
             if (_showRelicCollection)
             {
                 SetTestToolsOpen(false);
                 BuildNodes(false);
             }
 
-            SaveProgressionState();
+            RelicStateChanged?.Invoke();
 
             SetTestStatus(obtained
                 ? "유물 " + (index + 1).ToString("00", CultureInfo.InvariantCulture) +
@@ -6720,11 +6648,10 @@ namespace CursorHunter.Progression
             }
 
             RelicDisplayEntry entry = relicEntries[index];
-            if (!string.IsNullOrWhiteSpace(entry.Id) && _unseenRelicIds.Remove(entry.Id))
+            if (!string.IsNullOrWhiteSpace(entry.Id) && _unseenRelicIds.Contains(entry.Id))
             {
                 _lastViewedRelicIndex = index;
-                SaveProgressionState();
-                BuildNodes(false);
+                if (MarkRelicSeen(entry.Id)) BuildNodes(false);
             }
             RectTransform overlay = CreateRect(
                 "RelicDetailOverlay",
@@ -10510,7 +10437,7 @@ namespace CursorHunter.Progression
             RefreshSummary();
             RefreshGemstonePanel();
             UpdateHeaderForActiveView();
-            SaveProgressionState();
+            if (SaveProgressionState()) RelicStateChanged?.Invoke();
         }
 
         private void RefreshAll()
@@ -10520,6 +10447,7 @@ namespace CursorHunter.Progression
                 return;
             }
 
+            ApplyRelicPresentationDefaults();
             BuildCategories();
             BuildNodes(false);
             RefreshSummary();
@@ -11584,7 +11512,7 @@ namespace CursorHunter.Progression
             for (int i = 0; i < transform.childCount; i++)
             {
                 Transform child = transform.GetChild(i);
-                if (child != null && child.name != "TraitScreen_Runtime")
+                if (child != null && child != runtimeRoot)
                 {
                     child.gameObject.SetActive(false);
                 }
