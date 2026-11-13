@@ -12,5 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c68f88d01a4b4ce787c6a9f1b7000101, type: 3}
   m_Name: TypographySettings
   m_EditorClassIdentifier: CursorHunter.Data::CursorHunter.Data.GameTypographySettings
-  sourceFont: {fileID: 12800000, guid: 76d037539f56c45a1ba293f2dff49672, type: 3}
+  sourceFont: {fileID: 12800000, guid: 3ee8ce1b30ef4eb99633117ea94e0927, type: 3}
+  fallbackFont: {fileID: 12800000, guid: cc4f0bd639844f7da54be1b06991b913, type: 3}
   numericFont: {fileID: 11400000, guid: c9f0ab9a170fa4c3596972aa1db04a9a, type: 2}

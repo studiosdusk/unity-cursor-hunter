@@ -1,0 +1,17 @@
+{
+  "name": "CursorHunter.Progression.Editor",
+  "rootNamespace": "CursorHunter.Progression.Editor",
+  "references": [
+    "CursorHunter.Progression",
+    "CursorHunter.Data",
+    "Unity.TextMeshPro",
+    "UnityEngine.UI",
+    "Unity.InputSystem",
+    "Unity.Localization",
+    "Unity.Localization.Editor"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "autoReferenced": false
+}

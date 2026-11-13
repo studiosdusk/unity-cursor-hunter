@@ -44,7 +44,6 @@ namespace CursorHunter.Data
         {
             if (_text == null) _text = GetComponent<TMP_Text>();
             if (_text == null || string.IsNullOrEmpty(key)) return;
-            _text.font = LocalizedTypography.GetFont(null);
             _text.text = _formatArguments == null
                 ? LocalizationCatalog.Get(key, fallback)
                 : LocalizationCatalog.Format(key, fallback, _formatArguments);

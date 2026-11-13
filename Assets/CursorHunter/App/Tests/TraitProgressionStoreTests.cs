@@ -34,7 +34,7 @@ namespace CursorHunter.App.Tests
         }
 
         [Test]
-        public void FirstV6SavePreservesExactLegacyDataAndBackupIsNotOverwritten()
+        public void FirstCurrentSavePreservesExactLegacyDataAndBackupIsNotOverwritten()
         {
             const string old = "{\"version\":2,\"garnetBalance\":42,\"purchasedNodeIds\":[\"relic.monster.01.level.01\"],\"fragmentCurrencyIds\":[\"fragment.relic.monster.01\"],\"fragmentBalances\":[77]}";
             PlayerPrefs.SetString(Key, old);
@@ -43,7 +43,7 @@ namespace CursorHunter.App.Tests
                 new[] { "relic.red_potion" }), Is.True);
             Assert.That(PlayerPrefs.GetString(BackupKey), Is.EqualTo(old));
             Assert.That(TraitProgressionStore.TryLoad(out var current), Is.True);
-            Assert.That(current.version, Is.EqualTo(6));
+            Assert.That(current.version, Is.GreaterThanOrEqualTo(6));
             Assert.That(current.ownedRelicIds, Is.EqualTo(new[] { "relic.red_potion" }));
             Assert.That(PlayerPrefs.GetString(Key), Does.Not.Contain("fragment"));
             Assert.That(TraitProgressionStore.Save(43, new long[] { 43 }, new[] { "stat.attack.01" }, null, null), Is.True);

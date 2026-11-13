@@ -1,9 +1,24 @@
 {
   "name": "CursorHunter.App.PlayModeTests",
-  "references": ["CursorHunter.App", "CursorHunter.Combat", "CursorHunter.Contracts", "CursorHunter.Data", "CursorHunter.Progression", "Unity.TextMeshPro", "UnityEngine.UI", "UnityEngine.TestRunner"],
+  "references": [
+    "CursorHunter.App",
+    "CursorHunter.Combat",
+    "CursorHunter.Contracts",
+    "CursorHunter.Data",
+    "CursorHunter.Progression",
+    "Unity.TextMeshPro",
+    "UnityEngine.UI",
+    "UnityEngine.TestRunner",
+    "Unity.InputSystem",
+    "Unity.Localization"
+  ],
   "overrideReferences": true,
-  "precompiledReferences": ["nunit.framework.dll"],
+  "precompiledReferences": [
+    "nunit.framework.dll"
+  ],
   "autoReferenced": false,
-  "defineConstraints": ["UNITY_INCLUDE_TESTS"],
+  "defineConstraints": [
+    "UNITY_INCLUDE_TESTS"
+  ],
   "testAssemblies": true
 }

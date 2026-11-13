@@ -1,0 +1,440 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b11a58205ec3474ca216360e9fa74a8, type: 3}
+  m_Name: Research Shared Data
+  m_EditorClassIdentifier: Unity.Localization::UnityEngine.Localization.Tables.SharedTableData
+  m_TableCollectionName: Research
+  m_TableCollectionNameGuidString: f152688843106428788434aca36a627f
+  m_Entries:
+  - m_Id: 674226176
+    m_Key: research.cursor.attack.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 686809088
+    m_Key: research.cursor.attack.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 686809089
+    m_Key: research.cursor.radius.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 686809090
+    m_Key: research.cursor.radius.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 691003392
+    m_Key: research.cursor.interval.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 691003393
+    m_Key: research.cursor.interval.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 691003394
+    m_Key: research.cursor.critical.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 691003395
+    m_Key: research.cursor.critical.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 691003396
+    m_Key: research.cursor.critical_damage.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 691003397
+    m_Key: research.cursor.critical_damage.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 691003398
+    m_Key: research.cursor.boss_damage.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 691003399
+    m_Key: research.cursor.boss_damage.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1293878812672
+    m_Key: research.tooltip.cost
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1293891395584
+    m_Key: research.tooltip.free
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1293891395585
+    m_Key: research.tooltip.max
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373522235392
+    m_Key: research.cursor.attack.intermediate.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818304
+    m_Key: research.cursor.attack.intermediate.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818305
+    m_Key: research.cursor.radius.intermediate.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818306
+    m_Key: research.cursor.radius.intermediate.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818307
+    m_Key: research.cursor.critical.intermediate.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818308
+    m_Key: research.cursor.critical.intermediate.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818309
+    m_Key: research.skill.magic_ball.unlock.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818310
+    m_Key: research.skill.magic_ball.unlock.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818311
+    m_Key: research.skill.magic_ball.damage.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818312
+    m_Key: research.skill.magic_ball.damage.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818313
+    m_Key: research.skill.magic_ball.radius.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818314
+    m_Key: research.skill.magic_ball.radius.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818315
+    m_Key: research.skill.tornado.unlock.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818316
+    m_Key: research.skill.tornado.unlock.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818317
+    m_Key: research.skill.tornado.damage.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818318
+    m_Key: research.skill.tornado.damage.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818319
+    m_Key: research.skill.tornado.radius.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818320
+    m_Key: research.skill.tornado.radius.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818321
+    m_Key: research.skill.headshot.unlock.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818322
+    m_Key: research.skill.headshot.unlock.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818323
+    m_Key: research.skill.headshot.damage.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818324
+    m_Key: research.skill.headshot.damage.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818325
+    m_Key: research.skill.headshot.radius.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818326
+    m_Key: research.skill.headshot.radius.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818327
+    m_Key: research.skill.thunder.unlock.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818328
+    m_Key: research.skill.thunder.unlock.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818329
+    m_Key: research.skill.thunder.damage.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818330
+    m_Key: research.skill.thunder.damage.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818331
+    m_Key: research.skill.thunder.radius.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818332
+    m_Key: research.skill.thunder.radius.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818333
+    m_Key: research.skill.flame_exhaust.unlock.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818334
+    m_Key: research.skill.flame_exhaust.unlock.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818335
+    m_Key: research.skill.flame_exhaust.damage.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818336
+    m_Key: research.skill.flame_exhaust.damage.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818337
+    m_Key: research.skill.flame_exhaust.radius.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818338
+    m_Key: research.skill.flame_exhaust.radius.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818339
+    m_Key: research.skill.laser.unlock.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818340
+    m_Key: research.skill.laser.unlock.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818341
+    m_Key: research.skill.laser.damage.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818342
+    m_Key: research.skill.laser.damage.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818343
+    m_Key: research.skill.laser.radius.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818344
+    m_Key: research.skill.laser.radius.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818345
+    m_Key: research.skill.pet_baby_dragon.unlock.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818346
+    m_Key: research.skill.pet_baby_dragon.unlock.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818347
+    m_Key: research.skill.pet_baby_dragon.damage.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818348
+    m_Key: research.skill.pet_baby_dragon.damage.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818349
+    m_Key: research.skill.pet_baby_dragon.targets.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818350
+    m_Key: research.skill.pet_baby_dragon.targets.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818351
+    m_Key: research.monster.01.production.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818352
+    m_Key: research.monster.01.production.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818353
+    m_Key: research.monster.02.unlock.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818354
+    m_Key: research.monster.02.unlock.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818355
+    m_Key: research.monster.02.production.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818356
+    m_Key: research.monster.02.production.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818357
+    m_Key: research.monster.03.unlock.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818358
+    m_Key: research.monster.03.unlock.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818359
+    m_Key: research.monster.03.production.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818360
+    m_Key: research.monster.03.production.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818361
+    m_Key: research.monster.04.unlock.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818362
+    m_Key: research.monster.04.unlock.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818363
+    m_Key: research.monster.04.production.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818364
+    m_Key: research.monster.04.production.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818365
+    m_Key: research.monster.05.unlock.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818366
+    m_Key: research.monster.05.unlock.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818367
+    m_Key: research.monster.05.production.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818368
+    m_Key: research.monster.05.production.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818369
+    m_Key: research.monster.06.unlock.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818370
+    m_Key: research.monster.06.unlock.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818371
+    m_Key: research.monster.06.production.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818372
+    m_Key: research.monster.06.production.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818373
+    m_Key: research.monster.07.unlock.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818374
+    m_Key: research.monster.07.unlock.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818375
+    m_Key: research.monster.07.production.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818376
+    m_Key: research.monster.07.production.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818377
+    m_Key: research.monster.08.unlock.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818378
+    m_Key: research.monster.08.unlock.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818379
+    m_Key: research.monster.08.production.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818380
+    m_Key: research.monster.08.production.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818381
+    m_Key: research.monster.09.unlock.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818382
+    m_Key: research.monster.09.unlock.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818383
+    m_Key: research.monster.09.production.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818384
+    m_Key: research.monster.09.production.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818385
+    m_Key: research.monster.10.unlock.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818386
+    m_Key: research.monster.10.unlock.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818387
+    m_Key: research.monster.10.production.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818388
+    m_Key: research.monster.10.production.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818389
+    m_Key: research.field.duration.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818390
+    m_Key: research.field.duration.description
+    m_Metadata:
+      m_Items: []
+  m_Metadata:
+    m_Items: []
+  m_KeyGenerator:
+    rid: 8486289430309503001
+  references:
+    version: 2
+    RefIds:
+    - rid: 8486289430309503001
+      type: {class: DistributedUIDGenerator, ns: UnityEngine.Localization.Tables, asm: Unity.Localization}
+      data:
+        m_CustomEpoch: 1794556465497

@@ -100,7 +100,7 @@ namespace CursorHunter.App
 
                 if (_runtimeFont == null)
                 {
-                    _runtimeFont = LocalizedTypography.GetFont(uiFont);
+                    _runtimeFont = LocalizedTypography.GetFont(null) ?? LocalizedTypography.GetFont(uiFont);
                 }
 
                 GameObject clockObject = new GameObject(
@@ -235,7 +235,7 @@ namespace CursorHunter.App
 
             if (_runtimeFont == null)
             {
-                _runtimeFont = LocalizedTypography.GetFont(uiFont);
+                _runtimeFont = LocalizedTypography.GetFont(null) ?? LocalizedTypography.GetFont(uiFont);
             }
 
             if (gemstoneList == null)

@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 671b96fa4598549808b1332ba20709c6, type: 3}
+  m_Name: skill.thunder.unlock
+  m_EditorClassIdentifier: CursorHunter.Progression::CursorHunter.Progression.ResearchPrototype.ResearchDefinition
+  stableId: skill.thunder.unlock
+  presentation:
+    textKey: research.skill.thunder.unlock
+    icon: {fileID: 21300000, guid: 85280f6e3104e482aa706938bb3063f0, type: 3}
+    valueDisplay: 0
+  gameplay:
+    kind: 1
+    targetId: skill.thunder
+    statId: 
+    target: 0
+    ranks:
+    - levelDelta: 1
+      cost:
+        currencyId: gem.garnet
+        amount: 0

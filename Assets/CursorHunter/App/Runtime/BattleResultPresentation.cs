@@ -86,14 +86,6 @@ namespace CursorHunter.App
 
         private void Awake()
         {
-            foreach (TMP_Text label in overlay.GetComponentsInChildren<TMP_Text>(true))
-            {
-                // Keep the downloaded Rubik face for numerals; use the project's Korean fallback for Hangul.
-                if (label == timeOutTitle || label == kills || label == damage ||
-                    label.name == "Amount") continue;
-                label.font = LocalizedTypography.GetFont(null);
-                if (label.fontSize >= 24f) label.fontStyle |= FontStyles.Bold;
-            }
             upgradeButton.onClick.AddListener(OpenUpgrades);
             retryButton.onClick.AddListener(Retry);
             skipButton.onClick.AddListener(CompleteReveal);

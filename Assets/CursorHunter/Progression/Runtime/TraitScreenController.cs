@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using CursorHunter.Contracts;
 using CursorHunter.Data;
+using CursorHunter.Progression.ResearchPrototype;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.EventSystems;
@@ -41,6 +42,10 @@ namespace CursorHunter.Progression
         [SerializeField, Range(0, 5)] private int unlockedBossTier;
         public int CurrentBossProgressTier => Mathf.Clamp(unlockedBossTier, 0, 5);
         [SerializeField] private bool loadSavedProgress = true;
+        [Tooltip("Use the scene research map and keep legacy research effects archived; the basic monster is available by default.")]
+        [SerializeField, FormerlySerializedAs("newResearchDefaultMonster")] private bool useNewResearchSystem;
+        [Tooltip("Scene-authored map supplies placement IDs and node definitions for the new research system.")]
+        [SerializeField] private ResearchTestMap researchMap;
         [SerializeField] private bool testModeUnlockAll = false;
         [SerializeField] private bool testModeFreeUpgrades = false;
         [SerializeField] private UnityEvent backRequested = new UnityEvent();
@@ -123,6 +128,7 @@ namespace CursorHunter.Progression
         private bool _showFieldCollection;
         private TraitTab _activeTab;
         private string _selectedNodeId;
+        private readonly Dictionary<string, int> _researchRanks = new Dictionary<string, int>(StringComparer.Ordinal);
         private long _garnetBalance;
         private long[] _gemstoneBalances;
         private long _experiencePoints;
@@ -268,7 +274,8 @@ namespace CursorHunter.Progression
             get
             {
                 EnsureProgressionState();
-                return _purchased.Contains(ResearchCoreNodeId) && _purchased.Contains("monster.01");
+                return useNewResearchSystem ||
+                    _purchased.Contains(ResearchCoreNodeId) && _purchased.Contains("monster.01");
             }
         }
 
@@ -1091,9 +1098,17 @@ namespace CursorHunter.Progression
         public CursorCombatStatBonusesSnapshot CreateCursorCombatStatBonusesSnapshot()
         {
             EnsureProgressionState();
-            return GameInformationBuilder.CreateCursorCombatStatBonusesSnapshot(
-                _document,
-                _purchased);
+            if (useNewResearchSystem)
+            {
+                if (researchMap == null) throw new InvalidOperationException("The new research map is not connected.");
+                var research = ResearchEffectCalculator.Calculate(researchMap.nodes, GetResearchRank);
+                return new CursorCombatStatBonusesSnapshot(
+                    AddSaturating(research.AttackPowerDelta, GetOwnedTalentStackCount("talent.might")),
+                    research.AttackRadiusWorldUnitsDelta, research.AttackCooldownSecondsDelta,
+                    research.CriticalChancePercentDelta, research.CriticalDamageMultiplierDelta,
+                    research.BossDamageMultiplierDelta);
+            }
+            return GameInformationBuilder.CreateCursorCombatStatBonusesSnapshot(_document, _purchased);
         }
 
         public ProgressionCombatSnapshot CreateCombatSnapshot()
@@ -1108,10 +1123,23 @@ namespace CursorHunter.Progression
 
         private GameInformation CreateGameInformation()
         {
-            GameInformation information = GameInformationBuilder.Build(_document, _purchased,
+            // Old purchases remain stored, but do not contribute to the new research system.
+            ISet<string> activePurchases = useNewResearchSystem ? new HashSet<string>(StringComparer.Ordinal) : _purchased;
+            GameInformation information = GameInformationBuilder.Build(_document, activePurchases,
                 id => GetGemstoneBalance(GetGemstoneIndexById(id)),
                 _cursorCombatStatDefaults, GetOwnedRelicIds());
-            ApplyOwnedTalentEffects(information);
+            if (useNewResearchSystem)
+                GameInformationBuilder.ApplyCursorStatBonuses(information, CreateCursorCombatStatBonusesSnapshot());
+            if (useNewResearchSystem && information.monsters != null)
+                foreach (MonsterInformation monster in information.monsters)
+                    if (monster != null && monster.id == "monster.01")
+                    {
+                        monster.enabled = true;
+                        break;
+                    }
+            if (useNewResearchSystem)
+                ResearchEffectCalculator.ApplyAdditional(researchMap.nodes, GetResearchRank, information);
+            if (!useNewResearchSystem) ApplyOwnedTalentEffects(information);
             if (!information.TryValidate(out string error))
                 throw new InvalidOperationException("Resolved talent effects: " + error);
             return information;
@@ -1172,6 +1200,103 @@ namespace CursorHunter.Progression
             return true;
         }
 #endif
+
+        public long GetResearchGemstoneBalance(int index)
+        {
+            EnsureProgressionState();
+            return GetGemstoneBalance(index);
+        }
+
+        public int GetResearchRank(string placementId)
+        {
+            EnsureProgressionState();
+            return !string.IsNullOrWhiteSpace(placementId) && _researchRanks.TryGetValue(placementId, out int rank) ? rank : 0;
+        }
+
+        /// <summary>Clears purchases for the active research map, preserving other maps and currencies.</summary>
+        public bool TryResetResearchProgress(ResearchTestMap map)
+        {
+            EnsureProgressionState();
+            if (map == null || map != researchMap || map.nodes == null || !loadSavedProgress ||
+                _document == null || _document.progression.savedProgressPolicy == "fileOnly") return false;
+
+            var previous = new Dictionary<string, int>(StringComparer.Ordinal);
+            foreach (var node in map.nodes)
+                if (node != null && !string.IsNullOrWhiteSpace(node.placementId) &&
+                    _researchRanks.TryGetValue(node.placementId, out int rank))
+                    previous[node.placementId] = rank;
+            foreach (var entry in previous) _researchRanks.Remove(entry.Key);
+            if (!SaveProgressionState())
+            {
+                foreach (var entry in previous) _researchRanks[entry.Key] = entry.Value;
+                return false;
+            }
+            RefreshGemstonePanel();
+            return true;
+        }
+
+        public long GetResearchGemstoneBalance(string currencyId)
+        {
+            EnsureProgressionState();
+            int index = GetGemstoneIndexById(currencyId);
+            return index < 0 ? 0L : GetGemstoneBalance(index);
+        }
+
+        public bool TryPurchaseResearchRank(string placementId, int expectedRank, long cost) =>
+            TryPurchaseResearchRank(placementId, expectedRank, "gem.garnet", cost);
+
+        public bool TryPurchaseResearchRank(string placementId, int expectedRank, string currencyId, long cost)
+        {
+            EnsureProgressionState();
+            EnsureGemstoneBalanceCapacity();
+            int index = GetGemstoneIndexById(currencyId);
+            if (string.IsNullOrWhiteSpace(placementId) || expectedRank < 0 || cost < 0 || index < 0 ||
+                index >= _gemstoneBalances.Length || !ResearchDefinition.IsSupportedCurrency(currencyId) ||
+                GetResearchRank(placementId) != expectedRank || GetGemstoneBalance(index) < cost ||
+                (useNewResearchSystem && !IsAuthorizedResearchPurchase(placementId, expectedRank, currencyId, cost)) ||
+                !loadSavedProgress || _document == null || _document.progression.savedProgressPolicy == "fileOnly") return false;
+            long previous = GetGemstoneBalance(index);
+            _gemstoneBalances[index] = previous - cost;
+            if (index == 0) _garnetBalance = _gemstoneBalances[0];
+            _researchRanks[placementId] = expectedRank + 1;
+            if (!SaveProgressionState())
+            {
+                _gemstoneBalances[index] = previous;
+                if (index == 0) _garnetBalance = previous;
+                if (expectedRank == 0) _researchRanks.Remove(placementId);
+                else _researchRanks[placementId] = expectedRank;
+                return false;
+            }
+            RefreshGemstonePanel();
+            return true;
+        }
+
+        private bool IsAuthorizedResearchPurchase(string placementId, int expectedRank, string currencyId, long amount)
+        {
+            if (researchMap == null || researchMap.nodes == null) return false;
+            try { ResearchEffectCalculator.ValidateMap(researchMap.nodes); }
+            catch (InvalidOperationException) { return false; }
+            var ids = new HashSet<string>(StringComparer.Ordinal);
+            ResearchTestNode selected = null;
+            foreach (ResearchTestNode node in researchMap.nodes)
+            {
+                if (node == null || string.IsNullOrWhiteSpace(node.placementId) || !ids.Add(node.placementId)) return false;
+                if (node.placementId == placementId) selected = node;
+            }
+            if (selected == null || selected.definition == null || !selected.definition.TryValidate(out _) ||
+                expectedRank >= selected.definition.gameplay.ranks.Length) return false;
+            if (!ResearchEffectCalculator.RequiredTargetUnlocked(researchMap.nodes, selected.definition, GetResearchRank)) return false;
+            if (!selected.TryGetCost(expectedRank, out ResearchCost expected)) return false;
+            if (expected.currencyId != currencyId || expected.amount != amount) return false;
+            int fulfilled = 0;
+            if (selected.prerequisites != null)
+                foreach (ResearchTestNode prerequisite in selected.prerequisites)
+                {
+                    if (prerequisite == null || !ids.Contains(prerequisite.placementId)) return false;
+                    if (GetResearchRank(prerequisite.placementId) > 0) fulfilled++;
+                }
+            return selected.requiredPrerequisites >= 0 && fulfilled >= selected.requiredPrerequisites;
+        }
 
         private void EnsureProgressionState()
         {
@@ -1265,6 +1390,7 @@ namespace CursorHunter.Progression
             // A new or reset research profile starts at the available central
             // core. Nothing is purchased until the player activates it.
             _purchased.Clear();
+            _researchRanks.Clear();
             _spentByNode.Clear();
             _spentCurrencyByNode.Clear();
             _spentNodeCosts.Clear();
@@ -1291,6 +1417,10 @@ namespace CursorHunter.Progression
                 return;
             }
 
+            _researchRanks.Clear();
+            foreach (var entry in data.researchRanks)
+                if (entry != null && !string.IsNullOrWhiteSpace(entry.placementId) && entry.rank > 0)
+                    _researchRanks[entry.placementId] = entry.rank;
             RestoreOwnedRelics(data.ownedRelicIds);
             _unseenRelicIds.Clear();
             if (data.unseenRelicIds != null)
@@ -1347,6 +1477,25 @@ namespace CursorHunter.Progression
                         amount = receipt.amount
                     });
                 }
+            }
+            // In the new system, legacy purchases and receipts are archival data.
+            // Keep even retired or unknown IDs verbatim; do not refund or migrate them.
+            if (useNewResearchSystem)
+            {
+                _purchased.Clear();
+                _spentByNode.Clear();
+                _spentCurrencyByNode.Clear();
+                for (int i = 0; i < data.purchasedNodeIds.Count; i++)
+                {
+                    string id = data.purchasedNodeIds[i];
+                    if (string.IsNullOrWhiteSpace(id) || !_purchased.Add(id)) continue;
+                    if (i < data.spentCosts.Count && data.spentCosts[i] > 0)
+                        _spentByNode[id] = data.spentCosts[i];
+                    if (i < data.spentCurrencyIds.Count && !string.IsNullOrEmpty(data.spentCurrencyIds[i]))
+                        _spentCurrencyByNode[id] = data.spentCurrencyIds[i];
+                }
+                _garnetBalance = _gemstoneBalances[0];
+                return;
             }
             // A saved wallet replaces the file baseline; only migrated refunds are additive.
             var loadedNodes = new HashSet<string>(StringComparer.Ordinal);
@@ -1446,7 +1595,8 @@ namespace CursorHunter.Progression
                 traitCardDrawCount: _traitCardDrawCount,
                 selectedFieldTier: _selectedFieldTier,
                 ownedTraitCardIds: _ownedTalentIds,
-                spentCostEntries: _spentNodeCosts);
+                spentCostEntries: _spentNodeCosts,
+                researchRanks: _researchRanks);
             if (!saved)
             {
                 Debug.LogWarning(
@@ -3900,7 +4050,18 @@ namespace CursorHunter.Progression
             if (_document == null) return false;
             foreach (var monster in _document.information.monsters)
                 if (monster.gemstoneId == gemstone.Id && monster.gemstoneAmount > 0 && monster.gemstoneChancePercent > 0 &&
-                    (monster.enabled || _purchased.Contains(monster.id))) return true;
+                    (useNewResearchSystem
+                        ? monster.id == "monster.01" || IsResearchMonsterUnlocked(monster.id)
+                        : monster.enabled || _purchased.Contains(monster.id))) return true;
+            return false;
+        }
+        private bool IsResearchMonsterUnlocked(string monsterId)
+        {
+            if (researchMap == null || researchMap.nodes == null) return false;
+            foreach (var node in researchMap.nodes)
+                if (node != null && node.definition != null && node.definition.gameplay != null &&
+                    node.definition.gameplay.kind == ResearchEffectKind.MonsterUnlock &&
+                    node.definition.gameplay.targetId == monsterId && GetResearchRank(node.placementId) > 0) return true;
             return false;
         }
 
@@ -5414,6 +5575,30 @@ namespace CursorHunter.Progression
             RefreshCollectionTabButtons();
             BuildNodes(animate);
             RefreshSummary();
+        }
+
+        /// <summary>Switches the legacy collection views under the authored top menu.</summary>
+        public void SetExternalMenuSection(int section)
+        {
+            if (!_isBuilt) BuildUi();
+            if (_runtimeRoot == null) return;
+            bool collection = section >= 1 && section <= 3;
+            if (!collection)
+            {
+                HideNodeTooltip();
+                CloseRelicDetail();
+                CloseSummaryPopup();
+                SetTestToolsOpen(false);
+                _runtimeRoot.gameObject.SetActive(false);
+                return;
+            }
+            _runtimeRoot.gameObject.SetActive(true);
+            // The scene-authored TopMenu replaces the legacy collection tabs.
+            Transform oldTabs = _runtimeRoot.Find("ResearchCategoryTabs");
+            if (oldTabs != null) oldTabs.gameObject.SetActive(false);
+            if (section == 1) ShowRelicCollection(false);
+            else if (section == 2) ShowTalentCollection();
+            else ShowFieldSelectionForCombat();
         }
 
         private void ShowRelicCollection(bool animate = true)
@@ -11636,13 +11821,9 @@ namespace CursorHunter.Progression
             }
 
             text.text = content ?? string.Empty;
-            // Match PrototypeRunHud: resolve the scene's authored font first so
-            // stat labels use the same localized SDF typography as combat.
-            TMP_FontAsset sceneFont = LocalizedTypography.GetFont(uiFont);
+            // The shared locale font supplies the game's configured weight.
             TMP_FontAsset localeFont = LocalizedTypography.GetFont(null);
-            text.font = sceneFont != null && sceneFont != TMP_Settings.defaultFontAsset
-                ? sceneFont
-                : localeFont;
+            text.font = localeFont != null ? localeFont : LocalizedTypography.GetFont(uiFont);
             text.fontSize = Mathf.Max(
                 14,
                 Mathf.RoundToInt(fontSize * Mathf.Clamp(textScale, 1f, 1.5f)));

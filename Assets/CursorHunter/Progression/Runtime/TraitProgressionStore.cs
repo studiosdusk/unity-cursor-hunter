@@ -14,7 +14,7 @@ namespace CursorHunter.Progression
     public static class TraitProgressionStore
     {
         private const string SaveKey = "cursor_hunter.progression.v1";
-        private const int CurrentVersion = 10;
+        private const int CurrentVersion = 11;
         private const string LegacyBackupKey = SaveKey + ".before-v6";
 
         [Serializable]
@@ -25,6 +25,7 @@ namespace CursorHunter.Progression
             public long garnetBalance;
             public List<long> gemstoneBalances = new List<long>();
             public List<string> purchasedNodeIds = new List<string>();
+            public List<ResearchRankEntry> researchRanks = new List<ResearchRankEntry>();
             public List<string> ownedRelicIds = new List<string>();
             public List<string> unseenRelicIds = new List<string>();
             public long experiencePoints;
@@ -38,6 +39,13 @@ namespace CursorHunter.Progression
             public int highestBossStageCleared;
             public List<string> settledBossRunIds = new List<string>();
             public int unlockedBossTier;
+        }
+
+        [Serializable]
+        public sealed class ResearchRankEntry
+        {
+            public string placementId;
+            public int rank;
         }
 
         [Serializable]
@@ -72,6 +80,7 @@ namespace CursorHunter.Progression
 
                 loaded.gemstoneBalances = loaded.gemstoneBalances ??
                     new List<long>();
+                loaded.researchRanks = loaded.researchRanks ?? new List<ResearchRankEntry>();
                 loaded.purchasedNodeIds = loaded.purchasedNodeIds ??
                     new List<string>();
                 loaded.ownedRelicIds = loaded.ownedRelicIds ??
@@ -118,7 +127,8 @@ namespace CursorHunter.Progression
             int traitCardDrawCount = 0,
             int selectedFieldTier = 1,
             IEnumerable<string> ownedTraitCardIds = null,
-            IReadOnlyDictionary<string, List<SpentCostEntry>> spentCostEntries = null)
+            IReadOnlyDictionary<string, List<SpentCostEntry>> spentCostEntries = null,
+            IReadOnlyDictionary<string, int> researchRanks = null)
         {
             SaveData data = new SaveData
             {
@@ -140,6 +150,10 @@ namespace CursorHunter.Progression
                 highestBossStageCleared = Math.Max(0, Math.Min(20, highestBossStageCleared)),
                 settledBossRunIds = CopyIds(settledBossRunIds)
             };
+            if (researchRanks != null)
+                foreach (var entry in researchRanks)
+                    if (!string.IsNullOrWhiteSpace(entry.Key) && entry.Value > 0)
+                        data.researchRanks.Add(new ResearchRankEntry { placementId = entry.Key, rank = entry.Value });
             // Keep both lists aligned with purchasedNodeIds so the DTO can be
             // restored without serializing dictionaries or relying on their
             // enumeration order.

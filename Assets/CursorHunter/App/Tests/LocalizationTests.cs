@@ -2,6 +2,7 @@ using System;
 using System.Reflection;
 using CursorHunter.Data;
 using NUnit.Framework;
+using TMPro;
 using UnityEditor;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -82,6 +83,75 @@ namespace CursorHunter.App.Tests
                 Assert.That(settings.GetSourceFont("fr"), Is.SameAs(fallback));
             }
             finally { Object.DestroyImmediate(settings); Object.DestroyImmediate(fallback); Object.DestroyImmediate(japanese); }
+        }
+
+        [Test]
+        public void SharedFontsAndAuthoredFontsReceiveDarkOutlinesWithoutMutatingAssets()
+        {
+            var font = LocalizedTypography.GetFont(null);
+            Assert.That(AssetDatabase.GetAssetPath(font.sourceFontFile), Is.EqualTo("Assets/CursorHunter/Progression/Runtime/Fonts/NotoSansKR-Bold.otf"));
+            Assert.That(font.material.GetFloat(ShaderUtilities.ID_OutlineWidth), Is.EqualTo(.18f).Within(.001f));
+            Assert.That(font.material.GetColor(ShaderUtilities.ID_OutlineColor).a, Is.EqualTo(1f).Within(.001f));
+            Assert.That(font.material.GetColor(ShaderUtilities.ID_OutlineColor).r, Is.EqualTo(14f / 255f).Within(.001f));
+            var authored = LocalizedTypography.GetNumericFont();
+            float originalWidth = authored.material.GetFloat(ShaderUtilities.ID_OutlineWidth);
+            var go = new GameObject("Typography Test", typeof(RectTransform), typeof(TextMeshProUGUI));
+            try
+            {
+                var label = go.GetComponent<TextMeshProUGUI>();
+                label.font = authored;
+                LocalizedTypography.ApplyOutline(label);
+                var outlined = label.fontSharedMaterial;
+                Assert.That(outlined, Is.Not.SameAs(authored.material));
+                Assert.That(outlined.GetFloat(ShaderUtilities.ID_OutlineWidth), Is.EqualTo(.18f).Within(.001f));
+                Assert.That(authored.material.GetFloat(ShaderUtilities.ID_OutlineWidth), Is.EqualTo(originalWidth));
+                Assert.That(label.extraPadding, Is.True);
+                LocalizedTypography.ApplyOutline(label);
+                Assert.That(label.fontSharedMaterial, Is.SameAs(outlined));
+            }
+            finally { Object.DestroyImmediate(go); }
+        }
+
+        [Test]
+        public void LocalizedLabelUpdatesTextWithoutReplacingItsFontOrStyle()
+        {
+            var go = new GameObject("Localized Font Test", typeof(RectTransform), typeof(TextMeshProUGUI));
+            try
+            {
+                var label = go.GetComponent<TextMeshProUGUI>();
+                var authoredFont = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF.asset");
+                label.font = authoredFont;
+                label.fontStyle = FontStyles.Italic;
+                var localized = go.AddComponent<LocalizedTmpLabel>();
+                LocalizationCatalog.SetLanguage("ko");
+                localized.Bind("ui.attack", "공격력");
+                Assert.That(label.text, Is.EqualTo(LocalizationCatalog.Get("ui.attack", "공격력")));
+                LocalizationCatalog.SetLanguage("en");
+                localized.Bind("ui.attack", "공격력");
+                Assert.That(label.text, Is.EqualTo(LocalizationCatalog.Get("ui.attack", "공격력")));
+                Assert.That(label.font, Is.SameAs(authoredFont));
+                Assert.That(label.fontStyle, Is.EqualTo(FontStyles.Italic));
+            }
+            finally { Object.DestroyImmediate(go); }
+        }
+
+        [Test]
+        public void KoreanDisplayFontKeepsOutlineAndSupportsFallbackCharacters()
+        {
+            LocalizationCatalog.SetLanguage("ko");
+            var settings = Resources.Load<GameTypographySettings>("GameData/TypographySettings");
+            var dynamicFont = LocalizedTypography.GetFont(null);
+            Assert.That(dynamicFont.sourceFontFile, Is.SameAs(settings.sourceFont));
+            Assert.That(dynamicFont.fallbackFontAssetTable, Does.Contain(LocalizedTypography.GetFont(settings.fallbackFont)));
+            var font = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/CursorHunter/Data/Resources/GameData/KoreanNotoBold.asset");
+            Assert.That(font, Is.Not.Null);
+            Assert.That(font.atlasPopulationMode, Is.EqualTo(AtlasPopulationMode.Dynamic));
+            Assert.That(font.fallbackFontAssetTable, Is.Not.Empty);
+            Assert.That(font.material.GetFloat(ShaderUtilities.ID_OutlineWidth), Is.EqualTo(.18f).Within(.001f));
+            foreach (char c in "초급 공격력 연구 0123456789%")
+                Assert.That(font.HasCharacter(c, true, true), Is.True, "Missing " + c);
+            foreach (char c in "Research")
+                Assert.That(font.HasCharacter(c, true, true), Is.True, "Missing fallback " + c);
         }
 
         [Test]

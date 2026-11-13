@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbb281ee3bf0b054c82ac2347e9e782c, type: 3}
+  m_Name: Localization-Assets-Shared
+  m_EditorClassIdentifier: Unity.Addressables.Editor::UnityEditor.AddressableAssets.Settings.AddressableAssetGroup
+  m_GroupName: Localization-Assets-Shared
+  m_GUID: 76f84b1f9ff224b89914d867967b2224
+  m_SerializeEntries:
+  - m_GUID: f152688843106428788434aca36a627f
+    m_Address: Assets/CursorHunter/Progression/ResearchPrototype/Localization/Research
+      Shared Data.asset
+    m_ReadOnly: 1
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  m_ReadOnly: 1
+  m_Settings: {fileID: 11400000, guid: 2fbb3ae5aa1c1482095aa8bb383dc84e, type: 2}
+  m_SchemaSet:
+    m_Schemas:
+    - {fileID: 11400000, guid: ca0c39a23e8224779930d1b9729d99b3, type: 2}
+    - {fileID: 11400000, guid: 74feb3a95bb1b40d4b1bd3b461994290, type: 2}
+    - {fileID: 11400000, guid: 2d257e586e1794bbab9753c125b9afd5, type: 2}

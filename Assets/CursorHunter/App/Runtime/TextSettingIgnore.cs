@@ -3,7 +3,7 @@ using UnityEngine;
 namespace CursorHunter.App
 {
     /// <summary>
-    /// Keeps the TMP font on this GameObject when AppTextBootstrap applies the shared font.
+    /// Legacy marker retained for compatibility with existing scenes.
     /// </summary>
     [DisallowMultipleComponent]
     [AddComponentMenu("Cursor Hunter/UI/Text Setting Ignore")]

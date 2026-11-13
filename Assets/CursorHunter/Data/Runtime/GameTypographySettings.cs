@@ -6,6 +6,8 @@ namespace CursorHunter.Data
     public sealed class GameTypographySettings : ScriptableObject
     {
         public Font sourceFont;
+        [Tooltip("Fallback for characters missing from the primary UI font.")]
+        public Font fallbackFont;
         [Tooltip("Numeric face shared with the battle result UI and combat HUD.")]
         public TMP_FontAsset numericFont;
         [Serializable]

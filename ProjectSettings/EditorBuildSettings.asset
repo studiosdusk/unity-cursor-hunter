@@ -12,5 +12,7 @@ EditorBuildSettings:
     path: Assets/CursorHunter/App/Scenes/Main.unity
     guid: ed189016d29204c3a838f49e99b04423
   m_configObjects:
+    com.unity.addressableassets: {fileID: 11400000, guid: 20ef0a871d15f4c3798b5a99ff97ef60, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
+    com.unity.localization.settings: {fileID: 11400000, guid: 2421e6d4951944de3b40856550afd945, type: 2}
   m_UseUCBPForAssetBundles: 0

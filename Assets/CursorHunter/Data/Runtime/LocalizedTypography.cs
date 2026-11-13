@@ -8,6 +8,9 @@ namespace CursorHunter.Data
 {
     public static class LocalizedTypography
     {
+        private const float OutlineWidth = 0.18f;
+        private static readonly Color OutlineColor = new Color32(14, 16, 21, 255);
+        private static readonly Dictionary<Material, Material> OutlinedMaterials = new Dictionary<Material, Material>();
         private static readonly Dictionary<Font, TMP_FontAsset> Fonts = new Dictionary<Font, TMP_FontAsset>();
 
         public static TMP_FontAsset GetNumericFont()
@@ -19,6 +22,7 @@ namespace CursorHunter.Data
         public static TMP_FontAsset GetFont(Font source)
         {
             Font fallbackSource = null;
+            Font supportSource = null;
             if (source == null)
             {
                 var settings = Resources.Load<GameTypographySettings>("GameData/TypographySettings");
@@ -26,6 +30,7 @@ namespace CursorHunter.Data
                 {
                     source = settings.GetSourceFont(LocalizationCatalog.Language);
                     if (source != settings.sourceFont) fallbackSource = settings.sourceFont;
+                    if (source != settings.fallbackFont) supportSource = settings.fallbackFont;
                 }
             }
             if (source == null) return TMP_Settings.defaultFontAsset;
@@ -33,6 +38,7 @@ namespace CursorHunter.Data
             {
                 font = TMP_FontAsset.CreateFontAsset(source);
                 font.name = source.name + " Dynamic SDF";
+                ConfigureOutline(font.material);
                 font.atlasPopulationMode = AtlasPopulationMode.Dynamic;
                 font.isMultiAtlasTexturesEnabled = true;
                 Fonts[source] = font;
@@ -44,12 +50,48 @@ namespace CursorHunter.Data
                 font.fallbackFontAssetTable ??= new List<TMP_FontAsset>();
                 if (!font.fallbackFontAssetTable.Contains(fallback)) font.fallbackFontAssetTable.Add(fallback);
             }
+            if (supportSource != null)
+            {
+                TMP_FontAsset support = GetFont(supportSource);
+                font.fallbackFontAssetTable ??= new List<TMP_FontAsset>();
+                if (!font.fallbackFontAssetTable.Contains(support)) font.fallbackFontAssetTable.Add(support);
+            }
             return font;
+        }
+
+        // Preserve authored font assets and share one outlined material per source material.
+        public static void ApplyOutline(TMP_Text text)
+        {
+            if (text == null || text.fontSharedMaterial == null) return;
+            Material source = text.fontSharedMaterial;
+            if (!source.HasProperty(ShaderUtilities.ID_OutlineWidth) || !source.HasProperty(ShaderUtilities.ID_OutlineColor)) return;
+            if (!OutlinedMaterials.TryGetValue(source, out var outlined) || outlined == null)
+            {
+                outlined = new Material(source) { name = source.name + " UI Outline" };
+                ConfigureOutline(outlined);
+                OutlinedMaterials[source] = outlined;
+                // Reapplying the style must not generate a chain of material copies.
+                OutlinedMaterials[outlined] = outlined;
+            }
+            text.fontSharedMaterial = outlined;
+            text.extraPadding = true;
+        }
+
+        private static void ConfigureOutline(Material material)
+        {
+            if (material == null || !material.HasProperty(ShaderUtilities.ID_OutlineWidth) ||
+                !material.HasProperty(ShaderUtilities.ID_OutlineColor)) return;
+            material.SetColor(ShaderUtilities.ID_OutlineColor, OutlineColor);
+            material.SetFloat(ShaderUtilities.ID_OutlineWidth, OutlineWidth);
+            material.EnableKeyword("OUTLINE_ON");
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void Reset()
         {
+            foreach (var material in new HashSet<Material>(OutlinedMaterials.Values))
+                if (material != null) UnityEngine.Object.Destroy(material);
+            OutlinedMaterials.Clear();
             foreach (var font in Fonts.Values)
             {
                 if (font == null) continue;

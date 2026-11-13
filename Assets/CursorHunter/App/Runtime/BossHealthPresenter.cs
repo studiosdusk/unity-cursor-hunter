@@ -120,8 +120,9 @@ namespace CursorHunter.App
                 label.font = font;
                 // Own the HUD material so the result screen and shared font assets stay unchanged.
                 material = new Material(font.material) { name = "Boss HUD " + font.name };
-                material.SetColor(ShaderUtilities.ID_OutlineColor, new Color32(24, 25, 23, 210));
-                material.SetFloat(ShaderUtilities.ID_OutlineWidth, 0.12f);
+                material.SetColor(ShaderUtilities.ID_OutlineColor, new Color32(14, 16, 21, 255));
+                material.SetFloat(ShaderUtilities.ID_OutlineWidth, 0.18f);
+                material.EnableKeyword("OUTLINE_ON");
                 label.fontSharedMaterial = material;
             }
             label.fontStyle = FontStyles.Bold;
