@@ -18,11 +18,11 @@ namespace CursorHunter.Progression.ResearchPrototype
         [HideInInspector] public string appliedSceneFingerprint;
         [HideInInspector] public ResearchMapDefinition appliedVersion;
         public TextMeshProUGUI title, effectDescription, beforeValue, afterValue, costLabel, costValue, rankInfo, wallet;
-        private Vector2 normalBeforePosition, normalAfterPosition, normalCostPosition;
-        private float normalTooltipWidth, normalCostWidth, normalCostFontSize;
+        private Vector2 normalBeforePosition, normalCostPosition;
+        private float normalTooltipWidth, normalCostLabelFontSize, normalCostFontSize;
         private RectTransform effectBand, separator;
         private float normalBandWidth, normalSeparatorWidth, normalDescriptionWidth, normalTitleWidth;
-        private float normalBeforeWidth, normalAfterWidth, normalBeforeFontSize, normalAfterFontSize;
+        private float normalBeforeWidth, normalBeforeFontSize;
         public GameObject arrow, gemIcon, tooltipRoot;
         public RectTransform tooltipPanel;
         public ResearchMapNavigation navigation;
@@ -37,9 +37,9 @@ namespace CursorHunter.Progression.ResearchPrototype
         [SerializeField, Min(1f)] private float hoverScale = 1.1f;
         [SerializeField, Min(0.01f)] private float hoverDuration = 0.14f;
         private readonly Dictionary<ResearchTestNode, Vector3> baseScales = new Dictionary<ResearchTestNode, Vector3>();
-        public long testGarnet = 10000;
+        public long testGarnet = 50000;
         [Tooltip("Preview balances for topaz, amethyst, sapphire, diamond and dragon stone.")]
-        public long[] testOtherGemstones = new long[5];
+        public long[] testOtherGemstones = { 10000, 10000, 10000, 10000, 10000 };
         private Sprite garnetCostSprite;
         private GameInformation baseInformation;
         private readonly long[] lastBalances = new long[6];
@@ -48,8 +48,8 @@ namespace CursorHunter.Progression.ResearchPrototype
         private long lastGarnet = -1;
         private long Garnet => progression != null ? progression.GetResearchGemstoneBalance(0) : testGarnet;
         public Color unpurchasedColor = new Color(.47f, .78f, .95f);
-        public Color inProgressColor = new Color(.55f, .86f, .41f);
         public Color completedColor = new Color(1f, .76f, .32f);
+        private static readonly string[] CurrencyIds = { "gem.garnet", "gem.topaz", "gem.amethyst", "gem.sapphire", "gem.diamond", "gem.dragon" };
         private static readonly CultureInfo Invariant = CultureInfo.InvariantCulture;
         private void Start()
         {
@@ -62,14 +62,11 @@ namespace CursorHunter.Progression.ResearchPrototype
                 else garnetCostSprite = costImage.sprite;
             }
             normalBeforePosition = beforeValue.rectTransform.anchoredPosition;
-            normalAfterPosition = afterValue.rectTransform.anchoredPosition;
             normalBeforeWidth = beforeValue.rectTransform.sizeDelta.x;
-            normalAfterWidth = afterValue.rectTransform.sizeDelta.x;
             normalBeforeFontSize = beforeValue.fontSize;
-            normalAfterFontSize = afterValue.fontSize;
             normalCostPosition = costValue.rectTransform.anchoredPosition;
             normalTooltipWidth = tooltipPanel.sizeDelta.x;
-            normalCostWidth = costValue.rectTransform.sizeDelta.x;
+            normalCostLabelFontSize = costLabel.fontSize;
             normalCostFontSize = costValue.fontSize;
             effectBand = tooltipPanel.Find("EffectBand") as RectTransform;
             separator = tooltipPanel.Find("Separator") as RectTransform;
@@ -89,10 +86,9 @@ namespace CursorHunter.Progression.ResearchPrototype
         }
         private void Update()
         {
-            if (progression == null) return;
             bool changed = false;
             for (int i = 0; i < lastBalances.Length; i++)
-                if (lastBalances[i] != progression.GetResearchGemstoneBalance(i)) { changed = true; break; }
+                if (lastBalances[i] != GetCostBalance(CurrencyIds[i])) { changed = true; break; }
             if (changed)
             {
                 RefreshWallet();
@@ -104,11 +100,11 @@ namespace CursorHunter.Progression.ResearchPrototype
         {
             lastGarnet = Garnet;
             if (wallet != null) wallet.text = lastGarnet.ToString("N0", Invariant);
-            if (progression == null) return;
             for (int i = 0; i < lastBalances.Length; i++)
             {
-                long balance = progression.GetResearchGemstoneBalance(i);
+                long balance = GetCostBalance(CurrencyIds[i]);
                 lastBalances[i] = balance;
+                if (progression == null) continue;
                 if (gemstoneValues == null || i >= gemstoneValues.Length || gemstoneValues[i] == null) continue;
                 gemstoneValues[i].text = balance.ToString("N0", Invariant);
                 bool visible = balance > 0 || progression.IsGemstoneAvailable(i);
@@ -171,13 +167,12 @@ namespace CursorHunter.Progression.ResearchPrototype
                     foreach (var monster in baseInformation.monsters)
                         if (monster != null && monster.id == d.gameplay.targetId) { current = monster.productionCount; break; }
             }
-            beforeValue.text = Format(d.presentation.valueDisplay, current);
+            string currentText = Format(d.presentation.valueDisplay, current);
+            beforeValue.text = max ? currentText :
+                $"{currentText} <color=#21A6F2>→</color> <color=#A6E8BF>{Format(d.presentation.valueDisplay, d.GetEffectValue(node.rank + 1))}</color>";
             beforeValue.color = max ? new Color(.65f, .91f, .75f) : Color.white;
-            beforeValue.rectTransform.anchoredPosition = max
-                ? new Vector2(0f, normalBeforePosition.y) : normalBeforePosition;
-            afterValue.gameObject.SetActive(!max);
-            afterValue.text = max ? "" : Format(d.presentation.valueDisplay, d.GetEffectValue(node.rank + 1));
-            arrow.SetActive(!max);
+            if (afterValue != null) afterValue.gameObject.SetActive(false);
+            if (arrow != null) arrow.SetActive(false);
             ResearchCost cost = max ? default : node.TryGetCost(node.rank, out var shownCost) ? shownCost : default;
             gemIcon.SetActive(!max && cost.amount > 0);
             if (!max && gemIcon.TryGetComponent<Image>(out var costImage))
@@ -187,12 +182,11 @@ namespace CursorHunter.Progression.ResearchPrototype
                     cost.currencyId == "gem.garnet" ? garnetCostSprite : null;
             }
             costLabel.gameObject.SetActive(!max);
-            costValue.rectTransform.anchoredPosition = max
-                ? new Vector2(0f, normalCostPosition.y) : normalCostPosition;
-            costValue.alignment = max ? TextAlignmentOptions.Center : TextAlignmentOptions.Right;
+            costValue.rectTransform.anchoredPosition = new Vector2(0f, normalCostPosition.y);
+            costValue.alignment = TextAlignmentOptions.Center;
             costValue.text = max ? maxText : cost.amount == 0 ? freeText : cost.amount.ToString("N0", Invariant);
-            costValue.color = max ? new Color(.94f, .82f, .51f) :
-                cost.amount > GetCostBalance(cost.currencyId) ? new Color(1f, .48f, .48f) : Color.white;
+            costValue.color = max ? new Color(.94f, .82f, .51f) : cost.amount == 0 ? Color.white :
+                CanPurchase(node) ? new Color(.65f, .91f, .75f) : new Color(1f, .48f, .48f);
             ResizeCostLayout(max);
             PositionTooltip(node);
             rankInfo.text = node.rank + " / " + d.ranks.Length;
@@ -204,71 +198,89 @@ namespace CursorHunter.Progression.ResearchPrototype
             if (tooltipPanel == null || gemIcon == null) return;
             var icon = gemIcon.transform as RectTransform;
             if (icon == null) return;
+            var label = costLabel.rectTransform;
             var value = costValue.rectTransform;
+            costLabel.enableAutoSizing = false;
+            costLabel.textWrappingMode = TextWrappingModes.NoWrap;
+            costLabel.overflowMode = TextOverflowModes.Ellipsis;
+            costLabel.fontSize = normalCostLabelFontSize;
             costValue.enableAutoSizing = false;
             costValue.textWrappingMode = TextWrappingModes.NoWrap;
             costValue.overflowMode = TextOverflowModes.Ellipsis;
             costValue.fontSize = normalCostFontSize;
 
             float width = normalTooltipWidth;
-            float valueWidth = normalCostWidth;
-            if (!max)
+            float maxPanelWidth = GetMaximumTooltipWidth();
+            float valueWidth = Mathf.Max(1f, costValue.GetPreferredValues(costValue.text, 0f, 0f).x + 8f);
+            float labelWidth = 0f;
+            bool showIcon = !max && gemIcon.activeSelf;
+            const float labelValueGap = 8f;
+            const float valueIconGap = 8f;
+            if (max)
             {
-                // Reserve space after the label; the pair is positioned from the right edge below.
-                float labelRight = costLabel.rectTransform.anchoredPosition.x + costLabel.rectTransform.rect.width * .5f;
-                float minimumValueLeft = labelRight + 12f + icon.rect.width + 12f;
-                float preferred = costValue.GetPreferredValues(costValue.text, 0f, 0f).x + 4f;
-                valueWidth = Mathf.Max(1f, preferred);
-                float maximumWidth = GetMaximumTooltipWidth();
-                width = Mathf.Min(maximumWidth, Mathf.Max(normalTooltipWidth, 2f * (minimumValueLeft + valueWidth + 24f)));
-                float available = Mathf.Max(1f, width * .5f - minimumValueLeft - 24f);
-                if (valueWidth > available)
-                {
-                    costValue.fontSize = Mathf.Max(5f, normalCostFontSize * (available - 4f) / Mathf.Max(1f, preferred - 4f));
-                    valueWidth = available;
-                }
+                costLabel.gameObject.SetActive(false);
+                valueWidth = Mathf.Max(1f, costValue.GetPreferredValues(costValue.text, 0f, 0f).x + 12f);
+                width = Mathf.Min(maxPanelWidth, Mathf.Max(width, valueWidth + 48f));
+                value.sizeDelta = new Vector2(valueWidth, value.sizeDelta.y);
+                value.anchoredPosition = new Vector2(0f, normalCostPosition.y);
             }
             else
             {
-                valueWidth = Mathf.Max(normalCostWidth, costValue.GetPreferredValues(costValue.text, 0f, 0f).x + 12f);
-                width = Mathf.Max(width, valueWidth + 48f);
-                value.anchoredPosition = new Vector2(0f, normalCostPosition.y);
+                label.gameObject.SetActive(true);
+                labelWidth = Mathf.Max(1f, costLabel.GetPreferredValues(costLabel.text, 0f, 0f).x + 4f);
+                float iconWidth = showIcon ? icon.rect.width : 0f;
+                float groupWidth = labelWidth + labelValueGap + valueWidth + (showIcon ? valueIconGap + iconWidth : 0f);
+                float maximumGroupWidth = Mathf.Max(1f, maxPanelWidth - 48f);
+                if (groupWidth > maximumGroupWidth)
+                {
+                    float fixedWidth = labelValueGap + (showIcon ? valueIconGap + iconWidth : 0f);
+                    float textWidth = Mathf.Max(1f, groupWidth - fixedWidth);
+                    float fontScale = Mathf.Min(1f, Mathf.Max(1f, maximumGroupWidth - fixedWidth) / textWidth);
+                    costLabel.fontSize = Mathf.Max(5f, normalCostLabelFontSize * fontScale);
+                    costValue.fontSize = Mathf.Max(5f, normalCostFontSize * fontScale);
+                    labelWidth = Mathf.Max(1f, costLabel.GetPreferredValues(costLabel.text, 0f, 0f).x + 4f);
+                    valueWidth = Mathf.Max(1f, costValue.GetPreferredValues(costValue.text, 0f, 0f).x + 8f);
+                    groupWidth = labelWidth + labelValueGap + valueWidth + (showIcon ? valueIconGap + iconWidth : 0f);
+                }
+                if (groupWidth > maximumGroupWidth)
+                {
+                    float excess = groupWidth - maximumGroupWidth;
+                    float valueReduction = Mathf.Min(excess, Mathf.Max(0f, valueWidth - 1f));
+                    valueWidth -= valueReduction;
+                    labelWidth = Mathf.Max(1f, labelWidth - (excess - valueReduction));
+                    groupWidth = labelWidth + labelValueGap + valueWidth + (showIcon ? valueIconGap + iconWidth : 0f);
+                }
+                width = Mathf.Min(maxPanelWidth, Mathf.Max(width, groupWidth + 48f));
+
+                // Keep the label, amount and optional currency icon centered as one row.
+                float cursor = -groupWidth * .5f;
+                label.sizeDelta = new Vector2(labelWidth, label.sizeDelta.y);
+                label.anchoredPosition = new Vector2(cursor + labelWidth * .5f, normalCostPosition.y);
+                cursor += labelWidth + labelValueGap;
+                value.sizeDelta = new Vector2(valueWidth, value.sizeDelta.y);
+                value.anchoredPosition = new Vector2(cursor + valueWidth * .5f, normalCostPosition.y);
+                cursor += valueWidth;
+                if (showIcon)
+                {
+                    cursor += valueIconGap;
+                    icon.anchoredPosition = new Vector2(cursor + iconWidth * .5f, normalCostPosition.y);
+                }
             }
-            value.sizeDelta = new Vector2(valueWidth, value.sizeDelta.y);
-            // Grow the effect value areas away from the arrow as their numbers grow.
-            beforeValue.enableAutoSizing = afterValue.enableAutoSizing = false;
+            // Keep the before → after comparison together and centered as one text line.
+            beforeValue.enableAutoSizing = false;
             beforeValue.fontSize = normalBeforeFontSize;
-            afterValue.fontSize = normalAfterFontSize;
-            beforeValue.fontSizeMin = afterValue.fontSizeMin = 5f;
+            beforeValue.fontSizeMin = 5f;
             beforeValue.fontSizeMax = normalBeforeFontSize;
-            afterValue.fontSizeMax = normalAfterFontSize;
-            beforeValue.textWrappingMode = afterValue.textWrappingMode = TextWrappingModes.NoWrap;
-            beforeValue.overflowMode = afterValue.overflowMode = TextOverflowModes.Ellipsis;
-            float beforeWidth = Mathf.Max(normalBeforeWidth, beforeValue.GetPreferredValues(beforeValue.text, 0f, 0f).x + 12f);
-            float afterWidth = max ? 0f : Mathf.Max(normalAfterWidth, afterValue.GetPreferredValues(afterValue.text, 0f, 0f).x + 12f);
-            float innerGap = Mathf.Abs(normalBeforePosition.x) - normalBeforeWidth * .5f;
-            float effectWidth = max ? beforeWidth + 48f : 2f * (innerGap + Mathf.Max(beforeWidth, afterWidth) + 24f);
-            float maxPanelWidth = GetMaximumTooltipWidth();
+            beforeValue.textWrappingMode = TextWrappingModes.NoWrap;
+            beforeValue.overflowMode = TextOverflowModes.Ellipsis;
+            float beforeWidth = Mathf.Max(normalBeforeWidth, beforeValue.GetPreferredValues(beforeValue.text, 0f, 0f).x + 16f);
+            float effectWidth = beforeWidth + 48f;
             width = Mathf.Min(maxPanelWidth, Mathf.Max(width, effectWidth));
-            float maximumValueWidth = max ? width - 48f : width * .5f - innerGap - 24f;
+            float maximumValueWidth = width - 48f;
             beforeValue.enableAutoSizing = beforeWidth > maximumValueWidth;
-            afterValue.enableAutoSizing = afterWidth > maximumValueWidth;
             beforeWidth = Mathf.Min(beforeWidth, maximumValueWidth);
-            afterWidth = Mathf.Min(afterWidth, maximumValueWidth);
             beforeValue.rectTransform.sizeDelta = new Vector2(beforeWidth, beforeValue.rectTransform.sizeDelta.y);
-            beforeValue.rectTransform.anchoredPosition = new Vector2(max ? 0f : -innerGap - beforeWidth * .5f, normalBeforePosition.y);
-            if (!max)
-            {
-                afterValue.rectTransform.sizeDelta = new Vector2(afterWidth, afterValue.rectTransform.sizeDelta.y);
-                afterValue.rectTransform.anchoredPosition = new Vector2(innerGap + afterWidth * .5f, normalAfterPosition.y);
-            }
-            if (!max)
-            {
-                float valueRight = width * .5f - 24f;
-                float valueLeft = valueRight - valueWidth;
-                value.anchoredPosition = new Vector2(valueRight - valueWidth * .5f, normalCostPosition.y);
-                icon.anchoredPosition = new Vector2(valueLeft - 12f - icon.rect.width * .5f, icon.anchoredPosition.y);
-            }
+            beforeValue.rectTransform.anchoredPosition = new Vector2(0f, normalBeforePosition.y);
             float expansion = width - normalTooltipWidth;
             tooltipPanel.sizeDelta = new Vector2(width, tooltipPanel.sizeDelta.y);
             if (effectBand != null) effectBand.sizeDelta = new Vector2(normalBandWidth + expansion, effectBand.sizeDelta.y);
@@ -471,9 +483,11 @@ namespace CursorHunter.Progression.ResearchPrototype
             float peak = reveal ? 1.1f : 1.18f;
             float duration = reveal ? .3f : .25f;
             float destination = hoveredNodes.Contains(node) ? hoverScale : 1f;
-            animations[node] = DOTween.Sequence().SetUpdate(true).SetRecyclable(false)
-                .Append(node.transform.DOScale(basis * peak, duration * .5f).SetEase(Ease.OutCubic))
+            var sequence = DOTween.Sequence().SetUpdate(true).SetRecyclable(false);
+            if (!reveal) sequence.Append(node.transform.DOScale(basis * .82f, .09f).SetEase(Ease.InCubic));
+            sequence.Append(node.transform.DOScale(basis * peak, duration * .5f).SetEase(Ease.OutCubic))
                 .Append(node.transform.DOScale(basis * destination, duration * .5f).SetEase(Ease.OutCubic));
+            animations[node] = sequence;
         }
         private void OnDisable()
         {
@@ -522,8 +536,20 @@ namespace CursorHunter.Progression.ResearchPrototype
         private static LocalizedString NewTooltipString(string key) =>
             new LocalizedString("Research", "research.tooltip." + key) { FallbackState = FallbackBehavior.UseFallback };
         private void SetLocalizedTitle(string value) { title.text = value; RefreshTextLayout(); }
-        private void SetLocalizedDescription(string value) { effectDescription.text = value; RefreshTextLayout(); }
-        private void SetLocalizedCostLabel(string value) { costLabel.text = value; RefreshTextLayout(); }
+        private void SetLocalizedDescription(string value)
+        {
+            string description = (value ?? string.Empty).Trim().TrimEnd('.', ':', '：').TrimEnd();
+            effectDescription.text = description.Length == 0 ? string.Empty : description + " :";
+            RefreshTextLayout();
+        }
+        private void SetLocalizedCostLabel(string value)
+        {
+            string label = (value ?? string.Empty).Trim();
+            if (label == "연구 비용") label = "가격";
+            if (label.Length > 0 && !label.EndsWith(":") && !label.EndsWith("：")) label += ":";
+            costLabel.text = label;
+            RefreshTextLayout();
+        }
         private void SetLocalizedFree(string value) { freeText = value; RefreshCostText(); }
         private void SetLocalizedMax(string value) { maxText = value; RefreshCostText(); }
         private void RefreshCostText()

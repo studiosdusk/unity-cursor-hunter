@@ -43,6 +43,7 @@ namespace CursorHunter.App
         private void Awake()
         {
             InitializeBindings();
+            LanguageSelectorController.EnsureRuntime();
             if (!_bindings.ContainsKey(initialScreen) || !_bindings[initialScreen].IsValid)
                 initialScreen = UiScreenId.Trait;
             ShowScreen(initialScreen);
@@ -85,6 +86,8 @@ namespace CursorHunter.App
             foreach (UiScreenBinding binding in _bindings.Values)
                 if (binding != target) binding.SetVisible(false);
             target.SetVisible(true);
+            if (screenId == UiScreenId.Settings)
+                LanguageSelectorController.EnsureRuntime().AttachSettingsUi(target.Root);
             AppAmbientMusic.SetEnabled(screenId != UiScreenId.Combat);
             if (screenId != UiScreenId.Trait) InstallButtonAudio(target.Root);
             bool changed = !_hasCurrentScreen || previous != screenId;

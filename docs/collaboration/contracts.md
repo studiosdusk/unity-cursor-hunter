@@ -38,6 +38,7 @@ Editor Play Mode에서는 `PrototypeRunHud`가 전투 남은 시간과 별도로
 영문 GameInformation의 현재 루트는 schemaVersion=4, balanceVersion, stats, rules, gemstones, monsters, skills, relics, relicDropRules다.
 information 래퍼, progression, entities, fieldHelp, implementation은 포함하지 않는다.
 한국어 두 참고본은 docs 아래에만 있으며 게임에서 읽지 않는다.
+유물 UI와 효과 정의의 작성 원본은 개별 `RelicDefinition` SO다. `GameInformationJson`은 유물 DTO를 읽을 때 SO 값으로 다시 채우고 `owned` 상태만 입력에서 보존한다. 유물 표시 이름·설명은 `RelicText.xlsx`에서 관리한다.
 
 ## 필드와 단위
 

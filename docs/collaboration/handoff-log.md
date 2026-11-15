@@ -1534,3 +1534,15 @@ TraitScreen_Runtime의 배경 Image와 CanvasGroup, TraitBackdropArtwork를 Main
 ### 2026-11-13 · 유물 표시 데이터와 보유 상태 API
 
 유물 이름과 아이콘은 RelicCollectionCatalog SO를 기준으로 조회하며 Main에 남은 동일 표시 데이터보다 우선한다. 효과 설명은 활성 전투 정보의 effectId와 effectValue/effectValue2에서 생성하므로 SO의 옛 설명 문자열은 표시 기준으로 사용하지 않는다. 새 UI는 TraitScreenController.RelicCatalog.Entries의 ID를 기준으로 TryGetRelicView를 호출해 Presentation, Description, IsOwned, IsNew를 읽고, 확인 시 MarkRelicSeen을 호출한다. 저장 성공 시 RelicStateChanged 이벤트를 발행하며 New 저장 실패 시 상태를 복구한다. 20개 데이터의 설명 매핑과 보유/New 저장 경로의 Unity 테스트를 추가했다. dotnet 프로젝트 컴파일은 통과했으나 Unity 테스트는 미실행. 협업 검증은 기존 Progression/.DS_Store meta 누락으로 실패했고 게임 데이터 검증은 기존 한국어 참고본 불일치 및 유물 effectId 스키마 불일치로 실패했다.
+
+### 2026-11-13 · 연구 노드 표시 개선
+
+연결선 너비를 7에서 10으로 늘리고, 미완료 노드는 파란색·최대 레벨은 노란색으로 표시한다. + 표시는 첫 구매를 포함해 선행 조건과 현재 젬 잔액을 확인하는 구매 가능 판정에 따라 표시하며 잔액 변경 시 갱신한다. Progression Editor와 App PlayModeTests의 dotnet 빌드는 성공했다. 협업 검증은 기존 Progression/.DS_Store의 meta 누락으로 실패했으며 Unity Play Mode와 화면 확인은 미실행이다.
+
+### 2026-11-13 · 연구 연결선 씬 배치 및 구매 연출
+
+Main과 ResearchPrototype 씬의 연결선 너비를 10으로 저장하고 런타임 너비 변경을 제거했다. 구매 성공 시 노드를 축소한 뒤 확대하고 원래 크기 또는 호버 크기로 복귀하며, 최대 레벨의 테두리는 금갈색으로 표시한다. App PlayModeTests dotnet 빌드와 diff 검사는 통과했다. 협업 검증은 기존 Progression/.DS_Store의 meta 누락으로 실패했으며 Unity Play Mode와 화면 확인은 미실행이다.
+
+### 2026-11-15 · UI — ResearchPrototype_Canvas 스타일 기준 확정
+
+`ResearchPrototype_Canvas`를 최신 게임 UI 시각 기준으로 지정했다. 기존 Main 연구·유물·특성 카드 화면의 스타일은 레거시로 분류하며 새 UI 스타일 판단에 사용하지 않는다. 공급사 에셋 매핑은 재료 참고로 남기고 최종 스타일은 ResearchPrototype 기준을 따른다.

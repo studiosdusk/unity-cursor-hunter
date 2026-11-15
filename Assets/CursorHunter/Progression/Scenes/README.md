@@ -6,7 +6,7 @@ Sandbox는 독립 실행을 위해 자체 카메라와 EventSystem을 가질 수
 
 ## 초급 연구 테스트 씬
 
-`ResearchPrototype.unity`는 Main과 별개인 실험 씬이다. `ResearchPrototype_Canvas/ResearchBoard/EditableNodes`의 시작 노드 6개와 후행 노드 6개, `EditableLinks`의 연결선은 Hierarchy에서 직접 선택하여 편집한다. 각 후행 노드의 `prerequisites`, `requiredPrerequisites`, `incomingLine`에서 선행과 연결선을 지정한다. 편집 중에는 전체 배치가 보이고 Play에서는 조건 미충족 노드와 연결선이 숨겨진다. 최초에는 중앙의 공격력 노드 하나만 표시되며, 이를 1랭크 구매하면 주변 연구가 해금된다. `Tooltip_Dark_Prefab/Popup`의 제목·수치·재화 표시도 씬 오브젝트다. Dark Tooltip 공급사 프리팹 인스턴스의 씬 오버라이드를 사용한다.
+`ResearchPrototype.unity`는 Main과 별개인 동작/데이터 실험 씬이다. 다만 `ResearchPrototype_Canvas`의 시각 스타일은 현재 게임 UI의 최신 기준이며, 이전 연구·유물·특성 카드 화면의 시각 스타일은 레거시로 취급한다. `ResearchPrototype_Canvas/ResearchBoard/EditableNodes`의 시작 노드 6개와 후행 노드 6개, `EditableLinks`의 연결선은 Hierarchy에서 직접 선택하여 편집한다. 각 후행 노드의 `prerequisites`, `requiredPrerequisites`, `incomingLine`에서 선행과 연결선을 지정한다. 편집 중에는 전체 배치가 보이고 Play에서는 조건 미충족 노드와 연결선이 숨겨진다. 최초에는 중앙의 공격력 노드 하나만 표시되며, 이를 1랭크 구매하면 주변 연구가 해금된다. `Tooltip_Dark_Prefab/Popup`의 제목·수치·재화 표시도 씬 오브젝트다. Dark Tooltip 공급사 프리팹 인스턴스의 씬 오버라이드를 사용한다.
 
 노드별 `ResearchTestNode.definition`이 `Progression/ResearchPrototype`의 개별 연구 SO를 참조한다. SO에서 표시명, 아이콘과 누적 효과, 가넷 비용을 수정한다. 맵 편집기나 본게임 연구 시스템은 아직 연결하지 않았다. Play에서는 노드를 가리키면 우측 비교를 표시하고 좌클릭하면 테스트 가넷으로 다음 랭크를 산다. 미강화는 파랑, 강화 중은 초록, 최대 강화는 노랑이다. 각 노드에서 1랭크를 구매하면 연결된 후행 노드가 해금된다. 툴팁은 노드에 마우스를 올린 동안 표시된다. 구매 노드는 팝 애니메이션, 새 노드는 등장 애니메이션을 재생한다. 효과음은 설정하지 않았다. 테스트용 후행 노드는 같은 SO를 재사용하며 동일 스탯 효과를 합산한다. 재화와 랭크는 임시 메모리 값이며 종료 시 사라진다. Main의 저장·전투에는 영향을 주지 않는다. 기본값은 현재 Main 기준을 테스트 코드에 고정했으므로 Main 값이 변경되면 미리보기와 차이 날 수 있다.
 
@@ -23,6 +23,8 @@ Sandbox는 독립 실행을 위해 자체 카메라와 EventSystem을 가질 수
 ## Main 씬 배치
 
 `App/Scenes/Main.unity`의 `UICanvas/ResearchPrototype_Canvas`에도 같은 오브젝트를 편집 가능한 씬 계층으로 배치했다. 기본 비활성 상태이며 별도 Canvas와 EventSystem 없이 Main의 것을 사용한다. Inspector에서 임시로 활성화해 시험할 수 있다. 프로토타입은 테스트 가넷과 메모리 랭크를 사용하며 실제 연구 화면 전환·저장·전투에 연결되지 않는다.
+
+`ProgressionUiBackdrop.prefab`은 배경 삽화, 채도 조정 오버레이, 부유 반짝이를 한 오브젝트 계층으로 묶는다. 연구 화면에서 배경과 연구 콘텐츠 사이에 두며, Main의 `TraitScreen_Runtime`에도 같은 프리팹을 두어 유물·특성 카드 화면이 함께 사용한다. 다른 성장 화면은 이 프리팹을 화면 루트의 첫 자식으로 배치해 공유한다. `ProgressionUiBackgroundAtmosphere` Inspector에서 입자 수·크기·수명·속도·밝기를 조절한다. 입자 이미지는 UI 입력을 가로채지 않는다.
 
 각 노드의 `NodeBorder`는 GUI Pro-SimpleCasual 프레임 에셋이고, `UpgradeAvailable`은 IconPack의 초록색 + 아이콘이다. 활성 연구가 다음 랭크를 살 수 있는 재화를 보유할 때만 +를 표시하며, 재화 소진·최대 랭크·선행 잠금 상태에서는 숨긴다. 두 이미지는 입력을 가로채지 않는다.
 

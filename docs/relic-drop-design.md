@@ -41,7 +41,7 @@
 
 ## 런타임 JSON 전달 데이터
 
-각 `information.relics[]` 정의에는 `id`, `owned`, `sourceMonsterId`, `dropChancePercent`, `effectId`, `effectValue`, `effectValue2`가 있다. 표시 이름·아이콘·설명은 현재 `RelicCollectionCatalog`의 표시 데이터가 담당한다. 테스트 도구의 획득 상태는 `owned`에 들어가며 런 시작 시 `ProgressionCombatSnapshot.Relics`로 복사된다. `RunCoordinator`가 보유한 효과만 집계하고 `CombatRunController`가 이번 런의 전투·보상 처리에서 사용한다. `relicDropRules`도 전달되지만, 처치 기반 드롭 굴림과 획득 저장은 아직 연결되지 않았다. Combat은 저장소를 직접 수정하지 않는다.
+`RelicDefinition` SO 하나가 한 유물을 정의한다. `presentation`에는 로컬라이제이션 키, 아이콘, 표시 순서만 두고, `gameplay`에는 원천 몬스터, 드롭 확률, 효과 ID와 수치를 둔다. 이름과 설명은 [RelicText.xlsx](../Assets/CursorHunter/Data/Authoring/RelicText.xlsx)의 키 셀로 관리하며, `RelicTextWorkbook`이 Unity Localization의 `Relic` 문자열 테이블을 갱신한다. `GameInformationJson`은 읽을 때 SO 정의로 런타임 `RelicInformation` 배열을 다시 만들고 기존 `owned` 상태만 보존한다. 따라서 전투 DTO와 `ProgressionCombatSnapshot.Relics` 계약은 유지된다. `RunCoordinator`는 보유 효과만 집계하고 `CombatRunController`는 이번 런의 효과와 처치 드롭을 계산한다. 유물 소유권 저장은 App 정산이 담당하며 Combat은 저장소를 직접 수정하지 않는다.
 
 유물 드롭은 일반 필드의 일반 몬스터 처치에서만 발생한다. 런 결과 `RelicAwards`에 ID를 담고, App 정산이 재화와 한 번에 PlayerPrefs에 저장한다. 다음 런 시작 시 `owned`로 복원되며 효과가 적용된다. 런 중 획득된 유물은 현재 실행 중인 전투 수치에 소급 적용하지 않는다. 전투 중 드롭된 아이콘은 보석 수집 연출을 따라 좌측 하단 유물 줄로 날아와 추가된다. 테스트 도구의 획득/회수 작업도 저장 상태와 동일하게 바뀐다.
 

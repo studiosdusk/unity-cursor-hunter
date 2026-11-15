@@ -11,6 +11,7 @@ namespace CursorHunter.App
         [SerializeField] private TraitScreenController progression;
         [SerializeField] private GameObject topMenu, bottomMenu;
         [SerializeField] private GameObject researchMap;
+        [SerializeField] private GameObject artifactCanvas;
         [SerializeField] private Button researchButton, relicButton, talentButton, fieldButton;
         [SerializeField] private Button stageActionButton, battleActionButton;
         [SerializeField] private Button bossButton, huntButton, bottomStageButton, bottomBattleButton;
@@ -70,7 +71,9 @@ namespace CursorHunter.App
             if (topMenu != null) topMenu.SetActive(visible);
             if (bottomMenu != null) bottomMenu.SetActive(visible);
             if (researchMap != null) researchMap.SetActive(visible && selected == 0);
-            if (visible && progression != null) progression.SetExternalMenuSection(selected);
+            if (artifactCanvas != null) artifactCanvas.SetActive(visible && selected == 1);
+            if (visible && progression != null)
+                progression.SetExternalMenuSection(selected == 1 ? 0 : selected);
             SetSelected(researchButton, selected == 0);
             SetSelected(relicButton, selected == 1);
             SetSelected(talentButton, selected == 2);

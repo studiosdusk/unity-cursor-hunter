@@ -74,11 +74,13 @@ namespace CursorHunter.Progression.ResearchPrototype
             gameObject.SetActive(unlocked);
             if (incomingLine != null) incomingLine.SetActive(unlocked);
             if (incomingLines != null) foreach (var line in incomingLines) if (line != null) line.SetActive(unlocked);
-            if (upgradeIndicator != null) upgradeIndicator.SetActive(unlocked && rank > 0 && map != null && map.CanPurchase(this));
+            if (upgradeIndicator != null) upgradeIndicator.SetActive(unlocked && map != null && map.CanPurchase(this));
             if (!unlocked || frame == null || definition == null || definition.ranks == null) return;
             if (icon != null && definition.presentation != null) icon.sprite = definition.presentation.icon;
-            frame.color = rank == 0 ? map.unpurchasedColor : rank < definition.ranks.Length ? map.inProgressColor : map.completedColor;
-            if (maxSparkles != null) maxSparkles.SetCompleted(rank > 0 && rank >= definition.ranks.Length);
+            bool completed = rank > 0 && rank >= definition.ranks.Length;
+            frame.color = completed ? map.completedColor : map.unpurchasedColor;
+            if (border != null) border.color = completed ? new Color(.48f, .27f, .07f) : new Color(.12f, .18f, .27f);
+            if (maxSparkles != null) maxSparkles.SetCompleted(completed);
         }
     }
 }

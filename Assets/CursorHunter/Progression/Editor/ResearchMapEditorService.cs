@@ -285,7 +285,7 @@ namespace CursorHunter.Progression.Editor
                             go = new GameObject("Link_" + previous.placementId + "_to_" + node.placementId, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
                             Undo.RegisterCreatedObjectUndo(go, "연구 연결 생성");
                             go.transform.SetParent(lineParent, false);
-                            ((RectTransform)go.transform).sizeDelta = new Vector2(7f, 100f);
+                            ((RectTransform)go.transform).sizeDelta = new Vector2(10f, 100f);
                             var image = go.GetComponent<Image>(); image.color = new Color(.13f, .65f, .95f); image.raycastTarget = false;
                         }
                         else
@@ -300,7 +300,7 @@ namespace CursorHunter.Progression.Editor
                         var delta = b - a;
                         rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(.5f, .5f);
                         rect.anchoredPosition = (a + b) * .5f;
-                        rect.sizeDelta = new Vector2(rect.sizeDelta.x > 0 ? rect.sizeDelta.x : 7f, Mathf.Max(1f, delta.magnitude - 92f));
+                        rect.sizeDelta = new Vector2(10f, Mathf.Max(1f, delta.magnitude - 92f));
                         rect.localRotation = Quaternion.Euler(0, 0, Mathf.Atan2(-delta.x, delta.y) * Mathf.Rad2Deg);
                         lines.Add(go);
                     }

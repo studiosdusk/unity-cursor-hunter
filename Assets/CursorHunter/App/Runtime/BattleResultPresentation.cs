@@ -612,10 +612,10 @@ namespace CursorHunter.App
             element.preferredHeight = itemHeight;
             item.sizeDelta = new Vector2(itemWidth, itemHeight);
 
-            string title = relicId;
+            string textKey = string.Empty;
             Sprite icon = null;
             if (progression != null)
-                progression.TryGetRelicPresentation(relicId, out title, out icon);
+                progression.TryGetRelicPresentation(relicId, out textKey, out icon);
 
             float iconSize = Mathf.Clamp(Mathf.Min(itemWidth * 0.78f, itemHeight * 0.64f), 150f, 260f);
             if (glowSprite != null)
@@ -645,9 +645,15 @@ namespace CursorHunter.App
                 _relicDiscoverySequence?.Join(relicIcon.DOScale(Vector3.one, 0.32f)
                     .SetEase(Ease.OutBack, 0.65f));
             }
-            CreateCelebrationText("Name", item, title, 26,
+            TMP_Text name = CreateCelebrationText("Name", item,
+                string.IsNullOrWhiteSpace(textKey) ? relicId : string.Empty, 26,
                 new Color(1f, 0.93f, 0.78f, 1f),
                 new Vector2(0f, -itemHeight * 0.34f), new Vector2(itemWidth - 24f, 52f), true);
+            if (!string.IsNullOrWhiteSpace(textKey))
+            {
+                RelicLocalizedLabel localized = name.gameObject.AddComponent<RelicLocalizedLabel>();
+                localized.Bind(textKey + ".title");
+            }
         }
 
         private RectTransform CreateCelebrationImage(string name, Transform parent, Sprite sprite,

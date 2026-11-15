@@ -440,7 +440,9 @@ namespace CursorHunter.App.Tests
             Assert.That(first.icon.sprite, Is.EqualTo(first.definition.icon), "The definition selects the icon.");
             first.definition = originalDefinition;
             first.Refresh();
-            Assert.That(first.upgradeIndicator.activeSelf, Is.False, "A rank-zero node does not show the plus icon.");
+            Assert.That(first.upgradeIndicator.activeSelf, Is.True, "An affordable rank-zero node shows the plus icon.");
+            Assert.That(first.frame.color, Is.EqualTo(map.unpurchasedColor));
+            Assert.That(first.border.color, Is.EqualTo(new Color(.12f, .18f, .27f)));
             Assert.That(map.nodes.Skip(1).All(node => !node.gameObject.activeInHierarchy && !node.upgradeIndicator.activeSelf), Is.True);
             map.testGarnet = 100;
             map.RefreshNodes();
@@ -450,10 +452,14 @@ namespace CursorHunter.App.Tests
             map.testGarnet = 10000;
             map.RefreshNodes();
             Assert.That(first.upgradeIndicator.activeSelf, Is.True);
-            Assert.That(map.nodes.Skip(1).Where(node => node.gameObject.activeInHierarchy).All(node => !node.upgradeIndicator.activeSelf), Is.True);
+            Assert.That(map.nodes.Where(node => node.gameObject.activeInHierarchy).All(node => node.upgradeIndicator.activeSelf == map.CanPurchase(node)), Is.True);
+            Assert.That(first.frame.color, Is.EqualTo(map.unpurchasedColor), "Partially upgraded nodes remain blue.");
             while (first.rank < first.definition.ranks.Length) map.Purchase(first);
             Assert.That(first.upgradeIndicator.activeSelf, Is.False);
-            Assert.That(map.nodes[1].upgradeIndicator.activeSelf, Is.False);
+            Assert.That(first.frame.color, Is.EqualTo(map.completedColor));
+            Assert.That(first.border.color, Is.EqualTo(new Color(.48f, .27f, .07f)));
+            Assert.That(map.nodes[1].upgradeIndicator.activeSelf, Is.EqualTo(map.CanPurchase(map.nodes[1])));
+            Assert.That(map.nodes.Where(node => node.incomingLine != null).All(node => ((RectTransform)node.incomingLine.transform).sizeDelta.x == 10f), Is.True);
             map.Purchase(map.nodes[1]);
             Assert.That(map.nodes[1].upgradeIndicator.activeSelf, Is.True);
             yield return SceneManager.UnloadSceneAsync(scene);

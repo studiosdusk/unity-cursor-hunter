@@ -13,9 +13,7 @@ MonoBehaviour:
   m_Name: ResearchMap_AllNodes_Test
   m_EditorClassIdentifier: CursorHunter.Progression::CursorHunter.Progression.ResearchPrototype.ResearchMapDefinition
   versionId: "v2 \uC804\uCCB4 \uB178\uB4DC \uD14C\uC2A4\uD2B8"
-  description: "50\uAC1C \uC5F0\uAD6C\uB97C \uD55C \uBC88\uC529 \uBC30\uCE58\uD55C
-    \uBB34\uB8CC \uD14C\uC2A4\uD2B8 \uB9F5. \uBCC4\uB3C4 \uD14C\uC2A4\uD2B8 \uBC30\uCE58
-    ID\uB97C \uC0AC\uC6A9\uD569\uB2C8\uB2E4."
+  description: "50\uAC1C \uC5F0\uAD6C \uB178\uB4DC\uC5D0 \uC7AC\uD654 \uBE44\uC6A9\uACFC \uBCF4\uC11D \uB4F1\uAE09 \uD14C\uC2A4\uD2B8 \uAC12\uC744 \uC124\uC815\uD55C \uD14C\uC2A4\uD2B8\n    \uB9F5. \uBCC4\uB3C4 \uD14C\uC2A4\uD2B8 \uBC30\uCE58 ID\uB97C \uC0AC\uC6A9\uD569\uB2C8\uB2E4."
   isolatedTest: 1
   nodes:
   - id: research-test.cursor.attack
@@ -23,15 +21,15 @@ MonoBehaviour:
     position: {x: 0, y: 0}
     costs:
     - currencyId: gem.garnet
-      amount: 0
+      amount: 100
     - currencyId: gem.garnet
-      amount: 0
+      amount: 250
     - currencyId: gem.garnet
-      amount: 0
+      amount: 500
     - currencyId: gem.garnet
-      amount: 0
+      amount: 1000
     - currencyId: gem.garnet
-      amount: 0
+      amount: 2000
     prerequisites: []
     requiredPrerequisites: 0
   - id: research-test.cursor.radius
@@ -39,15 +37,15 @@ MonoBehaviour:
     position: {x: -180, y: 0}
     costs:
     - currencyId: gem.garnet
-      amount: 0
+      amount: 100
     - currencyId: gem.garnet
-      amount: 0
+      amount: 250
     - currencyId: gem.garnet
-      amount: 0
+      amount: 500
     - currencyId: gem.garnet
-      amount: 0
+      amount: 1000
     - currencyId: gem.garnet
-      amount: 0
+      amount: 2000
     prerequisites:
     - research-test.cursor.attack
     requiredPrerequisites: 1
@@ -56,13 +54,13 @@ MonoBehaviour:
     position: {x: 0, y: -180}
     costs:
     - currencyId: gem.garnet
-      amount: 0
+      amount: 100
     - currencyId: gem.garnet
-      amount: 0
+      amount: 250
     - currencyId: gem.garnet
-      amount: 0
+      amount: 500
     - currencyId: gem.garnet
-      amount: 0
+      amount: 1000
     prerequisites:
     - research-test.cursor.attack
     requiredPrerequisites: 1
@@ -71,15 +69,15 @@ MonoBehaviour:
     position: {x: -180, y: -180}
     costs:
     - currencyId: gem.garnet
-      amount: 0
+      amount: 100
     - currencyId: gem.garnet
-      amount: 0
+      amount: 250
     - currencyId: gem.garnet
-      amount: 0
+      amount: 500
     - currencyId: gem.garnet
-      amount: 0
+      amount: 1000
     - currencyId: gem.garnet
-      amount: 0
+      amount: 2000
     prerequisites:
     - research-test.cursor.interval
     requiredPrerequisites: 1
@@ -88,11 +86,11 @@ MonoBehaviour:
     position: {x: -180, y: -360}
     costs:
     - currencyId: gem.garnet
-      amount: 0
+      amount: 100
     - currencyId: gem.garnet
-      amount: 0
+      amount: 250
     - currencyId: gem.garnet
-      amount: 0
+      amount: 500
     prerequisites:
     - research-test.cursor.critical
     requiredPrerequisites: 1
@@ -101,15 +99,15 @@ MonoBehaviour:
     position: {x: -360, y: -360}
     costs:
     - currencyId: gem.garnet
-      amount: 0
+      amount: 100
     - currencyId: gem.garnet
-      amount: 0
+      amount: 250
     - currencyId: gem.garnet
-      amount: 0
+      amount: 500
     - currencyId: gem.garnet
-      amount: 0
+      amount: 1000
     - currencyId: gem.garnet
-      amount: 0
+      amount: 2000
     prerequisites:
     - research-test.cursor.critical_damage
     requiredPrerequisites: 1
@@ -117,14 +115,14 @@ MonoBehaviour:
     definition: {fileID: 11400000, guid: 3c27dc88340804b1685fcd1ccb922ae9, type: 2}
     position: {x: 0, y: -360}
     costs:
-    - currencyId: gem.garnet
-      amount: 0
-    - currencyId: gem.garnet
-      amount: 0
-    - currencyId: gem.garnet
-      amount: 0
-    - currencyId: gem.garnet
-      amount: 0
+    - currencyId: gem.topaz
+      amount: 100
+    - currencyId: gem.topaz
+      amount: 200
+    - currencyId: gem.topaz
+      amount: 300
+    - currencyId: gem.topaz
+      amount: 400
     prerequisites:
     - research-test.cursor.interval
     requiredPrerequisites: 1
@@ -132,16 +130,16 @@ MonoBehaviour:
     definition: {fileID: 11400000, guid: 3874212d0929b4e97826c0f169766150, type: 2}
     position: {x: -360, y: 0}
     costs:
-    - currencyId: gem.garnet
-      amount: 0
-    - currencyId: gem.garnet
-      amount: 0
-    - currencyId: gem.garnet
-      amount: 0
-    - currencyId: gem.garnet
-      amount: 0
-    - currencyId: gem.garnet
-      amount: 0
+    - currencyId: gem.topaz
+      amount: 100
+    - currencyId: gem.topaz
+      amount: 200
+    - currencyId: gem.topaz
+      amount: 300
+    - currencyId: gem.topaz
+      amount: 400
+    - currencyId: gem.topaz
+      amount: 500
     prerequisites:
     - research-test.cursor.radius
     requiredPrerequisites: 1
@@ -149,10 +147,10 @@ MonoBehaviour:
     definition: {fileID: 11400000, guid: 288ae2fe3671c4f5f98fbc769358a535, type: 2}
     position: {x: -360, y: -180}
     costs:
-    - currencyId: gem.garnet
-      amount: 0
-    - currencyId: gem.garnet
-      amount: 0
+    - currencyId: gem.topaz
+      amount: 100
+    - currencyId: gem.topaz
+      amount: 200
     prerequisites:
     - research-test.cursor.critical
     requiredPrerequisites: 1
@@ -161,7 +159,7 @@ MonoBehaviour:
     position: {x: -1, y: 180}
     costs:
     - currencyId: gem.garnet
-      amount: 0
+      amount: 250
     prerequisites:
     - research-test.cursor.attack
     requiredPrerequisites: 1
@@ -170,9 +168,9 @@ MonoBehaviour:
     position: {x: 0, y: 360}
     costs:
     - currencyId: gem.garnet
-      amount: 0
+      amount: 100
     - currencyId: gem.garnet
-      amount: 0
+      amount: 250
     prerequisites:
     - research-test.skill.magic_ball.unlock
     requiredPrerequisites: 1
@@ -181,16 +179,16 @@ MonoBehaviour:
     position: {x: -180, y: 180}
     costs:
     - currencyId: gem.garnet
-      amount: 0
+      amount: 250
     prerequisites:
     - research-test.skill.magic_ball.unlock
     requiredPrerequisites: 1
   - id: research-test.skill.tornado.unlock
     definition: {fileID: 11400000, guid: c3ce47c0743f041319a3c75458a6df08, type: 2}
-    position: {x: 180, y: 180}
+    position: {x: 180, y: 179}
     costs:
-    - currencyId: gem.garnet
-      amount: 0
+    - currencyId: gem.topaz
+      amount: 10
     prerequisites:
     - research-test.skill.magic_ball.unlock
     requiredPrerequisites: 1
@@ -198,10 +196,10 @@ MonoBehaviour:
     definition: {fileID: 11400000, guid: 89754e32857da4016966a78aa6371a8c, type: 2}
     position: {x: 360, y: 180}
     costs:
-    - currencyId: gem.garnet
-      amount: 0
-    - currencyId: gem.garnet
-      amount: 0
+    - currencyId: gem.topaz
+      amount: 10
+    - currencyId: gem.topaz
+      amount: 20
     prerequisites:
     - research-test.skill.tornado.unlock
     requiredPrerequisites: 1
@@ -209,8 +207,8 @@ MonoBehaviour:
     definition: {fileID: 11400000, guid: 2acf865aca06c460bacdc6da611f6ab8, type: 2}
     position: {x: 180, y: 360}
     costs:
-    - currencyId: gem.garnet
-      amount: 0
+    - currencyId: gem.topaz
+      amount: 20
     prerequisites:
     - research-test.skill.tornado.unlock
     requiredPrerequisites: 1
@@ -218,8 +216,8 @@ MonoBehaviour:
     definition: {fileID: 11400000, guid: 5098b83bfa54143038498c7001b71b85, type: 2}
     position: {x: -180, y: 360}
     costs:
-    - currencyId: gem.garnet
-      amount: 0
+    - currencyId: gem.topaz
+      amount: 15
     prerequisites:
     - research-test.skill.magic_ball.damage
     requiredPrerequisites: 1
@@ -227,10 +225,10 @@ MonoBehaviour:
     definition: {fileID: 11400000, guid: 2724eb0bd9ef949fbbb464c108047c3d, type: 2}
     position: {x: -360, y: 360}
     costs:
-    - currencyId: gem.garnet
-      amount: 0
-    - currencyId: gem.garnet
-      amount: 0
+    - currencyId: gem.topaz
+      amount: 10
+    - currencyId: gem.topaz
+      amount: 20
     prerequisites:
     - research-test.skill.headshot.unlock
     requiredPrerequisites: 1
@@ -238,8 +236,8 @@ MonoBehaviour:
     definition: {fileID: 11400000, guid: dd28d7eced914483bb13a4fa72f8c44d, type: 2}
     position: {x: -180, y: 540}
     costs:
-    - currencyId: gem.garnet
-      amount: 0
+    - currencyId: gem.topaz
+      amount: 20
     prerequisites:
     - research-test.skill.headshot.unlock
     requiredPrerequisites: 1
@@ -247,8 +245,8 @@ MonoBehaviour:
     definition: {fileID: 11400000, guid: 5640e5a4e7ace463e920b2a371be0be6, type: 2}
     position: {x: 0, y: 540}
     costs:
-    - currencyId: gem.garnet
-      amount: 0
+    - currencyId: gem.topaz
+      amount: 20
     prerequisites:
     - research-test.skill.magic_ball.damage
     requiredPrerequisites: 1
@@ -256,10 +254,10 @@ MonoBehaviour:
     definition: {fileID: 11400000, guid: 368ccf1f70aa049bf9648ab09d6fe2ba, type: 2}
     position: {x: 180, y: 540}
     costs:
-    - currencyId: gem.garnet
-      amount: 0
-    - currencyId: gem.garnet
-      amount: 0
+    - currencyId: gem.topaz
+      amount: 15
+    - currencyId: gem.topaz
+      amount: 30
     prerequisites:
     - research-test.skill.thunder.unlock
     requiredPrerequisites: 1
@@ -267,8 +265,8 @@ MonoBehaviour:
     definition: {fileID: 11400000, guid: 63d982c843bf34d44ab63962066980a8, type: 2}
     position: {x: 0, y: 720}
     costs:
-    - currencyId: gem.garnet
-      amount: 0
+    - currencyId: gem.topaz
+      amount: 30
     prerequisites:
     - research-test.skill.thunder.unlock
     requiredPrerequisites: 1
@@ -276,8 +274,8 @@ MonoBehaviour:
     definition: {fileID: 11400000, guid: 5b145f8947efc414fae92edda68ed9ab, type: 2}
     position: {x: -360, y: 540}
     costs:
-    - currencyId: gem.garnet
-      amount: 0
+    - currencyId: gem.amethyst
+      amount: 5
     prerequisites:
     - research-test.skill.headshot.damage
     requiredPrerequisites: 1
@@ -285,10 +283,10 @@ MonoBehaviour:
     definition: {fileID: 11400000, guid: 22f21cb1763a94d2886b32998ecde8a6, type: 2}
     position: {x: -540, y: 540}
     costs:
-    - currencyId: gem.garnet
-      amount: 0
-    - currencyId: gem.garnet
-      amount: 0
+    - currencyId: gem.amethyst
+      amount: 5
+    - currencyId: gem.amethyst
+      amount: 10
     prerequisites:
     - research-test.skill.flame_exhaust.unlock
     requiredPrerequisites: 1
@@ -296,8 +294,8 @@ MonoBehaviour:
     definition: {fileID: 11400000, guid: a304643dbb786406193cb66060c81cde, type: 2}
     position: {x: -360, y: 720}
     costs:
-    - currencyId: gem.garnet
-      amount: 0
+    - currencyId: gem.amethyst
+      amount: 10
     prerequisites:
     - research-test.skill.flame_exhaust.unlock
     requiredPrerequisites: 1
@@ -305,8 +303,8 @@ MonoBehaviour:
     definition: {fileID: 11400000, guid: 2f9a1b03e73d148bd9480aee1cfc5e92, type: 2}
     position: {x: 360, y: 360}
     costs:
-    - currencyId: gem.garnet
-      amount: 0
+    - currencyId: gem.sapphire
+      amount: 2
     prerequisites:
     - research-test.skill.tornado.damage
     requiredPrerequisites: 1
@@ -314,10 +312,10 @@ MonoBehaviour:
     definition: {fileID: 11400000, guid: 48cdc539ade3e4585a49b87ec278c22a, type: 2}
     position: {x: 540, y: 360}
     costs:
-    - currencyId: gem.garnet
-      amount: 0
-    - currencyId: gem.garnet
-      amount: 0
+    - currencyId: gem.sapphire
+      amount: 2
+    - currencyId: gem.sapphire
+      amount: 4
     prerequisites:
     - research-test.skill.laser.unlock
     requiredPrerequisites: 1
@@ -325,8 +323,8 @@ MonoBehaviour:
     definition: {fileID: 11400000, guid: 3a879c25c1d564f48986c8eaa48c15a5, type: 2}
     position: {x: 360, y: 540}
     costs:
-    - currencyId: gem.garnet
-      amount: 0
+    - currencyId: gem.sapphire
+      amount: 4
     prerequisites:
     - research-test.skill.laser.unlock
     requiredPrerequisites: 1
@@ -334,8 +332,8 @@ MonoBehaviour:
     definition: {fileID: 11400000, guid: 1a70e74df8cb145f0afbc2d0f8a85a1e, type: 2}
     position: {x: 180, y: 720}
     costs:
-    - currencyId: gem.garnet
-      amount: 0
+    - currencyId: gem.dragon
+      amount: 1
     prerequisites:
     - research-test.skill.thunder.damage
     requiredPrerequisites: 1
@@ -343,12 +341,12 @@ MonoBehaviour:
     definition: {fileID: 11400000, guid: 7289141baf4544217af3affc949f11ba, type: 2}
     position: {x: 360, y: 720}
     costs:
-    - currencyId: gem.garnet
-      amount: 0
-    - currencyId: gem.garnet
-      amount: 0
-    - currencyId: gem.garnet
-      amount: 0
+    - currencyId: gem.dragon
+      amount: 1
+    - currencyId: gem.dragon
+      amount: 2
+    - currencyId: gem.dragon
+      amount: 3
     prerequisites:
     - research-test.skill.pet_baby_dragon.unlock
     requiredPrerequisites: 1
@@ -356,10 +354,10 @@ MonoBehaviour:
     definition: {fileID: 11400000, guid: 46a5473867f424496b5ec48bc6502cba, type: 2}
     position: {x: 180, y: 900}
     costs:
-    - currencyId: gem.garnet
-      amount: 0
-    - currencyId: gem.garnet
-      amount: 0
+    - currencyId: gem.dragon
+      amount: 2
+    - currencyId: gem.dragon
+      amount: 4
     prerequisites:
     - research-test.skill.pet_baby_dragon.unlock
     requiredPrerequisites: 1
@@ -368,11 +366,11 @@ MonoBehaviour:
     position: {x: 180, y: 0}
     costs:
     - currencyId: gem.garnet
-      amount: 0
+      amount: 100
     - currencyId: gem.garnet
-      amount: 0
+      amount: 250
     - currencyId: gem.garnet
-      amount: 0
+      amount: 500
     prerequisites:
     - research-test.cursor.attack
     requiredPrerequisites: 1
@@ -381,7 +379,7 @@ MonoBehaviour:
     position: {x: 360, y: 0}
     costs:
     - currencyId: gem.garnet
-      amount: 0
+      amount: 250
     prerequisites:
     - research-test.monster.01.production
     requiredPrerequisites: 1
@@ -389,12 +387,12 @@ MonoBehaviour:
     definition: {fileID: 11400000, guid: 4612f8f550f74424f9ee75ee754c70b0, type: 2}
     position: {x: 360, y: -180}
     costs:
-    - currencyId: gem.garnet
-      amount: 0
-    - currencyId: gem.garnet
-      amount: 0
-    - currencyId: gem.garnet
-      amount: 0
+    - currencyId: gem.topaz
+      amount: 5
+    - currencyId: gem.topaz
+      amount: 10
+    - currencyId: gem.topaz
+      amount: 20
     prerequisites:
     - research-test.monster.02.unlock
     requiredPrerequisites: 1
@@ -402,8 +400,8 @@ MonoBehaviour:
     definition: {fileID: 11400000, guid: 68408f4ddbd3a4234a0c46a47b284fdf, type: 2}
     position: {x: 540, y: 0}
     costs:
-    - currencyId: gem.garnet
-      amount: 0
+    - currencyId: gem.topaz
+      amount: 10
     prerequisites:
     - research-test.monster.02.unlock
     requiredPrerequisites: 1
@@ -411,12 +409,12 @@ MonoBehaviour:
     definition: {fileID: 11400000, guid: b06312a3ddf60471daba9d114938a747, type: 2}
     position: {x: 540, y: -180}
     costs:
-    - currencyId: gem.garnet
-      amount: 0
-    - currencyId: gem.garnet
-      amount: 0
-    - currencyId: gem.garnet
-      amount: 0
+    - currencyId: gem.topaz
+      amount: 10
+    - currencyId: gem.topaz
+      amount: 20
+    - currencyId: gem.topaz
+      amount: 30
     prerequisites:
     - research-test.monster.03.unlock
     requiredPrerequisites: 1
@@ -424,8 +422,8 @@ MonoBehaviour:
     definition: {fileID: 11400000, guid: 0f0ac780867ca4a698cd29de8f32d79d, type: 2}
     position: {x: 720, y: 0}
     costs:
-    - currencyId: gem.garnet
-      amount: 0
+    - currencyId: gem.topaz
+      amount: 20
     prerequisites:
     - research-test.monster.03.unlock
     requiredPrerequisites: 1
@@ -433,12 +431,12 @@ MonoBehaviour:
     definition: {fileID: 11400000, guid: 6ddb54fce2f2241ef9a58e26ed60d474, type: 2}
     position: {x: 720, y: -180}
     costs:
-    - currencyId: gem.garnet
-      amount: 0
-    - currencyId: gem.garnet
-      amount: 0
-    - currencyId: gem.garnet
-      amount: 0
+    - currencyId: gem.amethyst
+      amount: 2
+    - currencyId: gem.amethyst
+      amount: 4
+    - currencyId: gem.amethyst
+      amount: 6
     prerequisites:
     - research-test.monster.04.unlock
     requiredPrerequisites: 1
@@ -446,8 +444,8 @@ MonoBehaviour:
     definition: {fileID: 11400000, guid: d955e0eaf9ff94eba9a59d0a46614cfd, type: 2}
     position: {x: 900, y: 0}
     costs:
-    - currencyId: gem.garnet
-      amount: 0
+    - currencyId: gem.amethyst
+      amount: 5
     prerequisites:
     - research-test.monster.04.unlock
     requiredPrerequisites: 1
@@ -455,12 +453,12 @@ MonoBehaviour:
     definition: {fileID: 11400000, guid: af6e1501e4f684c248b8324e5e8bbd31, type: 2}
     position: {x: 900, y: -180}
     costs:
-    - currencyId: gem.garnet
-      amount: 0
-    - currencyId: gem.garnet
-      amount: 0
-    - currencyId: gem.garnet
-      amount: 0
+    - currencyId: gem.amethyst
+      amount: 3
+    - currencyId: gem.amethyst
+      amount: 6
+    - currencyId: gem.amethyst
+      amount: 9
     prerequisites:
     - research-test.monster.05.unlock
     requiredPrerequisites: 1
@@ -468,8 +466,8 @@ MonoBehaviour:
     definition: {fileID: 11400000, guid: 22d2eb6a070c040b18dc4aa357253d5a, type: 2}
     position: {x: 1080, y: 0}
     costs:
-    - currencyId: gem.garnet
-      amount: 0
+    - currencyId: gem.amethyst
+      amount: 10
     prerequisites:
     - research-test.monster.05.unlock
     requiredPrerequisites: 1
@@ -477,12 +475,12 @@ MonoBehaviour:
     definition: {fileID: 11400000, guid: 77df0ede182ff4872adf894785d498c0, type: 2}
     position: {x: 1260, y: 0}
     costs:
-    - currencyId: gem.garnet
-      amount: 0
-    - currencyId: gem.garnet
-      amount: 0
-    - currencyId: gem.garnet
-      amount: 0
+    - currencyId: gem.sapphire
+      amount: 1
+    - currencyId: gem.sapphire
+      amount: 2
+    - currencyId: gem.sapphire
+      amount: 3
     prerequisites:
     - research-test.monster.06.unlock
     requiredPrerequisites: 1
@@ -490,8 +488,8 @@ MonoBehaviour:
     definition: {fileID: 11400000, guid: 29b1229df236b4969a58ba81fb9836d4, type: 2}
     position: {x: 1080, y: -360}
     costs:
-    - currencyId: gem.garnet
-      amount: 0
+    - currencyId: gem.sapphire
+      amount: 3
     prerequisites:
     - research-test.monster.06.unlock
     requiredPrerequisites: 1
@@ -499,12 +497,12 @@ MonoBehaviour:
     definition: {fileID: 11400000, guid: 1db14ac2ab0e842dd8569ce64a144440, type: 2}
     position: {x: 1260, y: -360}
     costs:
-    - currencyId: gem.garnet
-      amount: 0
-    - currencyId: gem.garnet
-      amount: 0
-    - currencyId: gem.garnet
-      amount: 0
+    - currencyId: gem.sapphire
+      amount: 2
+    - currencyId: gem.sapphire
+      amount: 4
+    - currencyId: gem.sapphire
+      amount: 6
     prerequisites:
     - research-test.monster.07.unlock
     requiredPrerequisites: 1
@@ -512,8 +510,8 @@ MonoBehaviour:
     definition: {fileID: 11400000, guid: a8a5093861d2e4d0596b5b5782b1b276, type: 2}
     position: {x: 900, y: -360}
     costs:
-    - currencyId: gem.garnet
-      amount: 0
+    - currencyId: gem.sapphire
+      amount: 5
     prerequisites:
     - research-test.monster.07.unlock
     requiredPrerequisites: 1
@@ -521,12 +519,12 @@ MonoBehaviour:
     definition: {fileID: 11400000, guid: 447b141c830364e7e972b6f6516a64fe, type: 2}
     position: {x: 900, y: -540}
     costs:
-    - currencyId: gem.garnet
-      amount: 0
-    - currencyId: gem.garnet
-      amount: 0
-    - currencyId: gem.garnet
-      amount: 0
+    - currencyId: gem.diamond
+      amount: 1
+    - currencyId: gem.diamond
+      amount: 2
+    - currencyId: gem.diamond
+      amount: 3
     prerequisites:
     - research-test.monster.08.unlock
     requiredPrerequisites: 1
@@ -534,8 +532,8 @@ MonoBehaviour:
     definition: {fileID: 11400000, guid: 72a71697d3ceb40798cb40b77b938a52, type: 2}
     position: {x: 720, y: -360}
     costs:
-    - currencyId: gem.garnet
-      amount: 0
+    - currencyId: gem.diamond
+      amount: 2
     prerequisites:
     - research-test.monster.08.unlock
     requiredPrerequisites: 1
@@ -543,12 +541,12 @@ MonoBehaviour:
     definition: {fileID: 11400000, guid: 2933078aad1cf44aca4edbcddcdaa064, type: 2}
     position: {x: 720, y: -540}
     costs:
-    - currencyId: gem.garnet
-      amount: 0
-    - currencyId: gem.garnet
-      amount: 0
-    - currencyId: gem.garnet
-      amount: 0
+    - currencyId: gem.dragon
+      amount: 1
+    - currencyId: gem.dragon
+      amount: 2
+    - currencyId: gem.dragon
+      amount: 3
     prerequisites:
     - research-test.monster.09.unlock
     requiredPrerequisites: 1
@@ -556,8 +554,8 @@ MonoBehaviour:
     definition: {fileID: 11400000, guid: c7b8879b4d5294be2b6dbf3a23837c01, type: 2}
     position: {x: 540, y: -360}
     costs:
-    - currencyId: gem.garnet
-      amount: 0
+    - currencyId: gem.dragon
+      amount: 3
     prerequisites:
     - research-test.monster.09.unlock
     requiredPrerequisites: 1
@@ -565,12 +563,12 @@ MonoBehaviour:
     definition: {fileID: 11400000, guid: dda0f513a0d0b4da99cf571e143ea2df, type: 2}
     position: {x: 540, y: -540}
     costs:
-    - currencyId: gem.garnet
-      amount: 0
-    - currencyId: gem.garnet
-      amount: 0
-    - currencyId: gem.garnet
-      amount: 0
+    - currencyId: gem.dragon
+      amount: 2
+    - currencyId: gem.dragon
+      amount: 4
+    - currencyId: gem.dragon
+      amount: 6
     prerequisites:
     - research-test.monster.10.unlock
     requiredPrerequisites: 1
@@ -578,12 +576,12 @@ MonoBehaviour:
     definition: {fileID: 11400000, guid: 68586832a76124a1db94bca12eb7080d, type: 2}
     position: {x: 0, y: -540}
     costs:
-    - currencyId: gem.garnet
-      amount: 0
-    - currencyId: gem.garnet
-      amount: 0
-    - currencyId: gem.garnet
-      amount: 0
+    - currencyId: gem.topaz
+      amount: 100
+    - currencyId: gem.topaz
+      amount: 200
+    - currencyId: gem.topaz
+      amount: 300
     prerequisites:
     - research-test.cursor.attack.intermediate
     requiredPrerequisites: 1

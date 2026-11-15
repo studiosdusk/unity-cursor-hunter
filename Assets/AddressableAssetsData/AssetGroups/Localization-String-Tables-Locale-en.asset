@@ -15,6 +15,13 @@ MonoBehaviour:
   m_GroupName: Localization-String-Tables-Locale-en
   m_GUID: d7f2d91954c2c413bb3210958bb1a9c5
   m_SerializeEntries:
+  - m_GUID: 5973f660815e346bc8f3b706bfdf6d6c
+    m_Address: Relic_en
+    m_ReadOnly: 1
+    m_SerializedLabels:
+    - Locale-en
+    - Preload
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: bf69da1818a9348328acf1d609ff5911
     m_Address: Research_en
     m_ReadOnly: 1

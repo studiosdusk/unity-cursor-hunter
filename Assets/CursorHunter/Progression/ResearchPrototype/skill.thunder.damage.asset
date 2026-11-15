@@ -25,9 +25,9 @@ MonoBehaviour:
     ranks:
     - levelDelta: 5
       cost:
-        currencyId: gem.garnet
-        amount: 0
+        currencyId: gem.topaz
+        amount: 15
     - levelDelta: 6
       cost:
-        currencyId: gem.garnet
-        amount: 0
+        currencyId: gem.topaz
+        amount: 30

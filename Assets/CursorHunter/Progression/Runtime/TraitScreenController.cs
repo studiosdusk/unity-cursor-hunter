@@ -297,12 +297,12 @@ namespace CursorHunter.Progression
             return icon != null;
         }
 
-        public bool TryGetRelicPresentation(string relicId, out string title, out Sprite icon)
+        public bool TryGetRelicPresentation(string relicId, out string textKey, out Sprite icon)
         {
             RelicCollectionCatalogEntry entry = RelicCatalog?.FindById(relicId);
-            title = entry?.Title ?? string.Empty;
+            textKey = entry?.TextKey ?? string.Empty;
             icon = entry?.Icon;
-            return icon != null || !string.IsNullOrWhiteSpace(title);
+            return icon != null || !string.IsNullOrWhiteSpace(textKey);
         }
 
         /// <summary>The catalog defines display order and presentation for collection views.</summary>
@@ -324,10 +324,9 @@ namespace CursorHunter.Progression
             foreach (RelicInformation candidate in _document.information.relics)
                 if (candidate != null && string.Equals(candidate.id, relicId, StringComparison.Ordinal))
                 { definition = candidate; break; }
-            string description = RelicEffectDescription.Format(definition);
-            if (definition == null || string.IsNullOrEmpty(description)) return false;
+            if (definition == null) return false;
             bool owned = GetOwnedRelicIds().Contains(relicId);
-            view = new RelicViewState(presentation, description, owned,
+            view = new RelicViewState(presentation, owned,
                 owned && _unseenRelicIds.Contains(relicId));
             return true;
         }
@@ -395,15 +394,15 @@ namespace CursorHunter.Progression
         private sealed class RelicDisplayEntry
         {
             [SerializeField] private string id;
-            [SerializeField] private string title;
+            [SerializeField] private string textKey;
             [SerializeField] private Sprite icon;
-            [SerializeField, TextArea(2, 4)] private string description;
             [SerializeField] private bool isObtained;
 
             public string Id => id;
-            public string Title => title;
+            // Kept for reflection-based scene diagnostics; this value is a localization key.
+            public string Title => textKey;
+            public string TextKey => textKey;
             public Sprite Icon => icon;
-            public string Description => description;
             public bool IsObtained => isObtained;
 
             public void SetObtained(bool value)
@@ -411,40 +410,29 @@ namespace CursorHunter.Progression
                 isObtained = value;
             }
 
-            public void SetCatalogPresentation(RelicCollectionCatalogEntry entry, string effectDescription)
+            public void SetCatalogPresentation(RelicCollectionCatalogEntry entry)
             {
                 id = entry.Id;
-                title = entry.Title;
+                textKey = entry.TextKey;
                 icon = entry.Icon;
-                description = effectDescription;
             }
 
             public void ApplyPresentationDefaults(
                 string relicId,
-                string defaultTitle,
-                Sprite defaultIcon,
-                string defaultDescription)
+                string defaultTextKey,
+                Sprite defaultIcon)
             {
                 if (string.IsNullOrWhiteSpace(id))
                 {
                     id = relicId;
                 }
 
-                bool hasGenericTitle = !string.IsNullOrWhiteSpace(title) &&
-                    title.StartsWith("유물 ", StringComparison.Ordinal);
-                if (string.IsNullOrWhiteSpace(title) || hasGenericTitle)
-                {
-                    title = defaultTitle;
-                }
+                if (string.IsNullOrWhiteSpace(textKey))
+                    textKey = defaultTextKey;
 
                 if (icon == null)
                 {
                     icon = defaultIcon;
-                }
-
-                if (string.IsNullOrWhiteSpace(description))
-                {
-                    description = defaultDescription;
                 }
             }
         }
@@ -584,9 +572,8 @@ namespace CursorHunter.Progression
                 {
                     entry.ApplyPresentationDefaults(
                         legacyPresentation.Id,
-                        legacyPresentation.Title,
-                        legacyPresentation.Icon,
-                        string.Empty);
+                        legacyPresentation.TextKey,
+                        legacyPresentation.Icon);
                 }
             }
 
@@ -623,9 +610,8 @@ namespace CursorHunter.Progression
                         {
                             entry.ApplyPresentationDefaults(
                                 presentation.Id,
-                                presentation.Title,
-                                presentation.Icon,
-                                string.Empty);
+                                presentation.TextKey,
+                                presentation.Icon);
                         }
                     }
 
@@ -657,12 +643,7 @@ namespace CursorHunter.Progression
                     continue;
                 }
 
-                RelicInformation definition = null;
-                if (definitions != null)
-                    foreach (RelicInformation candidate in definitions)
-                        if (candidate != null && string.Equals(candidate.id, entry.Id, StringComparison.Ordinal))
-                        { definition = candidate; break; }
-                entry.SetCatalogPresentation(presentation, RelicEffectDescription.Format(definition));
+                entry.SetCatalogPresentation(presentation);
             }
         }
 
@@ -5132,12 +5113,8 @@ namespace CursorHunter.Progression
             for (int i = 0; i < information.relics.Length; i++)
             {
                 RelicInformation relic = information.relics[i];
-                string title = i < relicEntries.Count && relicEntries[i] != null &&
-                               !string.IsNullOrWhiteSpace(relicEntries[i].Title)
-                    ? relicEntries[i].Title
-                    : relic.id;
                 CreateSummaryCategory(_summaryOverlayContent,
-                    title + " · " + relic.id, new Color(0.92f, 0.69f, 0.28f, 1f));
+                    relic.id, new Color(0.92f, 0.69f, 0.28f, 1f));
                 AddLocalizedInfo("획득 상태", "owned", relic.owned ? "획득" : "미획득");
                 EntityTextDefinition sourceMonster = _document == null
                     ? null
@@ -6567,7 +6544,7 @@ namespace CursorHunter.Progression
                     true);
             }
 
-            CreateText(
+            CreateRelicLocalizedText(
                 CreateRect(
                 "RelicTitle",
                     card,
@@ -6576,14 +6553,14 @@ namespace CursorHunter.Progression
                     new Vector2(112f, -22f),
                     new Vector2(-132f, 34f),
                     new Vector2(0f, 1f)),
-                string.IsNullOrWhiteSpace(entry.Title)
-                    ? "유물 " + (index + 1).ToString("00", CultureInfo.InvariantCulture)
-                    : entry.Title,
+                entry.TextKey,
+                ".title",
+                "유물 " + (index + 1).ToString("00", CultureInfo.InvariantCulture),
                 20,
                 TextAnchor.MiddleLeft,
                 inkColor,
                 true);
-            CreateText(
+            CreateRelicLocalizedText(
                 CreateRect(
                     "RelicDescription",
                     card,
@@ -6592,9 +6569,9 @@ namespace CursorHunter.Progression
                     new Vector2(112f, 10f),
                     new Vector2(-132f, -8f),
                     new Vector2(0f, 0.5f)),
-                string.IsNullOrWhiteSpace(entry.Description)
-                    ? "효과 정보 준비 중입니다."
-                    : entry.Description,
+                entry.TextKey,
+                ".description",
+                "효과 정보 준비 중입니다.",
                 14,
                 TextAnchor.UpperLeft,
                 mutedInkColor,
@@ -6708,7 +6685,7 @@ namespace CursorHunter.Progression
             cardClickBlocker.transition = Selectable.Transition.None;
             cardClickBlocker.onClick.AddListener(() => { });
 
-            CreateText(
+            CreateRelicLocalizedText(
                 CreateRect(
                     "RelicDetailTitle",
                     card,
@@ -6717,9 +6694,9 @@ namespace CursorHunter.Progression
                     new Vector2(0f, -cardHeight * 0.12f),
                     new Vector2(-32f, 58f),
                     new Vector2(0.5f, 0.5f)),
-                string.IsNullOrWhiteSpace(entry.Title)
-                    ? "유물 " + (index + 1).ToString("00", CultureInfo.InvariantCulture)
-                    : entry.Title,
+                entry.TextKey,
+                ".title",
+                "유물 " + (index + 1).ToString("00", CultureInfo.InvariantCulture),
                 27,
                 TextAnchor.MiddleCenter,
                 inkColor,
@@ -6757,7 +6734,7 @@ namespace CursorHunter.Progression
                     false);
             }
 
-            CreateText(
+            CreateRelicLocalizedText(
                 CreateRect(
                     "RelicDetailDescription",
                     card,
@@ -6766,9 +6743,9 @@ namespace CursorHunter.Progression
                     Vector2.zero,
                     new Vector2(-8f, -8f),
                     new Vector2(0.5f, 0.5f)),
-                string.IsNullOrWhiteSpace(entry.Description)
-                    ? "효과 정보 준비 중입니다."
-                    : entry.Description,
+                entry.TextKey,
+                ".description",
+                "효과 정보 준비 중입니다.",
                 19,
                 TextAnchor.UpperCenter,
                 inkColor,
@@ -11774,6 +11751,27 @@ namespace CursorHunter.Progression
             }
 
             LocalizationCatalog.BindKnown(text, content);
+            return text;
+        }
+
+        private TextMeshProUGUI CreateRelicLocalizedText(
+            RectTransform rect,
+            string textKey,
+            string suffix,
+            string fallback,
+            int fontSize,
+            TextAnchor alignment,
+            Color color,
+            bool bold)
+        {
+            TextMeshProUGUI text = CreateText(rect, fallback, fontSize, alignment, color, bold);
+            if (!string.IsNullOrWhiteSpace(textKey))
+            {
+                RelicLocalizedLabel localized = text.GetComponent<RelicLocalizedLabel>();
+                if (localized == null)
+                    localized = text.gameObject.AddComponent<RelicLocalizedLabel>();
+                localized.Bind(textKey + suffix);
+            }
             return text;
         }
 

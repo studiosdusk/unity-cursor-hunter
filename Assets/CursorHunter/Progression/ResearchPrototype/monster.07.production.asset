@@ -26,13 +26,13 @@ MonoBehaviour:
     ranks:
     - levelDelta: 3
       cost:
-        currencyId: gem.garnet
-        amount: 0
+        currencyId: gem.sapphire
+        amount: 2
     - levelDelta: 4
       cost:
-        currencyId: gem.garnet
-        amount: 0
+        currencyId: gem.sapphire
+        amount: 4
     - levelDelta: 8
       cost:
-        currencyId: gem.garnet
-        amount: 0
+        currencyId: gem.sapphire
+        amount: 6

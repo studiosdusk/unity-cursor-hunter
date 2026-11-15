@@ -1,0 +1,184 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e9620f8c34305754d8cc9a7e49e852d9, type: 3}
+  m_Name: Relic_en
+  m_EditorClassIdentifier: Unity.Localization::UnityEngine.Localization.Tables.StringTable
+  m_LocaleId:
+    m_Code: en
+  m_SharedData: {fileID: 11400000, guid: fd30bdd5ccbe64e4a9a1609fbbaaf124, type: 2}
+  m_Metadata:
+    m_Items: []
+  m_TableData:
+  - m_Id: 204464128
+    m_Localized: Red Potion
+    m_Metadata:
+      m_Items: []
+  - m_Id: 217047040
+    m_Localized: Cursor basic attack damage +10%
+    m_Metadata:
+      m_Items: []
+  - m_Id: 217047041
+    m_Localized: Blue Potion
+    m_Metadata:
+      m_Items: []
+  - m_Id: 217047042
+    m_Localized: Automatic skill damage +10%
+    m_Metadata:
+      m_Items: []
+  - m_Id: 217047043
+    m_Localized: Monster Meat
+    m_Metadata:
+      m_Items: []
+  - m_Id: 217047044
+    m_Localized: Pet attack damage +20%
+    m_Metadata:
+      m_Items: []
+  - m_Id: 217047045
+    m_Localized: Thief's Shoes
+    m_Metadata:
+      m_Items: []
+  - m_Id: 217047046
+    m_Localized: Pet movement speed +30%
+    m_Metadata:
+      m_Items: []
+  - m_Id: 217047047
+    m_Localized: Archer's Bow
+    m_Metadata:
+      m_Items: []
+  - m_Id: 217047048
+    m_Localized: Pet attack interval -20%
+    m_Metadata:
+      m_Items: []
+  - m_Id: 217047049
+    m_Localized: Warrior's Armor
+    m_Metadata:
+      m_Items: []
+  - m_Id: 217047050
+    m_Localized: Normal field duration +4 seconds (up to 30 seconds)
+    m_Metadata:
+      m_Items: []
+  - m_Id: 217047051
+    m_Localized: Wizard's Hat
+    m_Metadata:
+      m_Items: []
+  - m_Id: 217047052
+    m_Localized: Area skill radius +16%
+    m_Metadata:
+      m_Items: []
+  - m_Id: 217047053
+    m_Localized: Ring of Valor
+    m_Metadata:
+      m_Items: []
+  - m_Id: 217047054
+    m_Localized: Critical damage multiplier +0.5
+    m_Metadata:
+      m_Items: []
+  - m_Id: 217047055
+    m_Localized: Lucky Dice
+    m_Metadata:
+      m_Items: []
+  - m_Id: 217047056
+    m_Localized: Pet attacks have a 20% chance to deal double damage
+    m_Metadata:
+      m_Items: []
+  - m_Id: 217047057
+    m_Localized: Kraken's Eye
+    m_Metadata:
+      m_Items: []
+  - m_Id: 217047058
+    m_Localized: Against non-boss monsters, a 50% chance to execute when their health
+      is at or below 30%
+    m_Metadata:
+      m_Items: []
+  - m_Id: 217047059
+    m_Localized: Four-Leaf Clover
+    m_Metadata:
+      m_Items: []
+  - m_Id: 217047060
+    m_Localized: Relic drop chance +1 percentage point
+    m_Metadata:
+      m_Items: []
+  - m_Id: 217047061
+    m_Localized: Ancient Book
+    m_Metadata:
+      m_Items: []
+  - m_Id: 217047062
+    m_Localized: Basic attack interval -40%
+    m_Metadata:
+      m_Items: []
+  - m_Id: 217047063
+    m_Localized: Adventurer's Bag
+    m_Metadata:
+      m_Items: []
+  - m_Id: 217047064
+    m_Localized: Garnet rewards from kills +20%
+    m_Metadata:
+      m_Items: []
+  - m_Id: 217047065
+    m_Localized: Compass
+    m_Metadata:
+      m_Items: []
+  - m_Id: 217047066
+    m_Localized: Pet attack range +30%
+    m_Metadata:
+      m_Items: []
+  - m_Id: 217047067
+    m_Localized: Megaphone
+    m_Metadata:
+      m_Items: []
+  - m_Id: 217047068
+    m_Localized: Normal monster spawn interval -10%
+    m_Metadata:
+      m_Items: []
+  - m_Id: 217047069
+    m_Localized: Telescope
+    m_Metadata:
+      m_Items: []
+  - m_Id: 217047070
+    m_Localized: Cursor attack radius +20%
+    m_Metadata:
+      m_Items: []
+  - m_Id: 217047071
+    m_Localized: Stone
+    m_Metadata:
+      m_Items: []
+  - m_Id: 217047072
+    m_Localized: First-hit damage against targets at full health +30%
+    m_Metadata:
+      m_Items: []
+  - m_Id: 217047073
+    m_Localized: Rainbow Feather
+    m_Metadata:
+      m_Items: []
+  - m_Id: 217047074
+    m_Localized: Automatic skill cooldown -10%
+    m_Metadata:
+      m_Items: []
+  - m_Id: 217047075
+    m_Localized: Scales of Judgment
+    m_Metadata:
+      m_Items: []
+  - m_Id: 217047076
+    m_Localized: Boss damage +20%
+    m_Metadata:
+      m_Items: []
+  - m_Id: 217047077
+    m_Localized: Treasure Chest
+    m_Metadata:
+      m_Items: []
+  - m_Id: 217047078
+    m_Localized: Rewards from normal monster kills +30%
+    m_Metadata:
+      m_Items: []
+  references:
+    version: 2
+    RefIds: []

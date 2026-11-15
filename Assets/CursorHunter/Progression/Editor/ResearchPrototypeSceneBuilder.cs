@@ -31,7 +31,7 @@ namespace CursorHunter.Progression.Editor
             AssetDatabase.CreateAsset(font, Folder + "/ResearchPrototypeFont.asset");
             AssetDatabase.AddObjectToAsset(font.material, font);
             foreach (var atlas in font.atlasTextures) if (atlas != null) AssetDatabase.AddObjectToAsset(atlas, font);
-            font.TryAddCharacters("초급 공격력 연구범위간격치명타 확률강화피해보스0123456789 /배초%연구 비용최대 랭크무료가넷테스트 (실제 저장 및 전투 미적용)→");
+            font.TryAddCharacters("초급 공격력 연구범위간격치명타 확률강화피해보스0123456789 /배초%가격:최대 랭크무료가넷테스트 (실제 저장 및 전투 미적용)→");
             EditorUtility.SetDirty(font);
             var defs = new ResearchDefinition[6];
             string[] ids = {"cursor.attack", "cursor.radius", "cursor.interval", "cursor.critical", "cursor.critical_damage", "cursor.boss_damage"};
@@ -53,6 +53,10 @@ namespace CursorHunter.Progression.Editor
             var scaler=canvasGO.GetComponent<CanvasScaler>(); scaler.uiScaleMode=CanvasScaler.ScaleMode.ScaleWithScreenSize; scaler.referenceResolution=new Vector2(1920,1080); scaler.matchWidthOrHeight=.5f;
             var map=canvasGO.AddComponent<ResearchTestMap>();
             var bg=Image("Background",canvasGO.transform,Vector2.zero,new Vector2(1920,1080),null,new Color(.035f,.075f,.13f)); bg.raycastTarget=true; bg.rectTransform.anchorMin=Vector2.zero; bg.rectTransform.anchorMax=Vector2.one; bg.rectTransform.sizeDelta=Vector2.zero;
+            var backdropPrefab=AssetDatabase.LoadAssetAtPath<GameObject>("Assets/CursorHunter/Progression/Prefabs/ProgressionUiBackdrop.prefab");
+            if (backdropPrefab == null) throw new InvalidOperationException("Missing shared progression UI backdrop prefab");
+            var backdrop=(GameObject)PrefabUtility.InstantiatePrefab(backdropPrefab,canvasGO.transform);
+            backdrop.transform.SetSiblingIndex(bg.transform.GetSiblingIndex()+1);
             Text("ScreenTitle",canvasGO.transform,new Vector2(-770,440),new Vector2(450,75),"초급 연구",42,TextAlignmentOptions.Left);
             Text("TestLabel",canvasGO.transform,new Vector2(-430,440),new Vector2(350,52),"테스트 (실제 저장 및 전투 미적용)",18,TextAlignmentOptions.Left);
             Text("WalletLabel",canvasGO.transform,new Vector2(650,440),new Vector2(110,55),"가넷",24,TextAlignmentOptions.Right);
@@ -100,21 +104,25 @@ namespace CursorHunter.Progression.Editor
             PrefabUtility.RecordPrefabInstancePropertyModifications(header);
             PrefabUtility.RecordPrefabInstancePropertyModifications(headerImage);
             foreach(Transform child in header) child.gameObject.SetActive(false);
-            map.title=Text("ResearchTitle",header,Vector2.zero,new Vector2(450,55),"",25,TextAlignmentOptions.Center);
-            map.title.enableAutoSizing=true; map.title.fontSizeMin=16; map.title.fontSizeMax=25;
+            map.title=Text("ResearchTitle",header,Vector2.zero,new Vector2(450,55),"",40,TextAlignmentOptions.Center);
+            map.title.enableAutoSizing=true; map.title.fontSizeMin=24; map.title.fontSizeMax=40;
             var bandSprite=roundedSprite;
             var band=Image("EffectBand",popup,new Vector2(0,15),new Vector2(454,114),bandSprite,Color.white);
             band.type=UnityEngine.UI.Image.Type.Sliced; band.raycastTarget=false; band.transform.SetAsFirstSibling();
-            map.effectDescription=Text("EffectDescription",popup,new Vector2(0,49),new Vector2(430,30),"",20,TextAlignmentOptions.Center);
-            map.effectDescription.enableAutoSizing=true; map.effectDescription.fontSizeMin=14; map.effectDescription.fontSizeMax=20;
-            map.beforeValue=Text("CurrentValue",popup,new Vector2(-110,-1),new Vector2(150,50),"0",32,TextAlignmentOptions.Center);
-            map.afterValue=Text("NextValue",popup,new Vector2(110,-1),new Vector2(150,50),"2",32,TextAlignmentOptions.Center); map.afterValue.color=new Color(.65f,.91f,.75f);
-            var a=Image("ArrowIcon",popup,new Vector2(0,-1),new Vector2(28,28),AssetDatabase.LoadAssetAtPath<Sprite>(ResearchIcons+"UI_Common_Arrow_04_Blue_Right.png"),Color.white); a.preserveAspect=true; a.raycastTarget=false; map.arrow=a.gameObject;
+            map.effectDescription=Text("EffectDescription",popup,new Vector2(0,49),new Vector2(430,40),"",32,TextAlignmentOptions.Center);
+            map.effectDescription.enableAutoSizing=true; map.effectDescription.fontSizeMin=20; map.effectDescription.fontSizeMax=32;
+            map.beforeValue=Text("CurrentValue",popup,new Vector2(0,-1),new Vector2(380,50),"0 <color=#21A6F2>→</color> <color=#A6E8BF>2</color>",32,TextAlignmentOptions.Center);
+            map.afterValue=Text("NextValue",popup,new Vector2(110,-1),new Vector2(150,50),"2",32,TextAlignmentOptions.Center); map.afterValue.color=new Color(.65f,.91f,.75f); map.afterValue.gameObject.SetActive(false);
+            var a=Image("ArrowIcon",popup,new Vector2(0,-1),new Vector2(28,28),AssetDatabase.LoadAssetAtPath<Sprite>(ResearchIcons+"UI_Common_Arrow_04_Blue_Right.png"),Color.white); a.preserveAspect=true; a.raycastTarget=false; map.arrow=a.gameObject; map.arrow.SetActive(false);
             var separator=Image("Separator",popup,new Vector2(0,-58),new Vector2(446,2),null,new Color(.27f,.36f,.48f)); separator.raycastTarget=false;
-            map.costLabel=Text("CostLabel",popup,new Vector2(-113,-88),new Vector2(150,40),"연구 비용",22,TextAlignmentOptions.Center);
-            var gem=Image("GarnetIcon",popup,new Vector2(65,-88),new Vector2(36,36),AssetDatabase.LoadAssetAtPath<Sprite>("Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Icon_ItemIcons/512/ItemIcon_Gem_Pentagon_Red.png"),Color.white); gem.preserveAspect=true; gem.raycastTarget=false; map.gemIcon=gem.gameObject;
-            map.costValue=Text("CostValue",popup,new Vector2(132,-88),new Vector2(100,40),"100",23,TextAlignmentOptions.Right);
-            map.rankInfo=Text("SelectedRank",popup,new Vector2(0,-125),new Vector2(130,28),"0 / 5",18,TextAlignmentOptions.Center);
+            map.costLabel=Text("CostLabel",popup,new Vector2(-65,-88),new Vector2(100,40),"가격:",38,TextAlignmentOptions.Center);
+            map.costLabel.enableAutoSizing=true; map.costLabel.fontSizeMin=24; map.costLabel.fontSizeMax=38;
+            var gem=Image("GarnetIcon",popup,new Vector2(100,-88),new Vector2(36,36),AssetDatabase.LoadAssetAtPath<Sprite>("Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Icon_ItemIcons/512/ItemIcon_Gem_Pentagon_Red.png"),Color.white); gem.preserveAspect=true; gem.raycastTarget=false; map.gemIcon=gem.gameObject;
+            map.costValue=Text("CostValue",popup,new Vector2(31,-88),new Vector2(70,40),"100",38,TextAlignmentOptions.Center);
+            map.costValue.enableAutoSizing=true; map.costValue.fontSizeMin=24; map.costValue.fontSizeMax=38;
+            map.costValue.color=new Color(.65f,.91f,.75f);
+            map.rankInfo=Text("SelectedRank",popup,new Vector2(0,-125),new Vector2(180,32),"0 / 5",26,TextAlignmentOptions.Center);
+            map.rankInfo.enableAutoSizing=true; map.rankInfo.fontSizeMin=20; map.rankInfo.fontSizeMax=26;
             var es=new GameObject("EventSystem",typeof(EventSystem),typeof(InputSystemUIInputModule));
             AssetDatabase.SaveAssets();
             if(!EditorSceneManager.SaveScene(scene,ScenePath)) throw new InvalidOperationException("Failed to save scene");
@@ -124,7 +132,7 @@ namespace CursorHunter.Progression.Editor
         private static Image CreateLink(Transform parent,string name,Vector2 start,Vector2 end)
         {
             var delta=end-start;
-            var line=Image(name,parent,(start+end)/2,new Vector2(7,Mathf.Max(1,delta.magnitude-92)),null,new Color(.13f,.65f,.95f));
+            var line=Image(name,parent,(start+end)/2,new Vector2(10,Mathf.Max(1,delta.magnitude-92)),null,new Color(.13f,.65f,.95f));
             line.rectTransform.localRotation=Quaternion.Euler(0,0,Mathf.Atan2(-delta.x,delta.y)*Mathf.Rad2Deg);
             line.raycastTarget=false;
             return line;

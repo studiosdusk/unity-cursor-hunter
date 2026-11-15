@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using CursorHunter.Contracts;
+using CursorHunter.Data;
 using UnityEngine;
 
 namespace CursorHunter.Progression
@@ -9,14 +10,12 @@ namespace CursorHunter.Progression
     public readonly struct RelicViewState
     {
         public RelicCollectionCatalogEntry Presentation { get; }
-        public string Description { get; }
         public bool IsOwned { get; }
         public bool IsNew { get; }
 
-        public RelicViewState(RelicCollectionCatalogEntry presentation, string description, bool isOwned, bool isNew)
+        public RelicViewState(RelicCollectionCatalogEntry presentation, bool isOwned, bool isNew)
         {
             Presentation = presentation;
-            Description = description;
             IsOwned = isOwned;
             IsNew = isNew;
         }
@@ -25,22 +24,21 @@ namespace CursorHunter.Progression
     [Serializable]
     public sealed class RelicCollectionCatalogEntry
     {
-        [SerializeField] private string id;
-        [SerializeField] private string title;
-        [SerializeField] private Sprite icon;
-        // Kept only to preserve existing asset data; runtime text comes from combat values.
-        [SerializeField, HideInInspector] private string description;
+        [SerializeField] private RelicDefinition definition;
 
-        public string Id => id;
-        public string Title => title;
-        public Sprite Icon => icon;
+        public RelicDefinition Definition => definition;
+        public string Id => definition != null ? definition.stableId : string.Empty;
+        public string TextKey => definition != null ? definition.presentation?.textKey : string.Empty;
+        // Compatibility for existing diagnostics; this is a key, never display text.
+        public string Title => TextKey;
+        public Sprite Icon => definition != null ? definition.presentation?.icon : null;
+        public int DisplayOrder => definition != null ? definition.presentation?.displayOrder ?? int.MaxValue : int.MaxValue;
+
+        public RelicCollectionCatalogEntry() { }
+        public RelicCollectionCatalogEntry(RelicDefinition value) => definition = value;
     }
 
-    /// <summary>
-    /// Runtime-safe source of relic names and icons. Keeping this under
-    /// Resources lets the collection recover its presentation if an open
-    /// Unity scene still has older, empty serialized relic entries.
-    /// </summary>
+    /// <summary>Ordered presentation index over the individual relic definition assets.</summary>
     public sealed class RelicCollectionCatalog : ScriptableObject
     {
         [SerializeField] private List<RelicCollectionCatalogEntry> entries =
@@ -51,50 +49,40 @@ namespace CursorHunter.Progression
         public RelicCollectionCatalogEntry FindById(string relicId)
         {
             if (string.IsNullOrWhiteSpace(relicId) || entries == null)
-            {
                 return null;
-            }
 
             for (int i = 0; i < entries.Count; i++)
             {
                 RelicCollectionCatalogEntry entry = entries[i];
                 if (entry != null && string.Equals(entry.Id, relicId, StringComparison.Ordinal))
-                {
                     return entry;
-                }
             }
 
             return null;
         }
 
-        public RelicCollectionCatalogEntry FindLegacyEntry(string title, Sprite icon)
+        public RelicCollectionCatalogEntry FindLegacyEntry(string titleOrKey, Sprite icon)
         {
             if (entries == null)
-            {
                 return null;
-            }
 
             for (int i = 0; i < entries.Count; i++)
             {
                 RelicCollectionCatalogEntry entry = entries[i];
                 if (entry == null)
-                {
                     continue;
-                }
 
-                if ((!string.IsNullOrWhiteSpace(title) &&
-                     string.Equals(entry.Title, title, StringComparison.Ordinal)) ||
+                if ((!string.IsNullOrWhiteSpace(titleOrKey) &&
+                     string.Equals(entry.TextKey, titleOrKey, StringComparison.Ordinal)) ||
                     (icon != null && entry.Icon == icon))
-                {
                     return entry;
-                }
             }
 
             return null;
         }
     }
 
-    /// <summary>Formats the active combat definition, rather than cached display text.</summary>
+    /// <summary>Legacy debug formatter. Player-facing relic text comes from RelicText.xlsx.</summary>
     public static class RelicEffectDescription
     {
         public static string Format(RelicInformation relic)

@@ -25,21 +25,21 @@ MonoBehaviour:
     ranks:
     - levelDelta: 0.15
       cost:
-        currencyId: gem.garnet
-        amount: 0
+        currencyId: gem.topaz
+        amount: 100
     - levelDelta: 0.20
       cost:
-        currencyId: gem.garnet
-        amount: 0
+        currencyId: gem.topaz
+        amount: 200
     - levelDelta: 0.25
       cost:
-        currencyId: gem.garnet
-        amount: 0
+        currencyId: gem.topaz
+        amount: 300
     - levelDelta: 0.35
       cost:
-        currencyId: gem.garnet
-        amount: 0
+        currencyId: gem.topaz
+        amount: 400
     - levelDelta: 0.50
       cost:
-        currencyId: gem.garnet
-        amount: 0
+        currencyId: gem.topaz
+        amount: 500

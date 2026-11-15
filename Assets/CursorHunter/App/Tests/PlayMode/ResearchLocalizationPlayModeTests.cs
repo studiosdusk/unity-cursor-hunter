@@ -12,7 +12,7 @@ namespace CursorHunter.App.Tests
     public class ResearchLocalizationPlayModeTests
     {
         [UnityTest]
-        public IEnumerator TooltipUsesKoreanFallbackWhenEnglishTranslationIsEmpty()
+        public IEnumerator TooltipUsesEnglishWhenEnglishTranslationIsAvailable()
         {
 #if UNITY_EDITOR
             var scene = UnityEditor.SceneManagement.EditorSceneManager.LoadSceneInPlayMode(
@@ -29,9 +29,9 @@ namespace CursorHunter.App.Tests
                 var english = LocalizationSettings.AvailableLocales.GetLocale("en");
                 Assert.That(english, Is.Not.Null);
                 LocalizationSettings.SelectedLocale = english;
-                yield return new WaitForSecondsRealtime(.5f);
-                Assert.That(map.effectDescription.text, Is.EqualTo("기본 공격 피해 증가"));
-                Assert.That(map.title.text, Is.EqualTo("초급 공격력 연구"));
+                for (int i = 0; i < 120 && map.title.text != "Basic Attack Power Research"; i++) yield return null;
+                Assert.That(map.title.text, Is.EqualTo("Basic Attack Power Research"));
+                Assert.That(map.effectDescription.text, Is.EqualTo("Increase basic attack damage :"));
             }
             finally { LocalizationSettings.SelectedLocale = original; }
             yield return SceneManager.UnloadSceneAsync(scene);

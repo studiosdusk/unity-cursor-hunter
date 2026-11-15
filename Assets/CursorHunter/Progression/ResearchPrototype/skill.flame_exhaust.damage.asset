@@ -25,9 +25,9 @@ MonoBehaviour:
     ranks:
     - levelDelta: 6
       cost:
-        currencyId: gem.garnet
-        amount: 0
+        currencyId: gem.amethyst
+        amount: 5
     - levelDelta: 7
       cost:
-        currencyId: gem.garnet
-        amount: 0
+        currencyId: gem.amethyst
+        amount: 10

@@ -26,6 +26,10 @@ namespace CursorHunter.Data
             {
                 var candidate = JsonUtility.FromJson<GameInformation>(json);
                 if (candidate == null) { error = "Missing game information."; return false; }
+                // The JSON keeps the resolved combat DTO shape, but authored relic
+                // effects and drop data always come from the individual definition SOs.
+                // Preserve only acquired state from the incoming snapshot.
+                if (!RelicDefinitionResources.TryApplyTo(candidate, out error)) return false;
                 if (!candidate.TryValidate(out error)) return false;
                 information = candidate;
                 return true;

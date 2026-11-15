@@ -17,9 +17,10 @@
 # 에셋 후보와 기획 매핑
 
 파일 경로와 GUID를 확인한 목록이다. 렌더링·애니메이션·머티리얼 호환성은 Unity에서
-확인한다. GUI Lobby 미리보기는 후보 확인에만 사용했다. 특성 화면은 둥근 카드나 회색
-프레임을 사용하지 않고 런타임 정사각 셀·색상 선으로 구성한다. Main 최상위 메뉴에는
-젬스톤을 표시하지 않으며, 게임 시작 후 특성·전투·정산 화면에는 해금된 종류만 표시한다.
+확인한다. GUI Lobby 미리보기는 후보 확인에만 사용했다. 아래 특성 화면의 프레임·셀·색상
+설명은 이전 화면 구현을 위한 레거시 참고이며 현재 UI 스타일을 정의하지 않는다.
+최신 시각 기준은 `ResearchPrototype_Canvas`다. Main 최상위 메뉴에는 젬스톤을 표시하지
+않으며, 게임 시작 후 특성·전투·정산 화면에는 해금된 종류만 표시한다.
 
 ## 재사용 방식
 
@@ -60,6 +61,7 @@ Dead 클립을 Override하고, 나머지는 원본 Animator를 사용한다.
 
 | 기획 ID | 담당 | 특성 화면 적용 에셋 |
 |---|---|---|
+| ui.progression.backdrop | Progression | [`ProgressionUiBackdrop.prefab`](../../Assets/CursorHunter/Progression/Prefabs/ProgressionUiBackdrop.prefab): [Background_00.png](../../Assets/DownLoadAssets/Casual_GUI/GUI%20Pro-SimpleCasual/ResourcesData/Sprites/Demo/Demo_Background/Background_00.png) 아트·채도 오버레이·[`sparkle6_blue.png`](../../Assets/DownLoadAssets/Casual_VFX/Cartoon%20Casual%20VFX%20Pack/Textures/sparkle6_blue.png) 기반 부유 입자 |
 | gem.garnet | Progression | [ItemIcon_Gem_Pentagon_Red.png](../../Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Icon_ItemIcons/512/ItemIcon_Gem_Pentagon_Red.png) |
 | gem.topaz | Progression | [ItemIcon_Gem_Pentagon_Yellow.png](../../Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Icon_ItemIcons/512/ItemIcon_Gem_Pentagon_Yellow.png) |
 | gem.amethyst | Progression | [ItemIcon_Gem_Pentagon_Purple.png](../../Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Icon_ItemIcons/512/ItemIcon_Gem_Pentagon_Purple.png) |
