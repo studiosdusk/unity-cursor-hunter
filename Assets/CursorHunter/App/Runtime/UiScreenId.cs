@@ -12,6 +12,7 @@ namespace CursorHunter.App
         BossSelect = 2,
         Trait = 3,
         Settings = 4,
-        Combat = 5
+        Combat = 5,
+        ProfileLoadError = 6
     }
 }

@@ -20,7 +20,8 @@ namespace CursorHunter.Contracts
             int bossStage = 0,
             ResourceRewardSnapshot[] bossClearRewards = null,
             long bossExperienceReward = 0L,
-            int fieldTier = 1)
+            int fieldTier = 1,
+            float worldExperienceMultiplier = 1f)
         {
             if (!runId.IsValid)
             {
@@ -60,6 +61,9 @@ namespace CursorHunter.Contracts
             if (bossExperienceReward < 0L)
                 throw new ArgumentOutOfRangeException(nameof(bossExperienceReward));
             BossExperienceReward = mode == RunMode.Boss ? bossExperienceReward : 0L;
+            if (!(worldExperienceMultiplier > 0f) || float.IsInfinity(worldExperienceMultiplier))
+                throw new ArgumentOutOfRangeException(nameof(worldExperienceMultiplier));
+            WorldExperienceMultiplier = mode == RunMode.NormalField ? worldExperienceMultiplier : 1f;
             FieldTier = Math.Max(1, Math.Min(5, fieldTier));
             if (bossClearRewards != null && bossClearRewards.Length > 0)
             {
@@ -99,6 +103,7 @@ namespace CursorHunter.Contracts
         public int BossStage { get; }
         public long BossExperienceReward { get; }
         public int FieldTier { get; }
+        public float WorldExperienceMultiplier { get; }
         public float FieldGemstoneRewardMultiplier => FieldTier switch
         {
             2 => 1.10f,

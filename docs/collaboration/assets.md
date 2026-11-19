@@ -17,11 +17,14 @@
 # 에셋 후보와 기획 매핑
 
 파일 경로와 GUID를 확인한 목록이다. 렌더링·애니메이션·머티리얼 호환성은 Unity에서
-확인한다. GUI Lobby 미리보기는 후보 확인에만 사용했다. 특성 화면은 둥근 카드나 회색
-프레임을 사용하지 않고 런타임 정사각 셀·색상 선으로 구성한다. Main 최상위 메뉴에는
-젬스톤을 표시하지 않으며, 게임 시작 후 특성·전투·정산 화면에는 해금된 종류만 표시한다.
+확인한다. GUI Lobby 미리보기는 후보 확인에만 사용했다. 아래 특성 화면의 프레임·셀·색상
+설명은 이전 화면 구현을 위한 레거시 참고이며 현재 UI 스타일을 정의하지 않는다.
+최신 시각 기준은 [UI 스타일 정책](ui-style-policy.md)의 연구·특성 카드·유물 세 화면이다. Main 최상위 메뉴에는 젬스톤을 표시하지
+않으며, 게임 시작 후 특성·전투·정산 화면에는 해금된 종류만 표시한다.
 
 ## 재사용 방식
+
+2026-11-16 특성 보유 아이콘의 `TraitOwnedTooltip`은 Main의 `Artifact_Canvas`에 배치된 유물 툴팁을 게임 소유 씬 오브젝트로 복사해 사용한다. 제목·설명 영역과 기존 한국어 글꼴을 유지하며 특성 설명에 맞춰 높이를 조정한다. 공급사 원본과 유물 툴팁은 변경하지 않는다.
 
 2026-11-07 Main 하늘 배경은 게임 소유
 [IsometricSkyBackdrop.prefab](../../Assets/CursorHunter/Combat/Prefabs/Maps/IsometricSkyBackdrop.prefab)을 사용한다.
@@ -39,6 +42,10 @@
 [추가 젬 수집음](../../Assets/CursorHunter/App/Audio/GemCollectBonus.wav)을 사용한다.
 두 수집음은 짧은 합성 톤이며 Inspector에서 Clip·Mixer·음량을 교체/조절할 수 있다.
 설정 및 검수 방법은 [젬 수집 구현 기준](../gemstone-collection-presentation-design.md)을 따른다.
+
+전투 중 획득 유물은 Main의 `UICanvas/InGameObjects/GemStoneLists/RunRelicCollection`에
+표시한다. 가넷과 같은 행에서 타이머 전까지 배치되며, 해당 오브젝트 Inspector의
+`Icon Size`와 `Icon Spacing`으로 조정한다. 기본 크기는 40이다.
 
 기본 버튼 클릭음·연구/강화·유물 발견음은 `Progression/Runtime/TraitAudioFeedback`에서
 런타임 합성한다. App의 화면 버튼과 Trait의 런타임 생성 버튼이 클릭음을 재생한다.
@@ -60,6 +67,9 @@ Dead 클립을 Override하고, 나머지는 원본 Animator를 사용한다.
 
 | 기획 ID | 담당 | 특성 화면 적용 에셋 |
 |---|---|---|
+| ui.progression.backdrop | Progression | [`ProgressionUiBackdrop.prefab`](../../Assets/CursorHunter/Progression/Prefabs/ProgressionUiBackdrop.prefab): [Background_00.png](../../Assets/DownLoadAssets/Casual_GUI/GUI%20Pro-SimpleCasual/ResourcesData/Sprites/Demo/Demo_Background/Background_00.png) 아트·채도 오버레이·[`sparkle6_blue.png`](../../Assets/DownLoadAssets/Casual_VFX/Cartoon%20Casual%20VFX%20Pack/Textures/sparkle6_blue.png) 기반 부유 입자 |
+| ui.trait-card.flash | Progression | [FX_CardFlash_B.prefab](../../Assets/DownLoadAssets/Eric%20VFX%20Studio/Game%20VFX%20-%20Card%20Effects%20Collection/Prefabs/URP/FX_CardFlash_B.prefab)을 [TraitCardRevealBaker](../../Assets/CursorHunter/Progression/Editor/TraitCardRevealBaker.cs)로 24프레임 렌더링한 [CardFlashBlue.png](../../Assets/CursorHunter/Progression/Art/TraitCards/CardFlashBlue.png). Overlay UI의 공개·선택 순간에 한 번씩 재생한다. |
+| ui.trait-card.point-cost | Progression | [Item_Book_01_Purple.png](../../Assets/DownLoadAssets/IconPack/2D%20Minimal-IconPack/Icons/128/Item_Book_01_Purple.png): 특성 카드 공개 비용 숫자 옆에 표시하는 포인트 아이콘. |
 | gem.garnet | Progression | [ItemIcon_Gem_Pentagon_Red.png](../../Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Icon_ItemIcons/512/ItemIcon_Gem_Pentagon_Red.png) |
 | gem.topaz | Progression | [ItemIcon_Gem_Pentagon_Yellow.png](../../Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Icon_ItemIcons/512/ItemIcon_Gem_Pentagon_Yellow.png) |
 | gem.amethyst | Progression | [ItemIcon_Gem_Pentagon_Purple.png](../../Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Icon_ItemIcons/512/ItemIcon_Gem_Pentagon_Purple.png) |
@@ -67,9 +77,9 @@ Dead 클립을 Override하고, 나머지는 원본 Animator를 사용한다.
 | gem.diamond | Progression | [ItemIcon_Gem_Pentagon_Green.png](../../Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Icon_ItemIcons/512/ItemIcon_Gem_Pentagon_Green.png) *(프로토타입 임시 색상)* |
 | ui.trait.node | Progression | 런타임 4면 선 + 평면 Image (`TraitScreenController.cs`) |
 | ui.trait.drag-cursor | Progression | 별도 커서 에셋을 사용하지 않음 — 보드 드래그 중에도 운영체제 기본 포인터 모양과 크기를 유지 |
-| ui.trait.tabs | Progression | 상단 연구/특성/유물 프레임: [회색](../../Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Frame/ItemFrame01_Demo_Gray.png) / [초록](../../Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Frame/ItemFrame01_Demo_Green.png) / [보라](../../Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Frame/ItemFrame01_Demo_Purple.png) |
-| ui.boss.hp | App | 사용자가 Main에 배치한 [BossSlider.prefab](../../Assets/DownLoadAssets/Casual_GUI/GUI%20Pro-SimpleCasual/Prefabs/BossSlider.prefab). `BossHealthPresenter`가 결과창 기준의 굵은 한글 제목·Rubik 숫자·전용 SDF 테두리를 적용한다. 바 배치와 공급사 원본은 유지하고 두 텍스트의 가로 영역만 런타임에서 확장한다. |
-| ui.font.numeric | Data | [Rubik-SemiBold SDF.asset](../../Assets/DownLoadAssets/Casual_GUI/GUI%20Pro-SimpleCasual/ResourcesData/Fonts/Rubik-SemiBold%20SDF.asset). 기존 결과창의 숫자 글꼴을 `TypographySettings.numericFont` 기본값으로 지정하고 BossSlider 체력 숫자에 사용한다. 한글 제목은 `sourceFont`/`localeFonts`와 Bold를 사용한다. |
+| ui.trait.tabs | Progression | 레거시 프레임 참고: [회색](../../Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Frame/ItemFrame01_Demo_Gray.png) / [초록](../../Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Frame/ItemFrame01_Demo_Green.png) / [보라](../../Assets/DownLoadAssets/GUI-CasualFantasy/ResourcesData/Sprites/Components/Frame/ItemFrame01_Demo_Purple.png). 현재 Main 메뉴의 시각 기준은 [UI 스타일 정책](ui-style-policy.md)을 따른다. |
+| ui.boss.hp | App | 사용자가 Main에 배치한 [BossSlider.prefab](../../Assets/DownLoadAssets/Casual_GUI/GUI%20Pro-SimpleCasual/Prefabs/BossSlider.prefab). 현재 `BossHealthPresenter`가 기존 결과창의 굵은 한글 제목·Rubik 숫자·전용 SDF 테두리를 사용한다. 바 배치와 공급사 원본은 유지하고 두 텍스트의 가로 영역만 런타임에서 확장한다. 이것은 현행 구현 기록이며 새 UI의 시각 기준은 아니다. |
+| ui.font.numeric | Data | [Rubik-SemiBold SDF.asset](../../Assets/DownLoadAssets/Casual_GUI/GUI%20Pro-SimpleCasual/ResourcesData/Fonts/Rubik-SemiBold%20SDF.asset). 기존 결과창의 숫자 글꼴을 `TypographySettings.numericFont` 기본값으로 지정하고 BossSlider 체력 숫자에 사용 중이다. 한글 제목은 `sourceFont`/`localeFonts`와 Bold를 사용한다. |
 | boss.shared-root | Combat | [BossRoot.prefab](../../Assets/CursorHunter/Combat/Prefabs/Monsters/BossRoot.prefab). 공통 전투 판정·행동을 사용하고 BossDefinition의 외형을 합성. |
 | field.normal | Combat | [Map_3_Jungle Age.prefab](../../Assets/DownLoadAssets/Map/2D%20Maps%20-%20Age%20Battle%20Stages/Prefabs/Landscape/Map/Map_3_Jungle%20Age.prefab) |
 | field.boss | Combat | [Map_13_Medieval Age.prefab](../../Assets/DownLoadAssets/Map/2D%20Maps%20-%20Age%20Battle%20Stages/Prefabs/Landscape/Map/Map_13_Medieval%20Age.prefab) |
@@ -98,9 +108,10 @@ Dead 클립을 Override하고, 나머지는 원본 Animator를 사용한다.
 | hit.triple | Combat | [hit1_purple.png](../../Assets/DownLoadAssets/Casual_VFX/Cartoon%20Casual%20VFX%20Pack/Textures/hit1_purple.png) |
 | parry.marker | Combat | [magic_circle6_white.png](../../Assets/DownLoadAssets/Casual_VFX/Cartoon%20Casual%20VFX%20Pack/Textures/magic_circle6_white.png) |
 
-## 특성 화면 아이콘 품질 기준
+## 레거시 특성 화면 아이콘 참고
 
-특성 화면의 통일감을 위해 노드 아이콘은 가능한 한 `Icon_ItemIcons/512` 또는 이름에
+이 절은 이전 특성 화면의 연결 기록이다. 새 화면의 시각 정책은 [UI 스타일 정책](ui-style-policy.md)을 따른다.
+당시 특성 화면의 통일감을 위해 노드 아이콘은 가능한 한 `Icon_ItemIcons/512` 또는 이름에
 `_512`가 붙은 512px 스프라이트를 사용한다. 현재 적용한 512px 아이콘은 임포터의
 텍스처 압축을 끄고, 원본 PNG는 수정하지 않는다. 폰트는
 `Assets/CursorHunter/Progression/Runtime/Fonts/NanumGothic.ttf`(동적 48pt)를 사용하며,
@@ -144,7 +155,7 @@ Dead 클립을 Override하고, 나머지는 원본 Animator를 사용한다.
 - 라이트닝/브레스: 텍스처 재료를 찾았으며 완성 스킬 프리팹을 확인한 것은 아니다. 별도 파티클/라인 연출 제작이 필요하다.
 - 성장 타격: 흰 점 → 황금 이중 링 → 보라 파편 → 청색 맥동 → 결정·화염. 링은 자체 단순 도형으로 만들 수 있다. Sword Trails/Ink Slash/Magic Slash의 휘두르기 연출은 배제한다.
 - 맵: Landscape 후보를 16:9로 배치하고 HUD 안전 영역을 제외한다. 배경 건물·장식에 적이 가려지지 않도록 명도와 밀도를 낮춘다.
-- UI: 특성 좌상단 Stat/Skill/Monster, 좌중단 해금 젬, 우상단 요약 그래프, 중앙
+- 레거시 UI 참고: 특성 좌상단 Stat/Skill/Monster, 좌중단 해금 젬, 우상단 요약 그래프, 중앙
   정사각 노드 체인. 스탯·스킬은 세로 ScrollRect, 몬스터는 가로 ScrollRect로
   탐색하며, 실제 적용 에셋과 배열 순서는 [trait-ui-assets.md](trait-ui-assets.md)를
   기준으로 한다.

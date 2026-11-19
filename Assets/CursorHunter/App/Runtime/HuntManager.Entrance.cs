@@ -8,7 +8,6 @@ namespace CursorHunter.App
     {
         [Header("Stage entrance")]
         [SerializeField] private bool playEntranceSequence;
-        [SerializeField] private BattleResultPresentation battlePresentation;
         private Coroutine _entranceCoroutine;
         public bool IsPlayingEntrance => combatRunController != null && combatRunController.IsEntering;
 
@@ -28,12 +27,6 @@ namespace CursorHunter.App
                 yield return null;
             }
             if (!OwnsEntrance(runId)) yield break;
-            battlePresentation.ShowStart(runId, ShouldPauseForInspection());
-            while (OwnsEntrance(runId) && battlePresentation.IsShowingStart)
-            {
-                battlePresentation.SetStartPaused(ShouldPauseForInspection());
-                yield return null;
-            }
             while (OwnsEntrance(runId) && (ShouldPauseForInspection() || Time.timeScale <= 0f))
                 yield return null;
             if (OwnsEntrance(runId) && _runCoordinator.FinishEntrance())
@@ -52,7 +45,6 @@ namespace CursorHunter.App
         {
             if (_entranceCoroutine != null) StopCoroutine(_entranceCoroutine);
             _entranceCoroutine = null;
-            if (battlePresentation != null && battlePresentation.IsShowingStart) battlePresentation.Hide();
         }
 
         private void HandleEntranceScreenChanged(UiScreenId previous, UiScreenId current)

@@ -1,0 +1,437 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e9620f8c34305754d8cc9a7e49e852d9, type: 3}
+  m_Name: Research_en
+  m_EditorClassIdentifier: Unity.Localization::UnityEngine.Localization.Tables.StringTable
+  m_LocaleId:
+    m_Code: en
+  m_SharedData: {fileID: 11400000, guid: f152688843106428788434aca36a627f, type: 2}
+  m_Metadata:
+    m_Items: []
+  m_TableData:
+  - m_Id: 674226176
+    m_Localized: Basic Attack Power Research
+    m_Metadata:
+      m_Items: []
+  - m_Id: 686809088
+    m_Localized: Increase basic attack damage
+    m_Metadata:
+      m_Items: []
+  - m_Id: 686809089
+    m_Localized: Basic Attack Range Research
+    m_Metadata:
+      m_Items: []
+  - m_Id: 686809090
+    m_Localized: Increase basic attack range
+    m_Metadata:
+      m_Items: []
+  - m_Id: 691003392
+    m_Localized: Basic Attack Interval Research
+    m_Metadata:
+      m_Items: []
+  - m_Id: 691003393
+    m_Localized: Reduce the interval between basic attacks
+    m_Metadata:
+      m_Items: []
+  - m_Id: 691003394
+    m_Localized: Basic Critical Chance Research
+    m_Metadata:
+      m_Items: []
+  - m_Id: 691003395
+    m_Localized: Increase critical hit chance
+    m_Metadata:
+      m_Items: []
+  - m_Id: 691003396
+    m_Localized: Basic Critical Damage Research
+    m_Metadata:
+      m_Items: []
+  - m_Id: 691003397
+    m_Localized: Increase the critical damage multiplier
+    m_Metadata:
+      m_Items: []
+  - m_Id: 691003398
+    m_Localized: Basic Boss Damage Research
+    m_Metadata:
+      m_Items: []
+  - m_Id: 691003399
+    m_Localized: Increase damage dealt to bosses
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1293878812672
+    m_Localized: 'Cost:'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1293891395584
+    m_Localized: Free
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1293891395585
+    m_Localized: Max Level
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373522235392
+    m_Localized: Intermediate Attack Power Research
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818304
+    m_Localized: Increase basic attack damage
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818305
+    m_Localized: Intermediate Attack Range Research
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818306
+    m_Localized: Increase basic attack range
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818307
+    m_Localized: Intermediate Critical Chance Research
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818308
+    m_Localized: Increase critical hit chance
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818309
+    m_Localized: Unlock Magic Ball
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818310
+    m_Localized: Make the Magic Ball skill available
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818311
+    m_Localized: Magic Ball Damage Upgrade
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818312
+    m_Localized: Increase Magic Ball damage
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818313
+    m_Localized: Magic Ball Range Upgrade
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818314
+    m_Localized: Increase the Magic Ball attack radius
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818315
+    m_Localized: Unlock Tornado
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818316
+    m_Localized: Make the Tornado skill available
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818317
+    m_Localized: Tornado Damage Upgrade
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818318
+    m_Localized: Increase Tornado damage
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818319
+    m_Localized: Tornado Range Upgrade
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818320
+    m_Localized: Increase the Tornado attack radius
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818321
+    m_Localized: Unlock Headshot
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818322
+    m_Localized: Make the Headshot skill available
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818323
+    m_Localized: Headshot Damage Upgrade
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818324
+    m_Localized: Increase Headshot damage
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818325
+    m_Localized: Headshot Range Upgrade
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818326
+    m_Localized: Increase the Headshot attack radius
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818327
+    m_Localized: Unlock Thunder
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818328
+    m_Localized: Make the Thunder skill available
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818329
+    m_Localized: Thunder Damage Upgrade
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818330
+    m_Localized: Increase Thunder damage
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818331
+    m_Localized: Thunder Range Upgrade
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818332
+    m_Localized: Increase the Thunder strike radius
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818333
+    m_Localized: Unlock Flame Exhaust
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818334
+    m_Localized: Make the Flame Exhaust skill available
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818335
+    m_Localized: Flame Exhaust Damage Upgrade
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818336
+    m_Localized: Increase Flame Exhaust damage
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818337
+    m_Localized: Flame Exhaust Range Upgrade
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818338
+    m_Localized: Increase the Flame Exhaust attack radius
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818339
+    m_Localized: Unlock Laser
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818340
+    m_Localized: Make the Laser skill available
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818341
+    m_Localized: Laser Damage Upgrade
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818342
+    m_Localized: Increase Laser damage
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818343
+    m_Localized: Laser Range Upgrade
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818344
+    m_Localized: Increase the Laser attack radius
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818345
+    m_Localized: Unlock Baby Dragon
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818346
+    m_Localized: Make the Baby Dragon skill available
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818347
+    m_Localized: Baby Dragon Damage Upgrade
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818348
+    m_Localized: Increase Baby Dragon damage
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818349
+    m_Localized: Baby Dragon Target Count Upgrade
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818350
+    m_Localized: Increase the number of enemies hit at the same time
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818351
+    m_Localized: Stump Production Upgrade
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818352
+    m_Localized: Increase the number of Stumps produced each time they spawn
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818353
+    m_Localized: Unlock Queen Bee
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818354
+    m_Localized: Allow Queen Bees to appear
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818355
+    m_Localized: Queen Bee Production Upgrade
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818356
+    m_Localized: Increase the number of Queen Bees produced each time they spawn
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818357
+    m_Localized: Unlock Poison Mushroom
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818358
+    m_Localized: Allow Poison Mushrooms to appear
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818359
+    m_Localized: Poison Mushroom Production Upgrade
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818360
+    m_Localized: Increase the number of Poison Mushrooms produced each time they
+      spawn
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818361
+    m_Localized: Unlock Masked Ghost
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818362
+    m_Localized: Allow Masked Ghosts to appear
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818363
+    m_Localized: Masked Ghost Production Upgrade
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818364
+    m_Localized: Increase the number of Masked Ghosts produced each time they spawn
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818365
+    m_Localized: Unlock Armored Soldier
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818366
+    m_Localized: Allow Armored Soldiers to appear
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818367
+    m_Localized: Armored Soldier Production Upgrade
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818368
+    m_Localized: Increase the number of Armored Soldiers produced each time they
+      spawn
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818369
+    m_Localized: Unlock Snow Fairy
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818370
+    m_Localized: Allow Snow Fairies to appear
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818371
+    m_Localized: Snow Fairy Production Upgrade
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818372
+    m_Localized: Increase the number of Snow Fairies produced each time they spawn
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818373
+    m_Localized: Unlock Beehive
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818374
+    m_Localized: Allow Beehives to appear
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818375
+    m_Localized: Beehive Production Upgrade
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818376
+    m_Localized: Increase the number of Beehives produced each time they spawn
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818377
+    m_Localized: Unlock Golem
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818378
+    m_Localized: Allow Golems to appear
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818379
+    m_Localized: Golem Production Upgrade
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818380
+    m_Localized: Increase the number of Golems produced each time they spawn
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818381
+    m_Localized: Unlock Flower Bud
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818382
+    m_Localized: Allow Flower Buds to appear
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818383
+    m_Localized: Flower Bud Production Upgrade
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818384
+    m_Localized: Increase the number of Flower Buds produced each time they spawn
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818385
+    m_Localized: Unlock Pandora's Box
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818386
+    m_Localized: Allow Pandora's Boxes to appear
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818387
+    m_Localized: Pandora's Box Production Upgrade
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818388
+    m_Localized: Increase the number of Pandora's Boxes produced each time they spawn
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818389
+    m_Localized: Normal Field Duration Research
+    m_Metadata:
+      m_Items: []
+  - m_Id: 14373534818390
+    m_Localized: Increase the normal field time limit
+    m_Metadata:
+      m_Items: []
+  references:
+    version: 2
+    RefIds: []

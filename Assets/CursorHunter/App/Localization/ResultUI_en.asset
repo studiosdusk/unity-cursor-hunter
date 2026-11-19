@@ -1,0 +1,151 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e9620f8c34305754d8cc9a7e49e852d9, type: 3}
+  m_Name: ResultUI_en
+  m_EditorClassIdentifier: Unity.Localization::UnityEngine.Localization.Tables.StringTable
+  m_LocaleId:
+    m_Code: en
+  m_SharedData: {fileID: 11400000, guid: f971f4349bcd644bbbd9eb9e5afadeec, type: 2}
+  m_Metadata:
+    m_Items: []
+  m_TableData:
+  - m_Id: 389013504
+    m_Localized: Retired
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402112
+    m_Localized: BOSS CLEAR!
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402113
+    m_Localized: BOSS FAILED
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402114
+    m_Localized: Time Expired
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402115
+    m_Localized: Hunt Over
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402116
+    m_Localized: "Boss Stage {0} \xB7 Retired"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402117
+    m_Localized: "Boss Stage {0} \xB7 Victory"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402118
+    m_Localized: "Boss Stage {0} \xB7 Failed"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402119
+    m_Localized: Hunt Retired
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402120
+    m_Localized: Hunt Results
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402121
+    m_Localized: 'No rewards earned: retired before defeating the boss.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402122
+    m_Localized: Time ran out. Upgrade and try again.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402123
+    m_Localized: "Test Run \xB7 No Rewards"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402124
+    m_Localized: Upgrade
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402125
+    m_Localized: To Lobby
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402126
+    m_Localized: Next Stage
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402127
+    m_Localized: Normal Battle
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402128
+    m_Localized: Retry This Stage
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402129
+    m_Localized: Try Again
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402130
+    m_Localized: Rewards Earned
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402131
+    m_Localized: Experience Earned
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402133
+    m_Localized: Garnet
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402134
+    m_Localized: Topaz
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402135
+    m_Localized: Amethyst
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402136
+    m_Localized: Sapphire
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402137
+    m_Localized: Diamond
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402138
+    m_Localized: Dragon Gem
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402139
+    m_Localized: Click to reveal your rewards.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402140
+    m_Localized: No gemstones earned.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402141
+    m_Localized: Confirm
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402142
+    m_Localized: Could not continue. Press again to retry.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 381514893221888
+    m_Localized: Relic Discovered!
+    m_Metadata:
+      m_Items: []
+  references:
+    version: 2
+    RefIds: []

@@ -12,7 +12,10 @@
     "Unity.ugui",
     "Unity.RenderPipelines.Universal.2D.Runtime",
     "UnityEngine.TestRunner",
-    "UnityEditor.TestRunner"
+    "UnityEditor.TestRunner",
+    "CursorHunter.Progression.Editor",
+    "Unity.Localization",
+    "Unity.Localization.Editor"
   ],
   "includePlatforms": [
     "Editor"

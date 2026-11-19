@@ -63,6 +63,13 @@ namespace CursorHunter.App
         public bool StartBalanceTest(RunRequest request, ProgressionCombatSnapshot progression,
             SpawnPlan spawnPlan, IReadOnlyList<string> enabledMonsterIds, out string failureReason)
         {
+            return StartBalanceTest(request, progression, spawnPlan, enabledMonsterIds, null, out failureReason);
+        }
+
+        public bool StartBalanceTest(RunRequest request, ProgressionCombatSnapshot progression,
+            SpawnPlan spawnPlan, IReadOnlyList<string> enabledMonsterIds, TraitCardCombatLoadout traits,
+            out string failureReason)
+        {
             if (progression == null || !progression.IsValid)
             {
                 failureReason = "유효한 플레이어 특성 스냅샷이 필요합니다.";
@@ -70,7 +77,7 @@ namespace CursorHunter.App
             }
             return StartInternal(request, progression.Combat, null, progression.Skills,
                 progression.Relics, progression.RelicDropRules, spawnPlan, out failureReason,
-                enabledMonsterIds, discardRewards: true, requireExactSkillMapping: true);
+                enabledMonsterIds, discardRewards: true, requireExactSkillMapping: true, traitLoadout: traits);
         }
 
         public bool Start(
@@ -164,6 +171,21 @@ namespace CursorHunter.App
                 requireExactSkillMapping: true);
         }
 
+        public bool Start(
+            RunRequest request,
+            CombatSnapshot combatSnapshot,
+            IReadOnlyList<SkillCombatSnapshot> skills,
+            IReadOnlyList<RelicCombatSnapshot> relics,
+            RelicDropRulesCombatSnapshot relicDropRules,
+            SpawnPlan spawnPlan,
+            TraitCardCombatLoadout traits,
+            out string failureReason)
+        {
+            return StartInternal(request, combatSnapshot, null, skills,
+                relics, relicDropRules, spawnPlan, out failureReason,
+                requireExactSkillMapping: true, traitLoadout: traits);
+        }
+
         private bool StartInternal(
             RunRequest request,
             CombatSnapshot combatSnapshot,
@@ -175,7 +197,8 @@ namespace CursorHunter.App
             out string failureReason,
             IReadOnlyList<string> enabledMonsterIds = null,
             bool discardRewards = false,
-            bool requireExactSkillMapping = false)
+            bool requireExactSkillMapping = false,
+            TraitCardCombatLoadout traitLoadout = null)
         {
             failureReason = string.Empty;
 
@@ -253,6 +276,10 @@ namespace CursorHunter.App
                         true, false, false, out failureReason);
                 }
 
+                if (!_combatRunController.ConfigureTraitEffects(traitLoadout?.Effects))
+                    return FailStart(session, "CombatRunController rejected trait card effects.",
+                        true, false, false, out failureReason);
+
                 // Skill controllers capture the run's relic modifiers while
                 // preparing their runtime stats, so relics must be configured
                 // before they are enabled.
@@ -276,6 +303,17 @@ namespace CursorHunter.App
                         spawnStartResult.Status !=
                         SpawnStartStatus.AlreadyRunning,
                         out failureReason);
+                }
+
+                var chestSpawns = _combatRunController.TraitChestSpawns;
+                for (int i = 0; i < chestSpawns.Count; i++)
+                {
+                    var chest = chestSpawns[i];
+                    if (traitLoadout == null || !traitLoadout.TryGetChestVisual(chest.CardId, out var visual) ||
+                        !_monsterSpawner.SpawnTraitChests(new SpawnPlanEntry(chest.Chest, visual), chest.Count,
+                            request.Seed ^ (0x4348455354UL + (ulong)i)))
+                        return FailStart(session, "Trait treasure chest could not be spawned.",
+                            combatPrepared, false, true, out failureReason);
                 }
 
                 if (!_combatRunController.CommitStart(DeferCombatStart))
@@ -335,7 +373,7 @@ namespace CursorHunter.App
                 return false;
             }
 
-            if (!_session.Complete(endReason, result.SettlementPolicy))
+            if (!_session.Complete(result.EndReason, result.SettlementPolicy))
             {
                 return false;
             }
@@ -413,7 +451,7 @@ namespace CursorHunter.App
                 return false;
             }
 
-            if (!_session.Abort(endReason, result.SettlementPolicy))
+            if (!_session.Abort(result.EndReason, result.SettlementPolicy))
             {
                 return false;
             }
