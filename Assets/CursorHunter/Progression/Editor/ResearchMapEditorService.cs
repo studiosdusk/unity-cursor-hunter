@@ -95,19 +95,6 @@ namespace CursorHunter.Progression.Editor
             bool switchingIsolated = asset.isolatedTest != (map.appliedVersion != null && map.appliedVersion.isolatedTest);
             if (switchingIsolated && map.nodes.Any(x => x != null && definitions.ContainsKey(x.placementId)))
                 errors.Add("테스트 맵과 기존 맵의 배치 ID가 겹칩니다. 구매 기록 보호를 위해 서로 다른 ID를 사용해 주세요.");
-            foreach (var old in map.nodes)
-            {
-                if (old == null || !definitions.TryGetValue(old.placementId, out var next))
-                { if (!switchingIsolated || old == null) errors.Add("기존 노드 '" + (old != null ? old.placementId : "알 수 없음") + "'가 없어졌습니다. 구매 기록 이전 정책이 정해질 때까지 기존 노드를 유지해 주세요."); continue; }
-                if (old.definition != next.definition)
-                    errors.Add("기존 노드 '" + old.placementId + "'의 연구 종류가 바뀌었습니다. 구매 기록 이전 정책이 정해질 때까지 원래 연구를 유지해 주세요.");
-                var before = (old.prerequisites ?? Array.Empty<ResearchTestNode>()).Where(x => x != null).Select(x => x.placementId).OrderBy(x => x).ToArray();
-                var after = (next.prerequisites ?? new List<string>()).OrderBy(x => x).ToArray();
-                // Isolated test maps have their own placement IDs and may be rearranged freely.
-                // Production maps keep the migration guard for existing purchases.
-                if (!asset.isolatedTest && (!before.SequenceEqual(after) || old.requiredPrerequisites != next.requiredPrerequisites))
-                    errors.Add("기존 노드 '" + old.placementId + "'의 선행 조건이 바뀌었습니다. 구매 기록 이전 정책이 정해질 때까지 원래 연결과 필요 개수를 유지해 주세요.");
-            }
             if (AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath) == null) errors.Add("연구 노드 프리팹을 찾을 수 없습니다. " + PrefabPath + " 경로를 확인해 주세요.");
             if (map.navigation.board.Find("EditableLinks") == null) errors.Add("씬에서 연결선을 배치할 EditableLinks를 찾을 수 없습니다. 연구 맵 오브젝트 구성을 확인해 주세요.");
             return errors;
@@ -213,6 +200,11 @@ namespace CursorHunter.Progression.Editor
             Undo.SetCurrentGroupName("연구 맵 씬에 적용");
             try
             {
+                if (string.IsNullOrEmpty(map.legacyResearchLayoutFingerprint) && map.TryGetLayoutFingerprint(out string previousLayout))
+                {
+                    Undo.RecordObject(map, "이전 연구 맵 배치 보관");
+                    map.legacyResearchLayoutFingerprint = previousLayout;
+                }
                 bool switchingIsolated = asset.isolatedTest != (map.appliedVersion != null && map.appliedVersion.isolatedTest);
                 Transform archive = map.navigation.board.Find("ResearchMapArchive");
                 if (switchingIsolated && archive == null)

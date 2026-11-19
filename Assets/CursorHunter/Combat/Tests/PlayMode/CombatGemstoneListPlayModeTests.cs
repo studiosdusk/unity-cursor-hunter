@@ -133,7 +133,11 @@ namespace CursorHunter.Combat.Tests
                 .Single(text => text.transform.parent.name == "Timer" &&
                     text.transform.parent.parent.name == "InGameObjects");
             Color normalColor = timer.color;
+            Vector3 normalScale = timer.transform.localScale;
+            Color approachingColor = new Color32(255, 190, 85, 255);
             Color warningColor = new Color32(255, 102, 77, 255);
+            int initialHudAudioSources = hud.GetComponents<AudioSource>().Length;
+            Assert.That(Resources.Load<AudioClip>("Audio/TimerExpiry"), Is.Null);
             string savedProfile = PlayerPrefs.GetString("cursor_hunter.progression.v1", "missing");
 
             typeof(HuntManager).GetField("connectTraitScreenToCombat",
@@ -167,8 +171,30 @@ namespace CursorHunter.Combat.Tests
             combat.AdvanceTime(.25f);
             hud.ShowRunning(combat, spawner);
             Assert.That(timer.text, Is.EqualTo("03:00"));
+            Assert.That(timer.color, Is.EqualTo(approachingColor));
+            combat.AdvanceTime(.1f);
+            hud.ShowRunning(combat, spawner);
+            Assert.That(timer.transform.localScale.x, Is.GreaterThan(normalScale.x), "The timer must pulse during the last three seconds.");
+            Vector3 pausedScale = timer.transform.localScale;
+            Assert.That(combat.PauseRun(), Is.True);
+            combat.AdvanceTime(3f);
+            hud.ShowRunning(combat, spawner);
+            Assert.That(timer.transform.localScale, Is.EqualTo(pausedScale), "The pulse must pause with the combat clock.");
+            Assert.That(combat.ResumeRun(), Is.True);
+            combat.AdvanceTime(1f);
+            hud.ShowRunning(combat, spawner);
+            Assert.That(timer.color, Is.EqualTo(approachingColor));
+            Assert.That(timer.transform.localScale.x, Is.GreaterThan(normalScale.x), "The timer must pulse again at two seconds.");
+            combat.AdvanceTime(.91f);
+            Assert.That(combat.PauseRun(), Is.True);
+            hud.ShowRunning(combat, spawner);
             Assert.That(timer.color, Is.EqualTo(warningColor));
-            combat.AdvanceTime(2.75f);
+            Assert.That(hud.GetComponents<AudioSource>().Length, Is.EqualTo(initialHudAudioSources),
+                "The countdown must not create a timer sound source.");
+            Assert.That(combat.ResumeRun(), Is.True);
+            hud.ShowRunning(combat, spawner);
+            Assert.That(timer.color, Is.EqualTo(warningColor));
+            combat.AdvanceTime(.74f);
             hud.ShowRunning(combat, spawner);
             Assert.That(timer.text, Is.EqualTo("00:25"), "Do not show zero while combat still has time.");
             Assert.That(timer.color, Is.EqualTo(warningColor));
@@ -176,6 +202,9 @@ namespace CursorHunter.Combat.Tests
             Assert.That(combat.IsRunActive, Is.False);
             Assert.That(timer.text, Is.EqualTo("00:00"), "The terminal callback must update the last frame.");
             Assert.That(timer.gameObject.activeInHierarchy, Is.True);
+            Assert.That(timer.transform.localScale, Is.EqualTo(normalScale));
+            Assert.That(hud.GetComponents<AudioSource>().Length, Is.EqualTo(initialHudAudioSources),
+                "Time expiration must not create a timer sound source.");
 
             _hunt.ReturnToMainMenu();
             Assert.That(timer.gameObject.activeInHierarchy, Is.False);
@@ -183,7 +212,14 @@ namespace CursorHunter.Combat.Tests
             _hunt.BeginPrototypeRun();
             Assert.That(timer.text, Is.EqualTo("15:00"));
             Assert.That(timer.color, Is.EqualTo(normalColor));
+            Assert.That(timer.transform.localScale, Is.EqualTo(normalScale));
             Assert.That(timer.gameObject.activeInHierarchy, Is.True);
+            combat.AdvanceTime(14.05f);
+            hud.ShowRunning(combat, spawner);
+            Assert.That(timer.color, Is.EqualTo(warningColor));
+            _hunt.EndPrototypeRun();
+            Assert.That(timer.color, Is.EqualTo(normalColor));
+            Assert.That(hud.GetComponents<AudioSource>().Length, Is.EqualTo(initialHudAudioSources));
             Assert.That(PlayerPrefs.GetString("cursor_hunter.progression.v1", "missing"), Is.EqualTo(savedProfile));
 #else
             Assert.Ignore("Requires the Editor PlayMode scene loader.");

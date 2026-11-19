@@ -6,8 +6,13 @@ namespace CursorHunter.Progression.ResearchPrototype
 {
     // These targets describe additive deltas, not copies of the player's base values.
     public enum ResearchStat { Attack = 0, Radius = 1, Interval = 2, CriticalChance = 3, CriticalDamage = 4, BossDamage = 5 }
-    public enum ResearchValueDisplay { Number = 0, PercentPoints = 1, FractionPercent = 2, RadiusRatio = 3 }
+    public enum ResearchValueDisplay { Number = 0, PercentPoints = 1, FractionPercent = 2, RadiusRatio = 3, RadiusPercent = 4 }
     public enum ResearchEffectKind { CursorStat = 0, SkillUnlock = 1, SkillStat = 2, MonsterUnlock = 3, MonsterProduction = 4, FieldDuration = 5 }
+    public enum ResearchNodeUsage
+    {
+        [InspectorName("테스트용 노드")] Test = 0,
+        [InspectorName("실사용 노드")] Live = 1
+    }
 
     [Serializable]
     public sealed class ResearchPresentation
@@ -58,6 +63,8 @@ namespace CursorHunter.Progression.ResearchPrototype
     {
         [Tooltip("Stable definition ID. Each map placement also requires its own stable placement ID.")]
         public string stableId;
+        [InspectorName("노드 용도"), Tooltip("연구 맵 에디터에서 이 SO를 표시할 목록입니다. 기존 SO와 새 SO는 기본적으로 테스트용입니다.")]
+        public ResearchNodeUsage usage = ResearchNodeUsage.Test;
         public ResearchPresentation presentation = new ResearchPresentation();
         public ResearchGameplay gameplay = new ResearchGameplay();
 
@@ -65,6 +72,10 @@ namespace CursorHunter.Progression.ResearchPrototype
         public Sprite icon { get => presentation?.icon; set { presentation ??= new ResearchPresentation(); presentation.icon = value; } }
         public ResearchStat stat { get => gameplay == null ? default : gameplay.target; set { gameplay ??= new ResearchGameplay(); gameplay.target = value; } }
         public ResearchRank[] ranks { get => gameplay?.ranks ?? Array.Empty<ResearchRank>(); set { gameplay ??= new ResearchGameplay(); gameplay.ranks = value; } }
+        public bool IsLiveSkillUnlock => usage == ResearchNodeUsage.Live && gameplay?.kind == ResearchEffectKind.SkillUnlock;
+
+        public static string FormatRadiusPercent(float worldUnits) =>
+            (worldUnits / GameInformation.BaseAttackRadiusWorldUnits * 100f).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) + "%";
 
         // The saved rank is the only state needed; sum its authored increments on demand.
         public float GetEffectValue(int rank)

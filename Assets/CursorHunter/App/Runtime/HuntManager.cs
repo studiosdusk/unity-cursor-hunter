@@ -214,11 +214,6 @@ namespace CursorHunter.App
 
             PlayerCombatStatsRuntime runtimeStats =
                 combatRunController.PlayerCombatStatsRuntime;
-            if (playEntranceSequence && battlePresentation == null)
-            {
-                Debug.LogError("Stage entrance requires the authored battle popup presentation.", this);
-                return;
-            }
             _runCoordinator.DeferCombatStart = playEntranceSequence;
             _runUsesTraitScreen = false;
 #if UNITY_EDITOR
@@ -358,6 +353,16 @@ namespace CursorHunter.App
                     ? progressionController.SelectedFieldTier
                     : 1);
 
+            TraitCardCombatLoadout traitLoadout = null;
+            if (connectTraitScreenToCombat)
+            {
+                try { traitLoadout = TraitCardCombatLoadout.Capture(progressionController); }
+                catch (Exception exception)
+                {
+                    Debug.LogError("Cannot prepare acquired trait card effects: " + exception.Message, this);
+                    return;
+                }
+            }
             string failureReason;
             bool started = connectTraitScreenToCombat
                 ? _runCoordinator.Start(
@@ -370,6 +375,7 @@ namespace CursorHunter.App
                     progressionSnapshot == null
                         ? default : progressionSnapshot.RelicDropRules,
                     spawnPlan,
+                    traitLoadout,
                     out failureReason)
                 : _runCoordinator.Start(
                     runRequest,
@@ -547,6 +553,33 @@ namespace CursorHunter.App
             RefreshRetireButton();
         }
 
+        /// <summary>Progression UI button: resets trait cards, points, player XP, and the cached XP display.</summary>
+        public void ResetTraitCardProgress() => TryResetTraitCardProgress();
+
+        public bool TryResetTraitCardProgress()
+        {
+            ResolveReferences();
+            if (progressionController == null)
+            {
+                Debug.LogWarning("특성 카드 초기화에 필요한 진행도 컨트롤러가 없습니다.", this);
+                return false;
+            }
+            if (!TrySavePendingRunRewards() || !progressionController.TryResetTraitCardProgress())
+            {
+                Debug.LogWarning("특성 카드와 유저 경험치 초기화를 저장하지 못했습니다. 다시 시도해 주세요.", this);
+                return false;
+            }
+
+            runHud?.Reset();
+            return true;
+        }
+
+        public void RefreshExperienceAfterTestChange()
+        {
+            ResolveReferences();
+            runHud?.RefreshAfterTestExperienceChange();
+        }
+
         /// <summary>
         /// Assign this parameterless method to the main-menu return button.
         /// It aborts an active run without settlement, clears the prototype
@@ -712,9 +745,7 @@ namespace CursorHunter.App
                 return;
             }
 
-            if (result.BossDefeated
-                ? progressionController.GrantBossClear(result)
-                : progressionController.GrantRunRewards(result.Rewards, result.RelicAwards, result.ExperienceEarned))
+            if (progressionController.GrantSettledRun(result))
             {
                 _settledRunIds.Add(result.RunId);
                 if (_pendingRunSettlement.RunId == result.RunId)

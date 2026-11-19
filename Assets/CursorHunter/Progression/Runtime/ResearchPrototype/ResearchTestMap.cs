@@ -1,5 +1,8 @@
+using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
+using System.Text;
 using CursorHunter.Data;
 using CursorHunter.Contracts;
 using DG.Tweening;
@@ -17,18 +20,25 @@ namespace CursorHunter.Progression.ResearchPrototype
         public ResearchTestNode[] nodes;
         [HideInInspector] public string appliedSceneFingerprint;
         [HideInInspector] public ResearchMapDefinition appliedVersion;
+        // Baseline for saves created before research layouts were recorded.
+        [HideInInspector] public string legacyResearchLayoutFingerprint;
         public TextMeshProUGUI title, effectDescription, beforeValue, afterValue, costLabel, costValue, rankInfo, wallet;
-        private Vector2 normalBeforePosition, normalCostPosition;
+        private Vector2 normalBeforePosition, normalCostPosition, normalDescriptionPosition;
         private float normalTooltipWidth, normalCostLabelFontSize, normalCostFontSize;
         private RectTransform effectBand, separator;
         private float normalBandWidth, normalSeparatorWidth, normalDescriptionWidth, normalTitleWidth;
+        private float normalDescriptionHeight;
+        private float normalCostLabelHeight, normalCostValueHeight;
+        private TextWrappingModes normalDescriptionWrapping;
+        private TextOverflowModes normalDescriptionOverflow;
+        private bool normalDescriptionAutoSizing;
         private float normalBeforeWidth, normalBeforeFontSize;
         public GameObject arrow, gemIcon, tooltipRoot;
         public RectTransform tooltipPanel;
         public ResearchMapNavigation navigation;
         private ResearchTestNode hoveredNode;
-        private LocalizedString localizedTitle, localizedDescription, localizedCostLabel, localizedFree, localizedMax;
-        private string freeText = "", maxText = "";
+        private LocalizedString localizedTitle, localizedDescription, localizedCostLabel, localizedFree, localizedMax, localizedUnlocked;
+        private string freeText = "", maxText = "", unlockedText = "", descriptionText = "";
         private string boundTextKey;
         private Tween tooltipTween;
         private Quaternion tooltipBaseRotation = Quaternion.identity;
@@ -51,6 +61,38 @@ namespace CursorHunter.Progression.ResearchPrototype
         public Color completedColor = new Color(1f, .76f, .32f);
         private static readonly string[] CurrencyIds = { "gem.garnet", "gem.topaz", "gem.amethyst", "gem.sapphire", "gem.diamond", "gem.dragon" };
         private static readonly CultureInfo Invariant = CultureInfo.InvariantCulture;
+
+        /// <summary>Identifies the placed nodes, their positions and connections, independent of list order or costs.</summary>
+        public bool TryGetLayoutFingerprint(out string fingerprint)
+        {
+            fingerprint = null;
+            if (nodes == null || nodes.Length == 0) return false;
+            try { ResearchEffectCalculator.ValidateMap(nodes); }
+            catch (InvalidOperationException) { return false; }
+
+            var text = new StringBuilder();
+            void Add(string value) { value ??= ""; text.Append(value.Length.ToString(Invariant)).Append(':').Append(value); }
+            Add("research-layout-v1");
+            foreach (var node in nodes.OrderBy(x => x.placementId, StringComparer.Ordinal))
+            {
+                if (!(node.transform is RectTransform rect)) return false;
+                Vector2 position = rect.anchoredPosition;
+                if (float.IsNaN(position.x) || float.IsInfinity(position.x) ||
+                    float.IsNaN(position.y) || float.IsInfinity(position.y)) return false;
+                Add(node.placementId);
+                Add(node.definition.stableId);
+                Add(position.x.ToString("R", Invariant));
+                Add(position.y.ToString("R", Invariant));
+                Add(node.requiredPrerequisites.ToString(Invariant));
+                var prerequisites = (node.prerequisites ?? Array.Empty<ResearchTestNode>())
+                    .Select(x => x.placementId).OrderBy(x => x, StringComparer.Ordinal).ToArray();
+                Add(prerequisites.Length.ToString(Invariant));
+                foreach (string prerequisite in prerequisites) Add(prerequisite);
+            }
+            fingerprint = Hash128.Compute(text.ToString()).ToString();
+            return true;
+        }
+
         private void Start()
         {
             if (tooltipPanel != null) tooltipBaseRotation = tooltipPanel.localRotation;
@@ -65,6 +107,8 @@ namespace CursorHunter.Progression.ResearchPrototype
             normalBeforeWidth = beforeValue.rectTransform.sizeDelta.x;
             normalBeforeFontSize = beforeValue.fontSize;
             normalCostPosition = costValue.rectTransform.anchoredPosition;
+            normalCostLabelHeight = costLabel.rectTransform.sizeDelta.y;
+            normalCostValueHeight = costValue.rectTransform.sizeDelta.y;
             normalTooltipWidth = tooltipPanel.sizeDelta.x;
             normalCostLabelFontSize = costLabel.fontSize;
             normalCostFontSize = costValue.fontSize;
@@ -73,6 +117,11 @@ namespace CursorHunter.Progression.ResearchPrototype
             if (effectBand != null) normalBandWidth = effectBand.sizeDelta.x;
             if (separator != null) normalSeparatorWidth = separator.sizeDelta.x;
             normalDescriptionWidth = effectDescription.rectTransform.sizeDelta.x;
+            normalDescriptionHeight = effectDescription.rectTransform.sizeDelta.y;
+            normalDescriptionPosition = effectDescription.rectTransform.anchoredPosition;
+            normalDescriptionWrapping = effectDescription.textWrappingMode;
+            normalDescriptionOverflow = effectDescription.overflowMode;
+            normalDescriptionAutoSizing = effectDescription.enableAutoSizing;
             normalTitleWidth = title.rectTransform.sizeDelta.x;
             foreach (var node in nodes) if (node != null) baseScales[node] = node.transform.localScale;
             if (progression != null)
@@ -138,16 +187,25 @@ namespace CursorHunter.Progression.ResearchPrototype
         /// <summary>Button callback: reset the currently displayed map's research ranks.</summary>
         public void ResetResearchProgress()
         {
-            if (nodes == null) return;
-            if (progression != null && !progression.TryResetResearchProgress(this))
-            {
+            if (!TryResetResearchProgress())
                 Debug.LogWarning("연구 진행 상황을 초기화하지 못했습니다. 저장 설정과 연구 맵 연결을 확인해 주세요.", this);
-                return;
-            }
+        }
+
+        public bool TryResetResearchProgress()
+        {
+            if (nodes == null || (progression != null && !progression.TryResetResearchProgress(this))) return false;
             if (hoveredNode != null) HideTooltip(hoveredNode);
             foreach (var node in nodes) if (node != null) node.rank = 0;
             RefreshNodes();
             RefreshWallet();
+            return true;
+        }
+
+        public void RefreshAfterWalletChange()
+        {
+            RefreshWallet();
+            RefreshNodes();
+            if (hoveredNode != null) Select(hoveredNode);
         }
         public void Select(ResearchTestNode node)
         {
@@ -156,7 +214,10 @@ namespace CursorHunter.Progression.ResearchPrototype
             hoveredNode = node;
             if (tooltipRoot != null) tooltipRoot.SetActive(true);
             var d = node.definition;
+            bool descriptionOnly = d.IsLiveSkillUnlock;
+            ConfigureDescriptionLayout(descriptionOnly);
             BindText(d.presentation.textKey);
+            UpdateDescriptionText();
             bool max = node.rank >= d.ranks.Length;
             float current = d.GetEffectValue(node.rank);
             if (node.rank == 0 && (d.gameplay.kind == ResearchEffectKind.FieldDuration || d.gameplay.kind == ResearchEffectKind.MonsterProduction))
@@ -168,7 +229,7 @@ namespace CursorHunter.Progression.ResearchPrototype
                         if (monster != null && monster.id == d.gameplay.targetId) { current = monster.productionCount; break; }
             }
             string currentText = Format(d.presentation.valueDisplay, current);
-            beforeValue.text = max ? currentText :
+            beforeValue.text = descriptionOnly ? string.Empty : max ? currentText :
                 $"{currentText} <color=#21A6F2>→</color> <color=#A6E8BF>{Format(d.presentation.valueDisplay, d.GetEffectValue(node.rank + 1))}</color>";
             beforeValue.color = max ? new Color(.65f, .91f, .75f) : Color.white;
             if (afterValue != null) afterValue.gameObject.SetActive(false);
@@ -184,7 +245,7 @@ namespace CursorHunter.Progression.ResearchPrototype
             costLabel.gameObject.SetActive(!max);
             costValue.rectTransform.anchoredPosition = new Vector2(0f, normalCostPosition.y);
             costValue.alignment = TextAlignmentOptions.Center;
-            costValue.text = max ? maxText : cost.amount == 0 ? freeText : cost.amount.ToString("N0", Invariant);
+            costValue.text = max ? (descriptionOnly ? unlockedText : maxText) : cost.amount == 0 ? freeText : cost.amount.ToString("N0", Invariant);
             costValue.color = max ? new Color(.94f, .82f, .51f) : cost.amount == 0 ? Color.white :
                 CanPurchase(node) ? new Color(.65f, .91f, .75f) : new Color(1f, .48f, .48f);
             ResizeCostLayout(max);
@@ -192,6 +253,29 @@ namespace CursorHunter.Progression.ResearchPrototype
             rankInfo.text = node.rank + " / " + d.ranks.Length;
             if (wallet != null) wallet.text = Garnet.ToString("N0", Invariant);
             if (opening) AnimateTooltip();
+        }
+
+        private void ConfigureDescriptionLayout(bool descriptionOnly)
+        {
+            beforeValue.gameObject.SetActive(!descriptionOnly);
+            rankInfo.gameObject.SetActive(!descriptionOnly);
+            var labelRect = costLabel.rectTransform;
+            labelRect.sizeDelta = new Vector2(labelRect.sizeDelta.x,
+                descriptionOnly ? Mathf.Max(normalCostLabelHeight, 60f) : normalCostLabelHeight);
+            var costRect = costValue.rectTransform;
+            costRect.sizeDelta = new Vector2(costRect.sizeDelta.x,
+                descriptionOnly ? Mathf.Max(normalCostValueHeight, 60f) : normalCostValueHeight);
+            var description = effectDescription.rectTransform;
+            description.anchoredPosition = descriptionOnly
+                ? new Vector2(normalDescriptionPosition.x, (normalDescriptionPosition.y + normalBeforePosition.y) * .5f)
+                : normalDescriptionPosition;
+            float height = descriptionOnly
+                ? normalDescriptionHeight + Mathf.Abs(normalDescriptionPosition.y - normalBeforePosition.y)
+                : normalDescriptionHeight;
+            description.sizeDelta = new Vector2(description.sizeDelta.x, height);
+            effectDescription.textWrappingMode = descriptionOnly ? TextWrappingModes.Normal : normalDescriptionWrapping;
+            effectDescription.overflowMode = descriptionOnly ? TextOverflowModes.Ellipsis : normalDescriptionOverflow;
+            effectDescription.enableAutoSizing = descriptionOnly || normalDescriptionAutoSizing;
         }
         private void ResizeCostLayout(bool max)
         {
@@ -512,6 +596,7 @@ namespace CursorHunter.Progression.ResearchPrototype
                 case ResearchValueDisplay.PercentPoints: return delta.ToString("0.00", Invariant) + "%";
                 case ResearchValueDisplay.FractionPercent: return (delta * 100f).ToString("0.00", Invariant) + "%";
                 case ResearchValueDisplay.RadiusRatio: return (delta / GameInformation.BaseAttackRadiusWorldUnits).ToString("0.##", Invariant);
+                case ResearchValueDisplay.RadiusPercent: return ResearchDefinition.FormatRadiusPercent(delta);
                 default: return "—";
             }
         }
@@ -527,20 +612,27 @@ namespace CursorHunter.Progression.ResearchPrototype
             localizedCostLabel = NewTooltipString("cost");
             localizedFree = NewTooltipString("free");
             localizedMax = NewTooltipString("max");
+            localizedUnlocked = NewTooltipString("unlocked");
             localizedTitle.StringChanged += SetLocalizedTitle;
             localizedDescription.StringChanged += SetLocalizedDescription;
             localizedCostLabel.StringChanged += SetLocalizedCostLabel;
             localizedFree.StringChanged += SetLocalizedFree;
             localizedMax.StringChanged += SetLocalizedMax;
+            localizedUnlocked.StringChanged += SetLocalizedUnlocked;
         }
         private static LocalizedString NewTooltipString(string key) =>
             new LocalizedString("Research", "research.tooltip." + key) { FallbackState = FallbackBehavior.UseFallback };
         private void SetLocalizedTitle(string value) { title.text = value; RefreshTextLayout(); }
         private void SetLocalizedDescription(string value)
         {
-            string description = (value ?? string.Empty).Trim().TrimEnd('.', ':', '：').TrimEnd();
-            effectDescription.text = description.Length == 0 ? string.Empty : description + " :";
+            descriptionText = (value ?? string.Empty).Trim().TrimEnd('.', ':', '：').TrimEnd();
+            UpdateDescriptionText();
             RefreshTextLayout();
+        }
+        private void UpdateDescriptionText()
+        {
+            bool descriptionOnly = hoveredNode?.definition != null && hoveredNode.definition.IsLiveSkillUnlock;
+            effectDescription.text = descriptionText.Length == 0 ? string.Empty : descriptionText + (descriptionOnly ? "" : " :");
         }
         private void SetLocalizedCostLabel(string value)
         {
@@ -552,12 +644,13 @@ namespace CursorHunter.Progression.ResearchPrototype
         }
         private void SetLocalizedFree(string value) { freeText = value; RefreshCostText(); }
         private void SetLocalizedMax(string value) { maxText = value; RefreshCostText(); }
+        private void SetLocalizedUnlocked(string value) { unlockedText = value; RefreshCostText(); }
         private void RefreshCostText()
         {
             if (hoveredNode == null || hoveredNode.definition == null) return;
             var d = hoveredNode.definition;
             bool max = hoveredNode.rank >= d.ranks.Length;
-            if (max) costValue.text = maxText;
+            if (max) costValue.text = d.IsLiveSkillUnlock ? unlockedText : maxText;
             else if (hoveredNode.TryGetCost(hoveredNode.rank, out var cost) && cost.amount == 0) costValue.text = freeText;
             RefreshTextLayout();
         }
@@ -574,9 +667,10 @@ namespace CursorHunter.Progression.ResearchPrototype
             if (localizedCostLabel != null) { localizedCostLabel.StringChanged -= SetLocalizedCostLabel; ((System.IDisposable)localizedCostLabel).Dispose(); }
             if (localizedFree != null) { localizedFree.StringChanged -= SetLocalizedFree; ((System.IDisposable)localizedFree).Dispose(); }
             if (localizedMax != null) { localizedMax.StringChanged -= SetLocalizedMax; ((System.IDisposable)localizedMax).Dispose(); }
+            if (localizedUnlocked != null) { localizedUnlocked.StringChanged -= SetLocalizedUnlocked; ((System.IDisposable)localizedUnlocked).Dispose(); }
             localizedTitle = localizedDescription = null;
-            localizedCostLabel = localizedFree = localizedMax = null;
-            freeText = maxText = "";
+            localizedCostLabel = localizedFree = localizedMax = localizedUnlocked = null;
+            freeText = maxText = unlockedText = descriptionText = "";
             boundTextKey = null;
         }
     }

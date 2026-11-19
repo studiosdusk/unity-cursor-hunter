@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.IO;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using CursorHunter.Progression.Editor;
 using CursorHunter.Progression.ResearchPrototype;
 using NUnit.Framework;
@@ -132,6 +133,56 @@ namespace CursorHunter.App.Tests
             }
             finally { UnityEngine.Object.DestroyImmediate(window); }
         }
+
+        [Test]
+        public void ResearchListsSeparateUsageAndRefreshWhenUsageChanges()
+        {
+            string folderName = "ResearchUsageTest_" + Guid.NewGuid().ToString("N");
+            string folder = "Assets/" + folderName;
+            string legacyPath = folder + "/cursor.attack.asset";
+            string livePath = folder + "/live.asset";
+            AssetDatabase.CreateFolder("Assets", folderName);
+            var window = ScriptableObject.CreateInstance<ResearchMapEditorWindow>();
+            var type = typeof(ResearchMapEditorWindow);
+            var ensure = type.GetMethod("EnsureCache", BindingFlags.NonPublic | BindingFlags.Instance);
+            var invalidate = type.GetMethod("InvalidateCache", BindingFlags.NonPublic | BindingFlags.Instance);
+            var groups = type.GetField("definitionsByUsage", BindingFlags.NonPublic | BindingFlags.Instance);
+            try
+            {
+                string source = "Assets/CursorHunter/Progression/ResearchPrototype/cursor.attack.asset";
+                string legacyYaml = Regex.Replace(File.ReadAllText(source), @"(?m)^  usage:.*\r?\n", "");
+                File.WriteAllText(legacyPath, legacyYaml);
+                AssetDatabase.ImportAsset(legacyPath, ImportAssetOptions.ForceSynchronousImport);
+                var legacy = AssetDatabase.LoadAssetAtPath<ResearchDefinition>(legacyPath);
+                Assert.That(legacy, Is.Not.Null);
+                Assert.That(legacy.usage, Is.EqualTo(ResearchNodeUsage.Test));
+
+                var live = UnityEngine.Object.Instantiate(legacy);
+                live.name = "live test definition";
+                live.usage = ResearchNodeUsage.Live;
+                AssetDatabase.CreateAsset(live, livePath);
+                ensure.Invoke(window, null);
+                var firstGroups = (ResearchDefinition[][])groups.GetValue(window);
+                Assert.That(firstGroups[(int)ResearchNodeUsage.Test], Does.Contain(legacy));
+                Assert.That(firstGroups[(int)ResearchNodeUsage.Test].Contains(live), Is.False);
+                Assert.That(firstGroups[(int)ResearchNodeUsage.Live], Does.Contain(live));
+                Assert.That(firstGroups[(int)ResearchNodeUsage.Live].Contains(legacy), Is.False);
+
+                live.usage = ResearchNodeUsage.Test;
+                EditorUtility.SetDirty(live);
+                invalidate.Invoke(window, null);
+                ensure.Invoke(window, null);
+                var refreshedGroups = (ResearchDefinition[][])groups.GetValue(window);
+                Assert.That(refreshedGroups[(int)ResearchNodeUsage.Test], Does.Contain(live));
+                Assert.That(refreshedGroups[(int)ResearchNodeUsage.Live].Contains(live), Is.False);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(window);
+                AssetDatabase.DeleteAsset(folder);
+            }
+        }
+
         [Test]
         public void PlacementCostsAreIndependentAndMissingCostsAreRejected()
         {
@@ -213,6 +264,66 @@ namespace CursorHunter.App.Tests
                 Assert.That(ResearchMapEditorService.CheckApply(data, map), Does.Contain("씬에서 연구 맵이 변경"));
             }
             finally { UnityEngine.Object.DestroyImmediate(data); EditorSceneManager.ClosePreviewScene(scene); }
+        }
+
+        [Test]
+        public void LayoutFingerprintTracksPlacementsAndLinksButNotOrderOrCosts()
+        {
+            var scene = EditorSceneManager.OpenPreviewScene(ResearchMapEditorService.MainScene);
+            var map = scene.GetRootGameObjects().SelectMany(x => x.GetComponentsInChildren<ResearchTestMap>(true)).Single();
+            try
+            {
+                Assert.That(map.TryGetLayoutFingerprint(out string original), Is.True);
+                var nodes = map.nodes;
+                map.nodes = nodes.Reverse().ToArray();
+                Assert.That(map.TryGetLayoutFingerprint(out string reordered), Is.True);
+                Assert.That(reordered, Is.EqualTo(original));
+                map.nodes = nodes;
+
+                var node = nodes.First(x => x.usePlacementCosts && x.placementCosts.Length > 0);
+                var cost = node.placementCosts[0];
+                node.placementCosts[0].amount++;
+                Assert.That(map.TryGetLayoutFingerprint(out string changedCost), Is.True);
+                Assert.That(changedCost, Is.EqualTo(original));
+                node.placementCosts[0] = cost;
+
+                var rect = (RectTransform)node.transform;
+                rect.anchoredPosition += Vector2.right;
+                Assert.That(map.TryGetLayoutFingerprint(out string moved), Is.True);
+                Assert.That(moved, Is.Not.EqualTo(original));
+                rect.anchoredPosition -= Vector2.right;
+
+                var child = nodes.First(x => x.prerequisites != null && x.prerequisites.Length > 0);
+                child.prerequisites = Array.Empty<ResearchTestNode>();
+                child.requiredPrerequisites = 0;
+                Assert.That(map.TryGetLayoutFingerprint(out string disconnected), Is.True);
+                Assert.That(disconnected, Is.Not.EqualTo(original));
+            }
+            finally { EditorSceneManager.ClosePreviewScene(scene); }
+        }
+
+        [Test]
+        public void ReplacingExistingPlacementsKeepsLegacyLayoutForOldSaves()
+        {
+            var scene = EditorSceneManager.OpenPreviewScene(ResearchMapEditorService.MainScene);
+            var map = scene.GetRootGameObjects().SelectMany(x => x.GetComponentsInChildren<ResearchTestMap>(true)).Single();
+            var replacement = ResearchMapEditorService.Capture(map, "replacement-layout-test");
+            try
+            {
+                Assert.That(map.nodes.Length, Is.GreaterThan(1));
+                Assert.That(map.TryGetLayoutFingerprint(out string previous), Is.True);
+                map.legacyResearchLayoutFingerprint = null;
+                var root = replacement.nodes.First(x => x.prerequisites.Count == 0);
+                replacement.nodes.Clear();
+                replacement.nodes.Add(root);
+                Assert.That(ResearchMapEditorService.CheckApply(replacement, map), Is.Null);
+                ResearchMapEditorService.Apply(replacement, map);
+                Assert.That(map.nodes.Length, Is.EqualTo(1));
+                Assert.That(map.legacyResearchLayoutFingerprint, Is.EqualTo(previous));
+                Assert.That(map.TryGetLayoutFingerprint(out string current), Is.True);
+                Assert.That(current, Is.Not.EqualTo(previous));
+            }
+            finally { UnityEngine.Object.DestroyImmediate(replacement); EditorSceneManager.ClosePreviewScene(scene); }
         }
     }
 }

@@ -21,6 +21,7 @@ namespace CursorHunter.App
             public string currencyId;
             public CanvasGroup group;
             public RectTransform icon;
+            public TMP_Text name;
             public TMP_Text amount;
             [NonSerialized] public long earned;
             [NonSerialized] public long displayed = -1;
@@ -36,14 +37,16 @@ namespace CursorHunter.App
         [SerializeField] private TMP_Text timeOutTitle;
         [SerializeField] private CanvasGroup resultUI;
         [SerializeField] private TMP_Text title;
+        [SerializeField] private TMP_FontAsset relicDiscoveryFont;
         [SerializeField] private TMP_Text subtitle;
-        [SerializeField] private TMP_Text kills;
-        [SerializeField] private TMP_Text duration;
-        [SerializeField] private TMP_Text damage;
+        [SerializeField] private TMP_Text rewardHeading;
         [SerializeField] private TMP_Text hint;
         [SerializeField] private TMP_Text emptyRewards;
         [SerializeField] private RectTransform rewardRows;
         [SerializeField] private RewardRow[] rewards = Array.Empty<RewardRow>();
+        [SerializeField] private RectTransform experienceIcon;
+        [SerializeField] private TMP_Text experienceLabel;
+        [SerializeField] private TMP_Text experienceAmount;
         [SerializeField] private CanvasGroup actions;
         [SerializeField] private Button upgradeButton;
         [SerializeField] private Button retryButton;
@@ -58,6 +61,7 @@ namespace CursorHunter.App
         [SerializeField, Min(0.05f)] private float popupSeconds = 0.15f;
         [SerializeField, Min(0f)] private float holdSeconds = 0.65f;
         [SerializeField, Min(0.05f)] private float dismissSeconds = 0.05f;
+        [SerializeField, Min(0.05f)] private float resultPopupSeconds = 0.24f;
         [SerializeField, Min(0.05f)] private float countSeconds = 0.3f;
         [SerializeField, Min(0.05f)] private float buttonPopupSeconds = 0.22f;
         [SerializeField] private bool reduceMotion;
@@ -67,14 +71,13 @@ namespace CursorHunter.App
         public bool IsReady => _phase == Phase.Ready;
         private bool IsBossPresentationRunning =>
             collection != null && collection.IsFinishingCollection || huntManager != null && huntManager.IsBossDeathPlaying;
-        private enum Phase { Hidden, Start, StartDismiss, BossLoot, TimeOut, Dismiss, Rewards, RelicDiscovery, Buttons, Ready }
-        public bool IsShowingStart => _phase == Phase.Start || _phase == Phase.StartDismiss;
-        private bool _startPaused;
+        private enum Phase { Hidden, BossLoot, TimeOut, Dismiss, Rewards, RelicDiscovery, Buttons, Ready }
         private Phase _phase;
         private float _clock;
         private RunId _runId;
         private bool _navigating;
         private int _visibleRewardCount;
+        private long _displayedExperience = -1;
         private Sequence _buttonSequence;
         private Sequence _relicDiscoverySequence;
         private Sequence _relicDiscoveryIntroSequence;
@@ -83,6 +86,7 @@ namespace CursorHunter.App
         private AudioClip _countTickClip;
         private RunResult _currentResult;
         private bool _hasCurrentResult;
+        private bool _navigationFailed;
 
         private void Awake()
         {
@@ -134,6 +138,7 @@ namespace CursorHunter.App
             _phase = Phase.TimeOut;
             overlay.SetActive(true);
             timeOutPanel.SetActive(true);
+            hint.gameObject.SetActive(true);
             ApplyLocalizedPresentation(result);
             _visibleRewardCount = 0;
             foreach (RewardRow row in rewards)
@@ -149,9 +154,9 @@ namespace CursorHunter.App
                 SetAmount(row, 0L);
             }
             emptyRewards.gameObject.SetActive(_visibleRewardCount == 0);
+            _displayedExperience = -1;
+            SetExperienceAmount(0L);
             ResizeResult();
-            kills.text = result.DefeatedCount.ToString("N0", CultureInfo.InvariantCulture);
-            damage.text = result.EffectiveDamage.ToString("N0", CultureInfo.InvariantCulture);
             FitLayout();
             RenderTimeOut(0f);
             if (result.BossDefeated && IsBossPresentationRunning)
@@ -161,43 +166,24 @@ namespace CursorHunter.App
             }
         }
 
-        public void ShowStart(RunId runId, bool paused = false)
-        {
-            if (!runId.IsValid || IsShowingStart && runId == _runId) return;
-            Hide();
-            _runId = runId;
-            _startPaused = paused;
-            _phase = Phase.Start;
-            overlay.SetActive(true);
-            timeOutPanel.SetActive(true);
-            SetLocalizedText(timeOutTitle, "ui.combat.start", "전투 시작!");
-            FitLayout();
-            RenderTimeOut(0f);
-        }
-
-        public void SetStartPaused(bool paused) => _startPaused = paused;
-
         public void Hide()
         {
             StopCountTickAudio();
             _phase = Phase.Hidden;
             _buttonSequence?.Kill(false);
             _buttonSequence = null;
-            _relicDiscoverySequence?.Kill(false);
-            _relicDiscoverySequence = null;
-            _relicDiscoveryIntroSequence?.Kill(false);
-            _relicDiscoveryIntroSequence = null;
-            if (_relicDiscoveryOverlay != null) Destroy(_relicDiscoveryOverlay);
-            _relicDiscoveryOverlay = null;
+            ClearRelicDiscovery();
             _clock = 0f;
             _runId = default;
             _hasCurrentResult = false;
             _navigating = false;
+            _navigationFailed = false;
             if (overlay != null) overlay.SetActive(false);
             if (timeOutPanel != null) timeOutPanel.SetActive(false);
             if (resultUI != null)
             {
                 resultUI.gameObject.SetActive(false);
+                resultUI.alpha = 1f;
                 resultUI.transform.localScale = Vector3.one;
             }
             if (timeOutPopup != null) timeOutPopup.localScale = Vector3.one;
@@ -209,11 +195,6 @@ namespace CursorHunter.App
 
         private void RefreshLocalizedPresentation()
         {
-            if (IsShowingStart)
-            {
-                SetLocalizedText(timeOutTitle, "ui.combat.start", "전투 시작!");
-                return;
-            }
             if (!_hasCurrentResult || !IsVisible) return;
             ApplyLocalizedPresentation(_currentResult);
         }
@@ -234,19 +215,22 @@ namespace CursorHunter.App
                     : result.EndReason == RunEndReason.TimeExpired ? "시간 종료" : "사냥 종료");
             if (retired && boss)
                 SetLocalizedFormat(title, "ui.result.boss.retired.title", "보스 {0}단계 · 중도 포기", result.BossStage);
+            else if (boss)
+                SetLocalizedFormat(title,
+                    result.BossDefeated ? "ui.result.boss.clear.title" : "ui.result.boss.failed.title",
+                    result.BossDefeated ? "보스 {0}단계 · 토벌 성공" : "보스 {0}단계 · 토벌 실패",
+                    result.BossStage);
             else
                 SetLocalizedText(
                     title,
-                    retired ? "ui.result.retired.title" : boss ? "ui.result.boss.title" : "ui.result.title",
-                    retired ? "사냥 중도 포기" : boss
-                        ? $"보스 {result.BossStage}단계 · " + (result.BossDefeated ? "토벌 성공" : "토벌 실패")
-                        : "전투 종료");
-            subtitle.gameObject.SetActive(result.SettlementPolicy == RunSettlementPolicy.Discard);
+                    retired ? "ui.result.retired.title" : "ui.result.title",
+                    retired ? "사냥 중도 포기" : "전투 종료");
+            subtitle.gameObject.SetActive(_navigationFailed || result.SettlementPolicy == RunSettlementPolicy.Discard);
             SetLocalizedText(
                 subtitle,
-                retired && boss ? "ui.result.boss.retired.subtitle" :
+                _navigationFailed ? "ui.result.action.retry.failed" : retired && boss ? "ui.result.boss.retired.subtitle" :
                     boss && !result.BossDefeated ? "ui.result.boss.failed.subtitle" : "ui.result.test.no.reward",
-                retired && boss ? "보스 처치 전에 포기하여 획득한 보상이 없습니다." : boss && !result.BossDefeated
+                _navigationFailed ? "진행을 완료하지 못했습니다. 다시 눌러 재시도하세요." : retired && boss ? "보스 처치 전에 포기하여 획득한 보상이 없습니다." : boss && !result.BossDefeated
                     ? "시간 안에 토벌하지 못했습니다. 강화 후 다시 도전하세요."
                     : "테스트 전투 · 보상 미지급");
 
@@ -256,7 +240,7 @@ namespace CursorHunter.App
                 bool connected = huntManager != null && huntManager.IsTraitScreenConnectedToCombat;
                 SetLocalizedText(
                     upgradeLabel,
-                    connected ? "ui.action.upgrade" : "ui.result.action.lobby",
+                    connected ? "ui.result.action.upgrade" : "ui.result.action.lobby",
                     connected ? "강화하기" : "로비로");
             }
             TMP_Text retryLabel = retryButton.GetComponentInChildren<TMP_Text>(true);
@@ -271,23 +255,23 @@ namespace CursorHunter.App
                 retryFallback);
             // The skip buttons cover the backdrop/result panel, not dedicated labels.
             // Binding their first child text would overwrite the result title.
+            SetLocalizedText(rewardHeading, "ui.result.rewards.heading", "획득 보상");
+            SetLocalizedText(experienceLabel, "ui.result.experience", "획득 경험치");
+            foreach (RewardRow row in rewards)
+            {
+                if (row.name == null) continue;
+                SetLocalizedText(row.name, "ui.result." + row.currencyId, GemFallback(row.currencyId));
+            }
             SetLocalizedText(hint, "ui.result.hint", "클릭하면 보상을 바로 볼 수 있어요.");
-            SetLocalizedText(emptyRewards, "ui.result.empty.rewards", "획득한 재화가 없습니다.");
-
-            kills.text = result.DefeatedCount.ToString("N0", CultureInfo.InvariantCulture);
-            SetLocalizedFormat(
-                duration,
-                "ui.result.duration",
-                "전투 시간 {0}초",
-                result.ElapsedSeconds.ToString("0.0", CultureInfo.InvariantCulture));
-            damage.text = result.EffectiveDamage.ToString("N0", CultureInfo.InvariantCulture);
+            SetLocalizedText(emptyRewards, "ui.result.empty.gems", "획득한 젬스톤이 없습니다.");
         }
 
         private static void SetLocalizedText(TMP_Text label, string key, string fallback)
         {
             if (label == null) return;
-            LocalizedTmpLabel localized = label.GetComponent<LocalizedTmpLabel>();
-            if (localized == null) localized = label.gameObject.AddComponent<LocalizedTmpLabel>();
+            label.GetComponent<LocalizedTmpLabel>()?.Unbind();
+            ResultUiLocalizedLabel localized = label.GetComponent<ResultUiLocalizedLabel>();
+            if (localized == null) localized = label.gameObject.AddComponent<ResultUiLocalizedLabel>();
             localized.Bind(key, fallback);
         }
 
@@ -298,28 +282,31 @@ namespace CursorHunter.App
             params object[] arguments)
         {
             if (label == null) return;
-            LocalizedTmpLabel localized = label.GetComponent<LocalizedTmpLabel>();
-            if (localized == null) localized = label.gameObject.AddComponent<LocalizedTmpLabel>();
-            localized.BindFormat(key, fallbackFormat, arguments);
+            label.GetComponent<LocalizedTmpLabel>()?.Unbind();
+            ResultUiLocalizedLabel localized = label.GetComponent<ResultUiLocalizedLabel>();
+            if (localized == null) localized = label.gameObject.AddComponent<ResultUiLocalizedLabel>();
+            localized.Bind(key, fallbackFormat, arguments);
         }
+
+        private static string GemFallback(string currencyId) => currencyId switch
+        {
+            "gem.garnet" => "가넷",
+            "gem.topaz" => "토파즈",
+            "gem.amethyst" => "자수정",
+            "gem.sapphire" => "사파이어",
+            "gem.diamond" => "다이아몬드",
+            "gem.dragon" => "드래곤 젬",
+            _ => currencyId
+        };
 
         private void Update()
         {
             if (_phase == Phase.Hidden) return;
             FitLayout();
             if (_phase == Phase.Ready || _phase == Phase.Buttons || _phase == Phase.RelicDiscovery) return;
-            if (IsShowingStart && (_startPaused || Time.timeScale <= 0f)) return;
             _clock += Time.unscaledDeltaTime;
             switch (_phase)
             {
-                case Phase.Start:
-                    RenderTimeOut(_clock / Mathf.Max(0.05f, popupSeconds));
-                    if (_clock >= popupSeconds + holdSeconds) Next(Phase.StartDismiss);
-                    break;
-                case Phase.StartDismiss:
-                    timeOutGroup.alpha = 1f - Mathf.Clamp01(_clock / Mathf.Max(0.05f, dismissSeconds));
-                    if (_clock >= dismissSeconds) Hide();
-                    break;
                 case Phase.BossLoot:
                     if (!IsBossPresentationRunning)
                     {
@@ -345,6 +332,7 @@ namespace CursorHunter.App
                         LayoutRebuilder.ForceRebuildLayoutImmediate(rewardRows);
                         Next(Phase.Rewards);
                         RenderRewards(0f);
+                        if (HasRelicDiscovery()) BeginRelicDiscovery();
                     }
                     break;
                 case Phase.Rewards:
@@ -354,13 +342,16 @@ namespace CursorHunter.App
             }
         }
 
-        private float RevealDuration => _visibleRewardCount == 0 || reduceMotion ? 0f : countSeconds;
+        private bool HasCountableReward => _visibleRewardCount > 0 || _currentResult.ExperienceEarned > 0L;
+        private float RevealDuration => reduceMotion ? 0f :
+            Mathf.Max(Mathf.Max(0.05f, resultPopupSeconds), HasCountableReward ? countSeconds : 0f);
         private void Next(Phase phase) { _phase = phase; _clock = 0f; }
 
         private void RenderTimeOut(float progress)
         {
             float t = Mathf.Clamp01(progress);
-            backdrop.alpha = 1f;
+            // Keep the full-screen skip target without darkening the battlefield.
+            backdrop.alpha = 0f;
             timeOutGroup.alpha = 1f;
             // A single continuous expansion; the previous 82%/100% step looked like two pops.
             float scale = reduceMotion ? 1f : Mathf.Lerp(0.82f, 1f, 1f - Mathf.Pow(1f - t, 3f));
@@ -370,10 +361,12 @@ namespace CursorHunter.App
         private void RenderRewards(float elapsed)
         {
             resultUI.alpha = 1f;
-            resultUI.transform.localScale = Vector3.one;
+            float popupProgress = reduceMotion ? 1f : Mathf.Clamp01(elapsed / Mathf.Max(0.05f, resultPopupSeconds));
+            float popupEase = 1f - Mathf.Pow(1f - popupProgress, 3f);
+            resultUI.transform.localScale = Vector3.one * Mathf.Lerp(0.82f, 1f, popupEase);
             float progress = reduceMotion ? 1f : Mathf.Clamp01(elapsed / Mathf.Max(0.05f, countSeconds));
             float easedProgress = progress * progress * (3f - 2f * progress);
-            if (_visibleRewardCount > 0 && progress < 1f && countTickVolume > 0f)
+            if (HasCountableReward && progress < 1f && countTickVolume > 0f)
                 StartCountTickAudio();
             else
                 StopCountTickAudio();
@@ -382,6 +375,7 @@ namespace CursorHunter.App
                 if (row.earned <= 0) continue;
                 SetAmount(row, InterpolateAmount(row.earned, easedProgress));
             }
+            SetExperienceAmount(InterpolateAmount(_currentResult.ExperienceEarned, easedProgress));
         }
 
         private void CreateCountTickAudio()
@@ -433,9 +427,11 @@ namespace CursorHunter.App
             // The timeout must remain a distinct beat; clicks never bypass it or navigate.
             if (_phase != Phase.Rewards) return;
             RenderRewards(RevealDuration);
-            if (HasRelicDiscovery())
+            if (_relicDiscoveryOverlay != null)
             {
-                BeginRelicDiscovery();
+                // The result continues revealing behind the modal, but its actions
+                // must remain locked until the player confirms the discovery.
+                _phase = Phase.RelicDiscovery;
                 return;
             }
             RevealResultActions();
@@ -447,23 +443,31 @@ namespace CursorHunter.App
         private void BeginRelicDiscovery()
         {
             if (_phase != Phase.Rewards || !HasRelicDiscovery()) return;
-            _phase = Phase.RelicDiscovery;
             CreateRelicDiscoveryOverlay();
-            // Never strand the result screen if the authored UI root is unavailable.
-            if (_relicDiscoveryOverlay == null)
-                RevealResultActions();
+            if (_relicDiscoveryOverlay != null) hint.gameObject.SetActive(false);
         }
 
         private void DismissRelicDiscovery()
         {
-            if (_phase != Phase.RelicDiscovery) return;
+            if (_relicDiscoveryOverlay == null ||
+                (_phase != Phase.Rewards && _phase != Phase.RelicDiscovery)) return;
+            ClearRelicDiscovery();
+            if (_phase == Phase.Rewards) RenderRewards(RevealDuration);
+            RevealResultActions();
+        }
+
+        private void ClearRelicDiscovery()
+        {
             _relicDiscoverySequence?.Kill(false);
             _relicDiscoverySequence = null;
             _relicDiscoveryIntroSequence?.Kill(false);
             _relicDiscoveryIntroSequence = null;
-            if (_relicDiscoveryOverlay != null) Destroy(_relicDiscoveryOverlay);
+            if (_relicDiscoveryOverlay != null)
+            {
+                _relicDiscoveryOverlay.SetActive(false);
+                Destroy(_relicDiscoveryOverlay);
+            }
             _relicDiscoveryOverlay = null;
-            RevealResultActions();
         }
 
         private void RevealResultActions()
@@ -503,45 +507,69 @@ namespace CursorHunter.App
             rootRect.offsetMin = Vector2.zero;
             rootRect.offsetMax = Vector2.zero;
             rootRect.SetAsLastSibling();
-            Image dimmer = root.GetComponent<Image>();
-            dimmer.color = new Color(0.005f, 0.008f, 0.02f, 0.86f);
-            dimmer.raycastTarget = true;
+            Image inputBlocker = root.GetComponent<Image>();
+            inputBlocker.color = new Color(0f, 0f, 0f, 0.72f);
+            inputBlocker.raycastTarget = true;
             CanvasGroup group = root.GetComponent<CanvasGroup>();
             group.alpha = 0f;
             group.interactable = true;
             group.blocksRaycasts = true;
 
-            float panelWidth = Mathf.Min(820f, Mathf.Max(460f, parent.rect.width - 56f));
-            float panelHeight = Mathf.Min(680f, Mathf.Max(420f, parent.rect.height - 48f));
-            Image popupImage = timeOutPopup != null ? timeOutPopup.GetComponent<Image>() : null;
-            GameObject panelObject = new GameObject("RelicDiscoveryPanel",
-                typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Outline), typeof(Shadow));
-            RectTransform panel = panelObject.transform as RectTransform;
-            panel.SetParent(rootRect, false);
-            panel.anchorMin = panel.anchorMax = panel.pivot = new Vector2(0.5f, 0.5f);
-            panel.anchoredPosition = Vector2.zero;
-            panel.sizeDelta = new Vector2(panelWidth, panelHeight);
-            panel.localScale = Vector3.one * 0.90f;
-            Image panelImage = panelObject.GetComponent<Image>();
-            panelImage.sprite = popupImage != null ? popupImage.sprite : null;
-            panelImage.type = panelImage.sprite != null ? Image.Type.Sliced : Image.Type.Simple;
-            panelImage.color = new Color(0.035f, 0.028f, 0.04f, 0.98f);
-            panelImage.raycastTarget = true;
-            Outline border = panelObject.GetComponent<Outline>();
-            border.effectColor = new Color(0.79f, 0.70f, 0.53f, 0.78f);
-            border.effectDistance = new Vector2(1.5f, -2f);
-            Shadow shadow = panelObject.GetComponent<Shadow>();
-            shadow.effectColor = new Color(0f, 0f, 0f, 0.76f);
-            shadow.effectDistance = new Vector2(6f, -8f);
+            float panelWidth = Mathf.Min(1000f, Mathf.Max(1f, parent.rect.width - 56f));
+            float panelHeight = Mathf.Min(720f, Mathf.Max(1f, parent.rect.height - 48f));
+            RectTransform panel = CreateCelebrationRect("RelicDiscoveryPanel", rootRect,
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero,
+                new Vector2(panelWidth, panelHeight), new Vector2(0.5f, 0.5f));
+
+            float raySize = Mathf.Min(panelWidth * 1.2f, panelHeight * 1.8f);
+            RectTransform rays = CreateCelebrationRect("RelicDiscoveryRays", panel,
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(0f, panelHeight * 0.08f), new Vector2(raySize, raySize),
+                new Vector2(0.5f, 0.5f));
+            RelicDiscoveryRays rayGraphic = rays.gameObject.AddComponent<RelicDiscoveryRays>();
+            rayGraphic.color = new Color(1f, 0.75f, 0.28f, 0.18f);
+            rayGraphic.raycastTarget = false;
 
             Sprite glowSprite = null;
+            Sprite sparkleSprite = null;
             if (progression != null)
-                progression.GetRelicDiscoveryEffectSprites(out glowSprite, out _, out _);
+                progression.GetRelicDiscoveryEffectSprites(out glowSprite, out sparkleSprite, out _);
 
-            float viewportHeight = Mathf.Max(260f, panelHeight - 164f);
+            _relicDiscoverySequence?.Kill(false);
+            _relicDiscoverySequence = null;
+            if (!reduceMotion)
+            {
+                _relicDiscoverySequence = DOTween.Sequence().SetUpdate(true)
+                    .Join(rays.DOLocalRotate(new Vector3(0f, 0f, 8f), 3.2f).SetEase(Ease.InOutSine))
+                    .SetLoops(-1, LoopType.Yoyo);
+            }
+            if (sparkleSprite != null)
+            {
+                for (int i = 0; i < 8; i++)
+                {
+                    float angle = (i * 45f + 15f) * Mathf.Deg2Rad;
+                    Vector2 position = new Vector2(Mathf.Cos(angle) * panelWidth * 0.36f,
+                        Mathf.Sin(angle) * panelHeight * 0.34f + panelHeight * 0.08f);
+                    float size = i % 2 == 0 ? 30f : 20f;
+                    RectTransform sparkle = CreateCelebrationImage("Sparkle_" + i, panel, sparkleSprite,
+                        new Color(1f, 0.88f, 0.52f, 0.4f), position, new Vector2(size, size));
+                    if (_relicDiscoverySequence != null)
+                    {
+                        Image sparkleImage = sparkle.GetComponent<Image>();
+                        _relicDiscoverySequence.Join(DOTween.To(() => sparkleImage.color.a, alpha =>
+                        {
+                            Color tint = sparkleImage.color;
+                            tint.a = alpha;
+                            sparkleImage.color = tint;
+                        }, 0.9f, 2.4f).SetTarget(sparkleImage));
+                    }
+                }
+            }
+
+            float viewportHeight = panelHeight * 0.66f;
             RectTransform viewport = CreateCelebrationRect("RelicAwardViewport", panel,
-                new Vector2(0.08f, 0.5f), new Vector2(0.92f, 0.5f),
-                new Vector2(0f, 30f), new Vector2(-12f, viewportHeight), new Vector2(0.5f, 0.5f));
+                new Vector2(0.05f, 0.5f), new Vector2(0.95f, 0.5f),
+                new Vector2(0f, panelHeight * 0.04f), new Vector2(0f, viewportHeight), new Vector2(0.5f, 0.5f));
             Image viewportImage = viewport.gameObject.AddComponent<Image>();
             viewportImage.color = new Color(0f, 0f, 0f, 0.01f);
             viewportImage.raycastTarget = true;
@@ -550,8 +578,6 @@ namespace CursorHunter.App
             RectTransform content = CreateCelebrationRect("RelicAwardContent", viewport,
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
                 Vector2.zero, Vector2.zero, new Vector2(0.5f, 0.5f));
-            _relicDiscoverySequence?.Kill(false);
-            _relicDiscoverySequence = DOTween.Sequence().SetUpdate(true);
             HorizontalLayoutGroup row = content.gameObject.AddComponent<HorizontalLayoutGroup>();
             row.spacing = 18f;
             row.padding = new RectOffset(12, 12, 8, 8);
@@ -574,25 +600,50 @@ namespace CursorHunter.App
 
             IReadOnlyList<string> awards = _currentResult.RelicAwards;
             int count = awards == null ? 0 : awards.Count;
-            float itemWidth = Mathf.Clamp(
-                (panelWidth - 96f) / Mathf.Max(1, Mathf.Min(count, 3)), 220f, 320f);
+            float visibleItems = count > 3 ? 3.35f : Mathf.Max(1, count);
+            float itemWidth = Mathf.Clamp(panelWidth * 0.86f / visibleItems, 200f, 760f);
             for (int i = 0; i < count; i++)
-                CreateRelicAwardCard(content, awards[i], itemWidth, viewportHeight, glowSprite);
+                CreateRelicAwardCard(content, awards[i], itemWidth, viewportHeight, glowSprite, count);
             Canvas.ForceUpdateCanvases();
-            scroller.horizontalNormalizedPosition = 0.5f;
+            scroller.horizontalNormalizedPosition = 0f;
+
+            TMP_Text heading = CreateCelebrationText("RelicDiscoveryTitle", panel, "유물 발견!", 112f,
+                Color.white, new Vector2(0f, panelHeight * 0.16f),
+                new Vector2(panelWidth * 0.9f, panelHeight * 0.21f), true);
+            if (relicDiscoveryFont != null) heading.font = relicDiscoveryFont;
+            heading.enableAutoSizing = true;
+            heading.fontSizeMin = 30f;
+            heading.fontSizeMax = 112f;
+            SetLocalizedText(heading, "ui.result.relic.discovery", "유물 발견!");
+            LocalizedTypography.ApplyOutline(heading);
+
+            if (count > 3)
+            {
+                TMP_Text scrollHint = CreateCelebrationText("RelicScrollHint", panel, "↔", 34f,
+                    new Color(1f, 1f, 1f, 0.8f), new Vector2(0f, -panelHeight * 0.29f),
+                    new Vector2(100f, 42f), true);
+                LocalizedTypography.ApplyOutline(scrollHint);
+            }
 
             Button confirm = CreateCelebrationButton("RelicDiscoveryConfirm", panel,
-                new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
-                new Vector2(0f, 24f), new Vector2(Mathf.Min(360f, panelWidth - 80f), 58f),
-                "확인");
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f),
+                new Vector2(0f, -panelHeight * 0.39f),
+                new Vector2(Mathf.Min(480f, panelWidth * 0.72f), Mathf.Min(88f, panelHeight * 0.14f)),
+                "OK");
             confirm.onClick.AddListener(DismissRelicDiscovery);
             confirm.transform.localScale = Vector3.one;
 
-            group.alpha = 0f;
-            _relicDiscoveryIntroSequence = DOTween.Sequence().SetUpdate(true)
-                .Append(DOTween.To(() => group.alpha, value => group.alpha = value, 1f, 0.20f)
-                    .SetTarget(group))
-                .Join(panel.DOScale(Vector3.one, 0.34f).SetEase(Ease.OutCubic));
+            group.alpha = reduceMotion ? 1f : 0f;
+            if (!reduceMotion)
+            {
+                panel.localScale = Vector3.one * 0.88f;
+                rays.localScale = Vector3.one * 0.35f;
+                _relicDiscoveryIntroSequence = DOTween.Sequence().SetUpdate(true)
+                    .Append(DOTween.To(() => group.alpha, value => group.alpha = value, 1f, 0.20f)
+                        .SetTarget(group))
+                    .Join(panel.DOScale(Vector3.one, 0.34f).SetEase(Ease.OutCubic))
+                    .Join(rays.DOScale(Vector3.one, 0.5f).SetEase(Ease.OutCubic));
+            }
         }
 
         private void CreateRelicAwardCard(
@@ -600,7 +651,8 @@ namespace CursorHunter.App
             string relicId,
             float itemWidth,
             float itemHeight,
-            Sprite glowSprite)
+            Sprite glowSprite,
+            int awardCount)
         {
             GameObject itemObject = new GameObject(
                 "RelicAward_" + relicId,
@@ -617,38 +669,31 @@ namespace CursorHunter.App
             if (progression != null)
                 progression.TryGetRelicPresentation(relicId, out textKey, out icon);
 
-            float iconSize = Mathf.Clamp(Mathf.Min(itemWidth * 0.78f, itemHeight * 0.64f), 150f, 260f);
+            float iconSize = Mathf.Min(itemWidth * 0.78f, itemHeight * 0.82f, 360f);
             if (glowSprite != null)
             {
                 RectTransform halo = CreateCelebrationImage("RelicHalo", item, glowSprite,
                     new Color(1f, 0.66f, 0.27f, 0.42f),
-                    new Vector2(0f, 32f), new Vector2(iconSize * 1.55f, iconSize * 1.55f));
-                halo.localScale = Vector3.one * 0.94f;
-                Image haloImage = halo.GetComponent<Image>();
-                if (_relicDiscoverySequence == null)
-                    _relicDiscoverySequence = DOTween.Sequence().SetUpdate(true);
-                _relicDiscoverySequence.Join(halo.DOScale(Vector3.one * 1.08f, 1.15f)
-                        .SetEase(Ease.InOutSine).SetLoops(-1, LoopType.Yoyo))
-                    .Join(DOTween.To(() => haloImage.color.a, alpha =>
-                        {
-                            Color color = haloImage.color;
-                            color.a = alpha;
-                            haloImage.color = color;
-                        }, 0.66f, 1.15f).SetEase(Ease.InOutSine).SetLoops(-1, LoopType.Yoyo));
+                    new Vector2(0f, itemHeight * 0.12f), new Vector2(iconSize * 1.55f, iconSize * 1.55f));
+                if (_relicDiscoverySequence != null)
+                    _relicDiscoverySequence.Join(halo.DOScale(Vector3.one * 1.08f, 2.4f)
+                        .SetEase(Ease.InOutSine));
             }
             if (icon != null)
             {
                 RectTransform relicIcon = CreateCelebrationImage("Icon", item, icon,
-                    Color.white, new Vector2(0f, 38f), new Vector2(iconSize, iconSize));
+                    Color.white, new Vector2(0f, itemHeight * 0.12f), new Vector2(iconSize, iconSize));
                 relicIcon.GetComponent<Image>().preserveAspect = true;
-                relicIcon.localScale = Vector3.one * 0.86f;
-                _relicDiscoverySequence?.Join(relicIcon.DOScale(Vector3.one, 0.32f)
-                    .SetEase(Ease.OutBack, 0.65f));
             }
             TMP_Text name = CreateCelebrationText("Name", item,
-                string.IsNullOrWhiteSpace(textKey) ? relicId : string.Empty, 26,
-                new Color(1f, 0.93f, 0.78f, 1f),
-                new Vector2(0f, -itemHeight * 0.34f), new Vector2(itemWidth - 24f, 52f), true);
+                string.IsNullOrWhiteSpace(textKey) ? relicId : string.Empty, awardCount == 1 ? 80f : 44f,
+                Color.white, new Vector2(0f, -itemHeight * 0.19f),
+                new Vector2(itemWidth - 24f, itemHeight * 0.22f), true);
+            if (relicDiscoveryFont != null) name.font = relicDiscoveryFont;
+            name.enableAutoSizing = true;
+            name.fontSizeMin = 20f;
+            name.fontSizeMax = awardCount == 1 ? 80f : 44f;
+            LocalizedTypography.ApplyOutline(name);
             if (!string.IsNullOrWhiteSpace(textKey))
             {
                 RelicLocalizedLabel localized = name.gameObject.AddComponent<RelicLocalizedLabel>();
@@ -677,7 +722,7 @@ namespace CursorHunter.App
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), position,
                 dimensions, new Vector2(0.5f, 0.5f));
             TextMeshProUGUI text = rect.gameObject.AddComponent<TextMeshProUGUI>();
-            text.font = LocalizedTypography.GetFont(null);
+            text.font = title != null && title.font != null ? title.font : LocalizedTypography.GetFont(null);
             text.fontSize = size;
             text.fontStyle = bold ? FontStyles.Bold : FontStyles.Normal;
             text.color = color;
@@ -695,19 +740,20 @@ namespace CursorHunter.App
             RectTransform rect = CreateCelebrationRect(name, parent, anchorMin, anchorMax,
                 position, size, new Vector2(0.5f, 0.5f));
             Image image = rect.gameObject.AddComponent<Image>();
-            Image popupImage = timeOutPopup != null ? timeOutPopup.GetComponent<Image>() : null;
-            image.sprite = popupImage != null ? popupImage.sprite : null;
+            Image actionImage = upgradeButton != null ? upgradeButton.image : null;
+            image.sprite = actionImage != null ? actionImage.sprite : null;
             image.type = image.sprite != null ? Image.Type.Sliced : Image.Type.Simple;
-            image.color = new Color(0.13f, 0.14f, 0.14f, 1f);
+            image.color = Color.white;
+            image.pixelsPerUnitMultiplier = 2f;
             image.raycastTarget = true;
-            Outline outline = rect.gameObject.AddComponent<Outline>();
-            outline.effectColor = new Color(0.72f, 0.72f, 0.62f, 0.88f);
-            outline.effectDistance = new Vector2(2f, -2f);
             Button button = rect.gameObject.AddComponent<Button>();
             button.targetGraphic = image;
             button.transition = Selectable.Transition.ColorTint;
-            CreateCelebrationText("Label", rect, label, 22f, Color.white,
+            TMP_Text buttonLabel = CreateCelebrationText("Label", rect, label, 46f, Color.white,
                 Vector2.zero, size - new Vector2(22f, 12f), true);
+            buttonLabel.enableAutoSizing = true;
+            buttonLabel.fontSizeMin = 20f;
+            buttonLabel.fontSizeMax = 46f;
             return button;
         }
 
@@ -755,6 +801,7 @@ namespace CursorHunter.App
         private void RestoreActionsAfterRejectedNavigation()
         {
             _navigating = false;
+            _navigationFailed = true;
             actions.interactable = true;
             subtitle.gameObject.SetActive(true);
             SetLocalizedText(subtitle, "ui.result.action.retry.failed", "진행을 완료하지 못했습니다. 다시 눌러 재시도하세요.");
@@ -775,13 +822,52 @@ namespace CursorHunter.App
             row.amount.text = "+" + value.ToString("N0", CultureInfo.InvariantCulture);
         }
 
+        private void SetExperienceAmount(long value)
+        {
+            if (experienceAmount == null || _displayedExperience == value) return;
+            _displayedExperience = value;
+            experienceAmount.text = "+" + value.ToString("N0", CultureInfo.InvariantCulture);
+        }
+
         private void ResizeResult()
         {
-            float height = Mathf.Max(350f, 160f + _visibleRewardCount * 56f);
-            ((RectTransform)resultUI.transform).sizeDelta = new Vector2(1040f, height);
-            layout.sizeDelta = new Vector2(1040f, height + 150f);
-            rewardRows.sizeDelta = new Vector2(620f, _visibleRewardCount * 56f);
+            const float spacing = 6f;
+            int count = Mathf.Max(1, _visibleRewardCount);
+            float availableHeight = rewardRows.rect.height;
+            float rowHeight = Mathf.Min(150f, (availableHeight - spacing * (count - 1)) / count);
+            float textSize = Mathf.Lerp(64f, 30f, Mathf.Clamp01((_visibleRewardCount - 1) / 5f));
+            float iconSize = Mathf.Clamp(rowHeight * 0.8f, 38f, 100f);
+            foreach (RewardRow row in rewards)
+            {
+                if (row.group == null) continue;
+                RectTransform rect = row.group.transform as RectTransform;
+                if (rect != null) rect.sizeDelta = new Vector2(rewardRows.rect.width, rowHeight);
+                if (row.icon != null) row.icon.sizeDelta = Vector2.one * iconSize;
+                if (row.name != null)
+                {
+                    RectTransform nameRect = row.name.rectTransform;
+                    nameRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, rowHeight);
+                    nameRect.anchoredPosition = new Vector2(140f, nameRect.anchoredPosition.y);
+                }
+                if (row.amount != null) row.amount.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, rowHeight);
+                SetAdaptiveTextSize(row.name, textSize);
+                SetAdaptiveTextSize(row.amount, textSize);
+            }
+            if (experienceIcon != null)
+                experienceIcon.sizeDelta = Vector2.one * Mathf.Min(56f, iconSize);
+            float experienceSize = Mathf.Clamp(textSize * 0.78f, 30f, 48f);
+            SetAdaptiveTextSize(experienceLabel, experienceSize);
+            SetAdaptiveTextSize(experienceAmount, experienceSize);
             LayoutRebuilder.ForceRebuildLayoutImmediate(rewardRows);
+        }
+
+        private static void SetAdaptiveTextSize(TMP_Text text, float maximum)
+        {
+            if (text == null) return;
+            text.enableAutoSizing = true;
+            text.fontSizeMin = 20f;
+            text.fontSizeMax = maximum;
+            text.fontSize = maximum;
         }
 
         public static long GetEarned(RunResult result, string currencyId)

@@ -86,7 +86,7 @@
       "spawnIntervalSeconds(생성 주기)": 1.35,
       "garnetReward(처치 가넷 보상)": 6,
       "gemstoneId(드롭 젬스톤 ID)": "gem.amethyst",
-      "gemstoneAmount(드롭 젬스톤 수량)": 3,
+      "gemstoneAmount(드롭 젬스톤 수량)": 2,
       "gemstoneChancePercent(드롭 젬스톤 확률)": 100,
       "behaviorType(몬스터 행동 특성)": 0
     },
@@ -98,7 +98,7 @@
       "spawnIntervalSeconds(생성 주기)": 1.5,
       "garnetReward(처치 가넷 보상)": 7,
       "gemstoneId(드롭 젬스톤 ID)": "gem.amethyst",
-      "gemstoneAmount(드롭 젬스톤 수량)": 3,
+      "gemstoneAmount(드롭 젬스톤 수량)": 2,
       "gemstoneChancePercent(드롭 젬스톤 확률)": 100,
       "behaviorType(몬스터 행동 특성)": 0
     },
@@ -110,7 +110,7 @@
       "spawnIntervalSeconds(생성 주기)": 1.65,
       "garnetReward(처치 가넷 보상)": 8,
       "gemstoneId(드롭 젬스톤 ID)": "gem.sapphire",
-      "gemstoneAmount(드롭 젬스톤 수량)": 5,
+      "gemstoneAmount(드롭 젬스톤 수량)": 1,
       "gemstoneChancePercent(드롭 젬스톤 확률)": 100,
       "behaviorType(몬스터 행동 특성)": 0
     },
@@ -122,7 +122,7 @@
       "spawnIntervalSeconds(생성 주기)": 1.8,
       "garnetReward(처치 가넷 보상)": 9,
       "gemstoneId(드롭 젬스톤 ID)": "gem.sapphire",
-      "gemstoneAmount(드롭 젬스톤 수량)": 5,
+      "gemstoneAmount(드롭 젬스톤 수량)": 1,
       "gemstoneChancePercent(드롭 젬스톤 확률)": 100,
       "behaviorType(몬스터 행동 특성)": 0
     },
@@ -134,8 +134,8 @@
       "spawnIntervalSeconds(생성 주기)": 1.95,
       "garnetReward(처치 가넷 보상)": 10,
       "gemstoneId(드롭 젬스톤 ID)": "gem.diamond",
-      "gemstoneAmount(드롭 젬스톤 수량)": 3,
-      "gemstoneChancePercent(드롭 젬스톤 확률)": 100,
+      "gemstoneAmount(드롭 젬스톤 수량)": 1,
+      "gemstoneChancePercent(드롭 젬스톤 확률)": 50,
       "behaviorType(몬스터 행동 특성)": 0
     },
     {
@@ -147,7 +147,7 @@
       "garnetReward(처치 가넷 보상)": 11,
       "gemstoneId(드롭 젬스톤 ID)": "gem.dragon",
       "gemstoneAmount(드롭 젬스톤 수량)": 1,
-      "gemstoneChancePercent(드롭 젬스톤 확률)": 100,
+      "gemstoneChancePercent(드롭 젬스톤 확률)": 20,
       "behaviorType(몬스터 행동 특성)": 0
     },
     {
@@ -159,7 +159,7 @@
       "garnetReward(처치 가넷 보상)": 12,
       "gemstoneId(드롭 젬스톤 ID)": "gem.dragon",
       "gemstoneAmount(드롭 젬스톤 수량)": 1,
-      "gemstoneChancePercent(드롭 젬스톤 확률)": 100,
+      "gemstoneChancePercent(드롭 젬스톤 확률)": 20,
       "behaviorType(몬스터 행동 특성)": 0
     }
   ],
@@ -205,7 +205,7 @@
       "id(고정 식별자)": "relic.red_potion",
       "owned(획득 여부)": false,
       "sourceMonsterId(드롭 몬스터 ID)": "monster.01",
-      "dropChancePercent(개별 드롭 확률(%))": 5,
+      "dropChancePercent(개별 드롭 확률(%))": 2.5,
       "effectId(전투 효과 ID)": "cursorAttackDamagePercent",
       "effectValue(효과 수치)": 10,
       "effectValue2(보조 효과 수치)": 0
@@ -214,7 +214,7 @@
       "id(고정 식별자)": "relic.blue_potion",
       "owned(획득 여부)": false,
       "sourceMonsterId(드롭 몬스터 ID)": "monster.01",
-      "dropChancePercent(개별 드롭 확률(%))": 2,
+      "dropChancePercent(개별 드롭 확률(%))": 1,
       "effectId(전투 효과 ID)": "autoSkillDamagePercent",
       "effectValue(효과 수치)": 10,
       "effectValue2(보조 효과 수치)": 0
@@ -223,7 +223,7 @@
       "id(고정 식별자)": "relic.monster_meat",
       "owned(획득 여부)": false,
       "sourceMonsterId(드롭 몬스터 ID)": "monster.02",
-      "dropChancePercent(개별 드롭 확률(%))": 5,
+      "dropChancePercent(개별 드롭 확률(%))": 2.5,
       "effectId(전투 효과 ID)": "petDamagePercent",
       "effectValue(효과 수치)": 20,
       "effectValue2(보조 효과 수치)": 0
@@ -232,7 +232,7 @@
       "id(고정 식별자)": "relic.thief_shoes",
       "owned(획득 여부)": false,
       "sourceMonsterId(드롭 몬스터 ID)": "monster.02",
-      "dropChancePercent(개별 드롭 확률(%))": 2,
+      "dropChancePercent(개별 드롭 확률(%))": 1,
       "effectId(전투 효과 ID)": "petMoveSpeedPercent",
       "effectValue(효과 수치)": 30,
       "effectValue2(보조 효과 수치)": 0
@@ -241,7 +241,7 @@
       "id(고정 식별자)": "relic.archers_bow",
       "owned(획득 여부)": false,
       "sourceMonsterId(드롭 몬스터 ID)": "monster.03",
-      "dropChancePercent(개별 드롭 확률(%))": 5,
+      "dropChancePercent(개별 드롭 확률(%))": 2.5,
       "effectId(전투 효과 ID)": "petAttackIntervalReductionPercent",
       "effectValue(효과 수치)": 20,
       "effectValue2(보조 효과 수치)": 0
@@ -250,7 +250,7 @@
       "id(고정 식별자)": "relic.warrior_armor",
       "owned(획득 여부)": false,
       "sourceMonsterId(드롭 몬스터 ID)": "monster.03",
-      "dropChancePercent(개별 드롭 확률(%))": 2,
+      "dropChancePercent(개별 드롭 확률(%))": 1,
       "effectId(전투 효과 ID)": "normalFieldDurationBonusSeconds",
       "effectValue(효과 수치)": 4,
       "effectValue2(보조 효과 수치)": 0
@@ -259,7 +259,7 @@
       "id(고정 식별자)": "relic.wizards_hat",
       "owned(획득 여부)": false,
       "sourceMonsterId(드롭 몬스터 ID)": "monster.04",
-      "dropChancePercent(개별 드롭 확률(%))": 5,
+      "dropChancePercent(개별 드롭 확률(%))": 2.5,
       "effectId(전투 효과 ID)": "areaSkillRadiusPercent",
       "effectValue(효과 수치)": 16,
       "effectValue2(보조 효과 수치)": 0
@@ -268,7 +268,7 @@
       "id(고정 식별자)": "relic.valor_ring",
       "owned(획득 여부)": false,
       "sourceMonsterId(드롭 몬스터 ID)": "monster.04",
-      "dropChancePercent(개별 드롭 확률(%))": 2,
+      "dropChancePercent(개별 드롭 확률(%))": 1,
       "effectId(전투 효과 ID)": "criticalDamageMultiplierBonus",
       "effectValue(효과 수치)": 0.5,
       "effectValue2(보조 효과 수치)": 0
@@ -277,7 +277,7 @@
       "id(고정 식별자)": "relic.lucky_dice",
       "owned(획득 여부)": false,
       "sourceMonsterId(드롭 몬스터 ID)": "monster.05",
-      "dropChancePercent(개별 드롭 확률(%))": 5,
+      "dropChancePercent(개별 드롭 확률(%))": 2.5,
       "effectId(전투 효과 ID)": "petDoubleDamageChancePercent",
       "effectValue(효과 수치)": 20,
       "effectValue2(보조 효과 수치)": 0
@@ -286,7 +286,7 @@
       "id(고정 식별자)": "relic.kraken_eye",
       "owned(획득 여부)": false,
       "sourceMonsterId(드롭 몬스터 ID)": "monster.05",
-      "dropChancePercent(개별 드롭 확률(%))": 2,
+      "dropChancePercent(개별 드롭 확률(%))": 1,
       "effectId(전투 효과 ID)": "lowHealthExecuteChancePercent",
       "effectValue(효과 수치)": 50,
       "effectValue2(보조 효과 수치)": 30
@@ -295,7 +295,7 @@
       "id(고정 식별자)": "relic.four_leaf_clover",
       "owned(획득 여부)": false,
       "sourceMonsterId(드롭 몬스터 ID)": "monster.06",
-      "dropChancePercent(개별 드롭 확률(%))": 5,
+      "dropChancePercent(개별 드롭 확률(%))": 2.5,
       "effectId(전투 효과 ID)": "relicDropChanceBonusPercent",
       "effectValue(효과 수치)": 1,
       "effectValue2(보조 효과 수치)": 0
@@ -304,7 +304,7 @@
       "id(고정 식별자)": "relic.ancient_book",
       "owned(획득 여부)": false,
       "sourceMonsterId(드롭 몬스터 ID)": "monster.06",
-      "dropChancePercent(개별 드롭 확률(%))": 2,
+      "dropChancePercent(개별 드롭 확률(%))": 1,
       "effectId(전투 효과 ID)": "cursorAttackIntervalReductionPercent",
       "effectValue(효과 수치)": 40,
       "effectValue2(보조 효과 수치)": 0
@@ -313,7 +313,7 @@
       "id(고정 식별자)": "relic.adventurers_bag",
       "owned(획득 여부)": false,
       "sourceMonsterId(드롭 몬스터 ID)": "monster.07",
-      "dropChancePercent(개별 드롭 확률(%))": 5,
+      "dropChancePercent(개별 드롭 확률(%))": 2.5,
       "effectId(전투 효과 ID)": "garnetKillRewardPercent",
       "effectValue(효과 수치)": 20,
       "effectValue2(보조 효과 수치)": 0
@@ -322,7 +322,7 @@
       "id(고정 식별자)": "relic.compass",
       "owned(획득 여부)": false,
       "sourceMonsterId(드롭 몬스터 ID)": "monster.07",
-      "dropChancePercent(개별 드롭 확률(%))": 2,
+      "dropChancePercent(개별 드롭 확률(%))": 1,
       "effectId(전투 효과 ID)": "petAttackRadiusPercent",
       "effectValue(효과 수치)": 30,
       "effectValue2(보조 효과 수치)": 0
@@ -331,7 +331,7 @@
       "id(고정 식별자)": "relic.megaphone",
       "owned(획득 여부)": false,
       "sourceMonsterId(드롭 몬스터 ID)": "monster.08",
-      "dropChancePercent(개별 드롭 확률(%))": 5,
+      "dropChancePercent(개별 드롭 확률(%))": 2.5,
       "effectId(전투 효과 ID)": "monsterSpawnIntervalReductionPercent",
       "effectValue(효과 수치)": 10,
       "effectValue2(보조 효과 수치)": 0
@@ -340,7 +340,7 @@
       "id(고정 식별자)": "relic.telescope",
       "owned(획득 여부)": false,
       "sourceMonsterId(드롭 몬스터 ID)": "monster.08",
-      "dropChancePercent(개별 드롭 확률(%))": 2,
+      "dropChancePercent(개별 드롭 확률(%))": 1,
       "effectId(전투 효과 ID)": "cursorAttackRadiusPercent",
       "effectValue(효과 수치)": 20,
       "effectValue2(보조 효과 수치)": 0
@@ -349,7 +349,7 @@
       "id(고정 식별자)": "relic.stone",
       "owned(획득 여부)": false,
       "sourceMonsterId(드롭 몬스터 ID)": "monster.09",
-      "dropChancePercent(개별 드롭 확률(%))": 5,
+      "dropChancePercent(개별 드롭 확률(%))": 2.5,
       "effectId(전투 효과 ID)": "fullHealthFirstHitDamagePercent",
       "effectValue(효과 수치)": 30,
       "effectValue2(보조 효과 수치)": 0
@@ -358,7 +358,7 @@
       "id(고정 식별자)": "relic.rainbow_feather",
       "owned(획득 여부)": false,
       "sourceMonsterId(드롭 몬스터 ID)": "monster.09",
-      "dropChancePercent(개별 드롭 확률(%))": 2,
+      "dropChancePercent(개별 드롭 확률(%))": 1,
       "effectId(전투 효과 ID)": "autoSkillCooldownReductionPercent",
       "effectValue(효과 수치)": 10,
       "effectValue2(보조 효과 수치)": 0
@@ -367,7 +367,7 @@
       "id(고정 식별자)": "relic.scales_of_judgment",
       "owned(획득 여부)": false,
       "sourceMonsterId(드롭 몬스터 ID)": "monster.10",
-      "dropChancePercent(개별 드롭 확률(%))": 5,
+      "dropChancePercent(개별 드롭 확률(%))": 2.5,
       "effectId(전투 효과 ID)": "bossDamagePercent",
       "effectValue(효과 수치)": 20,
       "effectValue2(보조 효과 수치)": 0
@@ -376,7 +376,7 @@
       "id(고정 식별자)": "relic.treasure_chest",
       "owned(획득 여부)": false,
       "sourceMonsterId(드롭 몬스터 ID)": "monster.10",
-      "dropChancePercent(개별 드롭 확률(%))": 2,
+      "dropChancePercent(개별 드롭 확률(%))": 1,
       "effectId(전투 효과 ID)": "monsterKillRewardPercent",
       "effectValue(효과 수치)": 30,
       "effectValue2(보조 효과 수치)": 0

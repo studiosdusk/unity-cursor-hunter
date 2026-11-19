@@ -6,8 +6,8 @@ using System.Reflection;
 using CursorHunter.Combat;
 using CursorHunter.Contracts;
 using CursorHunter.Data;
+using CursorHunter.Progression.ResearchPrototype;
 using NUnit.Framework;
-using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
@@ -51,7 +51,6 @@ namespace CursorHunter.App.Tests
             Set(_hunt, "connectTraitScreenToCombat", false);
             Set(_hunt, "_ignoreFocusPauseForAutomatedPlayModeTest", true);
             Assert.That(Get<bool>(_hunt, "playEntranceSequence"), Is.True, "Main must enable entrance by default.");
-            Assert.That(Get<BattleResultPresentation>(_hunt, "battlePresentation"), Is.EqualTo(_presentation));
         }
 
         [UnityTearDown]
@@ -66,7 +65,7 @@ namespace CursorHunter.App.Tests
         }
 
         [UnityTest]
-        public IEnumerator EmptyFieldThenStaggeredPopupsThenAuthoredStartPopupGateAllCombat()
+        public IEnumerator EmptyFieldThenStaggeredPopupsStartCombatWithoutAnnouncement()
         {
             BeginNormal();
             RunId run = _combat.CurrentRunId;
@@ -91,29 +90,21 @@ namespace CursorHunter.App.Tests
             Time.timeScale = 0;
             yield return new WaitForSecondsRealtime(0.2f);
             CollectionAssert.AreEqual(scales, popups.Select(p => p.Scale).ToArray());
-            Time.timeScale = 1;
-            yield return Until(() => _presentation.IsShowingStart);
-            Assert.That(popups.All(p => p.IsFinished && p.Scale == 1f), Is.True);
-            Assert.That(_combat.ElapsedSeconds, Is.Zero);
-            Assert.That(_combat.RemainingSeconds, Is.EqualTo(17));
             CollectionAssert.AreEqual(positions, targets.Select(t => t.transform.position).ToArray());
             CollectionAssert.AreEqual(colliders, targets.Select(t => (Vector2)t.EnsureCombatCollider().bounds.size).ToArray());
-            Assert.That(Get<TMP_Text>(_presentation, "timeOutTitle").text, Is.EqualTo("전투 시작!"));
-            Assert.That(Get<GameObject>(_presentation, "timeOutPanel").activeSelf, Is.True);
-            Assert.That(Get<CanvasGroup>(_presentation, "resultUI").gameObject.activeSelf, Is.False);
-            LocalizationCatalog.SetLanguage("en");
-            Assert.That(Get<TMP_Text>(_presentation, "timeOutTitle").text, Is.EqualTo("Battle Start!"));
-            LocalizationCatalog.SetLanguage("ko");
-            Get<Button>(_presentation, "skipButton").onClick.Invoke();
-            _presentation.CompleteReveal();
-            Assert.That(_presentation.IsShowingStart, Is.True, "A click must not skip the start beat.");
-            Time.timeScale = 0;
-            float popupClock = Get<float>(_presentation, "_clock");
-            yield return new WaitForSecondsRealtime(0.2f);
-            Assert.That(Get<float>(_presentation, "_clock"), Is.EqualTo(popupClock));
             Time.timeScale = 1;
-            yield return Capture("start-popup");
-            yield return Until(() => _combat.IsRunning);
+            int completedFrames = 0;
+            float deadline = Time.realtimeSinceStartup + 6f;
+            while (!_combat.IsRunning && Time.realtimeSinceStartup < deadline)
+            {
+                Assert.That(_presentation.IsVisible, Is.False, "Entrance must not show a result or start overlay.");
+                Assert.That(Get<GameObject>(_presentation, "timeOutPanel").activeSelf, Is.False);
+                if (_spawner.IsInitialEntranceComplete) completedFrames++;
+                yield return null;
+            }
+            Assert.That(_combat.IsRunning, Is.True, "Combat must start after the initial monsters finish appearing.");
+            Assert.That(completedFrames, Is.LessThanOrEqualTo(1), "There must be no announcement delay after spawning.");
+            Assert.That(popups.All(p => p.IsFinished && p.Scale == 1f), Is.True);
             Assert.That(_combat.CurrentRunId, Is.EqualTo(run));
             Assert.That(_combat.ElapsedSeconds, Is.LessThan(0.3f));
             Assert.That(_presentation.IsVisible, Is.False);
@@ -127,11 +118,12 @@ namespace CursorHunter.App.Tests
             BeginNormal(40);
             Assert.That(Targets().Length, Is.EqualTo(80));
             float started = Time.realtimeSinceStartup;
-            yield return Until(() => _presentation.IsShowingStart);
+            yield return Until(() => _combat.IsRunning);
             Assert.That(Time.realtimeSinceStartup - started, Is.LessThan(1.5f));
             Assert.That(Targets().All(t => t.GetComponent<MonsterSpawnPresentation>().IsFinished), Is.True);
-            Assert.That(_combat.ElapsedSeconds, Is.Zero);
+            Assert.That(_combat.ElapsedSeconds, Is.LessThan(0.3f));
             Assert.That(_spawner.ActiveSpawnedCount, Is.EqualTo(80));
+            Assert.That(_presentation.IsVisible, Is.False);
         }
 
         [UnityTest]
@@ -163,7 +155,7 @@ namespace CursorHunter.App.Tests
         }
 
         [UnityTest]
-        public IEnumerator ResetAndMenuExitCancelBothSetupAndAnnouncementWithoutStartingStaleRuns()
+        public IEnumerator ResetAndMenuExitCancelSetupWithoutStartingStaleRuns()
         {
             BeginNormal();
             RunId first = _combat.CurrentRunId;
@@ -173,7 +165,9 @@ namespace CursorHunter.App.Tests
             Assert.That(_combat.IsRunActive, Is.False);
             BeginNormal();
             Assert.That(_combat.CurrentRunId, Is.Not.EqualTo(first));
-            yield return Until(() => _presentation.IsShowingStart);
+            yield return new WaitForSecondsRealtime(0.2f);
+            Assert.That(_combat.IsEntering, Is.True);
+            Assert.That(_presentation.IsVisible, Is.False);
             Object.FindFirstObjectByType<AppUiRootController>().ShowMainMenu();
             yield return new WaitForSecondsRealtime(1.1f);
             Assert.That(_combat.IsRunActive, Is.False);
@@ -185,27 +179,41 @@ namespace CursorHunter.App.Tests
         }
 
         [UnityTest]
-        public IEnumerator BossEntranceKeepsAllPurchasedSkillsPreparedAndThirtySecondsUntouched()
+        public IEnumerator BossEntranceKeepsPurchasedSkillsPreparedAndThirtySecondsUntouched()
         {
             Set(_hunt, "connectTraitScreenToCombat", true);
             object progression = Get<object>(_hunt, "progressionController");
             progression.GetType().GetMethod("CreateCombatSnapshot").Invoke(progression, null);
-            var purchased = Get<HashSet<string>>(progression, "_purchased");
-            object config = Get<object>(Get<object>(progression, "_document"), "progression");
-            foreach (object category in Get<Array>(config, "categories"))
-                foreach (object node in Get<Array>(category, "nodes")) purchased.Add(Get<string>(node, "id"));
+            var ranks = Get<Dictionary<string, int>>(progression, "_researchRanks");
+            var map = Get<ResearchTestMap>(progression, "researchMap");
+            var unlocks = map.nodes.Where(node => node != null && node.definition != null &&
+                node.definition.gameplay != null && node.definition.gameplay.kind == ResearchEffectKind.SkillUnlock).ToArray();
+            Assert.That(unlocks, Is.Not.Empty, "The active map must have a skill to test.");
+            foreach (var node in unlocks) ranks[node.placementId] = 1;
+            var unlockedIds = new HashSet<string>(unlocks.Select(node => node.definition.gameplay.targetId));
             _hunt.BeginBossRun();
             Assert.That(_combat.IsEntering, Is.True);
             Assert.That(_spawner.ActiveSpawnedCount, Is.EqualTo(1));
-            yield return Until(() => _presentation.IsShowingStart);
+            yield return new WaitForSecondsRealtime(0.3f);
+            Assert.That(_combat.IsEntering, Is.True);
             Assert.That(_combat.RemainingSeconds, Is.EqualTo(30));
             Assert.That(_spawner.BossTarget.CurrentHealth, Is.EqualTo(_spawner.BossTarget.MaxHealth));
             MonoBehaviour[] skills = _combat.GetComponentsInChildren<MonoBehaviour>(true)
                 .Where(s => s is IRunSkillController).ToArray();
             Assert.That(skills.Length, Is.EqualTo(7));
             foreach (MonoBehaviour skill in skills)
-                Assert.That(Get<bool>(skill, "_configured"), Is.True, skill.name + " lost its prepared run during entrance.");
+                Assert.That(Get<bool>(skill, "_configured"), Is.EqualTo(unlockedIds.Contains(((IRunSkillController)skill).Id)),
+                    skill.name + " has incorrect preparation during entrance.");
             Assert.That(_combat.GarnetEarned, Is.Zero);
+            float deadline = Time.realtimeSinceStartup + 6f;
+            while (!_combat.IsRunning && Time.realtimeSinceStartup < deadline)
+            {
+                Assert.That(_presentation.IsVisible, Is.False, "Boss entrance must not show an announcement.");
+                yield return null;
+            }
+            Assert.That(_combat.IsRunning, Is.True);
+            Assert.That(_combat.ElapsedSeconds, Is.LessThan(0.3f));
+            Assert.That(_presentation.IsVisible, Is.False);
             _hunt.ResetPrototypeRun();
         }
 
@@ -239,45 +247,6 @@ namespace CursorHunter.App.Tests
             float deadline = Time.realtimeSinceStartup + 6;
             while (!condition() && Time.realtimeSinceStartup < deadline) yield return null;
             Assert.That(condition(), Is.True, "Stage entrance timed out.");
-        }
-
-        private IEnumerator Capture(string name)
-        {
-            if (Environment.GetEnvironmentVariable("CURSOR_HUNTER_ENTRANCE_CAPTURE") != "1") yield break;
-            Camera camera = Camera.main;
-            Canvas canvas = Get<CanvasGroup>(_presentation, "resultUI").GetComponentInParent<Canvas>().rootCanvas;
-            RenderMode mode = canvas.renderMode;
-            Camera oldCamera = canvas.worldCamera;
-            float distance = canvas.planeDistance;
-            int sortingOrder = canvas.sortingOrder;
-            RenderTexture previous = camera.targetTexture;
-            var texture = new RenderTexture(1920, 1080, 24);
-            try
-            {
-                camera.targetTexture = texture;
-                canvas.renderMode = RenderMode.ScreenSpaceCamera;
-                canvas.worldCamera = camera;
-                canvas.planeDistance = 1;
-                // ScreenSpaceOverlay normally renders above every world SortingGroup.
-                canvas.sortingOrder = 1000;
-                yield return null;
-                Canvas.ForceUpdateCanvases();
-                camera.Render();
-                RenderTexture old = RenderTexture.active;
-                RenderTexture.active = texture;
-                var pixels = new Texture2D(1920, 1080, TextureFormat.RGB24, false);
-                pixels.ReadPixels(new Rect(0, 0, 1920, 1080), 0, 0); pixels.Apply();
-                RenderTexture.active = old;
-                System.IO.File.WriteAllBytes("/private/tmp/cursor-hunter-" + name + ".png", pixels.EncodeToPNG());
-                Object.Destroy(pixels);
-            }
-            finally
-            {
-                camera.targetTexture = previous;
-                canvas.renderMode = mode; canvas.worldCamera = oldCamera; canvas.planeDistance = distance;
-                canvas.sortingOrder = sortingOrder;
-                texture.Release(); Object.Destroy(texture);
-            }
         }
 
         private static T Get<T>(object target, string name) => (T)target.GetType().GetField(name,

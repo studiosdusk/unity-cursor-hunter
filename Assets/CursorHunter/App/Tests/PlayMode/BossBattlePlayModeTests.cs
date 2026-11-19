@@ -891,6 +891,7 @@ namespace CursorHunter.App.Tests
             Assert.That(retire.interactable, Is.False);
             Assert.That(Get<TMP_Text>(_result, "timeOutTitle").text, Is.EqualTo("중도 포기"));
             Assert.That(Object.FindFirstObjectByType<AppUiRootController>().CurrentScreen, Is.EqualTo(UiScreenId.Combat));
+            yield return ConfirmRelicDiscovery();
             yield return Ready();
             var collection = Object.FindFirstObjectByType<GemstoneCollectionController>();
             foreach (ResourceRewardSnapshot reward in result.Rewards)
@@ -903,6 +904,43 @@ namespace CursorHunter.App.Tests
             Assert.That(_combat.CurrentRunId, Is.Not.EqualTo(run));
             Assert.That(retire.interactable, Is.True);
             Assert.That(_result.IsVisible, Is.False);
+        }
+
+        [UnityTest]
+        public IEnumerator NormalRunSettlesOnlyTheFirstRelicAfterAnotherGuaranteedDrop()
+        {
+            BeginPlayerNormalRunWithRelicDrop();
+            RunId run = _combat.CurrentRunId;
+            RelicCombatSnapshot[] relics = _combat.RelicSnapshots.Select(relic => new RelicCombatSnapshot(
+                relic.RelicId, false,
+                relic.RelicId == "relic.blue_potion" ? "monster.second_relic" : "monster.unused",
+                relic.RelicId == "relic.blue_potion" ? 100f : 0.001f,
+                relic.EffectId, relic.EffectValue, relic.EffectValue2)).ToArray();
+            Assert.That(_combat.ConfigureRelics(relics, new RelicDropRulesCombatSnapshot(
+                1, "unownedOnly", "sumFixedChanceThenWeightedPick", true)), Is.True);
+
+            var monsterObject = new GameObject("Guaranteed second relic monster");
+            try
+            {
+                var target = monsterObject.AddComponent<MonsterCombatTarget>();
+                target.Initialize(new SpawnSnapshot("monster.second_relic", "test.visual",
+                    1L, 1f, 1, 10, 7L), run);
+                long previousGarnet = _combat.GarnetEarned;
+                Assert.That(_combat.TryApplySkillDamage(run, target, 1L), Is.True);
+                Assert.That(_combat.GarnetEarned, Is.EqualTo(previousGarnet + 7L));
+
+                _hunt.EndPrototypeRun();
+                RunResult result = Get<RunResult>(_result, "_currentResult");
+                Assert.That(result.RunId, Is.EqualTo(run));
+                CollectionAssert.AreEqual(new[] { "relic.red_potion" }, result.RelicAwards);
+                Assert.That(PlayerPrefs.GetString(ProfileKey), Does.Contain("relic.red_potion"));
+                Assert.That(PlayerPrefs.GetString(ProfileKey), Does.Not.Contain("relic.blue_potion"));
+            }
+            finally
+            {
+                Object.Destroy(monsterObject);
+            }
+            yield return null;
         }
 
         [UnityTest]
@@ -948,6 +986,7 @@ namespace CursorHunter.App.Tests
             RetireButton().onClick.Invoke();
             Assert.That(Get<RunResult>(_hunt, "_pendingRunSettlement").RunId, Is.EqualTo(run));
             Assert.That(Get<long>(progression, "_garnetBalance"), Is.EqualTo(before));
+            yield return ConfirmRelicDiscovery();
             yield return Ready();
             ExpectSettlementFailure(run);
             Get<Button>(_result, "upgradeButton").onClick.Invoke();
@@ -1058,6 +1097,20 @@ namespace CursorHunter.App.Tests
             float until = Time.realtimeSinceStartup + 6;
             while (!_result.IsReady && Time.realtimeSinceStartup < until) yield return null;
             Assert.That(_result.IsReady, Is.True);
+        }
+        private IEnumerator ConfirmRelicDiscovery()
+        {
+            GameObject overlay = Get<GameObject>(_result, "overlay");
+            float until = Time.realtimeSinceStartup + 6;
+            Transform confirm = null;
+            while (confirm == null && Time.realtimeSinceStartup < until)
+            {
+                confirm = overlay.transform.Find(
+                    "RelicDiscoveryCelebration/RelicDiscoveryPanel/RelicDiscoveryConfirm");
+                if (confirm == null) yield return null;
+            }
+            Assert.That(confirm, Is.Not.Null, "The relic discovery must appear before it can be confirmed.");
+            confirm.GetComponent<Button>().onClick.Invoke();
         }
         private static IEnumerator Capture(string path)
         {

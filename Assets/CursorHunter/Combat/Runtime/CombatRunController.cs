@@ -40,6 +40,7 @@ namespace CursorHunter.Combat
             new Dictionary<string, long>(StringComparer.Ordinal);
         private readonly Dictionary<string, double> _fractionalRewardRemainders =
             new Dictionary<string, double>(StringComparer.Ordinal);
+        private decimal _fractionalTraitExperience;
         private readonly List<string> _relicAwards = new List<string>(20);
         private readonly HashSet<string> _relicAwardIds =
             new HashSet<string>(StringComparer.Ordinal);
@@ -56,8 +57,10 @@ namespace CursorHunter.Combat
             Array.AsReadOnly(Array.Empty<RelicCombatSnapshot>());
         private RelicDropRulesCombatSnapshot _relicDropRules;
         private RelicCombatModifiers _relicModifiers;
+        private TraitCombatEffects _traitEffects;
         private SeededRandom _random;
         private SeededRandom _relicRandom;
+        private SeededRandom _chestRewardRandom;
         private float _elapsedSeconds;
         private float _durationSeconds;
         private Vector2 _previousAttackCenter;
@@ -67,6 +70,7 @@ namespace CursorHunter.Combat
         private long _garnetEarned;
         private long _experienceEarned;
         private long _effectiveDamage;
+        private long _rewardSequence;
         private bool _isPrepared;
         private bool _isRunning;
         private bool _isPaused;
@@ -118,6 +122,8 @@ namespace CursorHunter.Combat
         public IReadOnlyList<RelicCombatSnapshot> RelicSnapshots => _relicSnapshotView;
         public RelicDropRulesCombatSnapshot RelicDropRules => _relicDropRules;
         public RelicCombatModifiers RelicModifiers => _relicModifiers;
+        public IReadOnlyList<TreasureChestTraitSnapshot> TraitChestSpawns =>
+            _traitEffects != null ? _traitEffects.Chests : Array.Empty<TreasureChestTraitSnapshot>();
         public float AreaSkillRadiusMultiplier =>
             _relicModifiers.AreaSkillRadiusMultiplier;
 
@@ -209,6 +215,9 @@ namespace CursorHunter.Combat
             }
 
             _elapsedSeconds += deltaSeconds;
+            _traitEffects?.Advance(Mathf.Min(_elapsedSeconds, _durationSeconds), _durationSeconds);
+            if (_traitEffects != null)
+                playerCombatStatsRuntime.SetTraitRangeMultiplier(_traitEffects.CursorRangeMultiplier);
 
             if (_elapsedSeconds >= _durationSeconds)
             {
@@ -281,6 +290,7 @@ namespace CursorHunter.Combat
             StopAllSkills();
             _random = new SeededRandom(request.Seed ^ 0xC17C17UL);
             _relicRandom = new SeededRandom(request.Seed ^ 0xA71FAC73UL);
+            _chestRewardRandom = new SeededRandom(request.Seed ^ 0x434845535452UL);
             _elapsedSeconds = 0f;
             _lastBasicHitAt.Clear();
             ResetAttackPath();
@@ -288,14 +298,18 @@ namespace CursorHunter.Combat
             _garnetEarned = 0;
             _experienceEarned = 0;
             _effectiveDamage = 0;
+            _rewardSequence = 0;
             _resourceRewards.Clear();
             _fractionalRewardRemainders.Clear();
+            _fractionalTraitExperience = 0m;
             _relicAwards.Clear();
             _relicAwardIds.Clear();
             _relicSnapshots = Array.Empty<RelicCombatSnapshot>();
             _relicSnapshotView = Array.AsReadOnly(_relicSnapshots);
             _relicDropRules = default;
             _relicModifiers = default;
+            TraitCombatEffects.TryCreate(null, request.Seed, out _traitEffects);
+            playerCombatStatsRuntime.SetTraitRangeMultiplier(1f);
             _isPrepared = true;
             _isRunning = false;
             _isPaused = false;
@@ -746,6 +760,15 @@ namespace CursorHunter.Combat
             return true;
         }
 
+        /// <summary>Captures acquired trait modules before the run is committed.</summary>
+        public bool ConfigureTraitEffects(IReadOnlyList<ITraitCombatEffectSnapshot> snapshots)
+        {
+            if (!_isPrepared || _isRunning || !TraitCombatEffects.TryCreate(snapshots, _runRequest.Seed, out var effects))
+                return false;
+            _traitEffects = effects;
+            return true;
+        }
+
         private bool RefreshSkillControllers()
         {
             _skillControllers.Clear();
@@ -884,15 +907,34 @@ namespace CursorHunter.Combat
                 _experienceEarned = 0L;
                 _resourceRewards.Clear();
             }
+            ResourceRewardSnapshot[] rewards = CreateResourceRewards();
+            long garnet = _garnetEarned;
+            if (settlementPolicy == RunSettlementPolicy.Eligible && _traitEffects != null)
+            {
+                if (!_traitEffects.TryApplySettlementRewards(rewards, out rewards))
+                {
+                    endReason = RunEndReason.NumericOverflow;
+                    settlementPolicy = RunSettlementPolicy.Discard;
+                    rewards = Array.Empty<ResourceRewardSnapshot>();
+                    garnet = 0L;
+                    _experienceEarned = 0L;
+                }
+                else
+                {
+                    garnet = 0L;
+                    foreach (var reward in rewards)
+                        if (reward.CurrencyId == "gem.garnet") { garnet = reward.Amount; break; }
+                }
+            }
             return new RunResult(
                 _runRequest,
                 endReason,
                 settlementPolicy,
                 _elapsedSeconds,
                 _defeatedCount,
-                _garnetEarned,
+                garnet,
                 _effectiveDamage,
-                CreateResourceRewards(),
+                rewards,
                 _relicAwards,
                 _experienceEarned);
         }
@@ -1003,6 +1045,18 @@ namespace CursorHunter.Combat
                 return true;
             }
 
+            if (target is MonsterCombatTarget chestTarget && chestTarget.IsTraitChest)
+            {
+                CommitTraitChestReward(chestTarget, rewardPosition, hasRewardPosition);
+                chestTarget.Unregister();
+                if (Application.isPlaying)
+                {
+                    if (!chestTarget.PlayTraitChestLethalHit()) Destroy(chestTarget.gameObject);
+                }
+                else DestroyImmediate(chestTarget.gameObject);
+                return true;
+            }
+
             if (_runRequest.Mode == RunMode.Boss && _runRequest.BossClearRewards.Count > 0)
             {
                 CommitBossClearRewards(rewardPosition, hasRewardPosition);
@@ -1042,11 +1096,7 @@ namespace CursorHunter.Combat
             }
             long experienceReward = normalMonsterKill && target is MonsterCombatTarget xpTarget
                 ? xpTarget.ExperienceReward : 0L;
-            if (normalMonsterKill && !TryScaleReward(
-                    "experience",
-                    experienceReward,
-                    _runRequest.FieldExperienceMultiplier,
-                    out experienceReward))
+            if (normalMonsterKill && !TryScaleNormalExperience(experienceReward, out experienceReward))
             {
                 RequestAbort(RunEndReason.NumericOverflow);
                 return true;
@@ -1114,13 +1164,38 @@ namespace CursorHunter.Combat
             RequestBossCompletion();
         }
 
+        private void CommitTraitChestReward(MonsterCombatTarget target, Vector3 position, bool hasPosition)
+        {
+            long garnet = target.GarnetReward;
+            long experience = target.ExperienceReward;
+            string bonusId = target.BonusDropCurrencyId;
+            long bonus = !string.IsNullOrWhiteSpace(bonusId) && target.BonusDropAmount > 0 &&
+                TraitEffectRoll.Pass(_chestRewardRandom, target.BonusDropChancePercent) ? target.BonusDropAmount : 0L;
+            if (bonusId == "gem.garnet")
+            {
+                if (!TryAddNonNegative(garnet, bonus, out garnet)) { RequestAbort(RunEndReason.NumericOverflow); return; }
+                bonus = 0L;
+            }
+            if (!TryAddNonNegative(_garnetEarned, garnet, out long nextGarnet) ||
+                !TryAddNonNegative(_experienceEarned, experience, out long nextExperience) ||
+                !TryAddNonNegative(GetResourceEarned("gem.garnet"), garnet, out _) ||
+                !TryAddNonNegative(GetResourceEarned(bonusId), bonus, out _))
+            { RequestAbort(RunEndReason.NumericOverflow); return; }
+            _garnetEarned = nextGarnet;
+            _experienceEarned = nextExperience;
+            TryRecordReward("gem.garnet", garnet);
+            TryRecordReward(bonusId, bonus);
+            if (garnet > 0L || bonus > 0L || experience > 0L)
+                NotifyKillReward(position, hasPosition, garnet, bonusId, bonus, experience: experience);
+        }
+
         private void NotifyKillReward(Vector3 position, bool hasPosition, long garnet, string bonusId,
             long bonus, string relicAwardId = null, long experience = 0L)
         {
             try
             {
                 RewardResolved?.Invoke(new CombatRewardResolved(_runRequest.RunId,
-                    _defeatedCount, position, hasPosition, garnet, bonusId, bonus,
+                    ++_rewardSequence, position, hasPosition, garnet, bonusId, bonus,
                     relicAwardId, experience));
             }
             catch (Exception exception)
@@ -1141,7 +1216,8 @@ namespace CursorHunter.Combat
 
         private string RollRelicDrop(string sourceMonsterId)
         {
-            if (string.IsNullOrEmpty(sourceMonsterId) || _relicRandom == null ||
+            // A run can discover only one relic, regardless of its source monster.
+            if (_relicAwards.Count > 0 || string.IsNullOrEmpty(sourceMonsterId) || _relicRandom == null ||
                 !_relicDropRules.IsValid || _relicDropRules.MaxPerKill != 1 ||
                 _relicDropRules.CandidatePolicy != "unownedOnly" ||
                 _relicDropRules.Resolution != "sumFixedChanceThenWeightedPick")
@@ -1394,6 +1470,14 @@ namespace CursorHunter.Combat
             else
                 _fractionalRewardRemainders[currencyId] = nextRemainder;
             return true;
+        }
+
+        private bool TryScaleNormalExperience(long amount, out long scaledAmount)
+        {
+            if (_traitEffects != null && _traitEffects.HasNormalExperienceEffect)
+                return _traitEffects.TryScaleNormalExperience(amount, _runRequest.FieldExperienceMultiplier,
+                    ref _fractionalTraitExperience, out scaledAmount);
+            return TryScaleReward("experience", amount, _runRequest.FieldExperienceMultiplier, out scaledAmount);
         }
 
         private bool TryRecordReward(string currencyId, long amount)

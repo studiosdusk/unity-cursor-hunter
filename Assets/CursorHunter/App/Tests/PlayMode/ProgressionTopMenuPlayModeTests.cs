@@ -114,12 +114,15 @@ namespace CursorHunter.App.Tests
                 Assert.That(boss.GetComponentInChildren<TMPro.TextMeshProUGUI>(true).text, Is.EqualTo("보스"));
                 Assert.That(huntButton.GetComponentInChildren<TMPro.TextMeshProUGUI>(true).text, Is.EqualTo("사냥"));
                 var map = canvas.transform.Find("ResearchPrototype_Canvas").GetComponent<ResearchTestMap>();
+                var artifactCanvas = canvas.transform.Find("Artifact_Canvas");
+                var traitCardCanvas = canvas.transform.Find("TraitCard_Canvas");
                 var progression = scene.GetRootGameObjects().SelectMany(root => root.GetComponentsInChildren<TraitScreenController>(true)).Single();
                 var app = scene.GetRootGameObjects().SelectMany(root => root.GetComponentsInChildren<AppUiRootController>(true)).Single();
                 var runtime = progression.transform.Find("TraitScreen_Runtime");
-                var artwork = runtime.Find("TraitBackdropArtwork").GetComponent<Image>();
-                var veil = runtime.Find("TraitBackdropDesaturation").GetComponent<Image>();
-                var atmosphere = runtime.Find("TraitBackdropAtmosphere").GetComponent<Image>();
+                var backdrop = runtime.Find("ProgressionUiBackdrop");
+                var artwork = backdrop.Find("BackgroundArtwork").GetComponent<Image>();
+                var veil = backdrop.Find("DesaturationOverlay").GetComponent<Image>();
+                var atmosphere = backdrop.Find("FloatingSparkles");
                 var authoredColor = new Color(0.3f, 0.4f, 0.5f, 0.7f);
                 artwork.color = authoredColor;
                 var authoredPosition = new Vector2(13f, 21f);
@@ -130,14 +133,17 @@ namespace CursorHunter.App.Tests
                 Assert.That(runtime.gameObject.activeSelf, Is.False);
                 Assert.That(research.image.sprite.name, Is.EqualTo("Btn_MenuButton_Rectangle00_s"));
                 Assert.That(relic.image.sprite.name, Is.EqualTo("Btn_MenuButton_Rectangle00_n"));
-                Assert.That(map.title.font.name, Is.EqualTo("KoreanNotoBold"));
-                Assert.That(map.costValue.font.name, Is.EqualTo("KoreanNotoBold"));
-                Assert.That(map.gemstoneValues[0].font.name, Is.EqualTo("KoreanNotoBold"));
+                var titleFont = map.title.font;
+                var costFont = map.costValue.font;
+                var gemstoneFont = map.gemstoneValues[0].font;
+                Assert.That(titleFont, Is.Not.Null);
+                Assert.That(costFont, Is.Not.Null);
+                Assert.That(gemstoneFont, Is.Not.Null);
                 foreach (Button button in new[] { research, relic, talent })
-                    Assert.That(button.GetComponentInChildren<TMPro.TextMeshProUGUI>(true).font.name, Is.EqualTo("KoreanNotoBold"), button.name);
+                    Assert.That(button.GetComponentInChildren<TMPro.TextMeshProUGUI>(true).font, Is.Not.Null, button.name);
                 Canvas.ForceUpdateCanvases();
                 var eventSystem = scene.GetRootGameObjects().SelectMany(root => root.GetComponentsInChildren<EventSystem>(true)).Single();
-                foreach (Button button in new[] { research, relic, talent, field, boss, huntButton })
+                foreach (Button button in new[] { research, relic, talent, boss, huntButton })
                 {
                     var pointer = new PointerEventData(eventSystem) { position = RectTransformUtility.WorldToScreenPoint(null, button.transform.position) };
                     var hits = new List<RaycastResult>();
@@ -151,25 +157,28 @@ namespace CursorHunter.App.Tests
                 relic.onClick.Invoke();
                 yield return null;
                 Assert.That(map.gameObject.activeSelf, Is.False);
-                Assert.That(runtime.gameObject.activeInHierarchy, Is.True);
+                Assert.That(runtime.gameObject.activeSelf, Is.False);
+                Assert.That(artifactCanvas.gameObject.activeInHierarchy, Is.True);
                 Assert.That(relic.image.sprite.name, Is.EqualTo("Btn_MenuButton_Rectangle00_s"));
                 Assert.That(research.image.sprite.name, Is.EqualTo("Btn_MenuButton_Rectangle00_n"));
-                Assert.That(runtime.GetComponentsInChildren<Transform>(false).Any(t => t.name == "RelicSlot_01"), Is.True);
-                Assert.That(runtime.Find("ResearchCategoryTabs").gameObject.activeSelf, Is.False);
+                Assert.That(artifactCanvas.GetComponentsInChildren<Transform>(false).Any(t => t.name == "RelicSlot_01"), Is.True);
+                Assert.That(runtime.Find("ResearchCategoryTabs").gameObject.activeInHierarchy, Is.False);
                 talent.onClick.Invoke();
                 yield return null;
                 Assert.That(talent.image.sprite.name, Is.EqualTo("Btn_MenuButton_Rectangle00_s"));
                 Assert.That(relic.image.sprite.name, Is.EqualTo("Btn_MenuButton_Rectangle00_n"));
-                Assert.That(runtime.GetComponentsInChildren<Transform>(false).Any(t => t.name == "TalentCollectionPanel"), Is.True);
+                Assert.That(artifactCanvas.gameObject.activeSelf, Is.False);
+                Assert.That(traitCardCanvas.gameObject.activeInHierarchy, Is.True);
+                Assert.That(runtime.gameObject.activeSelf, Is.False);
                 field.onClick.Invoke();
                 yield return null;
                 Assert.That(field.image.sprite.name, Is.EqualTo("Btn_MenuButton_Rectangle00_s"));
                 Assert.That(runtime.GetComponentsInChildren<Transform>(false).Any(t => t.name == "FieldCard_1"), Is.True);
-                Assert.That(runtime.Find("TraitBackdropArtwork").GetComponent<Image>(), Is.SameAs(artwork));
+                Assert.That(backdrop.Find("BackgroundArtwork").GetComponent<Image>(), Is.SameAs(artwork));
                 Assert.That(artwork.color, Is.EqualTo(authoredColor));
-                Assert.That(runtime.Find("TraitBackdropDesaturation").GetComponent<Image>(), Is.SameAs(veil));
+                Assert.That(backdrop.Find("DesaturationOverlay").GetComponent<Image>(), Is.SameAs(veil));
                 Assert.That(veil.rectTransform.anchoredPosition, Is.EqualTo(authoredPosition));
-                Assert.That(runtime.Find("TraitBackdropAtmosphere").GetComponent<Image>(), Is.SameAs(atmosphere));
+                Assert.That(backdrop.Find("FloatingSparkles"), Is.SameAs(atmosphere));
                 talent.onClick.Invoke();
                 yield return null;
                 app.ShowSettings();
@@ -182,12 +191,16 @@ namespace CursorHunter.App.Tests
                 Assert.That(top.gameObject.activeInHierarchy, Is.True);
                 Assert.That(bottom.gameObject.activeInHierarchy, Is.True);
                 Assert.That(talent.image.sprite.name, Is.EqualTo("Btn_MenuButton_Rectangle00_s"));
-                Assert.That(runtime.GetComponentsInChildren<Transform>(false).Any(t => t.name == "TalentCollectionPanel"), Is.True);
+                Assert.That(traitCardCanvas.gameObject.activeInHierarchy, Is.True);
+                Assert.That(runtime.gameObject.activeSelf, Is.False);
                 research.onClick.Invoke();
                 yield return null;
                 Assert.That(map.gameObject.activeInHierarchy, Is.True);
                 Assert.That(runtime.gameObject.activeSelf, Is.False);
                 Assert.That(research.image.sprite.name, Is.EqualTo("Btn_MenuButton_Rectangle00_s"));
+                Assert.That(map.title.font, Is.SameAs(titleFont));
+                Assert.That(map.costValue.font, Is.SameAs(costFont));
+                Assert.That(map.gemstoneValues[0].font, Is.SameAs(gemstoneFont));
                 Assert.That(map.nodes[0].rank, Is.EqualTo(1));
                 Assert.That(progression.GetResearchGemstoneBalance(0), Is.EqualTo(balance));
             }

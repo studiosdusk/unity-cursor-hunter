@@ -22,7 +22,8 @@ namespace CursorHunter.App.Tests
             string backup = PlayerPrefs.GetString(backupKey, ""); bool backupExisted = PlayerPrefs.HasKey(backupKey);
             Assert.That(TraitProgressionStore.Save(200, new long[] { 200, 20, 30, 40, 50, 60 },
                 new[] { "stat.attack.02" }, new Dictionary<string, int>(), new Dictionary<string, string>(),
-                researchRanks: new Dictionary<string, int> { ["cursor.attack.start"] = 2 }), Is.True);
+                researchRanks: new Dictionary<string, int> { ["cursor.attack.start"] = 2 },
+                researchLayoutFingerprint: "previous-research-layout"), Is.True);
             var scene = UnityEditor.SceneManagement.EditorSceneManager.LoadSceneInPlayMode(
                 "Assets/CursorHunter/App/Scenes/Main.unity", new LoadSceneParameters(LoadSceneMode.Additive));
             var created = new List<GameObject>();
@@ -40,7 +41,9 @@ namespace CursorHunter.App.Tests
                     var go = Object.Instantiate(prefab, map.nodes[0].transform.parent); created.Add(go);
                     var node = go.GetComponent<ResearchTestNode>();
                     node.map = map; node.placementId = placement.id; node.definition = placement.definition;
-                    node.usePlacementCosts = true; node.placementCosts = (ResearchCost[])placement.costs.Clone();
+                    // This fixture exercises the full map without spending the seeded wallet.
+                    node.usePlacementCosts = true;
+                    node.placementCosts = placement.costs.Select(_ => new ResearchCost { currencyId = "gem.garnet", amount = 0 }).ToArray();
                     nodes.Add(placement.id, node);
                 }
                 foreach (var placement in version.nodes)
@@ -57,14 +60,14 @@ namespace CursorHunter.App.Tests
                     if (node.definition.stableId == "field.duration")
                     {
                         map.Select(node);
-                        Assert.That(map.beforeValue.text, Is.EqualTo("15"));
-                        Assert.That(map.afterValue.text, Is.EqualTo("20"));
+                        Assert.That(map.beforeValue.text, Does.StartWith("15 ").And.Contain(">20</color>"));
+                        Assert.That(map.afterValue.gameObject.activeSelf, Is.False);
                     }
                     if (node.definition.stableId == "monster.02.production")
                     {
                         map.Select(node);
-                        Assert.That(map.beforeValue.text, Is.EqualTo("1"));
-                        Assert.That(map.afterValue.text, Is.EqualTo("3"));
+                        Assert.That(map.beforeValue.text, Does.StartWith("1 ").And.Contain(">3</color>"));
+                        Assert.That(map.afterValue.gameObject.activeSelf, Is.False);
                     }
                     while (node.rank < node.definition.ranks.Length)
                     {
@@ -88,7 +91,7 @@ namespace CursorHunter.App.Tests
                 Assert.That(map.progression.IsGemstoneAvailable(1), Is.True);
                 Assert.That(TraitProgressionStore.TryLoad(out var saved), Is.True);
                 Assert.That(saved.purchasedNodeIds, Does.Contain("stat.attack.02"));
-                Assert.That(saved.researchRanks.Single(x => x.placementId == "cursor.attack.start").rank, Is.EqualTo(2));
+                Assert.That(saved.researchRanks.Any(x => x.placementId == "cursor.attack.start"), Is.False);
                 Assert.That(saved.researchRanks.Count(x => x.placementId.StartsWith("research-test.")), Is.EqualTo(50));
                 var hunt = scene.GetRootGameObjects().SelectMany(x => x.GetComponentsInChildren<CursorHunter.App.HuntManager>(true)).Single();
                 hunt.BeginPrototypeRun();
@@ -106,7 +109,7 @@ namespace CursorHunter.App.Tests
                 Assert.That(combat.CombatSnapshot.AttackPower, Is.EqualTo(37), "An active run keeps its original snapshot.");
                 Assert.That(TraitProgressionStore.TryLoad(out saved), Is.True);
                 Assert.That(saved.purchasedNodeIds, Does.Contain("stat.attack.02"));
-                Assert.That(saved.researchRanks.Single(x => x.placementId == "cursor.attack.start").rank, Is.EqualTo(2));
+                Assert.That(saved.researchRanks.Any(x => x.placementId == "cursor.attack.start"), Is.False);
                 Assert.That(saved.researchRanks.Any(x => x.placementId.StartsWith("research-test.")), Is.False);
             }
             finally

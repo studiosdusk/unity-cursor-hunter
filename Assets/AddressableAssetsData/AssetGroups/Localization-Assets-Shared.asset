@@ -15,9 +15,20 @@ MonoBehaviour:
   m_GroupName: Localization-Assets-Shared
   m_GUID: 76f84b1f9ff224b89914d867967b2224
   m_SerializeEntries:
+  - m_GUID: 7755855de6ad148448e4b5258aada6ad
+    m_Address: Assets/CursorHunter/Progression/ResearchPrototype/Localization/TraitCard
+      Shared Data.asset
+    m_ReadOnly: 1
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: f152688843106428788434aca36a627f
     m_Address: Assets/CursorHunter/Progression/ResearchPrototype/Localization/Research
       Shared Data.asset
+    m_ReadOnly: 1
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: f971f4349bcd644bbbd9eb9e5afadeec
+    m_Address: Assets/CursorHunter/App/Localization/ResultUI Shared Data.asset
     m_ReadOnly: 1
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

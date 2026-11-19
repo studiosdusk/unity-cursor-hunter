@@ -1,11 +1,6 @@
 {
   "entries": [
     {
-      "key": "ui.combat.start",
-      "ko": "전투 시작!",
-      "en": "Battle Start!"
-    },
-    {
       "key": "ui.traits.title",
       "ko": "특성",
       "en": "Upgrades"
@@ -1241,6 +1236,41 @@
       "en": "No rewards earned: retired before defeating the boss."
     },
     {
+      "key": "ui.result.boss.clear",
+      "ko": "BOSS CLEAR!",
+      "en": "BOSS CLEAR!"
+    },
+    {
+      "key": "ui.result.boss.failed",
+      "ko": "BOSS FAILED",
+      "en": "BOSS FAILED"
+    },
+    {
+      "key": "ui.result.boss.clear.title",
+      "ko": "보스 {0}단계 · 토벌 성공",
+      "en": "Boss Stage {0} · Victory"
+    },
+    {
+      "key": "ui.result.boss.failed.title",
+      "ko": "보스 {0}단계 · 토벌 실패",
+      "en": "Boss Stage {0} · Failed"
+    },
+    {
+      "key": "ui.result.boss.failed.subtitle",
+      "ko": "시간 안에 토벌하지 못했습니다. 강화 후 다시 도전하세요.",
+      "en": "Time ran out. Upgrade and try again."
+    },
+    {
+      "key": "ui.result.action.boss.next",
+      "ko": "다음 단계 도전",
+      "en": "Next Stage"
+    },
+    {
+      "key": "ui.result.action.boss.field",
+      "ko": "일반 전투",
+      "en": "Normal Battle"
+    },
+    {
       "key": "ui.result.action.boss.retry",
       "ko": "같은 단계 재도전",
       "en": "Retry This Stage"
@@ -1254,6 +1284,36 @@
       "key": "ui.result.title",
       "ko": "전투 종료",
       "en": "Hunt Results"
+    },
+    {
+      "key": "ui.result.rewards.heading",
+      "ko": "획득 보상",
+      "en": "Rewards Earned"
+    },
+    {
+      "key": "ui.result.experience",
+      "ko": "획득 경험치",
+      "en": "Experience Earned"
+    },
+    {
+      "key": "ui.result.gem.dragon",
+      "ko": "드래곤 젬",
+      "en": "Dragon Gem"
+    },
+    {
+      "key": "ui.result.empty.gems",
+      "ko": "획득한 젬스톤이 없습니다.",
+      "en": "No gemstones earned."
+    },
+    {
+      "key": "ui.result.confirm",
+      "ko": "확인",
+      "en": "Confirm"
+    },
+    {
+      "key": "ui.result.relic.discovery",
+      "ko": "유물 발견!",
+      "en": "Relic Discovered!"
     },
     {
       "key": "ui.result.test.no.reward",

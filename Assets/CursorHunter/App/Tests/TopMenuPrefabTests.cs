@@ -23,7 +23,7 @@ namespace CursorHunter.App.Tests
             {
                 var canvas = scene.GetRootGameObjects().Single(root => root.name == "UICanvas");
                 var menu = canvas.transform.Find("TopMenu/Menus/Button_MainMenu");
-                string[] names = { "Button_Research", "Button_Artifact", "Button_TraitCard", "Button_Shop (3)" };
+                string[] names = { "Button_Research", "Button_Artifact", "Button_TraitCard", "Button_World", "Button_Shop (3)" };
                 Assert.That(menu.childCount, Is.EqualTo(names.Length));
                 var sprites = new System.Collections.Generic.HashSet<Sprite>();
                 for (int i = 0; i < names.Length; i++)

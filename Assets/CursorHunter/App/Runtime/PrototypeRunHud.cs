@@ -22,14 +22,18 @@ namespace CursorHunter.App
         [SerializeField] private Font uiFont;
         [SerializeField] private CombatGemstoneList gemstoneList;
         [SerializeField] private BattleResultPresentation battleResult;
+        [SerializeField] private PlayerExperiencePresenter experiencePresenter;
         [Tooltip("씬에 배치된 남은 시간 텍스트. 초:1/100초로 표시합니다. 예: 15:00")]
         [SerializeField] private TextMeshProUGUI timerText;
         [Tooltip("남은 시간이 3초 이하일 때의 텍스트 색상")]
+        [SerializeField] private Color timerApproachingColor = new Color32(255, 190, 85, 255);
+        [Tooltip("남은 시간이 1초 이하일 때의 텍스트 색상")]
         [SerializeField] private Color timerWarningColor = new Color32(255, 102, 77, 255);
 
         private TextMeshProUGUI _timerText;
         private int _displayedTimerCentiseconds = -1;
         private Color _timerNormalColor;
+        private Vector3 _timerNormalScale;
         private bool _hasTimerNormalColor;
         private bool _showingRun;
         private Button _progressionInfoButton;
@@ -196,6 +200,7 @@ namespace CursorHunter.App
         public void SetTraitConnectionEnabled(bool enabled)
         {
             _traitConnectionEnabled = enabled;
+            experiencePresenter?.SetProgressionConnectionEnabled(enabled);
             if (_progressionInfoButton != null)
             {
                 bool showingResult = battleResult == null && _resultPanel != null && _resultPanel.activeSelf;
@@ -274,6 +279,7 @@ namespace CursorHunter.App
         public void ShowRunning(CombatRunController combat, MonsterSpawner spawner)
         {
             if (combat == null) return;
+            experiencePresenter?.ShowRunning(combat);
             _observedCombat = combat;
             _activeRunId = combat.CurrentRunId;
             _acceptResult = combat.IsRunActive;
@@ -326,10 +332,12 @@ namespace CursorHunter.App
         {
             _observedCombat = null;
             if (battleResult != null && (!_acceptResult || result.RunId != _activeRunId)) return;
+            experiencePresenter?.ShowResult(result);
             _acceptResult = false;
             _showingRun = false;
             ShowRemainingTime(result.BossDefeated
-                ? Mathf.Max(0f, HuntManager.BossFieldDurationSeconds - result.ElapsedSeconds) : 0f);
+                ? Mathf.Max(0f, HuntManager.BossFieldDurationSeconds - result.ElapsedSeconds) : 0f,
+                result.EndReason == RunEndReason.TimeExpired);
             if ((battleResult == null && _resultPanel == null) || (_traitConnectionEnabled && _progressionInfoButton == null))
             {
                 Initialize();
@@ -465,11 +473,14 @@ namespace CursorHunter.App
             progressionController.ShowSummaryPopup();
         }
 
+        public void RefreshAfterTestExperienceChange() => experiencePresenter?.RefreshAfterTestExperienceChange();
+
         /// <summary>
         /// Clears both the running timer and the result panel for a new test.
         /// </summary>
         public void Reset()
         {
+            experiencePresenter?.ResetDisplay();
             _showingRun = false;
             _acceptResult = false;
             _activeRunId = default;
@@ -500,10 +511,20 @@ namespace CursorHunter.App
             if (!_hasTimerNormalColor)
             {
                 _timerNormalColor = timerText.color;
+                _timerNormalScale = timerText.transform.localScale;
                 _hasTimerNormalColor = true;
             }
-            Color color = showWarning && seconds <= 3f ? timerWarningColor : _timerNormalColor;
+            Color color = !showWarning || seconds > 3f ? _timerNormalColor :
+                seconds > 1f ? timerApproachingColor : timerWarningColor;
             if (timerText.color != color) timerText.color = color;
+            float pulse = 0f;
+            if (showWarning && seconds > 0f && seconds <= 3f)
+            {
+                float sinceSecond = Mathf.Ceil(seconds) - seconds;
+                pulse = Mathf.Sin(Mathf.Clamp01(sinceSecond / 0.2f) * Mathf.PI) * 0.1f;
+            }
+            Vector3 scale = _timerNormalScale * (1f + pulse);
+            if (timerText.transform.localScale != scale) timerText.transform.localScale = scale;
 
             // Round up so the display reaches zero only when combat time expires.
             int centiseconds = Mathf.CeilToInt(Mathf.Max(0f, seconds) * 100f);

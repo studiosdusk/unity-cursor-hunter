@@ -1,8 +1,36 @@
-# IsometricGrassland
+# 아이소메트릭 스테이지 프리팹
+
+## 테마
+
+| 프리팹 | 테마 | 지형·장식 원본 |
+|---|---|---|
+| `IsometricGrassland.prefab` | 기본 숲 | `a/field_a.png`, 꽃, 작은 돌 |
+| `IsometricDesert.prefab` | 사막 | `o/field_o.png`, `g/g_tree2.png`·`g_tree3.png` 선인장, `g/g_bush.png` 마른 덤불, `o/o_weed.png`, `g/g_rock.png` |
+| `IsometricWinter.prefab` | 겨울 | `l/field_l.png`, `l/l_ice2.png`·`l_ice3.png`, `l/l_bush.png`, `l/l_weed2.png`, `l/l_rock.png` |
+| `IsometricBeach.prefab` | 해변 | `h/field_h.png`·`field_h2.png`·`field_h3.png`, `h/h_tree.png`, `h/h_shell.png`, `h/h_bottle.png`, `h/h_sand1.png`, `g/g_rock.png` |
+| `IsometricSpace.prefab` | 우주 | `n/field_n.png`·`field_n2.png`, `n/n_crater1.png`·`n_crater2.png`, `n/n_hole1.png`·`n_hole2.png`, `n/n_head1.png`·`n_head2.png`, `n/n_bolt.png` |
+| `IsometricConstruction.prefab` | 공사장 | `i/field_i.png`, `i/i_barricade2.png`·`i_barricade3.png`, `i/i_cone.png`, `i/i_stop.png`, `i/i_drum.png`, `i/i_weed.png`, `i/i_rock.png` |
+
+원본 스프라이트 경로는 `Assets/DownLoadAssets/Map/2D Maps - Age Battle Stages/Sprite/Prop` 기준이다.
+여섯 프리팹 모두 윗면 크기 `36.764 × 20.979`, 단면 높이 `0.6`, 루트 원점·Scale, `BattlefieldArea`의 경계·공간 배율, SortingGroup `Default / -10`, `Ignore Raycast` 레이어가 같다. 각 테마는 장식 31개를 바닥 위에 두고 중앙 전투 공간은 비워 두며, Collider·Rigidbody·Animator는 없다.
+
+사막은 모래색 지면과 사암 단면, 작은 선인장 4개·마른 덤불 8개·마른 풀 6개·돌 13개를 사용한다. 겨울은 옅은 눈빛 지면과 푸른 얼음 단면, 얼음 5개·서리 덤불 3개·눈 덩이 10개·돌 13개를 사용한다. `Ground_Color_Accents`는 여섯 테마 모두 비활성 상태다.
+
+해변은 `Prefabs/Landscape/Map/Map_19_Pirate Age.prefab`의 모래·야자수·조개·병을 사용하며, 윗면 뒤쪽 오른쪽 변 안쪽에 얕은 물과 흰 물결 스프라이트 두 장을 더했다. 물결은 정적인 외형이며 전투 경계를 바꾸지 않는다. 우주는 `Map_29_Robot Age.prefab`의 푸른 지면·크레이터·충돌 흔적·로봇 잔해를 사용한다. 공사장은 `Map_27_War on Terror Age.prefab`의 회색 지면·안전 바리케이드·돌과 같은 `i` 폴더의 라바콘·드럼통을 사용한다.
+
+새 바닥 스프라이트는 `Combat/Art/Maps`의 각 테마 폴더에서 관리하며 원본 PNG의 불투명 사각 영역을 참조한다. 해변의 물·물결, 우주의 짙은 단면도 별도 Sprite 에셋으로 저장했다. 여섯 프리팹은 기존 `IsometricGrassland_Unlit.mat`을 공유하고 공급사 원본·임포터는 수정하지 않는다.
+
+Main 씬의 루트 `IsometricMaps` 아래에 여섯 프리팹 인스턴스를 미리 배치했다. 부모는 Position `(0, 0, 0)`, Rotation `(0, 0, 0)`, Scale `(1, 1, 1)`이며, 여섯 자식의 Local Position은 기존 숲과 같은 `(-0.2981043, 0.018790722, 0)`, Rotation `(0, 0, 0)`, Scale `(1, 1, 1)`이다. 자식 순서는 숲·사막·겨울·해변·우주·공사장이고 숲만 `activeSelf=true`다.
+
+`IsometricMaps`는 기본 비활성이며 `AppUiRootController`의 Combat `Additional Roots`에 연결했다. 전투 화면에서 부모만 켜고 끄므로 비선택 맵이 동시에 표시되지 않고 자식별 선택 상태를 유지한다. 하늘 배경은 기존 독립 루트와 바인딩을 유지한다. 씬에서 외형을 비교할 때는 부모를 켠 뒤 자식 중 하나만 활성화한다.
+
+스테이지 선택·전환 코드는 아직 연결하지 않았다. 이후 실제 전투 전환을 연결할 때는 선택한 프리팹의 `BattlefieldArea`를 `CombatRunController`에 연결한다. 현재 Main의 참조는 기존 숲 맵에 고정되어 있으므로 활성화만으로 전투 참조가 자동 변경되지는 않는다.
+
+## 기존 숲 스테이지
 
 Main 씬의 `Map_6_Neolithic Age/field_a`를 기준으로 만든 초원 맵이다.
 현재 Main에 배치된 인스턴스를 `CombatRunController.Battlefield`가 직접 참조하며, 생성·이동·공격의 공통 경계로 사용한다.
-Main의 맵과 하늘 배경 인스턴스는 기본 비활성 상태다. `AppUiRootController`의 Combat 바인딩에 함께 연결되어 일반·보스 전투 입장부터 결과창까지 표시되며, 메인·특성·설정·필드/보스 선택 화면에서는 비활성화된다. 바인딩의 `Additional Roots`가 월드 오브젝트를 제어하므로 맵을 UI Transform 아래에 넣지 않는다.
+Main의 맵 부모 `IsometricMaps`와 하늘 배경 인스턴스는 기본 비활성 상태다. `AppUiRootController`의 Combat 바인딩에 함께 연결되어 일반·보스 전투 입장부터 결과창까지 표시되며, 메인·특성·설정·필드/보스 선택 화면에서는 비활성화된다. 바인딩의 `Additional Roots`가 월드 오브젝트를 제어하므로 맵을 UI Transform 아래에 넣지 않는다.
 
 ## 배치
 

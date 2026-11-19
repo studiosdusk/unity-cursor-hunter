@@ -69,6 +69,43 @@ namespace CursorHunter.App.Tests
         }
 
         [Test]
+        public void NewDraftSurvivesAnOlderCallerSavingUnrelatedProgress()
+        {
+            var state = new TraitCardProgressData
+            {
+                points = 4, revealed = true,
+                ownedIds = new System.Collections.Generic.List<string> { "trait_card.lucky_settlement" },
+                candidateIds = new System.Collections.Generic.List<string> { "trait_card.hunting_wisdom" }
+            };
+            Assert.That(TraitProgressionStore.Save(9, new long[] { 9 }, new string[0], null, null,
+                experiencePoints: 1000, availableTraitCards: 7,
+                ownedTraitCardIds: new[] { "talent.might", "talent.might" }, newTraitCards: state), Is.True);
+            Assert.That(TraitProgressionStore.Save(10, new long[] { 10 }, new string[0], null, null,
+                experiencePoints: 1000, availableTraitCards: 7,
+                ownedTraitCardIds: new[] { "talent.might", "talent.might" }), Is.True);
+            Assert.That(TraitProgressionStore.TryLoad(out var loaded), Is.True);
+            Assert.That(loaded.newTraitCards.points, Is.EqualTo(4));
+            Assert.That(loaded.newTraitCards.revealed, Is.True);
+            Assert.That(loaded.newTraitCards.candidateIds, Is.EqualTo(state.candidateIds));
+            Assert.That(loaded.newTraitCards.ownedIds, Is.EqualTo(state.ownedIds));
+            Assert.That(loaded.availableTraitCards, Is.EqualTo(7));
+            Assert.That(loaded.ownedTraitCardIds, Is.EqualTo(new[] { "talent.might", "talent.might" }));
+        }
+
+        [Test]
+        public void SaveWithoutConnectedResearchMapPreservesTheExistingLayoutMarker()
+        {
+            var ranks = new System.Collections.Generic.Dictionary<string, int> { ["research.node"] = 1 };
+            Assert.That(TraitProgressionStore.Save(9, new long[] { 9 }, new string[0], null, null,
+                researchRanks: ranks, researchLayoutFingerprint: "saved-layout"), Is.True);
+            Assert.That(TraitProgressionStore.Save(10, new long[] { 10 }, new string[0], null, null,
+                researchRanks: ranks), Is.True);
+            Assert.That(TraitProgressionStore.TryLoad(out var loaded), Is.True);
+            Assert.That(loaded.researchLayoutFingerprint, Is.EqualTo("saved-layout"));
+            Assert.That(loaded.researchRanks[0].rank, Is.EqualTo(1));
+        }
+
+        [Test]
         public void UnsupportedFutureSaveIsNotOverwritten()
         {
             const string future = "{\"version\":999,\"garnetBalance\":99}";

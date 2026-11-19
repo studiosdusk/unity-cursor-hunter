@@ -45,13 +45,16 @@ namespace CursorHunter.Progression.ResearchPrototype
                     !uniqueEffects.Add(game.kind + ":" + game.targetId))
                     errors.Add(node.id + ": 같은 대상의 해금 또는 설정 연구는 한 번만 배치할 수 있습니다.");
                 if (node.costs == null || node.costs.Length != node.definition.ranks.Length)
-                    errors.Add(node.id + $": 비용 행이 {node.costs?.Length ?? 0}개입니다. 최대 레벨 {node.definition.ranks.Length}개에 맞게 연구 종류를 다시 선택하고 비용을 설정해 주세요.");
+                    errors.Add(node.definition.IsLiveSkillUnlock
+                        ? node.id + ": 해금 비용을 설정하려면 연구 종류를 다시 선택해 주세요."
+                        : node.id + $": 비용 행이 {node.costs?.Length ?? 0}개입니다. 최대 레벨 {node.definition.ranks.Length}개에 맞게 연구 종류를 다시 선택하고 비용을 설정해 주세요.");
                 else for (int i = 0; i < node.costs.Length; i++)
                 {
+                    string level = node.definition.IsLiveSkillUnlock ? "해금" : (i + 1) + "레벨";
                     if (!ResearchDefinition.IsSupportedCurrency(node.costs[i].currencyId))
-                        errors.Add(node.id + $": {i + 1}레벨의 재화를 선택해 주세요. 무료라도 재화를 선택하고 비용을 0으로 입력해야 합니다.");
+                        errors.Add(node.id + $": {level}의 재화를 선택해 주세요. 무료라도 재화를 선택하고 비용을 0으로 입력해야 합니다.");
                     if (node.costs[i].amount < 0)
-                        errors.Add(node.id + $": {i + 1}레벨 비용이 {node.costs[i].amount}입니다. 0 이상의 수량을 입력해 주세요.");
+                        errors.Add(node.id + $": {level} 비용이 {node.costs[i].amount}입니다. 0 이상의 수량을 입력해 주세요.");
                 }
             }
             foreach (var node in byId.Values)

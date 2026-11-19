@@ -21,7 +21,7 @@ namespace CursorHunter.Progression
     /// without changing this layout code.
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class TraitScreenController : MonoBehaviour
+    public sealed partial class TraitScreenController : MonoBehaviour
     {
         private const string BalanceInfoPreferenceKey = "cursor_hunter.balance_patch.game_data.v1";
         private const string BalanceProgressionPreferenceKey = "cursor_hunter.balance_patch.progression.v1";
@@ -132,6 +132,9 @@ namespace CursorHunter.Progression
         private TraitTab _activeTab;
         private string _selectedNodeId;
         private readonly Dictionary<string, int> _researchRanks = new Dictionary<string, int>(StringComparer.Ordinal);
+        private string _researchLayoutFingerprint;
+        private bool _pendingResearchLayoutSave;
+        private float _nextResearchLayoutSaveRetry;
         private long _garnetBalance;
         private long[] _gemstoneBalances;
         private long _experiencePoints;
@@ -281,6 +284,7 @@ namespace CursorHunter.Progression
         }
 
         public long ExperiencePoints { get { EnsureProgressionState(); return _experiencePoints; } }
+        public event Action ExperienceChanged;
         public int PlayerLevel { get { EnsureProgressionState(); return ProgressionLevelCurve.GetLevel(_experiencePoints); } }
         public int SelectedFieldTier { get { EnsureProgressionState(); return Mathf.Clamp(_selectedFieldTier, 1, UnlockedFieldTier); } }
         public int UnlockedFieldTier => Mathf.Clamp(1 + PlayerLevel / 5, 1, 5);
@@ -666,6 +670,11 @@ namespace CursorHunter.Progression
 
         private void Update()
         {
+            if (_pendingResearchLayoutSave && Time.unscaledTime >= _nextResearchLayoutSaveRetry)
+            {
+                _nextResearchLayoutSaveRetry = Time.unscaledTime + 5f;
+                SaveProgressionState();
+            }
             UpdateRainbowNodeFrames();
             RefreshResponsiveHeaderLayout(false);
         }
@@ -889,7 +898,7 @@ namespace CursorHunter.Progression
             if (experienceEarned < 0L) return false;
             EnsureProgressionState();
             EnsureRelicEntries();
-            experienceEarned = ApplyTalentExperienceBonus(experienceEarned, isBossRun);
+            if (!useNewTraitCardSystem) experienceEarned = ApplyTalentExperienceBonus(experienceEarned, isBossRun);
 
             var relicIndexes = new List<int>();
             if (relicAwards != null && relicAwards.Count > 0)
@@ -934,6 +943,7 @@ namespace CursorHunter.Progression
             long[] previousGemstoneBalances = (long[])_gemstoneBalances.Clone();
             long previousExperience = _experiencePoints;
             int previousCardBalance = _availableTraitCards;
+            TraitCardProgressData previousNewCards = useNewTraitCardSystem ? TraitCards.Capture() : null;
             var previousUnseenRelics = new HashSet<string>(_unseenRelicIds, StringComparer.Ordinal);
             for (int i = 0; rewards != null && i < rewards.Count; i++)
             {
@@ -977,18 +987,21 @@ namespace CursorHunter.Progression
             _experiencePoints = AddSaturating(_experiencePoints, experienceEarned);
             int previousLevel = ProgressionLevelCurve.GetLevel(experienceBefore);
             int currentLevel = ProgressionLevelCurve.GetLevel(_experiencePoints);
-            long cardsEarned = Math.Max(0, currentLevel - previousLevel);
-            int fiveLevelMilestones = Math.Max(
-                0, currentLevel / 5 - previousLevel / 5);
-            cardsEarned += (long)fiveLevelMilestones *
-                GetOwnedTalentStackCount("talent.chronicle");
-            _availableTraitCards = (int)Math.Min(int.MaxValue,
-                (long)_availableTraitCards + cardsEarned);
+            if (useNewTraitCardSystem) TraitCards.AddLevelPoints(Math.Max(0, currentLevel - previousLevel));
+            if (!useNewTraitCardSystem)
+            {
+                long cardsEarned = Math.Max(0, currentLevel - previousLevel);
+                int fiveLevelMilestones = Math.Max(0, currentLevel / 5 - previousLevel / 5);
+                cardsEarned += (long)fiveLevelMilestones * GetOwnedTalentStackCount("talent.chronicle");
+                _availableTraitCards = (int)Math.Min(int.MaxValue, (long)_availableTraitCards + cardsEarned);
+            }
 
             RefreshAll();
             if (SaveProgressionState())
             {
                 if (relicIndexes.Count > 0) RelicStateChanged?.Invoke();
+                if (useNewTraitCardSystem) TraitCardStateChanged?.Invoke();
+                if (_experiencePoints != previousExperience) ExperienceChanged?.Invoke();
                 return true;
             }
 
@@ -996,6 +1009,7 @@ namespace CursorHunter.Progression
             _gemstoneBalances = previousGemstoneBalances;
             _experiencePoints = previousExperience;
             _availableTraitCards = previousCardBalance;
+            if (previousNewCards != null) TraitCards.Restore(previousNewCards);
             _unseenRelicIds.Clear();
             foreach (string id in previousUnseenRelics) _unseenRelicIds.Add(id);
             for (int i = 0; i < relicIndexes.Count; i++)
@@ -1111,7 +1125,7 @@ namespace CursorHunter.Progression
                 if (researchMap == null) throw new InvalidOperationException("The new research map is not connected.");
                 var research = ResearchEffectCalculator.Calculate(researchMap.nodes, GetResearchRank);
                 return new CursorCombatStatBonusesSnapshot(
-                    AddSaturating(research.AttackPowerDelta, GetOwnedTalentStackCount("talent.might")),
+                    AddSaturating(research.AttackPowerDelta, useNewTraitCardSystem ? 0 : GetOwnedTalentStackCount("talent.might")),
                     research.AttackRadiusWorldUnitsDelta, research.AttackCooldownSecondsDelta,
                     research.CriticalChancePercentDelta, research.CriticalDamageMultiplierDelta,
                     research.BossDamageMultiplierDelta);
@@ -1147,7 +1161,7 @@ namespace CursorHunter.Progression
                     }
             if (useNewResearchSystem)
                 ResearchEffectCalculator.ApplyAdditional(researchMap.nodes, GetResearchRank, information);
-            if (!useNewResearchSystem) ApplyOwnedTalentEffects(information);
+            if (!useNewResearchSystem && !useNewTraitCardSystem) ApplyOwnedTalentEffects(information);
             if (!information.TryValidate(out string error))
                 throw new InvalidOperationException("Resolved talent effects: " + error);
             return information;
@@ -1399,6 +1413,9 @@ namespace CursorHunter.Progression
             // core. Nothing is purchased until the player activates it.
             _purchased.Clear();
             _researchRanks.Clear();
+            _researchLayoutFingerprint = useNewResearchSystem && researchMap != null &&
+                researchMap.TryGetLayoutFingerprint(out string layout) ? layout : null;
+            _pendingResearchLayoutSave = false;
             _spentByNode.Clear();
             _spentCurrencyByNode.Clear();
             _spentNodeCosts.Clear();
@@ -1408,6 +1425,8 @@ namespace CursorHunter.Progression
                     relicEntries[i].SetObtained(false);
             _unseenRelicIds.Clear();
             _experiencePoints = 0L;
+            _newTraitCardData = new TraitCardProgressData();
+            _newTraitCards = null;
             _selectedFieldTier = 1;
             _availableTraitCards = 0;
             _traitCardDrawCount = 0;
@@ -1426,9 +1445,17 @@ namespace CursorHunter.Progression
             }
 
             _researchRanks.Clear();
-            foreach (var entry in data.researchRanks)
-                if (entry != null && !string.IsNullOrWhiteSpace(entry.placementId) && entry.rank > 0)
-                    _researchRanks[entry.placementId] = entry.rank;
+            string savedLayout = data.researchLayoutFingerprint;
+            if (string.IsNullOrEmpty(savedLayout) && researchMap != null)
+                savedLayout = researchMap.legacyResearchLayoutFingerprint;
+            bool layoutChanged = !string.IsNullOrEmpty(_researchLayoutFingerprint) &&
+                !string.IsNullOrEmpty(savedLayout) && savedLayout != _researchLayoutFingerprint;
+            if (!layoutChanged)
+                foreach (var entry in data.researchRanks)
+                    if (entry != null && !string.IsNullOrWhiteSpace(entry.placementId) && entry.rank > 0)
+                        _researchRanks[entry.placementId] = entry.rank;
+            bool saveResearchLayout = !string.IsNullOrEmpty(_researchLayoutFingerprint) &&
+                data.researchLayoutFingerprint != _researchLayoutFingerprint;
             RestoreOwnedRelics(data.ownedRelicIds);
             _unseenRelicIds.Clear();
             if (data.unseenRelicIds != null)
@@ -1436,6 +1463,13 @@ namespace CursorHunter.Progression
                     if (!string.IsNullOrWhiteSpace(id)) _unseenRelicIds.Add(id);
             _garnetBalance = Math.Max(0L, data.garnetBalance);
             _experiencePoints = Math.Max(0L, data.experiencePoints);
+            // Preserve legacy cards separately. Already-earned user levels fund the new system once.
+            _newTraitCardData = data.hasNewTraitCardProgress && data.newTraitCards != null
+                ? data.newTraitCards.Copy() : new TraitCardProgressData
+            {
+                points = Math.Max(0, ProgressionLevelCurve.GetLevel(_experiencePoints) - 1)
+            };
+            _newTraitCards = null;
             _selectedFieldTier = Mathf.Clamp(data.selectedFieldTier, 1, 5);
             _availableTraitCards = Math.Max(0, data.availableTraitCards);
             _traitCardDrawCount = Math.Max(0, data.traitCardDrawCount);
@@ -1503,6 +1537,14 @@ namespace CursorHunter.Progression
                         _spentCurrencyByNode[id] = data.spentCurrencyIds[i];
                 }
                 _garnetBalance = _gemstoneBalances[0];
+                if (saveResearchLayout)
+                {
+                    // Clear and stamp together only after all other progression has been restored.
+                    // If persistence fails, the in-memory reset stays in effect and is retried.
+                    _pendingResearchLayoutSave = true;
+                    _nextResearchLayoutSaveRetry = Time.unscaledTime + 5f;
+                    SaveProgressionState();
+                }
                 return;
             }
             // A saved wallet replaces the file baseline; only migrated refunds are additive.
@@ -1583,7 +1625,7 @@ namespace CursorHunter.Progression
             _garnetBalance = _gemstoneBalances[0];
         }
 
-        private bool SaveProgressionState()
+        private bool SaveProgressionState(TraitCardProgressData cardStateOverride = null)
         {
             // File-only preview/prototyping must never overwrite the player's existing save.
             if (_document != null && _document.progression.savedProgressPolicy == "fileOnly") return true;
@@ -1604,7 +1646,10 @@ namespace CursorHunter.Progression
                 selectedFieldTier: _selectedFieldTier,
                 ownedTraitCardIds: _ownedTalentIds,
                 spentCostEntries: _spentNodeCosts,
-                researchRanks: _researchRanks);
+                researchRanks: _researchRanks,
+                newTraitCards: cardStateOverride ?? _newTraitCards?.Capture() ?? _newTraitCardData,
+                researchLayoutFingerprint: _researchLayoutFingerprint);
+            if (saved) _pendingResearchLayoutSave = false;
             if (!saved)
             {
                 Debug.LogWarning(
@@ -10414,7 +10459,12 @@ namespace CursorHunter.Progression
             RefreshSummary();
             RefreshGemstonePanel();
             UpdateHeaderForActiveView();
-            if (SaveProgressionState()) RelicStateChanged?.Invoke();
+            if (SaveProgressionState())
+            {
+                RelicStateChanged?.Invoke();
+                ExperienceChanged?.Invoke();
+                TraitCardStateChanged?.Invoke();
+            }
         }
 
         private void RefreshAll()

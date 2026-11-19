@@ -58,7 +58,7 @@ namespace CursorHunter.Progression.Editor
         {
             var rows = ReadRows(Path);
             var keys = new HashSet<string>(rows.Select(x => x.Key), StringComparer.Ordinal);
-            foreach (string key in new[] { "research.tooltip.cost", "research.tooltip.free", "research.tooltip.max" })
+            foreach (string key in new[] { "research.tooltip.cost", "research.tooltip.free", "research.tooltip.max", "research.tooltip.unlocked" })
                 if (!keys.Contains(key)) throw new InvalidDataException("툴팁 공통 키가 엑셀에 없습니다: " + key);
             foreach (string guid in AssetDatabase.FindAssets("t:ResearchDefinition"))
             {

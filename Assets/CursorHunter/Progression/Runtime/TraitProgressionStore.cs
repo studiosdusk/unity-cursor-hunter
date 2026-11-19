@@ -14,7 +14,7 @@ namespace CursorHunter.Progression
     public static class TraitProgressionStore
     {
         private const string SaveKey = "cursor_hunter.progression.v1";
-        private const int CurrentVersion = 11;
+        private const int CurrentVersion = 12;
         private const string LegacyBackupKey = SaveKey + ".before-v6";
 
         [Serializable]
@@ -26,6 +26,7 @@ namespace CursorHunter.Progression
             public List<long> gemstoneBalances = new List<long>();
             public List<string> purchasedNodeIds = new List<string>();
             public List<ResearchRankEntry> researchRanks = new List<ResearchRankEntry>();
+            public string researchLayoutFingerprint;
             public List<string> ownedRelicIds = new List<string>();
             public List<string> unseenRelicIds = new List<string>();
             public long experiencePoints;
@@ -33,6 +34,8 @@ namespace CursorHunter.Progression
             public int traitCardDrawCount;
             public int selectedFieldTier = 1;
             public List<string> ownedTraitCardIds = new List<string>();
+            public TraitCardProgressData newTraitCards;
+            public bool hasNewTraitCardProgress;
             public List<int> spentCosts = new List<int>();
             public List<string> spentCurrencyIds = new List<string>();
             public List<SpentCostEntry> spentCostEntries = new List<SpentCostEntry>();
@@ -128,7 +131,9 @@ namespace CursorHunter.Progression
             int selectedFieldTier = 1,
             IEnumerable<string> ownedTraitCardIds = null,
             IReadOnlyDictionary<string, List<SpentCostEntry>> spentCostEntries = null,
-            IReadOnlyDictionary<string, int> researchRanks = null)
+            IReadOnlyDictionary<string, int> researchRanks = null,
+            TraitCardProgressData newTraitCards = null,
+            string researchLayoutFingerprint = null)
         {
             SaveData data = new SaveData
             {
@@ -136,6 +141,7 @@ namespace CursorHunter.Progression
                 garnetBalance = Math.Max(0L, garnetBalance),
                 gemstoneBalances = CopyBalances(gemstoneBalances),
                 purchasedNodeIds = CopyIds(purchasedNodeIds),
+                researchLayoutFingerprint = researchLayoutFingerprint,
                 ownedRelicIds = CopyIds(ownedRelicIds),
                 unseenRelicIds = CopyIds(unseenRelicIds),
                 experiencePoints = Math.Max(0L, experiencePoints),
@@ -143,6 +149,8 @@ namespace CursorHunter.Progression
                 traitCardDrawCount = Math.Max(0, traitCardDrawCount),
                 selectedFieldTier = Math.Max(1, Math.Min(5, selectedFieldTier)),
                 ownedTraitCardIds = CopyRepeatedIds(ownedTraitCardIds),
+                newTraitCards = newTraitCards?.Copy(),
+                hasNewTraitCardProgress = newTraitCards != null,
                 spentCosts = new List<int>(),
                 spentCurrencyIds = new List<string>(),
                 spentCostEntries = new List<SpentCostEntry>(),
@@ -191,31 +199,43 @@ namespace CursorHunter.Progression
                 }
             }
 
+            bool hadPreviousSave = PlayerPrefs.HasKey(SaveKey);
+            string previousJson = PlayerPrefs.GetString(SaveKey, string.Empty);
             try
             {
-                string json = JsonUtility.ToJson(data);
-                if (string.IsNullOrWhiteSpace(json))
-                {
-                    return false;
-                }
-
                 // Preserve the exact old save (including retired data) before the first v6 write.
                 // Unknown/corrupt versions must not be silently overwritten.
                 if (PlayerPrefs.HasKey(SaveKey))
                 {
                     if (!TryLoad(out SaveData previous)) return false;
+                    // Older callers must not erase the new draft when saving unrelated progress.
+                    if (!data.hasNewTraitCardProgress && previous.hasNewTraitCardProgress)
+                    {
+                        data.newTraitCards = previous.newTraitCards?.Copy();
+                        data.hasNewTraitCardProgress = data.newTraitCards != null;
+                    }
+                    // Callers without a connected research map must not erase its layout marker.
+                    if (data.researchLayoutFingerprint == null)
+                        data.researchLayoutFingerprint = previous.researchLayoutFingerprint;
                     if (previous.version < CurrentVersion && !PlayerPrefs.HasKey(LegacyBackupKey))
                     {
                         PlayerPrefs.SetString(LegacyBackupKey, PlayerPrefs.GetString(SaveKey));
                         PlayerPrefs.Save();
                     }
                 }
+                string json = JsonUtility.ToJson(data);
+                if (string.IsNullOrWhiteSpace(json)) return false;
                 PlayerPrefs.SetString(SaveKey, json);
                 PlayerPrefs.Save();
                 return true;
             }
             catch (Exception exception)
             {
+                // SetString changes the in-memory cache before Save can fail.
+                // Restore it as well as the caller's transaction state so a retry cannot
+                // accidentally persist a failed card purchase in an unrelated later save.
+                if (hadPreviousSave) PlayerPrefs.SetString(SaveKey, previousJson);
+                else PlayerPrefs.DeleteKey(SaveKey);
                 Debug.LogWarning(
                     $"Trait progression save could not be written: {exception.Message}");
                 return false;

@@ -18,6 +18,8 @@ namespace CursorHunter.Progression.Editor
         static readonly string[] CurrencyNames = { "가넷", "토파즈", "자수정", "사파이어", "다이아몬드", "드래곤 스톤" };
         static readonly string[] CurrencyChoices = new[] { "선택해 주세요" }.Concat(CurrencyNames).ToArray();
         static readonly string[] AllCurrencyChoices = new[] { "재화 선택" }.Concat(CurrencyNames).ToArray();
+        static readonly ResearchNodeUsage[] UsageValues = { ResearchNodeUsage.Test, ResearchNodeUsage.Live };
+        static readonly string[] UsageLabels = { "테스트용 노드", "실사용 노드" };
         ResearchMapDefinition map;
         string selectedId, connectingId, status = "버전을 선택하거나 씬에서 현재 맵을 가져오세요.";
         Vector2 pan, scroll;
@@ -32,7 +34,12 @@ namespace CursorHunter.Progression.Editor
         ResearchMapDefinition[] versions;
         string[] versionLabels;
         ResearchDefinition[] definitions;
-        string[] definitionLabels;
+        ResearchDefinition[][] definitionsByUsage;
+        string[][] definitionLabelsByUsage;
+        [SerializeField] int selectedUsage;
+        ResearchMapDefinition pendingInjectionMap;
+        ResearchMapPlacement pendingInjectionNode;
+        Rect pendingInjectionRect;
         readonly Dictionary<ResearchDefinition, string> names = new Dictionary<ResearchDefinition, string>();
         bool cacheInvalid = true;
         const float PanelWidth = 310f;
@@ -59,7 +66,7 @@ namespace CursorHunter.Progression.Editor
         }
         void EnsureCache()
         {
-            if (!cacheInvalid && versions != null && definitions != null) return;
+            if (!cacheInvalid && versions != null && definitions != null && definitionsByUsage != null) return;
             cacheInvalid = false;
             names.Clear();
             versions = AssetDatabase.FindAssets("t:ResearchMapDefinition").Select(AssetDatabase.GUIDToAssetPath)
@@ -75,7 +82,9 @@ namespace CursorHunter.Progression.Editor
                     table?.GetEntry(key + ".title")?.Value ?? definition.name;
             }
             definitions = definitions.OrderBy(NameOf).ThenBy(x => x.stableId).ToArray();
-            definitionLabels = new[] { "선택해 주세요" }.Concat(definitions.Select(NameOf)).ToArray();
+            definitionsByUsage = UsageValues.Select(usage => definitions.Where(x => x.usage == usage).ToArray()).ToArray();
+            definitionLabelsByUsage = definitionsByUsage.Select(group =>
+                new[] { "선택해 주세요" }.Concat(group.Select(NameOf)).ToArray()).ToArray();
         }
         void RefreshVersionLabels()
         {
@@ -89,7 +98,7 @@ namespace CursorHunter.Progression.Editor
                 EditorGUILayout.HelpBox("연구 맵을 편집하려면 플레이를 종료해 주세요.", MessageType.Info);
                 return;
             }
-            if ((cacheInvalid && Event.current.type == EventType.Layout) || versions == null || definitions == null) EnsureCache();
+            if ((cacheInvalid && Event.current.type == EventType.Layout) || versions == null || definitions == null || definitionsByUsage == null) EnsureCache();
             GUILayout.BeginArea(new Rect(0, 0, position.width, 20));
             DrawToolbar();
             GUILayout.EndArea();
@@ -113,6 +122,15 @@ namespace CursorHunter.Progression.Editor
                 clearNodeInputFocus = false;
             }
             DrawInspector(inspector);
+            if (pendingInjectionNode != null && Event.current.type == EventType.Repaint)
+            {
+                var node = pendingInjectionNode;
+                var targetMap = pendingInjectionMap;
+                pendingInjectionNode = null;
+                pendingInjectionMap = null;
+                if (map == targetMap && map.nodes.Contains(node))
+                    PopupWindow.Show(pendingInjectionRect, new ResearchInjectionPopup(this, targetMap, node));
+            }
         }
         void DrawToolbar()
         {
@@ -291,14 +309,15 @@ namespace CursorHunter.Progression.Editor
                     else
                     {
                         SelectNode(hit.id);
-                        if (definitions.Length == 0)
-                            menu.AddDisabledItem(new GUIContent("연구 주입/사용 가능한 연구가 없습니다"));
-                        foreach (var definition in definitions)
+                        var targetMap = map;
+                        var popupRect = new Rect(e.mousePosition, Vector2.zero);
+                        menu.AddItem(new GUIContent("연구 주입"), false, () =>
                         {
-                            var selectedDefinition = definition;
-                            menu.AddItem(new GUIContent("연구 주입/" + NameOf(definition) + " (" + definition.stableId + ")"),
-                                definition == hit.definition, () => AssignDefinition(hit, selectedDefinition));
-                        }
+                            pendingInjectionMap = targetMap;
+                            pendingInjectionNode = hit;
+                            pendingInjectionRect = popupRect;
+                            Repaint();
+                        });
                         menu.AddSeparator("");
                         menu.AddItem(new GUIContent("다른 노드에 연결"), false, () => { connectingId = hit.id; status = "연결할 후행 노드를 클릭하세요. Esc로 취소합니다."; });
                         menu.AddItem(new GUIContent("노드 복제"), false, () => Duplicate(hit));
@@ -343,7 +362,7 @@ namespace CursorHunter.Progression.Editor
         }
         void Delete(ResearchMapPlacement node)
         {
-            if (!EditorUtility.DisplayDialog("노드 삭제", "이 버전에서 노드와 연결을 삭제합니다. 기존 구매 기록에 영향을 주는 삭제는 씬에 적용할 수 없습니다.", "삭제", "취소")) return;
+            if (!EditorUtility.DisplayDialog("노드 삭제", "이 버전에서 노드와 연결을 삭제합니다. 변경된 배치가 씬에 적용되면 연구 구매 기록이 초기화됩니다.", "삭제", "취소")) return;
             Undo.RecordObject(map, "연구 노드 삭제");
             map.nodes.Remove(node);
             foreach (var n in map.nodes) if (n.prerequisites.Remove(node.id)) n.requiredPrerequisites = Mathf.Min(n.requiredPrerequisites, n.prerequisites.Count);
@@ -371,7 +390,9 @@ namespace CursorHunter.Progression.Editor
             if (node.definition == definition) return;
             int newCount = definition == null ? 0 : definition.ranks.Length;
             if (node.costs != null && node.costs.Length > newCount &&
-                !EditorUtility.DisplayDialog("비용 행 변경", "새 SO의 최대 레벨이 더 작습니다. 초과하는 비용 행이 삭제됩니다.", "변경", "취소")) return;
+                !EditorUtility.DisplayDialog("비용 행 변경", definition != null && definition.IsLiveSkillUnlock
+                    ? "스킬 해금 연구로 변경하면 첫 번째 비용을 제외한 나머지 비용 행이 삭제됩니다."
+                    : "새 SO의 최대 레벨이 더 작습니다. 초과하는 비용 행이 삭제됩니다.", "변경", "취소")) return;
             Undo.RecordObject(map, "연구 종류 선택");
             node.definition = definition;
             Array.Resize(ref node.costs, newCount);
@@ -379,13 +400,72 @@ namespace CursorHunter.Progression.Editor
             status = definition == null ? "연구 종류를 해제했습니다." : NameOf(definition) + "을(를) 주입했습니다. 레벨별 비용을 확인해 주세요.";
             Repaint();
         }
+
+        sealed class ResearchInjectionPopup : PopupWindowContent
+        {
+            readonly ResearchMapEditorWindow owner;
+            readonly ResearchMapDefinition targetMap;
+            readonly ResearchMapPlacement node;
+            Vector2 scroll;
+
+            public ResearchInjectionPopup(ResearchMapEditorWindow owner, ResearchMapDefinition targetMap, ResearchMapPlacement node)
+            {
+                this.owner = owner;
+                this.targetMap = targetMap;
+                this.node = node;
+            }
+
+            public override Vector2 GetWindowSize() => new Vector2(380, 360);
+
+            public override void OnGUI(Rect rect)
+            {
+                if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Escape)
+                {
+                    Event.current.Use();
+                    editorWindow.Close();
+                    return;
+                }
+                if (owner == null || owner.map != targetMap || !targetMap.nodes.Contains(node))
+                {
+                    editorWindow.Close();
+                    return;
+                }
+                if ((owner.cacheInvalid && Event.current.type == EventType.Layout) || owner.definitionsByUsage == null)
+                    owner.EnsureCache();
+                EditorGUILayout.LabelField("연구 주입", EditorStyles.boldLabel);
+                int previousUsage = owner.selectedUsage;
+                owner.selectedUsage = GUILayout.Toolbar(Mathf.Clamp(owner.selectedUsage, 0, UsageValues.Length - 1), UsageLabels);
+                if (owner.selectedUsage != previousUsage) { scroll = Vector2.zero; owner.Repaint(); }
+                var choices = owner.definitionsByUsage[owner.selectedUsage];
+                if (choices.Length == 0)
+                {
+                    EditorGUILayout.HelpBox(UsageLabels[owner.selectedUsage] + " 목록이 비어 있습니다.", MessageType.Info);
+                    return;
+                }
+                ResearchDefinition picked = null;
+                scroll = EditorGUILayout.BeginScrollView(scroll);
+                foreach (var definition in choices)
+                {
+                    string label = (definition == node.definition ? "✓ " : "") + owner.NameOf(definition) + " (" + definition.stableId + ")";
+                    if (GUILayout.Button(label, EditorStyles.miniButton, GUILayout.Height(22))) picked = definition;
+                }
+                EditorGUILayout.EndScrollView();
+                if (picked != null)
+                {
+                    owner.AssignDefinition(node, picked);
+                    editorWindow.Close();
+                }
+            }
+        }
+
         void DrawInspector(Rect rect)
         {
             GUILayout.BeginArea(rect, EditorStyles.helpBox);
             scroll = EditorGUILayout.BeginScrollView(scroll);
             EditorGUILayout.LabelField("연구 맵 설정", EditorStyles.boldLabel);
+            EditorGUILayout.HelpBox("노드 배치나 연결이 바뀌면 게임 실행 시 연구 구매 기록이 초기화됩니다. 보유 재화는 유지됩니다.", MessageType.Info);
             if (map.isolatedTest)
-                EditorGUILayout.HelpBox("전체 노드 테스트 맵입니다. 구매는 무료이며 기존 맵의 구매 기록과 구분됩니다. 저장 시 기존 맵은 보관됩니다.", MessageType.Info);
+                EditorGUILayout.HelpBox("전체 노드 테스트 맵입니다. 저장 시 기존 맵은 보관됩니다.", MessageType.Info);
             EditorGUI.BeginChangeCheck();
             string version = EditorGUILayout.TextField("버전 이름", map.versionId);
             string description = EditorGUILayout.TextField("설명", map.description);
@@ -410,22 +490,40 @@ namespace CursorHunter.Progression.Editor
                     EditorUtility.SetDirty(map);
                     Repaint();
                 }
-                int chosen = Array.IndexOf(definitions, n.definition);
-                EditorGUI.BeginChangeCheck();
-                int picked = EditorGUILayout.Popup("연구 종류", chosen + 1, definitionLabels) - 1;
-                var definition = picked < 0 ? null : definitions[picked];
-                if (EditorGUI.EndChangeCheck())
-                    AssignDefinition(n, definition);
+                EditorGUILayout.LabelField("연구 종류", EditorStyles.boldLabel);
+                selectedUsage = GUILayout.Toolbar(Mathf.Clamp(selectedUsage, 0, UsageValues.Length - 1), UsageLabels);
+                var choices = definitionsByUsage[selectedUsage];
+                int chosen = Array.IndexOf(choices, n.definition);
+                if (choices.Length == 0)
+                    EditorGUILayout.HelpBox(UsageLabels[selectedUsage] + " 목록이 비어 있습니다.", MessageType.Info);
+                else
+                {
+                    EditorGUI.BeginChangeCheck();
+                    int picked = EditorGUILayout.Popup("연구 선택", chosen + 1, definitionLabelsByUsage[selectedUsage]) - 1;
+                    if (EditorGUI.EndChangeCheck())
+                        AssignDefinition(n, picked < 0 ? null : choices[picked]);
+                }
+                if (n.definition != null && chosen < 0)
+                    EditorGUILayout.HelpBox("현재 주입: " + NameOf(n.definition) + " (다른 탭의 연구)", MessageType.None);
                 if (n.definition != null)
                 {
                     EditorGUILayout.LabelField(NameOf(n.definition), EditorStyles.boldLabel);
-                    EditorGUILayout.LabelField("최대 레벨", n.definition.ranks.Length.ToString());
+                    bool skillUnlock = n.definition.IsLiveSkillUnlock;
+                    if (skillUnlock) EditorGUILayout.LabelField("연구 방식", "스킬 해금");
+                    else EditorGUILayout.LabelField("최대 레벨", n.definition.ranks.Length.ToString());
                     if (n.costs == null || n.costs.Length != n.definition.ranks.Length)
-                        EditorGUILayout.HelpBox("비용 행 수가 최대 레벨과 다릅니다. SO를 다시 선택해 주세요.", MessageType.Warning);
+                        EditorGUILayout.HelpBox(skillUnlock ? "해금 비용을 설정하려면 SO를 다시 선택해 주세요." :
+                            "비용 행 수가 최대 레벨과 다릅니다. SO를 다시 선택해 주세요.", MessageType.Warning);
                     else for (int i = 0; i < n.costs.Length; i++)
                     {
                         EditorGUILayout.Space(3);
-                        EditorGUILayout.LabelField((i + 1) + "레벨  |  증가: " + n.definition.ranks[i].levelDelta + "  |  적용: " + n.definition.GetEffectValue(i + 1), EditorStyles.miniBoldLabel);
+                        float increment = n.definition.ranks[i].levelDelta;
+                        float total = n.definition.GetEffectValue(i + 1);
+                        bool radiusPercent = n.definition.presentation?.valueDisplay == ResearchValueDisplay.RadiusPercent;
+                        string incrementText = radiusPercent ? ResearchDefinition.FormatRadiusPercent(increment) : increment.ToString();
+                        string totalText = radiusPercent ? ResearchDefinition.FormatRadiusPercent(total) : total.ToString();
+                        EditorGUILayout.LabelField(skillUnlock ? "해금 비용" :
+                            (i + 1) + "레벨  |  증가: " + incrementText + "  |  적용: " + totalText, EditorStyles.miniBoldLabel);
                         EditorGUI.BeginChangeCheck();
                         int index = Array.IndexOf(CurrencyIds, n.costs[i].currencyId);
                         int selected = EditorGUILayout.Popup("젬스톤", index + 1, CurrencyChoices) - 1;
@@ -442,7 +540,7 @@ namespace CursorHunter.Progression.Editor
                             { Undo.RecordObject(map, "연구 비용 붙여넣기"); n.costs[i] = copiedCost; EditorUtility.SetDirty(map); }
                         EditorGUILayout.EndHorizontal();
                     }
-                    if (n.costs != null && n.costs.Length == n.definition.ranks.Length)
+                    if (!skillUnlock && n.costs != null && n.costs.Length == n.definition.ranks.Length)
                     {
                         int all = EditorGUILayout.Popup("전체 레벨 재화 변경", 0, AllCurrencyChoices);
                         if (all > 0)
@@ -454,7 +552,7 @@ namespace CursorHunter.Progression.Editor
                     }
                 }
                 EditorGUILayout.Space();
-                EditorGUILayout.LabelField("선행 노드 (1레벨 이상)", EditorStyles.boldLabel);
+                EditorGUILayout.LabelField("선행 노드 (1회 이상 구매 또는 해금)", EditorStyles.boldLabel);
                 foreach (var id in n.prerequisites.ToArray())
                 {
                     EditorGUILayout.BeginHorizontal();

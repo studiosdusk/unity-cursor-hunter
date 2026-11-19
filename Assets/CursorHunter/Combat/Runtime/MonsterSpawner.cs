@@ -20,7 +20,16 @@ namespace CursorHunter.Combat
         private GameObject _runRootPrefab;
         private bool _bossRun;
         private MonsterCombatTarget _bossDeathVisual;
-        public MonsterCombatTarget BossTarget => _bossRun && _spawnedTargets.Count > 0 ? _spawnedTargets[0] : null;
+        public MonsterCombatTarget BossTarget
+        {
+            get
+            {
+                if (!_bossRun) return null;
+                foreach (var target in _spawnedTargets)
+                    if (target != null && !target.IsTraitChest) return target;
+                return null;
+            }
+        }
         public bool IsBossDeathPlaying => _bossDeathVisual != null && _bossDeathVisual.gameObject.activeInHierarchy;
         [SerializeField] private float spawnPlaneZ;
         [SerializeField, Min(0f)] private float horizontalPadding = 0.02f;
@@ -66,7 +75,7 @@ namespace CursorHunter.Combat
                 int count = 0;
                 foreach (MonsterCombatTarget target in _spawnedTargets)
                 {
-                    if (target != null && !target.IsDead)
+                    if (target != null && !target.IsDead && !target.IsTraitChest)
                     {
                         count++;
                     }
@@ -262,6 +271,55 @@ namespace CursorHunter.Combat
             return new SpawnStartResult(SpawnStartStatus.Started, "All monster packs prepared.");
         }
 
+        /// <summary>Spawns non-respawning trait chests with the shared monster root and authored monster data.</summary>
+        public bool SpawnTraitChests(SpawnPlanEntry entry, int count, ulong seed)
+        {
+            if (!_isSpawning || !_runId.IsValid || !entry.HasValidSnapshot || !entry.HasVisualPrefab ||
+                monsterRootPrefab == null || count < 1 || count > GameInformation.MaximumAliveMonsters) return false;
+            foreach (var existing in _entries)
+                if (existing.Snapshot.MonsterId == entry.Snapshot.MonsterId) return false;
+
+            SpawnSnapshot previousSnapshot = _spawnSnapshot;
+            GameObject previousVisual = _spawnVisualPrefab, previousRoot = _runRootPrefab;
+            SeededRandom previousRandom = _random;
+            int first = _spawnedTargets.Count;
+            bool success = false;
+            try
+            {
+                _spawnSnapshot = entry.Snapshot;
+                _spawnVisualPrefab = entry.VisualPrefab;
+                _runRootPrefab = monsterRootPrefab;
+                _random = new SeededRandom(seed);
+                for (int i = 0; i < count; i++)
+                {
+                    if (!TryGetSpawnPosition(out Vector3 position) || !TryInstantiateSpawnPrefab(position, out GameObject instance))
+                        return false;
+                    if (!TryInitializeTarget(instance, out MonsterCombatTarget target))
+                    {
+                        if (target != null) target.Unregister();
+                        if (instance != null) Destroy(instance);
+                        return false;
+                    }
+                    target.MarkAsTraitChest();
+                    Transform pivot = target.transform.Find("VisualRoot/SpawnPopup");
+                    var presentation = target.gameObject.AddComponent<MonsterSpawnPresentation>();
+                    presentation.Play(pivot, target, combatRunController, _preparingEntrance, _preparingEntrance ? .1f : 0f);
+                    if (_preparingEntrance) _initialPresentations.Add(presentation);
+                    _spawnedTargets.Add(target);
+                }
+                success = true;
+                return true;
+            }
+            finally
+            {
+                if (!success) RollbackPack(first);
+                _spawnSnapshot = previousSnapshot;
+                _spawnVisualPrefab = previousVisual;
+                _runRootPrefab = previousRoot;
+                _random = previousRandom;
+            }
+        }
+
         public void AdvanceInitialEntrance(float seconds)
         {
             if (!_preparingEntrance || seconds <= 0f || float.IsNaN(seconds) || float.IsInfinity(seconds)) return;
@@ -304,7 +362,7 @@ namespace CursorHunter.Combat
             // Validation has finished for every entry and body before any combat state changes.
             foreach (MonsterCombatTarget target in _spawnedTargets)
             {
-                if (target == null || target.IsDead) continue;
+                if (target == null || target.IsDead || target.IsTraitChest) continue;
                 int index = candidateIndices[target.MonsterId];
                 target.TryApplyBalance(plan.Entries[index].Snapshot, bounds[index], out _);
             }
@@ -375,7 +433,7 @@ namespace CursorHunter.Combat
             }
             foreach (MonsterCombatTarget target in _spawnedTargets)
             {
-                if (target == null || target.IsDead) continue;
+                if (target == null || target.IsDead || target.IsTraitChest) continue;
                 if (!candidateIndices.TryGetValue(target.MonsterId, out int candidateIndex))
                 {
                     error = target.MonsterId + ": 현재 개체의 종이 생성 계획에 없습니다.";
@@ -477,7 +535,7 @@ namespace CursorHunter.Combat
                     continue;
                 }
 
-                if (finishBossDeathAnimation && _bossRun && target.TryContinueDeathAfterRun(_runId))
+                if (finishBossDeathAnimation && _bossRun && !target.IsTraitChest && target.TryContinueDeathAfterRun(_runId))
                 {
                     _bossDeathVisual = target;
                     continue;

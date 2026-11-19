@@ -1,14 +1,113 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using CursorHunter.Contracts;
+using CursorHunter.Progression.Editor;
 using CursorHunter.Progression.ResearchPrototype;
 using NUnit.Framework;
 using UnityEditor;
+using UnityEditor.Localization;
 using UnityEngine;
+using UnityEngine.Localization.Tables;
 
 namespace CursorHunter.App.Tests
 {
     public sealed class ResearchDefinitionTests
     {
+        [Test]
+        public void LiveTornadoUnlockHasOnePurchasableStateAndMapCost()
+        {
+            var definition = AssetDatabase.LoadAssetAtPath<ResearchDefinition>(
+                "Assets/CursorHunter/Progression/ResearchPrototype/Live/skill.tornado.unlock.live.asset");
+            Assert.That(definition, Is.Not.Null);
+            Assert.That(definition.IsLiveSkillUnlock, Is.True);
+            Assert.That(definition.gameplay.targetId, Is.EqualTo("skill.tornado"));
+            Assert.That(definition.TryValidate(out string error), Is.True, error);
+            Assert.That(definition.ranks.Length, Is.EqualTo(1));
+            Assert.That(definition.GetEffectValue(0), Is.Zero);
+            Assert.That(definition.GetEffectValue(1), Is.EqualTo(1));
+            var rows = ResearchTextWorkbook.ReadRows(ResearchTextWorkbook.Path).ToDictionary(x => x.Key);
+            Assert.That(rows[definition.presentation.textKey + ".title"].Values["ko"], Is.EqualTo("토네이도"));
+            Assert.That(rows[definition.presentation.textKey + ".description"].Values["ko"],
+                Is.EqualTo("랜덤으로 움직이며 피해를 입히는 토네이도 생성"));
+
+            var map = ScriptableObject.CreateInstance<ResearchMapDefinition>();
+            try
+            {
+                map.versionId = "live-unlock-test";
+                var node = new ResearchMapPlacement { id = "tornado-test", definition = definition,
+                    costs = new[] { new ResearchCost { currencyId = "", amount = 2 } } };
+                map.nodes.Add(node);
+                Assert.That(map.Validate().Any(x => x.Contains("해금") && x.Contains("재화")), Is.True);
+                node.costs[0] = new ResearchCost { currencyId = "gem.topaz", amount = 2 };
+                Assert.That(map.Validate(), Is.Empty);
+            }
+            finally { UnityEngine.Object.DestroyImmediate(map); }
+        }
+
+        [Test]
+        public void LiveAttackAndRadiusNodesApplyRequestedRanksAndLocalizedText()
+        {
+            const string folder = "Assets/CursorHunter/Progression/ResearchPrototype/Live/";
+            var attack = AssetDatabase.LoadAssetAtPath<ResearchDefinition>(folder + "cursor.attack.increase.asset");
+            var radius = AssetDatabase.LoadAssetAtPath<ResearchDefinition>(folder + "cursor.radius.increase.asset");
+            Assert.That(attack, Is.Not.Null);
+            Assert.That(radius, Is.Not.Null);
+            Assert.That(attack.usage, Is.EqualTo(ResearchNodeUsage.Live));
+            Assert.That(radius.usage, Is.EqualTo(ResearchNodeUsage.Live));
+            Assert.That(attack.TryValidate(out var attackError), Is.True, attackError);
+            Assert.That(radius.TryValidate(out var radiusError), Is.True, radiusError);
+            Assert.That(attack.gameplay.target, Is.EqualTo(ResearchStat.Attack));
+            Assert.That(radius.gameplay.target, Is.EqualTo(ResearchStat.Radius));
+            Assert.That(attack.ranks.Length, Is.EqualTo(5));
+            Assert.That(radius.ranks.Length, Is.EqualTo(5));
+            Assert.That(attack.icon, Is.EqualTo(AssetDatabase.LoadAssetAtPath<Sprite>(
+                "Assets/DownLoadAssets/IconPack/2D Minimal-IconPack/Icons/128/Stat_Attack_01.png")));
+            Assert.That(radius.icon, Is.EqualTo(AssetDatabase.LoadAssetAtPath<Sprite>(
+                "Assets/DownLoadAssets/IconPack/2D Minimal-IconPack/Icons/128/Misc_Crosshair_01_Gray.png")));
+            Assert.That(radius.presentation.valueDisplay, Is.EqualTo(ResearchValueDisplay.RadiusPercent));
+
+            var rows = ResearchTextWorkbook.ReadRows(ResearchTextWorkbook.Path).ToDictionary(x => x.Key);
+            var table = LocalizationEditorSettings.GetStringTableCollection("Research").GetTable("ko") as StringTable;
+            foreach (var entry in new[] {
+                ("research.cursor.attack.increase.title", "공격력 강화"),
+                ("research.cursor.attack.increase.description", "기본 공격력 증가"),
+                ("research.cursor.radius.increase.title", "공격 범위 확장"),
+                ("research.cursor.radius.increase.description", "공격 범위 크기 증가") })
+            {
+                Assert.That(rows[entry.Item1].Values["ko"], Is.EqualTo(entry.Item2));
+                Assert.That(table.GetEntry(entry.Item1)?.Value, Is.EqualTo(entry.Item2));
+            }
+
+            var attackObject = new GameObject("live attack");
+            var radiusObject = new GameObject("live radius");
+            try
+            {
+                var attackNode = attackObject.AddComponent<ResearchTestNode>();
+                attackNode.placementId = "live.attack";
+                attackNode.definition = attack;
+                var radiusNode = radiusObject.AddComponent<ResearchTestNode>();
+                radiusNode.placementId = "live.radius";
+                radiusNode.definition = radius;
+                var format = typeof(ResearchTestMap).GetMethod("Format", BindingFlags.NonPublic | BindingFlags.Static);
+                for (int rank = 0; rank <= 5; rank++)
+                {
+                    var bonuses = ResearchEffectCalculator.Calculate(new[] { attackNode, radiusNode }, _ => rank);
+                    Assert.That(bonuses.AttackPowerDelta, Is.EqualTo(rank));
+                    Assert.That(bonuses.AttackRadiusWorldUnitsDelta,
+                        Is.EqualTo(GameInformation.BaseAttackRadiusWorldUnits * .01f * rank).Within(.000001f));
+                    Assert.That(format.Invoke(null, new object[] { radius.presentation.valueDisplay, radius.GetEffectValue(rank) }),
+                        Is.EqualTo(rank + ".00%"));
+                }
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(attackObject);
+                UnityEngine.Object.DestroyImmediate(radiusObject);
+            }
+        }
+
         [Test]
         public void ExistingDefinitionsHaveSeparatedValidPresentationAndGameplay()
         {
