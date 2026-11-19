@@ -80,6 +80,12 @@ namespace CursorHunter.Progression.Editor
                         throw new InvalidDataException($"{key}.description ({value.Key}): {error}");
                 }
             }
+            WriteTables(TableName, rows);
+        }
+
+        internal static void WriteTables(string tableName, Row[] rows)
+        {
+            var keys = new HashSet<string>(rows.Select(x => x.Key), StringComparer.Ordinal);
             Directory.CreateDirectory(Folder);
             AssetDatabase.Refresh();
             if (LocalizationEditorSettings.ActiveLocalizationSettings == null)
@@ -97,8 +103,8 @@ namespace CursorHunter.Progression.Editor
             var locales = new List<Locale> { ko };
             foreach (string code in codes.Where(x => x != "ko"))
                 locales.Add(EnsureLocale(code, ko));
-            var collection = LocalizationEditorSettings.GetStringTableCollection(TableName) ??
-                LocalizationEditorSettings.CreateStringTableCollection(TableName, Folder, locales);
+            var collection = LocalizationEditorSettings.GetStringTableCollection(tableName) ??
+                LocalizationEditorSettings.CreateStringTableCollection(tableName, Folder, locales);
             foreach (Locale locale in locales)
             {
                 var table = collection.GetTable(locale.Identifier) as StringTable ??
@@ -142,13 +148,15 @@ namespace CursorHunter.Progression.Editor
             LocalizationEditorSettings.AddLocale(locale);
             return locale;
         }
-        public static Row[] ReadRows(string path)
+        public static Row[] ReadRows(string path) => ReadRows(path, "특성 카드 표시 정보", true);
+
+        internal static Row[] ReadRows(string path, string sheetName, bool requireEnglish)
         {
             using var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
             using var zip = new ZipArchive(file, ZipArchiveMode.Read);
             var book = Xml(zip, "xl/workbook.xml");
-            var sheet = book.Descendants(Ns + "sheet").SingleOrDefault(x => (string)x.Attribute("name") == "특성 카드 표시 정보");
-            if (sheet == null) throw new InvalidDataException("'특성 카드 표시 정보' 시트가 없습니다.");
+            var sheet = book.Descendants(Ns + "sheet").SingleOrDefault(x => (string)x.Attribute("name") == sheetName);
+            if (sheet == null) throw new InvalidDataException(sheetName + " 시트가 없습니다.");
             XNamespace rel = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
             string id = (string)sheet.Attribute(rel + "id");
             var link = Xml(zip, "xl/_rels/workbook.xml.rels").Root.Elements().SingleOrDefault(x => (string)x.Attribute("Id") == id);
@@ -189,7 +197,7 @@ namespace CursorHunter.Progression.Editor
                             throw new InvalidDataException("언어 코드를 확인하세요. 예: ko, en, ja");
                         columns.Add(col, code);
                     }
-                    if (!codes.Contains("ko") || !codes.Contains("en")) throw new InvalidDataException("ko와 en 열이 필요합니다.");
+                    if (!codes.Contains("ko") || (requireEnglish && !codes.Contains("en"))) throw new InvalidDataException("ko와 en 열이 필요합니다.");
                     continue;
                 }
                 if (cells.Keys.All(x => Value(x) == "")) continue;
@@ -199,7 +207,7 @@ namespace CursorHunter.Progression.Editor
                     if (col != "A" && !columns.ContainsKey(col) && Value(col) != "")
                         throw new InvalidDataException(col + "열에 언어 코드가 없습니다.");
                 var values = columns.ToDictionary(x => x.Value, x => Value(x.Key), StringComparer.Ordinal);
-                if (string.IsNullOrWhiteSpace(values["ko"]) || string.IsNullOrWhiteSpace(values["en"])) throw new InvalidDataException(key + "의 한국어 또는 영어 문구가 비어 있습니다.");
+                if (string.IsNullOrWhiteSpace(values["ko"]) || (requireEnglish && string.IsNullOrWhiteSpace(values["en"]))) throw new InvalidDataException(key + "의 한국어 또는 영어 문구가 비어 있습니다.");
                 rows.Add(new Row { Key = key, Values = values });
             }
             if (columns == null || rows.Count == 0)

@@ -150,6 +150,7 @@ namespace CursorHunter.Progression
         private readonly List<string> _talentDraftIds = new List<string>(3);
         private ProgressionCombatSnapshot _activeRunSnapshot;
         private GameDataDocument _document;
+        private ProgressionLoadStatus _profileLoadStatus;
         private string _summaryJson;
         private string _fullDocumentJson;
         private CursorCombatStatDefaultsSnapshot? _cursorCombatStatDefaults;
@@ -273,11 +274,19 @@ namespace CursorHunter.Progression
         private TraitTab _lastBuiltTab;
         private bool _hasBuiltNodeLayout;
 
+        public ProgressionLoadStatus ProfileLoadStatus
+        {
+            get { EnsureProgressionState(); return _profileLoadStatus; }
+        }
+
+        public bool IsProfileLoadBlocked => ProfileLoadStatus is ProgressionLoadStatus.Corrupt or
+            ProgressionLoadStatus.Unsupported or ProgressionLoadStatus.ResetFailed;
+
         public bool CanStartPlayerCombat
         {
             get
             {
-                EnsureProgressionState();
+                if (IsProfileLoadBlocked) return false;
                 return useNewResearchSystem ||
                     _purchased.Contains(ResearchCoreNodeId) && _purchased.Contains("monster.01");
             }
@@ -515,14 +524,7 @@ namespace CursorHunter.Progression
             EnsureRelicEntries();
             HideAuthoredPlaceholders();
             EnsureCanvasScale();
-            if (_activeCatalog == null)
-            {
-                _garnetBalance = startingGarnet;
-                ResolveCatalog();
-                InitializeGemstoneBalances();
-                InitializePurchasedState();
-                LoadSavedProgress();
-            }
+            EnsureProgressionState();
             BuildUi();
         }
 
@@ -653,6 +655,7 @@ namespace CursorHunter.Progression
 
         private void OnEnable()
         {
+            if (IsProfileLoadBlocked) return;
             LocalizationCatalog.Changed -= RefreshLocalizedContent;
             LocalizationCatalog.Changed += RefreshLocalizedContent;
             if (!_isBuilt)
@@ -1061,6 +1064,7 @@ namespace CursorHunter.Progression
         }
 
         private int _highestBossStageCleared;
+        public event Action BossProgressChanged;
         private readonly HashSet<string> _settledBossRunIds = new HashSet<string>(StringComparer.Ordinal);
         public int HighestBossStageCleared
         {
@@ -1073,7 +1077,11 @@ namespace CursorHunter.Progression
             EnsureProgressionState();
             int previousStage = _highestBossStageCleared;
             _highestBossStageCleared = 0;
-            if (SaveProgressionState()) return true;
+            if (SaveProgressionState())
+            {
+                if (previousStage != 0) BossProgressChanged?.Invoke();
+                return true;
+            }
             _highestBossStageCleared = previousStage;
             return false;
         }
@@ -1096,6 +1104,7 @@ namespace CursorHunter.Progression
                     result.Rewards, result.RelicAwards, result.ExperienceEarned,
                     isBossRun: true))
             {
+                if (_highestBossStageCleared != previousStage) BossProgressChanged?.Invoke();
                 return true;
             }
             _highestBossStageCleared = previousStage;
@@ -1438,11 +1447,9 @@ namespace CursorHunter.Progression
 
         private void LoadSavedProgress()
         {
-            if (_document.progression.savedProgressPolicy == "fileOnly" || !loadSavedProgress ||
-                !TraitProgressionStore.TryLoad(out TraitProgressionStore.SaveData data))
-            {
-                return;
-            }
+            if (_document.progression.savedProgressPolicy == "fileOnly" || !loadSavedProgress) return;
+            _profileLoadStatus = TraitProgressionStore.Load(out var data);
+            if (_profileLoadStatus != ProgressionLoadStatus.Loaded) return;
 
             _researchRanks.Clear();
             string savedLayout = data.researchLayoutFingerprint;
@@ -1627,28 +1634,10 @@ namespace CursorHunter.Progression
 
         private bool SaveProgressionState(TraitCardProgressData cardStateOverride = null)
         {
-            // File-only preview/prototyping must never overwrite the player's existing save.
-            if (_document != null && _document.progression.savedProgressPolicy == "fileOnly") return true;
-            bool saved = TraitProgressionStore.Save(
-                _garnetBalance,
-                _gemstoneBalances,
-                _purchased,
-                _spentByNode,
-                _spentCurrencyByNode,
-                unlockedBossTier: unlockedBossTier,
-                ownedRelicIds: GetOwnedRelicIds(),
-                highestBossStageCleared: _highestBossStageCleared,
-                settledBossRunIds: _settledBossRunIds,
-                unseenRelicIds: _unseenRelicIds,
-                experiencePoints: _experiencePoints,
-                availableTraitCards: _availableTraitCards,
-                traitCardDrawCount: _traitCardDrawCount,
-                selectedFieldTier: _selectedFieldTier,
-                ownedTraitCardIds: _ownedTalentIds,
-                spentCostEntries: _spentNodeCosts,
-                researchRanks: _researchRanks,
-                newTraitCards: cardStateOverride ?? _newTraitCards?.Capture() ?? _newTraitCardData,
-                researchLayoutFingerprint: _researchLayoutFingerprint);
+            if (_retiredProfile || IsProfileLoadBlocked) return false;
+            // Preview sessions can change their in-memory profile without writing the player's save.
+            if (!loadSavedProgress || _document?.progression.savedProgressPolicy == "fileOnly") return true;
+            bool saved = TraitProgressionStore.Save(CaptureProgressionSnapshot(cardStateOverride));
             if (saved) _pendingResearchLayoutSave = false;
             if (!saved)
             {
@@ -1658,6 +1647,19 @@ namespace CursorHunter.Progression
             }
 
             return saved;
+        }
+
+        private TraitProgressionStore.SaveData CaptureProgressionSnapshot(TraitCardProgressData cardStateOverride)
+        {
+            var snapshot = new TraitProgressionStore.SaveData();
+            snapshot.CaptureWallet(_garnetBalance, _gemstoneBalances);
+            snapshot.CaptureResearch(_researchRanks, _researchLayoutFingerprint);
+            snapshot.CaptureLegacyPurchases(_purchased, _spentByNode, _spentCurrencyByNode, _spentNodeCosts);
+            snapshot.CaptureRelics(GetOwnedRelicIds(), _unseenRelicIds);
+            snapshot.CaptureTraits(_experiencePoints, cardStateOverride ?? _newTraitCards?.Capture() ?? _newTraitCardData,
+                _availableTraitCards, _traitCardDrawCount, _ownedTalentIds);
+            snapshot.CaptureBattleProgress(_selectedFieldTier, unlockedBossTier, _highestBossStageCleared, _settledBossRunIds);
+            return snapshot;
         }
 
         private static bool IsLegacyImplicitStartNode(string nodeId)
@@ -1679,7 +1681,7 @@ namespace CursorHunter.Progression
 
         private void BuildUi()
         {
-            if (_isBuilt)
+            if (_isBuilt || IsProfileLoadBlocked)
             {
                 return;
             }

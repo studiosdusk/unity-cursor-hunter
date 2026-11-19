@@ -50,6 +50,14 @@ namespace CursorHunter.App
         [SerializeField] private bool allowPrototypeFallback;
         [SerializeField] private GameObject prototypeFallbackPrefab;
 
+        [Serializable]
+        private struct WorldMapBinding
+        {
+            public WorldStageDefinition stage;
+            public BattlefieldArea area;
+        }
+        [SerializeField] private WorldMapBinding[] worldMaps = Array.Empty<WorldMapBinding>();
+        private WorldStageDefinition _lastWorld;
         private RunCoordinator _runCoordinator;
         private bool _coordinatorEventsSubscribed;
         private bool _pausedForInspection;
@@ -190,9 +198,11 @@ namespace CursorHunter.App
             BeginRun(stage, null);
         }
 
-        private void BeginRun(CombatStageDefinition stage, BossDefinition boss)
+        private void BeginRun(CombatStageDefinition stage, BossDefinition boss, WorldStageDefinition replayWorld = null)
         {
             ResolveReferences();
+            if (connectTraitScreenToCombat && progressionController != null && progressionController.IsProfileLoadBlocked)
+                return;
             if (!TrySavePendingRunRewards()) return;
             EnsureRunCoordinator();
             SubscribeToCoordinator();
@@ -223,6 +233,24 @@ namespace CursorHunter.App
                 return;
             }
 #endif
+            WorldStageDefinition world = null;
+            BattlefieldArea worldArea = null;
+            if (worldMaps.Length > 0 && connectTraitScreenToCombat)
+            {
+                if (progressionController == null)
+                {
+                    Debug.LogError("World selection requires a progression controller.", this);
+                    return;
+                }
+                world = progressionController.IsStageUnlocked(replayWorld) ? replayWorld : progressionController.SelectedWorldStage;
+                foreach (var binding in worldMaps)
+                    if (binding.stage == world) worldArea = binding.area;
+                if (worldArea == null)
+                {
+                    Debug.LogError("Missing battlefield for " + world.stableId, this);
+                    return;
+                }
+            }
             CursorCombatStatBonusesSnapshot cursorStatBonuses = default;
             ProgressionCombatSnapshot progressionSnapshot = null;
             string json = null;
@@ -259,6 +287,19 @@ namespace CursorHunter.App
                         Debug.LogError(
                             $"Cannot enter stage '{stage.StageId}': " + error,
                             this);
+                        return;
+                    }
+                }
+                if (world != null && boss == null)
+                {
+                    try
+                    {
+                        foreach (var monster in information.monsters)
+                            if (monster.enabled) monster.hitPoints = world.ScaleMonsterHealth(monster.hitPoints);
+                    }
+                    catch (OverflowException)
+                    {
+                        Debug.LogError("Monster health exceeds the supported range in " + world.stableId, this);
                         return;
                     }
                 }
@@ -349,9 +390,9 @@ namespace CursorHunter.App
                 boss == null ? 0 : boss.Stage,
                 boss == null ? null : boss.CreateClearRewards(),
                 boss == null ? 0L : boss.ExperienceReward,
-                boss == null && connectTraitScreenToCombat && progressionController != null
-                    ? progressionController.SelectedFieldTier
-                    : 1);
+                fieldTier: world == null && boss == null && connectTraitScreenToCombat && progressionController != null
+                    ? progressionController.SelectedFieldTier : 1,
+                worldExperienceMultiplier: boss == null && world != null ? world.monsterExperienceMultiplier : 1f);
 
             TraitCardCombatLoadout traitLoadout = null;
             if (connectTraitScreenToCombat)
@@ -362,6 +403,12 @@ namespace CursorHunter.App
                     Debug.LogError("Cannot prepare acquired trait card effects: " + exception.Message, this);
                     return;
                 }
+            }
+            if (worldArea != null)
+            {
+                combatRunController.SetBattlefield(worldArea);
+                foreach (var binding in worldMaps)
+                    if (binding.area != null) binding.area.gameObject.SetActive(binding.area == worldArea);
             }
             string failureReason;
             bool started = connectTraitScreenToCombat
@@ -393,6 +440,7 @@ namespace CursorHunter.App
             }
 
             _runUsesTraitScreen = connectTraitScreenToCombat;
+            _lastWorld = world;
             _lastStartedStage = stage;
             _lastRunWasBoss = boss != null;
             _lastBossStage = boss == null ? 0 : boss.Stage;
@@ -615,8 +663,8 @@ namespace CursorHunter.App
         /// <summary>Reuses the last field selection with a fresh RunId and current progression snapshot.</summary>
         public void ReplayLastRun()
         {
-            if (_lastRunWasBoss) BeginBossStage(_lastBossStage);
-            else BeginStageRun(_lastStartedStage);
+            if (_lastRunWasBoss) StartBossStage(_lastBossStage, _lastWorld);
+            else BeginRun(_lastStartedStage, null, _lastWorld);
         }
 
         private void Update()

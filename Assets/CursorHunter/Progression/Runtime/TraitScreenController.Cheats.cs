@@ -5,6 +5,19 @@ namespace CursorHunter.Progression
 {
     public sealed partial class TraitScreenController
     {
+        private bool _retiredProfile;
+
+        /// <summary>Clear the profile and prevent this scene from saving again while App restarts it.</summary>
+        public bool TryResetAllProgressForTesting()
+        {
+            if (_retiredProfile) return true;
+            EnsureProgressionState();
+            if (!CanPersistTestingChanges() || !TraitProgressionStore.TryClearEntireProfile()) return false;
+            _retiredProfile = true;
+            _pendingResearchLayoutSave = false;
+            return true;
+        }
+
         /// <summary>Advance exactly one player level through the normal XP/trait-point transaction.</summary>
         public bool TryIncreaseUserLevelForTesting()
         {
@@ -71,7 +84,7 @@ namespace CursorHunter.Progression
             return true;
         }
 
-        private bool CanPersistTestingChanges() => loadSavedProgress && _document != null &&
+        private bool CanPersistTestingChanges() => !_retiredProfile && loadSavedProgress && _document != null &&
             _document.progression != null && _document.progression.savedProgressPolicy != "fileOnly";
     }
 }

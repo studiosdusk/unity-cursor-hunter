@@ -1,6 +1,31 @@
 {
   "entries": [
     {
+      "key": "ui.profile.load_error",
+      "ko": "진행도를 불러올 수 없어요",
+      "en": "Could not load your progress"
+    },
+    {
+      "key": "ui.profile.corrupt",
+      "ko": "저장 데이터의 일부를 읽을 수 없어요.\n기존 저장은 보존되어 있어요.",
+      "en": "Part of your save could not be read.\nYour existing save has been kept."
+    },
+    {
+      "key": "ui.profile.unsupported",
+      "ko": "현재 버전에서 지원하지 않는 저장 데이터예요.\n이 저장과 호환되는 게임 버전에서 열어 주세요.",
+      "en": "This version does not support your save.\nOpen it with a compatible version of the game."
+    },
+    {
+      "key": "ui.profile.retry",
+      "ko": "다시 불러오기",
+      "en": "Reload save"
+    },
+    {
+      "key": "ui.profile.reset_failed",
+      "ko": "첫 실행 초기화를 저장하지 못했어요.\n다시 불러오기를 눌러 주세요.",
+      "en": "Could not save the first-launch reset.\nSelect Reload save to try again."
+    },
+    {
       "key": "ui.traits.title",
       "ko": "특성",
       "en": "Upgrades"

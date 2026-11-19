@@ -22,6 +22,12 @@ namespace CursorHunter.Combat
         [SerializeField] private BattlefieldArea battlefield;
 
         public BattlefieldArea Battlefield => battlefield;
+
+        public void SetBattlefield(BattlefieldArea area)
+        {
+            if (IsRunActive || area == null) throw new InvalidOperationException("A battlefield must be bound before combat.");
+            battlefield = area;
+        }
         public float SpatialSkillScale => battlefield != null ? battlefield.SkillScale : 1f;
         public float SpatialMotionScale => battlefield != null ? battlefield.MotionScale : 1f;
 
@@ -1474,10 +1480,9 @@ namespace CursorHunter.Combat
 
         private bool TryScaleNormalExperience(long amount, out long scaledAmount)
         {
-            if (_traitEffects != null && _traitEffects.HasNormalExperienceEffect)
-                return _traitEffects.TryScaleNormalExperience(amount, _runRequest.FieldExperienceMultiplier,
-                    ref _fractionalTraitExperience, out scaledAmount);
-            return TryScaleReward("experience", amount, _runRequest.FieldExperienceMultiplier, out scaledAmount);
+            float multiplier = _runRequest.FieldExperienceMultiplier * _runRequest.WorldExperienceMultiplier;
+            return _traitEffects.TryScaleNormalExperience(amount, multiplier,
+                ref _fractionalTraitExperience, out scaledAmount);
         }
 
         private bool TryRecordReward(string currencyId, long amount)

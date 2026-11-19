@@ -1,6 +1,6 @@
 # 두 사람 개발 인수인계
 
-현재 게임 버전: **0.0.5**. 전투 JSON의 schemaVersion=4와 진행도 저장 version=12는 게임 버전과 별개다.
+현재 게임 버전: **0.0.5**. 전투 JSON의 schemaVersion=4와 진행도 저장 version=13는 게임 버전과 별개다.
 
 커서 핵심 스탯의 공통 기본값은 Main 씬에서 `PlayerCombatStatsRuntime`과 함께 둔
 `PlayerCombatStatsDefaults` 컴포넌트가 소유한다. 나머지 게임 초기 데이터와 전체 정보
@@ -58,7 +58,7 @@ macOS 설치 확인: `python3 tools/open_unity.py --check`. 확인 후 같은 �
 
 - UI 스타일 기준(2026-11-17): 기존 시각 정책은 [새 UI 스타일 정책](ui-style-policy.md)으로 대체한다. Main의 `ResearchPrototype_Canvas`, `TraitCard_Canvas`, `Artifact_Canvas` 세 화면을 함께 기준으로 한다. 결과창은 획득한 젬스톤 종류에 따라 크기를 조정하고 경험치를 마지막 행에 항상 표시한다. 과거 화면·캡처와 공급사 데모는 에셋이나 구현 기록이다.
 - 새 연구의 노드 정의·표시 단위·배치 ID와 전투 적용 규칙은 [연구 노드 데이터](../../Assets/CursorHunter/Progression/ResearchPrototype/README.md)를 따른다. 레거시 연구 구매는 보관하며 새 연구 전투 효과에는 포함하지 않는다.
-- Main 성장 화면의 TopMenu는 연구·유물·특성·월드를 전환하며, 최초 선택은 새 연구 맵이다. 유물과 특성은 각각 `Artifact_Canvas`와 `TraitCard_Canvas`를 사용한다. `World_Canvas`는 현재 공통 배경과 화면 전환만 갖춘 기본 화면이다. 기존 스테이지 선택 경로도 유지한다. 새 연구 프로필은 이전 구매 기록 없이 기본 몬스터로 사냥을 시작할 수 있다.
+- Main 성장 화면의 TopMenu는 연구·유물·특성·월드를 전환하며, 최초 선택은 새 연구 맵이다. 유물과 특성은 각각 `Artifact_Canvas`와 `TraitCard_Canvas`를 사용한다. [월드 스테이지](stage-selection-design.md)는 실제 맵 6종을 표시한다. 특성 포인트로 맵을 순차 구매·선택하고 하단 버튼으로 일반전 또는 보스전에 진입한다. 새 연구 프로필은 이전 구매 기록 없이 기본 몬스터로 사냥을 시작할 수 있다.
 - Main 테스트 치트는 실행 중 `=`로 연다. 목록·수치와 씬 버튼을 추가할 때는 [공통 치트 추가 절차](cheat-testing.md#새-치트-추가-절차)를 따른다.
 - 보스 도전은 1~20단계, 단계마다 30초다. Main의 BossSlider를 사용하며, 토벌 성공 시 보석 보상과 공통 결과 UI를 표시한다. 실패 시 재도전 또는 특성 화면으로 이동할 수 있다. 단계·보상은 저장되며 보스별 체력·행동·보상 목록은 `BossDefinitions`에서 조정한다. 이름은 `Data/Authoring/BossNames.xlsx`에서 관리한다. [보스 계약](contracts.md#보스-도전-2026-10-30)을 참고한다.
 - 커서 기본 스탯과 실제 구매한 특성의 증가량을 런 시작 때 합산한다. 성장 노드는 보스 단계 제한 없이 연구 시작·선행 노드·젬스톤 비용으로 구매한다. 보스 진행도는 실제 보스 도전과 단계 시간 기록에만 사용한다. 스킬·몬스터·재화·유물 정의는 GameInformation v4 스냅샷을 사용한다.

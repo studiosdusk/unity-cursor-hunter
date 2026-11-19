@@ -7,13 +7,16 @@ namespace CursorHunter.Progression
     public sealed class TraitCardProgressData
     {
         public long points;
+        public string selectedStageId;
+        public List<string> purchasedStageIds = new List<string>();
         public bool revealed;
         public List<string> ownedIds = new List<string>();
         public List<string> candidateIds = new List<string>();
 
         public TraitCardProgressData Copy() => new TraitCardProgressData
         {
-            points = points, revealed = revealed,
+            points = points, revealed = revealed, selectedStageId = selectedStageId,
+            purchasedStageIds = new List<string>(purchasedStageIds ?? new List<string>()),
             ownedIds = new List<string>(ownedIds ?? new List<string>()),
             candidateIds = new List<string>(candidateIds ?? new List<string>())
         };
@@ -50,15 +53,23 @@ namespace CursorHunter.Progression
         public void Restore(TraitCardProgressData value)
         {
             var next = value.Copy();
+            if (ValidateDraft(next, catalog) != ProgressionLoadStatus.Loaded)
+                throw new ArgumentException("Invalid or unsupported trait card progress.");
+            state = next;
+        }
+
+        internal static ProgressionLoadStatus ValidateDraft(TraitCardProgressData next, ICollection<string> cardIds)
+        {
             if (next.points < 0 || !Unique(next.ownedIds) || !Unique(next.candidateIds) ||
                 next.candidateIds.Count > 3 || (next.revealed && next.candidateIds.Count == 0))
-                throw new ArgumentException("Invalid trait card progress.");
-            foreach (string id in next.ownedIds)
-                if (!catalog.Contains(id)) throw new ArgumentException("Missing owned trait card: " + id);
+                return ProgressionLoadStatus.Corrupt;
             foreach (string id in next.candidateIds)
-                if (!catalog.Contains(id) || next.ownedIds.Contains(id))
-                    throw new ArgumentException("Invalid trait card candidate: " + id);
-            state = next;
+                if (next.ownedIds.Contains(id)) return ProgressionLoadStatus.Corrupt;
+            foreach (string id in next.ownedIds)
+                if (!cardIds.Contains(id)) return ProgressionLoadStatus.Unsupported;
+            foreach (string id in next.candidateIds)
+                if (!cardIds.Contains(id)) return ProgressionLoadStatus.Unsupported;
+            return ProgressionLoadStatus.Loaded;
         }
 
         // Called inside the existing experience/reward transaction, which saves or rolls this back.
@@ -73,6 +84,22 @@ namespace CursorHunter.Progression
         {
             if (value < 0) throw new ArgumentOutOfRangeException(nameof(value));
             state.points = value;
+        }
+
+        internal string SelectedStageId => state.selectedStageId;
+        internal bool OwnsStage(string id) => state.purchasedStageIds.Contains(id);
+
+        internal bool CommitStage(string id, bool purchase, int cost)
+        {
+            var next = state.Copy();
+            if (purchase)
+            {
+                if (cost < 0 || next.points < cost || next.purchasedStageIds.Contains(id)) return false;
+                next.points -= cost;
+                next.purchasedStageIds.Add(id);
+            }
+            next.selectedStageId = id;
+            return Commit(next);
         }
 
         public bool Prepare()

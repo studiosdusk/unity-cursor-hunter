@@ -24,6 +24,9 @@ namespace CursorHunter.App.Tests
         private const string Key = "cursor_hunter.progression.v1";
         private readonly string[] keys = { Key, Key + ".before-v6" };
         private string[] previous;
+        private string researchPlacement;
+        private string firstLaunchGameInformation;
+        private int firstLaunchCandidateCount;
         private Scene scene;
         private CheatMenuController menu;
         private TraitScreenController progression;
@@ -39,13 +42,6 @@ namespace CursorHunter.App.Tests
         {
             previous = keys.Select(k => PlayerPrefs.HasKey(k) ? PlayerPrefs.GetString(k) : null).ToArray();
             foreach (var key in keys) PlayerPrefs.DeleteKey(key);
-            Assert.That(TraitProgressionStore.Save(25, new long[] { 25, 2, 3, 4, 5, 6 },
-                new string[0], null, null, ownedRelicIds: new[] { "relic.red_potion", "relic.blue_potion" },
-                unseenRelicIds: new[] { "relic.red_potion" }, highestBossStageCleared: 2,
-                settledBossRunIds: new[] { "old-run" }, experiencePoints: ProgressionLevelCurve.TotalExperienceForLevel(5),
-                ownedTraitCardIds: new[] { "talent.might" },
-                researchRanks: new Dictionary<string, int> { ["research-test.cursor.attack"] = 1, ["other-map.node"] = 3 },
-                newTraitCards: new TraitCardProgressData { points = 4 }), Is.True);
             oldBackground = InputSystem.settings.backgroundBehavior;
             oldEditorBehavior = InputSystem.settings.editorInputBehaviorInPlayMode;
             InputSystem.settings.backgroundBehavior = InputSettings.BackgroundBehavior.IgnoreFocus;
@@ -53,13 +49,34 @@ namespace CursorHunter.App.Tests
             keyboard = InputSystem.AddDevice<Keyboard>();
             timeScale = Time.timeScale;
             yield return LoadMain();
+            firstLaunchGameInformation = progression.CreateGameInformationJson();
+            firstLaunchCandidateCount = progression.TraitCards.CandidateIds.Count;
+            researchPlacement = map.nodes.First(n => n != null).placementId;
+            Assert.That(map.TryGetLayoutFingerprint(out string layout), Is.True);
+            yield return SceneManager.UnloadSceneAsync(scene);
+            Assert.That(TraitProgressionStore.Save(25, new long[] { 25, 2, 3, 4, 5, 6 },
+                new string[0], null, null, ownedRelicIds: new[] { "relic.red_potion", "relic.blue_potion" },
+                unseenRelicIds: new[] { "relic.red_potion" }, highestBossStageCleared: 2,
+                settledBossRunIds: new[] { "old-run" }, experiencePoints: ProgressionLevelCurve.TotalExperienceForLevel(5),
+                ownedTraitCardIds: new[] { "talent.might" },
+                researchRanks: new Dictionary<string, int> { [researchPlacement] = 1, ["other-map.node"] = 3 },
+                researchLayoutFingerprint: layout,
+                newTraitCards: new TraitCardProgressData
+                {
+                    points = 4, selectedStageId = "desert", purchasedStageIds = new List<string> { "desert" }
+                }), Is.True);
+            yield return LoadMain();
         }
 
         [UnityTearDown]
         public IEnumerator TearDown()
         {
             Time.timeScale = timeScale;
-            if (scene.IsValid() && scene.isLoaded) yield return SceneManager.UnloadSceneAsync(scene);
+            if (scene.IsValid() && scene.isLoaded)
+            {
+                if (SceneManager.sceneCount == 1) SceneManager.CreateScene("Cheat test teardown");
+                yield return SceneManager.UnloadSceneAsync(scene);
+            }
             if (keyboard != null && keyboard.added) InputSystem.RemoveDevice(keyboard);
             InputSystem.settings.backgroundBehavior = oldBackground;
             InputSystem.settings.editorInputBehaviorInPlayMode = oldEditorBehavior;
@@ -75,9 +92,10 @@ namespace CursorHunter.App.Tests
             var authoredButtons = root.GetComponentsInChildren<Button>(true).Where(b => b.name.StartsWith("Cheat_")).ToArray();
             Assert.That(authoredButtons.Length, Is.GreaterThanOrEqualTo(6), "Cheat buttons exist in the scene before opening.");
             var requiredLabels = new Dictionary<string, string> {
-                ["reset_trait_cards"] = "특성 카드 초기화", ["reset_research"] = "연구 진행 상황 초기화",
+                ["reset_trait_cards"] = "카드·레벨·스테이지 초기화", ["reset_research"] = "연구 진행 상황 초기화",
                 ["reset_relics"] = "유물 진행 상황 초기화", ["grant_currencies"] = "모든 재화 999,999 지급",
-                ["clear_currencies"] = "모든 재화 0으로", ["increase_user_level"] = "유저 레벨 1 올리기" };
+                ["clear_currencies"] = "모든 재화 0으로", ["increase_user_level"] = "유저 레벨 1 올리기",
+                ["reset_all_progress"] = "모든 진행도 초기화" };
             foreach (var entry in requiredLabels)
                 Assert.That(authoredButtons.Single(b => b.name == "Cheat_" + entry.Key)
                     .GetComponentInChildren<TMP_Text>(true).text, Is.EqualTo(entry.Value));
@@ -87,7 +105,7 @@ namespace CursorHunter.App.Tests
             Assert.That(progression.RevealTraitCards(), Is.True);
             Assert.That(progression.SelectTraitCard(progression.TraitCards.CandidateIds[0]), Is.True);
             Assert.That(progression.TraitCards.Level, Is.EqualTo(1));
-            Assert.That(map.nodes.Single(n => n.placementId == "research-test.cursor.attack").rank, Is.EqualTo(1));
+            Assert.That(map.nodes.Single(n => n.placementId == researchPlacement).rank, Is.EqualTo(1));
             Assert.That(progression.TryGetRelicView("relic.red_potion", out var relic), Is.True);
             Assert.That(relic.IsOwned, Is.True);
 
@@ -122,7 +140,7 @@ namespace CursorHunter.App.Tests
 
             Click("reset_research");
             Assert.That(map.nodes.All(n => n == null || n.rank == 0), Is.True);
-            Assert.That(progression.GetResearchRank("research-test.cursor.attack"), Is.Zero);
+            Assert.That(progression.GetResearchRank(researchPlacement), Is.Zero);
             Assert.That(progression.GetResearchRank("other-map.node"), Is.EqualTo(3));
             Assert.That(progression.GetResearchGemstoneBalance(0), Is.EqualTo(2000023));
             Assert.That(progression.TryGetRelicView("relic.red_potion", out relic) && relic.IsOwned, Is.True);
@@ -146,7 +164,10 @@ namespace CursorHunter.App.Tests
             Assert.That(Enumerable.Range(0, 6).Select(progression.GetResearchGemstoneBalance), Is.All.EqualTo(0));
             Assert.That(progression.TraitCards.Points, Is.Zero);
             Click("grant_currencies");
+            Assert.That(progression.SelectedWorldStage.stableId, Is.EqualTo("desert"));
             Click("reset_trait_cards");
+            Assert.That(progression.SelectedWorldStage.stableId, Is.EqualTo("forest"));
+            Assert.That(progression.WorldStages.Count(progression.IsStageUnlocked), Is.EqualTo(1));
             Assert.That(progression.TraitCards.Level, Is.Zero);
             Assert.That(progression.TraitCards.Points, Is.Zero);
             Assert.That(progression.ExperiencePoints, Is.Zero);
@@ -186,7 +207,7 @@ namespace CursorHunter.App.Tests
                 Click(id);
                 Assert.That(root.transform.Find("CheatStatusFailure").gameObject.activeSelf, Is.True);
                 Assert.That(progression.GetResearchGemstoneBalance(0), Is.EqualTo(25));
-                Assert.That(progression.GetResearchRank("research-test.cursor.attack"), Is.EqualTo(1));
+                Assert.That(progression.GetResearchRank(researchPlacement), Is.EqualTo(1));
                 Assert.That(progression.TryGetRelicView("relic.red_potion", out var relic) && relic.IsOwned && relic.IsNew, Is.True);
                 Assert.That(progression.ExperiencePoints, Is.EqualTo(experience));
                 Assert.That(JsonUtility.ToJson(progression.TraitCards.Capture()), Is.EqualTo(beforeCards));
@@ -197,6 +218,99 @@ namespace CursorHunter.App.Tests
             Assert.That(progression.TraitCards.Points, Is.EqualTo(1000003));
             Assert.That(root.transform.Find("CheatStatusSuccess").gameObject.activeSelf, Is.True);
             yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator FullResetRestartsMainWithFirstLaunchProgressAndPreservesSettings()
+        {
+            var hunt = Find<HuntManager>();
+            var combat = Find<CombatRunController>();
+            Assert.That(progression.PrepareTraitCards() && progression.RevealTraitCards(), Is.True);
+            Assert.That(progression.SelectTraitCard(progression.TraitCards.CandidateIds[0]), Is.True);
+            Find<ProgressionTopMenu>().ShowWorld();
+            hunt.BeginBossRun();
+            Assert.That(combat.IsBossRun, Is.True);
+            Assert.That(progression.SelectedWorldStage.stableId, Is.EqualTo("desert"));
+            string path = scene.path;
+            Scene oldScene = scene;
+            string beforeReset = PlayerPrefs.GetString(Key);
+            PlayerPrefs.SetString(Key + ".before-v6", "old migration backup");
+            string setting = "CheatMenuPlayModeTests." + System.Guid.NewGuid();
+            PlayerPrefs.SetInt(setting, 42);
+            try
+            {
+                yield return PressEquals();
+                var persist = typeof(TraitScreenController).GetField("loadSavedProgress", BindingFlags.Instance | BindingFlags.NonPublic);
+                persist.SetValue(progression, false);
+                Click("reset_all_progress");
+                Assert.That(root.transform.Find("CheatStatusFailure").gameObject.activeInHierarchy, Is.True);
+                Assert.That(combat.IsBossRun, Is.True);
+                Assert.That(PlayerPrefs.GetString(Key), Is.EqualTo(beforeReset));
+                Assert.That(PlayerPrefs.GetString(Key + ".before-v6"), Is.EqualTo("old migration backup"));
+                persist.SetValue(progression, true);
+
+                Canvas.ForceUpdateCanvases();
+                root.GetComponentInChildren<ScrollRect>().verticalNormalizedPosition = 0;
+                yield return null;
+                Canvas.ForceUpdateCanvases();
+                var reset = root.transform.Find("CheatViewport/Group/Cheat_reset_all_progress").GetComponent<Button>();
+                var eventSystem = Find<EventSystem>();
+                var pointer = new PointerEventData(eventSystem) {
+                    position = RectTransformUtility.WorldToScreenPoint(null, reset.transform.TransformPoint(((RectTransform)reset.transform).rect.center)),
+                    button = PointerEventData.InputButton.Left };
+                var hits = new List<RaycastResult>();
+                eventSystem.RaycastAll(pointer, hits);
+                Assert.That(hits, Is.Not.Empty);
+                Assert.That(ExecuteEvents.GetEventHandler<IPointerClickHandler>(hits[0].gameObject), Is.EqualTo(reset.gameObject));
+                ExecuteEvents.ExecuteHierarchy(hits[0].gameObject, pointer, ExecuteEvents.pointerClickHandler);
+                float deadline = Time.realtimeSinceStartup + 10f;
+                while (oldScene.isLoaded && Time.realtimeSinceStartup < deadline) yield return null;
+                Assert.That(oldScene.isLoaded, Is.False, "Reset should leave the old combat and restart Main.");
+                scene = SceneManager.GetSceneByPath(path);
+                Assert.That(scene.isLoaded, Is.True);
+                yield return BindMain();
+
+                void AssertFirstLaunch()
+                {
+                    Assert.That(root.activeSelf, Is.False);
+                    Assert.That(Find<AppUiRootController>().CurrentScreen, Is.EqualTo(UiScreenId.Trait));
+                    Assert.That(map.gameObject.activeInHierarchy, Is.True);
+                    Assert.That(map.nodes.All(n => n == null || n.rank == 0), Is.True);
+                    Assert.That(progression.GetResearchRank("other-map.node"), Is.Zero);
+                    Assert.That(progression.PlayerLevel, Is.EqualTo(1));
+                    Assert.That(progression.ExperiencePoints, Is.Zero);
+                    Assert.That(progression.TraitCards.Points, Is.Zero);
+                    Assert.That(progression.TraitCards.OwnedIds, Is.Empty);
+                    Assert.That(progression.TraitCards.Revealed, Is.False);
+                    Assert.That(progression.TraitCards.CandidateIds.Count, Is.EqualTo(firstLaunchCandidateCount));
+                    Assert.That(progression.WorldStages.Where(progression.IsStageUnlocked).Select(s => s.stableId),
+                        Is.EqualTo(new[] { "forest" }));
+                    Assert.That(progression.SelectedWorldStage.stableId, Is.EqualTo("forest"));
+                    Assert.That(Find<HuntManager>().NextBossStage, Is.EqualTo(1));
+                    Assert.That(Find<CombatRunController>().IsRunActive, Is.False);
+                    Assert.That(progression.CreateGameInformationJson(), Is.EqualTo(firstLaunchGameInformation),
+                        "Wallet, relic effects, monsters, and combat stats should match an actual first launch.");
+                    Assert.That(PlayerPrefs.HasKey(Key + ".before-v6"), Is.False);
+                    Assert.That(PlayerPrefs.GetInt(setting), Is.EqualTo(42));
+                }
+
+                AssertFirstLaunch();
+                // Persist the freshly initialized model and inspect historical fields that have no UI.
+                Assert.That(progression.TryChangeCurrenciesForTesting(0, false), Is.True);
+                Assert.That(TraitProgressionStore.TryLoad(out var saved), Is.True);
+                Assert.That(saved.ownedTraitCardIds, Is.Empty);
+                Assert.That(saved.purchasedNodeIds, Is.Empty);
+                Assert.That(saved.researchRanks, Is.Empty);
+                Assert.That(saved.spentCostEntries, Is.Empty);
+                Assert.That(saved.unseenRelicIds, Is.Empty);
+                Assert.That(saved.ownedRelicIds, Is.Empty);
+                Assert.That(saved.settledBossRunIds, Is.Empty);
+                yield return SceneManager.LoadSceneAsync(path, LoadSceneMode.Single);
+                scene = SceneManager.GetSceneByPath(path);
+                yield return BindMain();
+                AssertFirstLaunch();
+            }
+            finally { PlayerPrefs.DeleteKey(setting); }
         }
 
         [UnityTest]
@@ -357,6 +471,11 @@ namespace CursorHunter.App.Tests
             scene = UnityEditor.SceneManagement.EditorSceneManager.LoadSceneInPlayMode(
                 "Assets/CursorHunter/App/Scenes/Main.unity", new LoadSceneParameters(LoadSceneMode.Additive));
 #endif
+            yield return BindMain();
+        }
+
+        private IEnumerator BindMain()
+        {
             yield return null;
             yield return null;
             menu = Find<CheatMenuController>();

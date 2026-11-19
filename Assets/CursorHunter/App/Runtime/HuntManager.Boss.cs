@@ -15,11 +15,12 @@ namespace CursorHunter.App
         public bool IsBossDeathPlaying => monsterSpawner != null && monsterSpawner.IsBossDeathPlaying;
         public int HighestBossStageCleared => connectTraitScreenToCombat && progressionController != null
             ? progressionController.HighestBossStageCleared : _sessionHighestBossStage;
+        public int NextBossStage => Math.Min(BossDefinition.StageCount, HighestBossStageCleared + 1);
 
         public void BeginBossRun()
         {
             ResolveReferences();
-            BeginBossStage(Math.Min(BossDefinition.StageCount, HighestBossStageCleared + 1));
+            BeginBossStage(NextBossStage);
         }
 
         /// <summary>Button OnClick: reset saved boss progress so the next challenge starts at stage one.</summary>
@@ -50,7 +51,9 @@ namespace CursorHunter.App
             _lastBossSucceeded = false;
         }
 
-        public void BeginBossStage(int stage)
+        public void BeginBossStage(int stage) => StartBossStage(stage, null);
+
+        private void StartBossStage(int stage, WorldStageDefinition replayWorld)
         {
             ResolveReferences();
             if (stage < 1 || stage > BossDefinition.StageCount) return;
@@ -63,7 +66,7 @@ namespace CursorHunter.App
             foreach (BossDefinition boss in bosses)
                 if (boss != null && boss.Stage == stage && boss.IsValid)
                 {
-                    BeginRun(null, boss);
+                    BeginRun(null, boss, replayWorld);
                     return;
                 }
             Debug.LogError($"Boss stage {stage} has no valid definition.", this);

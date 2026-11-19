@@ -1,5 +1,4 @@
 using System;
-using System.Reflection;
 using CursorHunter.Data;
 using NUnit.Framework;
 using TMPro;
@@ -52,21 +51,13 @@ namespace CursorHunter.App.Tests
         [Test]
         public void AdditionalUiTranslationsCanBeAddedAsData()
         {
-            FieldInfo entries = typeof(LocalizationCatalog).GetField("_entries", BindingFlags.NonPublic | BindingFlags.Static);
-            object original = entries.GetValue(null);
-            try
+            var entry = new LocalizationCatalog.Entry
             {
-                entries.SetValue(null, new[] { new LocalizationCatalog.Entry
-                {
-                    key = "test", ko = "공격력", en = "Attack",
-                    translations = new[] { new LocalizedText { locale = "ja", text = "攻撃力" } }
-                } });
-                LocalizationCatalog.SetLanguage("ja-JP");
-                Assert.That(LocalizationCatalog.Get("test", "missing"), Is.EqualTo("攻撃力"));
-                LocalizationCatalog.SetLanguage("fr");
-                Assert.That(LocalizationCatalog.Get("test", "missing"), Is.EqualTo("공격력"));
-            }
-            finally { entries.SetValue(null, original); }
+                key = "test", ko = "공격력", en = "Attack",
+                translations = new[] { new LocalizedText { locale = "ja", text = "攻撃力" } }
+            };
+            Assert.That(entry.Resolve("ja-jp", "missing"), Is.EqualTo("攻撃力"));
+            Assert.That(entry.Resolve("fr", "missing"), Is.EqualTo("공격력"));
         }
 
         [Test]

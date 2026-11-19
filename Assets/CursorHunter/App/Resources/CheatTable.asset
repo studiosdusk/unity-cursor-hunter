@@ -37,3 +37,7 @@ MonoBehaviour:
     action: 5
     amount: 0
     enabled: 1
+  - id: reset_all_progress
+    action: 6
+    amount: 0
+    enabled: 1

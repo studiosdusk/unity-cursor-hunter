@@ -244,7 +244,8 @@ namespace CursorHunter.App.Tests
             Assert.That(Quaternion.Angle(map.tooltipPanel.localRotation, initialRotation), Is.LessThan(.01f));
             node.OnPointerClick(pointer);
             Assert.That(node.rank, Is.EqualTo(1));
-            Assert.That(map.beforeValue.text, Is.EqualTo("2"));
+            map.beforeValue.ForceMeshUpdate();
+            Assert.That(map.beforeValue.GetParsedText(), Is.EqualTo("2 → 4"));
             yield return new WaitForSecondsRealtime(.05f);
             Assert.That(Quaternion.Angle(map.tooltipPanel.localRotation, initialRotation), Is.GreaterThan(.1f));
             node.OnPointerExit(pointer);

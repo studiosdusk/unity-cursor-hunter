@@ -1,21 +1,52 @@
 using System;
 using System.Collections.Generic;
+using CursorHunter.Data;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using UnityEngine;
 
 namespace CursorHunter.Progression
 {
-    /// <summary>
-    /// Small PlayerPrefs-backed prototype store for the trait screen. The
-    /// production save service can replace this class without changing the UI
-    /// because the controller only depends on the DTO-shaped methods below.
-    /// PlayerPrefs is used here so tests persist between Play Mode sessions and
-    /// no file path or platform-specific API leaks into Progression UI code.
-    /// </summary>
+    public enum ProgressionLoadStatus
+    {
+        Missing,
+        Loaded,
+        Corrupt,
+        Unsupported,
+        ResetFailed
+    }
+
+    /// <summary>Persists versioned player progression snapshots in PlayerPrefs.</summary>
     public static class TraitProgressionStore
     {
         private const string SaveKey = "cursor_hunter.progression.v1";
-        private const int CurrentVersion = 12;
+        private const int CurrentVersion = 13;
         private const string LegacyBackupKey = SaveKey + ".before-v6";
+        private const string ResetBuildVersion = "0.0.5";
+        private const string BuildResetMarker = "cursor_hunter.first_build_reset.0.0.5";
+        private static HashSet<string> runtimeCardIds;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetCardCatalog() => runtimeCardIds = null;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        private static void ResetProgressForFirstBuildLaunch() =>
+            TryResetForFirstBuildLaunch(Application.version, Application.isEditor);
+
+        internal static bool TryResetForFirstBuildLaunch(string version, bool isEditor)
+        {
+            if (isEditor || version != ResetBuildVersion) return true;
+            try
+            {
+                if (PlayerPrefs.HasKey(BuildResetMarker)) return true;
+            }
+            catch (Exception exception)
+            {
+                Debug.LogWarning($"첫 실행 초기화를 확인하지 못했습니다. {exception.Message}");
+                return false;
+            }
+            return TryClearEntireProfile(BuildResetMarker);
+        }
 
         [Serializable]
         public sealed class SaveData
@@ -42,6 +73,77 @@ namespace CursorHunter.Progression
             public int highestBossStageCleared;
             public List<string> settledBossRunIds = new List<string>();
             public int unlockedBossTier;
+
+            internal void CaptureWallet(long garnet, IReadOnlyList<long> balances)
+            {
+                garnetBalance = Math.Max(0L, garnet);
+                gemstoneBalances = CopyBalances(balances);
+            }
+
+            internal void CaptureResearch(IReadOnlyDictionary<string, int> ranks, string layout)
+            {
+                researchLayoutFingerprint = layout;
+                if (ranks == null) return;
+                foreach (var entry in ranks)
+                    if (!string.IsNullOrWhiteSpace(entry.Key) && entry.Value > 0)
+                        researchRanks.Add(new ResearchRankEntry { placementId = entry.Key, rank = entry.Value });
+            }
+
+            internal void CaptureLegacyPurchases(IEnumerable<string> purchases,
+                IReadOnlyDictionary<string, int> costs, IReadOnlyDictionary<string, string> currencies,
+                IReadOnlyDictionary<string, List<SpentCostEntry>> receipts)
+            {
+                purchasedNodeIds = CopyIds(purchases);
+                // Legacy costs and currency IDs are parallel lists indexed by purchased node.
+                foreach (var nodeId in purchasedNodeIds)
+                {
+                    spentCosts.Add(costs != null && costs.TryGetValue(nodeId, out int cost) ? Math.Max(0, cost) : 0);
+                    spentCurrencyIds.Add(currencies != null && currencies.TryGetValue(nodeId, out var currency)
+                        ? currency ?? string.Empty : string.Empty);
+                }
+
+                if (receipts == null) return;
+                foreach (var node in receipts)
+                {
+                    if (string.IsNullOrWhiteSpace(node.Key) || node.Value == null) continue;
+                    foreach (var receipt in node.Value)
+                    {
+                        if (receipt == null || string.IsNullOrWhiteSpace(receipt.currencyId) || receipt.amount <= 0)
+                            continue;
+                        spentCostEntries.Add(new SpentCostEntry
+                        {
+                            nodeId = node.Key,
+                            currencyId = receipt.currencyId,
+                            amount = receipt.amount
+                        });
+                    }
+                }
+            }
+
+            internal void CaptureRelics(IEnumerable<string> owned, IEnumerable<string> unseen)
+            {
+                ownedRelicIds = CopyIds(owned);
+                unseenRelicIds = CopyIds(unseen);
+            }
+
+            internal void CaptureTraits(long experience, TraitCardProgressData cards, int legacyAvailableCards,
+                int legacyDrawCount, IEnumerable<string> legacyOwnedCards)
+            {
+                experiencePoints = Math.Max(0L, experience);
+                newTraitCards = cards?.Copy();
+                hasNewTraitCardProgress = newTraitCards != null;
+                availableTraitCards = Math.Max(0, legacyAvailableCards);
+                traitCardDrawCount = Math.Max(0, legacyDrawCount);
+                ownedTraitCardIds = CopyRepeatedIds(legacyOwnedCards);
+            }
+
+            internal void CaptureBattleProgress(int fieldTier, int bossTier, int highestCleared, IEnumerable<string> settledRuns)
+            {
+                selectedFieldTier = Math.Max(1, Math.Min(5, fieldTier));
+                unlockedBossTier = Math.Max(0, Math.Min(5, bossTier));
+                highestBossStageCleared = Math.Max(0, Math.Min(20, highestCleared));
+                settledBossRunIds = CopyIds(settledRuns);
+            }
         }
 
         [Serializable]
@@ -59,26 +161,54 @@ namespace CursorHunter.Progression
             public int amount;
         }
 
-        public static bool TryLoad(out SaveData data)
+        public static bool TryLoad(out SaveData data) => Load(out data) == ProgressionLoadStatus.Loaded;
+
+        public static ProgressionLoadStatus Load(out SaveData data)
         {
-            data = null;
+            if (!TryResetForFirstBuildLaunch(Application.version, Application.isEditor))
+            {
+                data = null;
+                return ProgressionLoadStatus.ResetFailed;
+            }
             if (!PlayerPrefs.HasKey(SaveKey))
             {
-                return false;
+                data = null;
+                return ProgressionLoadStatus.Missing;
             }
+            return ReadProfile(PlayerPrefs.GetString(SaveKey, string.Empty), out data);
+        }
 
-            string json = PlayerPrefs.GetString(SaveKey, string.Empty);
-            if (string.IsNullOrWhiteSpace(json))
-            {
-                return false;
-            }
-
+        private static ProgressionLoadStatus ReadProfile(string json, out SaveData data)
+        {
+            data = null;
             try
             {
-                SaveData loaded = JsonUtility.FromJson<SaveData>(json);
-                if (loaded == null || loaded.version <= 0 || loaded.version > CurrentVersion)
+                json = json.Trim();
+                if (json.Length < 2 || json[0] != '{' || json[json.Length - 1] != '}')
+                    return ProgressionLoadStatus.Corrupt;
+
+                // Unity creates nested serializable objects even when their JSON member is absent.
+                // Read into the same DTO with a parser that preserves missing and null card data.
+                SaveData loaded;
+                try
                 {
-                    return false;
+                    loaded = JsonConvert.DeserializeObject<SaveData>(json);
+                }
+                catch (JsonException)
+                {
+                    // A newer schema may have changed the type of a field in our DTO.
+                    // Check its version independently before reporting a damaged profile.
+                    var version = JObject.Parse(json)[nameof(SaveData.version)] as JValue;
+                    if (version?.Type == JTokenType.Integer && version.CompareTo(new JValue(CurrentVersion)) > 0)
+                        return ProgressionLoadStatus.Unsupported;
+                    throw;
+                }
+                if (loaded == null || loaded.version <= 0) return ProgressionLoadStatus.Corrupt;
+                if (loaded.version > CurrentVersion) return ProgressionLoadStatus.Unsupported;
+                if (loaded.hasNewTraitCardProgress)
+                {
+                    var status = ValidateSavedCards(loaded.newTraitCards);
+                    if (status != ProgressionLoadStatus.Loaded) return status;
                 }
 
                 loaded.gemstoneBalances = loaded.gemstoneBalances ??
@@ -105,15 +235,34 @@ namespace CursorHunter.Progression
                     Math.Max(0, Math.Min(5, loaded.unlockedBossTier)));
                 loaded.settledBossRunIds = loaded.settledBossRunIds ?? new List<string>();
                 data = loaded;
-                return true;
+                return ProgressionLoadStatus.Loaded;
             }
             catch (Exception exception)
             {
                 Debug.LogWarning(
                     $"Trait progression save could not be read: {exception.Message}");
-                return false;
+                return ProgressionLoadStatus.Corrupt;
             }
         }
+
+        private static ProgressionLoadStatus ValidateSavedCards(TraitCardProgressData cards)
+        {
+            if (cards == null) return ProgressionLoadStatus.Corrupt;
+            cards.ownedIds ??= new List<string>();
+            cards.candidateIds ??= new List<string>();
+            var ids = runtimeCardIds;
+            if (ids == null)
+            {
+                if (!TraitCardDefinitionResources.TryLoad(out var definitions, out _))
+                    return ProgressionLoadStatus.Unsupported;
+                ids = new HashSet<string>(StringComparer.Ordinal);
+                foreach (var definition in definitions) ids.Add(definition.stableId);
+                if (Application.isPlaying) runtimeCardIds = ids;
+            }
+            return TraitCardProgress.ValidateDraft(cards, ids);
+        }
+
+        // Compatibility for callers that predate full profile snapshots.
         public static bool Save(
             long garnetBalance,
             IReadOnlyList<long> gemstoneBalances,
@@ -135,95 +284,47 @@ namespace CursorHunter.Progression
             TraitCardProgressData newTraitCards = null,
             string researchLayoutFingerprint = null)
         {
-            SaveData data = new SaveData
-            {
-                version = CurrentVersion,
-                garnetBalance = Math.Max(0L, garnetBalance),
-                gemstoneBalances = CopyBalances(gemstoneBalances),
-                purchasedNodeIds = CopyIds(purchasedNodeIds),
-                researchLayoutFingerprint = researchLayoutFingerprint,
-                ownedRelicIds = CopyIds(ownedRelicIds),
-                unseenRelicIds = CopyIds(unseenRelicIds),
-                experiencePoints = Math.Max(0L, experiencePoints),
-                availableTraitCards = Math.Max(0, availableTraitCards),
-                traitCardDrawCount = Math.Max(0, traitCardDrawCount),
-                selectedFieldTier = Math.Max(1, Math.Min(5, selectedFieldTier)),
-                ownedTraitCardIds = CopyRepeatedIds(ownedTraitCardIds),
-                newTraitCards = newTraitCards?.Copy(),
-                hasNewTraitCardProgress = newTraitCards != null,
-                spentCosts = new List<int>(),
-                spentCurrencyIds = new List<string>(),
-                spentCostEntries = new List<SpentCostEntry>(),
-                unlockedBossTier = Math.Max(0, Math.Min(5, unlockedBossTier)),
-                highestBossStageCleared = Math.Max(0, Math.Min(20, highestBossStageCleared)),
-                settledBossRunIds = CopyIds(settledBossRunIds)
-            };
-            if (researchRanks != null)
-                foreach (var entry in researchRanks)
-                    if (!string.IsNullOrWhiteSpace(entry.Key) && entry.Value > 0)
-                        data.researchRanks.Add(new ResearchRankEntry { placementId = entry.Key, rank = entry.Value });
-            // Keep both lists aligned with purchasedNodeIds so the DTO can be
-            // restored without serializing dictionaries or relying on their
-            // enumeration order.
-            for (int i = 0; i < data.purchasedNodeIds.Count; i++)
-            {
-                string nodeId = data.purchasedNodeIds[i];
-                data.spentCosts.Add(
-                    spentCosts != null && spentCosts.TryGetValue(nodeId, out int cost)
-                        ? Math.Max(0, cost)
-                        : 0);
-                data.spentCurrencyIds.Add(
-                    spentCurrencyIds != null &&
-                    spentCurrencyIds.TryGetValue(nodeId, out string currency)
-                        ? currency ?? string.Empty
-                        : string.Empty);
-            }
+            var data = new SaveData();
+            data.CaptureWallet(garnetBalance, gemstoneBalances);
+            data.CaptureResearch(researchRanks, researchLayoutFingerprint);
+            data.CaptureLegacyPurchases(purchasedNodeIds, spentCosts, spentCurrencyIds, spentCostEntries);
+            data.CaptureRelics(ownedRelicIds, unseenRelicIds);
+            data.CaptureTraits(experiencePoints, newTraitCards, availableTraitCards, traitCardDrawCount, ownedTraitCardIds);
+            data.CaptureBattleProgress(selectedFieldTier, unlockedBossTier, highestBossStageCleared, settledBossRunIds);
+            return Save(data);
+        }
 
-            if (spentCostEntries != null)
-            {
-                foreach (KeyValuePair<string, List<SpentCostEntry>> pair in spentCostEntries)
-                {
-                    if (string.IsNullOrWhiteSpace(pair.Key) || pair.Value == null) continue;
-                    for (int i = 0; i < pair.Value.Count; i++)
-                    {
-                        SpentCostEntry entry = pair.Value[i];
-                        if (entry == null || string.IsNullOrWhiteSpace(entry.currencyId) || entry.amount <= 0)
-                            continue;
-                        data.spentCostEntries.Add(new SpentCostEntry
-                        {
-                            nodeId = pair.Key,
-                            currencyId = entry.currencyId,
-                            amount = entry.amount
-                        });
-                    }
-                }
-            }
-
+        internal static bool Save(SaveData snapshot)
+        {
+            if (!TryResetForFirstBuildLaunch(Application.version, Application.isEditor)) return false;
+            snapshot.version = CurrentVersion;
             bool hadPreviousSave = PlayerPrefs.HasKey(SaveKey);
             string previousJson = PlayerPrefs.GetString(SaveKey, string.Empty);
             try
             {
-                // Preserve the exact old save (including retired data) before the first v6 write.
-                // Unknown/corrupt versions must not be silently overwritten.
-                if (PlayerPrefs.HasKey(SaveKey))
+                if (snapshot.hasNewTraitCardProgress &&
+                    ValidateSavedCards(snapshot.newTraitCards) != ProgressionLoadStatus.Loaded) return false;
+
+                // Validate the same bytes held for rollback and the first migration backup.
+                if (hadPreviousSave)
                 {
-                    if (!TryLoad(out SaveData previous)) return false;
+                    if (ReadProfile(previousJson, out SaveData previous) != ProgressionLoadStatus.Loaded) return false;
                     // Older callers must not erase the new draft when saving unrelated progress.
-                    if (!data.hasNewTraitCardProgress && previous.hasNewTraitCardProgress)
+                    if (!snapshot.hasNewTraitCardProgress && previous.hasNewTraitCardProgress)
                     {
-                        data.newTraitCards = previous.newTraitCards?.Copy();
-                        data.hasNewTraitCardProgress = data.newTraitCards != null;
+                        snapshot.newTraitCards = previous.newTraitCards?.Copy();
+                        snapshot.hasNewTraitCardProgress = snapshot.newTraitCards != null;
                     }
                     // Callers without a connected research map must not erase its layout marker.
-                    if (data.researchLayoutFingerprint == null)
-                        data.researchLayoutFingerprint = previous.researchLayoutFingerprint;
+                    if (snapshot.researchLayoutFingerprint == null)
+                        snapshot.researchLayoutFingerprint = previous.researchLayoutFingerprint;
                     if (previous.version < CurrentVersion && !PlayerPrefs.HasKey(LegacyBackupKey))
                     {
-                        PlayerPrefs.SetString(LegacyBackupKey, PlayerPrefs.GetString(SaveKey));
+                        PlayerPrefs.SetString(LegacyBackupKey, previousJson);
                         PlayerPrefs.Save();
                     }
                 }
-                string json = JsonUtility.ToJson(data);
+                string json = JsonUtility.ToJson(snapshot);
                 if (string.IsNullOrWhiteSpace(json)) return false;
                 PlayerPrefs.SetString(SaveKey, json);
                 PlayerPrefs.Save();
@@ -246,6 +347,31 @@ namespace CursorHunter.Progression
         {
             PlayerPrefs.DeleteKey(SaveKey);
             PlayerPrefs.Save();
+        }
+
+        internal static bool TryClearEntireProfile(string completionMarker = null)
+        {
+            // The explicit full reset also removes migrations' exact, potentially unreadable old save.
+            string current = null;
+            string backup = null;
+            try
+            {
+                current = PlayerPrefs.HasKey(SaveKey) ? PlayerPrefs.GetString(SaveKey) : null;
+                backup = PlayerPrefs.HasKey(LegacyBackupKey) ? PlayerPrefs.GetString(LegacyBackupKey) : null;
+                PlayerPrefs.DeleteKey(SaveKey);
+                PlayerPrefs.DeleteKey(LegacyBackupKey);
+                if (!string.IsNullOrEmpty(completionMarker)) PlayerPrefs.SetInt(completionMarker, 1);
+                PlayerPrefs.Save();
+                return true;
+            }
+            catch (Exception exception)
+            {
+                if (current != null) PlayerPrefs.SetString(SaveKey, current);
+                if (backup != null) PlayerPrefs.SetString(LegacyBackupKey, backup);
+                if (!string.IsNullOrEmpty(completionMarker)) PlayerPrefs.DeleteKey(completionMarker);
+                Debug.LogWarning($"진행도 초기화를 저장하지 못했습니다. {exception.Message}");
+                return false;
+            }
         }
 
         private static List<long> CopyBalances(IReadOnlyList<long> source)
@@ -282,9 +408,10 @@ namespace CursorHunter.Progression
                 return copy;
             }
 
+            var seen = new HashSet<string>(StringComparer.Ordinal);
             foreach (string id in source)
             {
-                if (!string.IsNullOrEmpty(id) && !copy.Contains(id))
+                if (!string.IsNullOrEmpty(id) && seen.Add(id))
                 {
                     copy.Add(id);
                 }

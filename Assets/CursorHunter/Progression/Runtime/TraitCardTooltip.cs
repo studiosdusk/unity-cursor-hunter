@@ -47,7 +47,7 @@ namespace CursorHunter.Progression
             localizedDescription = new LocalizedString("TraitCard", card.presentation.textKey + ".description");
             localizedTitle.StringChanged += SetTitle;
             localizedDescription.StringChanged += SetDescription;
-            AnimateTooltip();
+            tween = TooltipSway.Play(tooltipPanel, baseRotation);
         }
 
         public void Hide()
@@ -101,18 +101,5 @@ namespace CursorHunter.Progression
 
         private static float ClampInside(float value, float minimum, float maximum, float fallback) =>
             minimum > maximum ? fallback : Mathf.Clamp(value, minimum, maximum);
-
-        private void AnimateTooltip()
-        {
-            float angle = 0;
-            Tween RotateTo(float target, float duration) => DOTween.To(() => angle, value =>
-                {
-                    angle = value;
-                    if (tooltipPanel != null) tooltipPanel.localRotation = baseRotation * Quaternion.Euler(0, 0, angle);
-                }, target, duration).SetEase(Ease.OutSine);
-            tween = DOTween.Sequence().SetUpdate(true).SetRecyclable(false)
-                .Append(RotateTo(3, .07f)).Append(RotateTo(-3, .11f))
-                .Append(RotateTo(1.2f, .09f)).Append(RotateTo(0, .09f));
-        }
     }
 }

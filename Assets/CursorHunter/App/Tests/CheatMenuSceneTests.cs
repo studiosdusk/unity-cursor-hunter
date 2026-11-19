@@ -26,9 +26,10 @@ namespace CursorHunter.App.Tests
                 Assert.That(group.GetComponent<ContentSizeFitter>(), Is.Not.Null);
                 var buttons = group.GetComponentsInChildren<Button>(true);
                 var expected = new System.Collections.Generic.Dictionary<string, string> {
-                    ["reset_trait_cards"] = "특성 카드 초기화", ["reset_research"] = "연구 진행 상황 초기화",
+                    ["reset_trait_cards"] = "카드·레벨·스테이지 초기화", ["reset_research"] = "연구 진행 상황 초기화",
                     ["reset_relics"] = "유물 진행 상황 초기화", ["grant_currencies"] = "모든 재화 999,999 지급",
-                    ["clear_currencies"] = "모든 재화 0으로", ["increase_user_level"] = "유저 레벨 1 올리기" };
+                    ["clear_currencies"] = "모든 재화 0으로", ["increase_user_level"] = "유저 레벨 1 올리기",
+                    ["reset_all_progress"] = "모든 진행도 초기화" };
                 foreach (var entry in expected)
                 {
                     var button = buttons.Single(b => b.name == "Cheat_" + entry.Key);

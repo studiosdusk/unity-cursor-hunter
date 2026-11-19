@@ -6,6 +6,8 @@ using System.Reflection;
 using CursorHunter.Combat;
 using CursorHunter.Contracts;
 using CursorHunter.Data;
+using CursorHunter.Progression;
+using CursorHunter.Progression.ResearchPrototype;
 using NUnit.Framework;
 using TMPro;
 using UnityEngine;
@@ -381,8 +383,20 @@ namespace CursorHunter.App.Tests
         public IEnumerator ResetBossProgressPreservesPurchasesWalletAndReceiptsAndRestartsAtStageOneAfterReload()
         {
             Set(_hunt, "connectTraitScreenToCombat", true);
-            PurchaseAllTraitsInMemory();
+            var progression = Get<TraitScreenController>(_hunt, "progressionController");
+            var map = Get<ResearchTestMap>(progression, "researchMap");
+            var tornado = map.nodes.Single(node => node.definition.IsLiveSkillUnlock &&
+                node.definition.gameplay.targetId == TornadoSkillController.SkillId);
+            string tornadoPlacement = tornado.placementId;
+            Assert.That(progression.TryChangeCurrenciesForTesting(1000, false), Is.True);
+            foreach (var node in tornado.prerequisites.Concat(new[] { tornado }))
+            {
+                Assert.That(node.TryGetCost(0, out var cost), Is.True);
+                Assert.That(progression.TryPurchaseResearchRank(node.placementId, 0, cost.currencyId, cost.amount),
+                    Is.True, node.placementId);
+            }
             _hunt.BeginBossRun();
+            Assert.That(_combat.CaptureSkillBalanceSettings().Single(x => x.SkillId == TornadoSkillController.SkillId).Enabled, Is.True);
             RunResult firstClear = default;
             Get<RunCoordinator>(_hunt, "_runCoordinator").Completed += value =>
             {
@@ -403,8 +417,7 @@ namespace CursorHunter.App.Tests
             string reset = PlayerPrefs.GetString(ProfileKey);
             Assert.That(reset, Is.EqualTo(saved.Replace("\"highestBossStageCleared\":2", "\"highestBossStageCleared\":0")),
                 "Reset must change only boss progress, not wallet, purchases, or paid receipts.");
-            object progression = Get<object>(_hunt, "progressionController");
-            Assert.That(progression.GetType().GetMethod("GrantBossClear").Invoke(progression, new object[] { firstClear }), Is.True);
+            Assert.That(progression.GrantBossClear(firstClear), Is.True);
             Assert.That(_hunt.HighestBossStageCleared, Is.Zero, "An old paid result must not restore progress.");
             Assert.That(PlayerPrefs.GetString(ProfileKey), Is.EqualTo(reset));
             _hunt.ResetBossProgress();
@@ -428,7 +441,9 @@ namespace CursorHunter.App.Tests
             _hunt.BeginBossRun();
             _combat.PauseRun();
             Assert.That(_spawner.BossTarget.MonsterId, Is.EqualTo("boss.01"));
-            CapturePurchasedSkills();
+            var restored = Get<TraitScreenController>(_hunt, "progressionController");
+            Assert.That(restored.GetResearchRank(tornadoPlacement), Is.EqualTo(1));
+            Assert.That(_combat.CaptureSkillBalanceSettings().Single(x => x.SkillId == TornadoSkillController.SkillId).Enabled, Is.True);
             // Reloading the scene can emit Unity's informational no-audio-listener log.
             // The test runner still rejects unexpected errors and exceptions.
         }

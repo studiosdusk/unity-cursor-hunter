@@ -11,7 +11,8 @@ namespace CursorHunter.App
         ResetRelics = 2,
         AddAllCurrencies = 3,
         ClearAllCurrencies = 4,
-        IncreaseUserLevel = 5
+        IncreaseUserLevel = 5,
+        ResetAllProgress = 6
     }
 
     [Serializable]

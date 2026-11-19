@@ -7,6 +7,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.Events;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 namespace CursorHunter.App
@@ -31,7 +32,7 @@ namespace CursorHunter.App
         [SerializeField] private ResearchTestMap researchMap;
 
         private readonly List<(Button button, UnityAction action)> listeners = new List<(Button, UnityAction)>();
-        private bool bound;
+        private bool bound, restarting;
 
         private void Awake()
         {
@@ -53,7 +54,7 @@ namespace CursorHunter.App
 
         public void Toggle()
         {
-            if (cheatRoot == null) return;
+            if (cheatRoot == null || restarting) return;
             if (!cheatRoot.activeSelf)
             {
                 if (!bound && !BindButtons()) return;
@@ -130,11 +131,17 @@ namespace CursorHunter.App
 
         private void Execute(CheatRow row)
         {
+            if (restarting) return;
             bool success = false;
             try
             {
                 if (hunt != null && progression != null)
                 {
+                    if (progression.IsProfileLoadBlocked && row.action != CheatAction.ResetAllProgress)
+                    {
+                        SetStatus(false);
+                        return;
+                    }
                     if (row.action == CheatAction.ResetTraitCards)
                         success = hunt.TryResetTraitCardProgress();
                     else if (hunt.TrySavePendingRunRewards())
@@ -147,6 +154,7 @@ namespace CursorHunter.App
                             case CheatAction.ResetRelics: success = progression.TryResetRelicsForTesting(); break;
                             case CheatAction.AddAllCurrencies: success = progression.TryChangeCurrenciesForTesting(row.amount, false); break;
                             case CheatAction.ClearAllCurrencies: success = progression.TryChangeCurrenciesForTesting(0, true); break;
+                            case CheatAction.ResetAllProgress: success = RestartWithFreshProfile(); break;
                             case CheatAction.IncreaseUserLevel:
                                 if (ProgressionLevelCurve.GetLevel(progression.ExperiencePoints) >= ProgressionLevelCurve.MaximumLevel)
                                 {
@@ -165,6 +173,18 @@ namespace CursorHunter.App
                 Debug.LogException(exception, this);
             }
             SetStatus(success);
+        }
+
+        private bool RestartWithFreshProfile()
+        {
+            int sceneIndex = SceneUtility.GetBuildIndexByScenePath(gameObject.scene.path);
+            if (sceneIndex < 0 || !progression.TryResetAllProgressForTesting()) return false;
+
+            restarting = true;
+            hunt.ResetPrototypeRun();
+            cheatRoot.SetActive(false);
+            SceneManager.LoadScene(sceneIndex, LoadSceneMode.Single);
+            return true;
         }
 
         private void SetStatus(bool? success, bool maximumLevel = false)

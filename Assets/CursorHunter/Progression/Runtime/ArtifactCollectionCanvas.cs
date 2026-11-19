@@ -221,24 +221,7 @@ namespace CursorHunter.Progression
                 return;
 
             StopTooltipAnimation();
-            float angle = 0f;
-            Tween RotateTo(float target, float duration) => DOTween.To(
-                    () => angle,
-                    value =>
-                    {
-                        angle = value;
-                        if (tooltipPanel != null)
-                            tooltipPanel.localRotation = _tooltipBaseRotation * Quaternion.Euler(0f, 0f, angle);
-                    },
-                    target,
-                    duration)
-                .SetEase(Ease.OutSine);
-
-            _tooltipTween = DOTween.Sequence().SetUpdate(true).SetRecyclable(false)
-                .Append(RotateTo(3f, .07f))
-                .Append(RotateTo(-3f, .11f))
-                .Append(RotateTo(1.2f, .09f))
-                .Append(RotateTo(0f, .09f));
+            _tooltipTween = TooltipSway.Play(tooltipPanel, _tooltipBaseRotation);
         }
 
         private void StopTooltipAnimation()

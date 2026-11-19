@@ -130,6 +130,15 @@ namespace CursorHunter.Data
             public string en;
             // Existing ko/en JSON remains compatible; additional languages need only data.
             public LocalizedText[] translations;
+
+            public string Resolve(string language, string fallback)
+            {
+                string translated = LocalizedText.Find(translations, language);
+                if (translated != null) return translated;
+                if ((language == "en" || language.StartsWith("en-", StringComparison.Ordinal)) && !string.IsNullOrEmpty(en))
+                    return en;
+                return string.IsNullOrEmpty(ko) ? fallback : ko;
+            }
         }
         [Serializable] private sealed class Table { public Entry[] entries; }
         private static Entry[] _entries;
@@ -181,12 +190,7 @@ namespace CursorHunter.Data
         {
             Load();
             if (!string.IsNullOrEmpty(key) && _entriesByKey.TryGetValue(key, out Entry entry))
-            {
-                string translated = LocalizedText.Find(entry.translations, Language);
-                if (translated != null) return translated;
-                if (Language == "en" && !string.IsNullOrEmpty(entry.en)) return entry.en;
-                if (!string.IsNullOrEmpty(entry.ko)) return entry.ko;
-            }
+                return entry.Resolve(Language, fallback);
             return fallback;
         }
 

@@ -58,7 +58,7 @@ namespace CursorHunter.App.Tests
                 Assert.That(english.GetEntry(key), Is.Null);
             }
         }
-        static void Rewrite(string path, string address, string value)
+        internal static void Rewrite(string path, string address, string value)
         {
             using var zip = ZipFile.Open(path, ZipArchiveMode.Update);
             var entry = zip.GetEntry("xl/worksheets/sheet1.xml");

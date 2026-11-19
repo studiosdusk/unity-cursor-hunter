@@ -25,9 +25,11 @@ namespace CursorHunter.App.Tests
         public IEnumerator NormalExperienceUsesExactConfiguredPercentAndAccumulatesFractions()
         {
             var cases = new[] {
-                (count: 1, amount: 100000000L, bonus: 10f, tier: 1, expected: 110000000L),
-                (count: 10, amount: 1L, bonus: 30f, tier: 1, expected: 13L),
-                (count: 1, amount: 100000000L, bonus: 10f, tier: 2, expected: 115500000L)
+                (count: 1, amount: 100000000L, bonus: 10f, tier: 1, world: 1f, expected: 110000000L),
+                (count: 10, amount: 1L, bonus: 30f, tier: 1, world: 1f, expected: 13L),
+                (count: 1, amount: 100000000L, bonus: 10f, tier: 2, world: 1f, expected: 115500000L),
+                (count: 10, amount: 1L, bonus: 0f, tier: 1, world: .5f, expected: 5L),
+                (count: 10, amount: 1L, bonus: 10f, tier: 1, world: 2f, expected: 22L)
             };
             foreach (var item in cases)
             {
@@ -37,10 +39,11 @@ namespace CursorHunter.App.Tests
                 {
                     var combat = root.AddComponent<CombatRunController>();
                     var request = new RunRequest(RunId.Create(), 1, 1, RunMode.NormalField, string.Empty, 1, 30,
-                        fieldTier: item.tier);
+                        fieldTier: item.tier, worldExperienceMultiplier: item.world);
                     Assert.That(combat.PrepareRun(request, new CombatSnapshot(10, 1, 1, 1)), Is.True);
-                    Assert.That(combat.ConfigureTraitEffects(new ITraitCombatEffectSnapshot[] {
-                        new NormalExperienceTraitSnapshot("trait.xp", item.bonus) }), Is.True);
+                    if (item.bonus > 0f)
+                        Assert.That(combat.ConfigureTraitEffects(new ITraitCombatEffectSnapshot[] {
+                            new NormalExperienceTraitSnapshot("trait.xp", item.bonus) }), Is.True);
                     Assert.That(combat.CommitStart(), Is.True);
                     for (int i = 0; i < item.count; i++)
                     {

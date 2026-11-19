@@ -1,5 +1,7 @@
 using CursorHunter.Progression;
+using TMPro;
 using UnityEngine;
+using UnityEngine.Localization.Components;
 using UnityEngine.UI;
 
 namespace CursorHunter.App
@@ -17,12 +19,14 @@ namespace CursorHunter.App
         [SerializeField] private Button researchButton, relicButton, talentButton, fieldButton, worldButton;
         [SerializeField] private Button stageActionButton, battleActionButton;
         [SerializeField] private Button bossButton, huntButton, bottomStageButton, bottomBattleButton;
+        [SerializeField] private LocalizeStringEvent raidStageLabel, battleWorldLabel;
         [SerializeField] private HuntManager huntManager;
         [SerializeField] private Sprite selectedSprite, normalSprite;
-        private int selected;
+        private int selected, beforeWorld;
 
         private void Awake()
         {
+            worldCanvas?.GetComponentInChildren<WorldStageScreen>(true)?.Connect(progression, this);
             if (researchButton != null) researchButton.onClick.AddListener(ShowResearch);
             if (relicButton != null) relicButton.onClick.AddListener(ShowRelics);
             if (talentButton != null) talentButton.onClick.AddListener(ShowTalents);
@@ -38,11 +42,21 @@ namespace CursorHunter.App
         private void OnEnable()
         {
             if (app != null) app.ScreenChanged += OnScreenChanged;
+            if (progression != null)
+            {
+                progression.TraitCardStateChanged += RefreshBattleDestinations;
+                progression.BossProgressChanged += RefreshBattleDestinations;
+            }
         }
         private void Start() => ApplyScreen(app == null || app.CurrentScreen == UiScreenId.Trait);
         private void OnDisable()
         {
             if (app != null) app.ScreenChanged -= OnScreenChanged;
+            if (progression != null)
+            {
+                progression.TraitCardStateChanged -= RefreshBattleDestinations;
+                progression.BossProgressChanged -= RefreshBattleDestinations;
+            }
         }
         private void OnDestroy()
         {
@@ -61,12 +75,30 @@ namespace CursorHunter.App
         public void ShowResearch() => Select(0);
         public void ShowRelics() => Select(1);
         public void ShowTalents() => Select(2);
-        public void ShowFields() => Select(3);
+        public void ShowFields() => ShowWorld();
+        public void LeaveWorld() => Select(beforeWorld);
         public void ShowWorld() => Select(4);
         public void StartBattle() { if (huntManager != null) huntManager.BeginPrototypeRun(); }
         public void StartBoss() { if (huntManager != null) huntManager.BeginBossRun(); }
+
+        // The scene's LocalizeStringEvent supplies the name again when the language changes.
+        public void ShowBattleWorldName(string localizedName) =>
+            battleWorldLabel.GetComponent<TMP_Text>().text = $"[{localizedName}]";
+
+        private void RefreshBattleDestinations()
+        {
+            if (bottomMenu == null || !bottomMenu.activeInHierarchy) return;
+            if (raidStageLabel != null && huntManager != null)
+            {
+                raidStageLabel.StringReference.Arguments = new object[] { huntManager.NextBossStage };
+                raidStageLabel.RefreshString();
+            }
+            if (battleWorldLabel != null && progression != null)
+                battleWorldLabel.SetEntry(progression.SelectedWorldStage.textKey + ".name");
+        }
         private void Select(int section)
         {
+            if (section == 4 && selected != 4) beforeWorld = selected;
             selected = section;
             ApplyScreen(app == null || app.CurrentScreen == UiScreenId.Trait);
         }
@@ -75,6 +107,7 @@ namespace CursorHunter.App
         {
             if (topMenu != null) topMenu.SetActive(visible);
             if (bottomMenu != null) bottomMenu.SetActive(visible);
+            if (visible) RefreshBattleDestinations();
             if (researchMap != null) researchMap.SetActive(visible && selected == 0);
             if (artifactCanvas != null) artifactCanvas.SetActive(visible && selected == 1);
             if (traitCardCanvas != null) traitCardCanvas.SetActive(visible && selected == 2);
