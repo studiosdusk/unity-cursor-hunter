@@ -4,7 +4,11 @@ using UnityEngine;
 
 namespace CursorHunter.Combat
 {
-    /// <summary>Committed kill rewards. Contains values only; never retains a dying target.</summary>
+    /// <summary>
+    /// Committed combat rewards, including treasure chests. The per-run sequence
+    /// identifies reward events independently of the number of defeated monsters.
+    /// Contains values only; never retains a dying target.
+    /// </summary>
     public readonly struct CombatRewardResolved
     {
         public CombatRewardResolved(RunId runId, long sequence, Vector3 position,

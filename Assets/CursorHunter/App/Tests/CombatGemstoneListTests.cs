@@ -47,6 +47,33 @@ namespace CursorHunter.App.Tests
         public void TearDown() { Object.DestroyImmediate(_root); }
 
         [Test]
+        public void MainSceneExposesRelicIconSizeOnTheCollectionObject()
+        {
+            var scene = EditorSceneManager.OpenPreviewScene("Assets/CursorHunter/App/Scenes/Main.unity");
+            try
+            {
+                var source = scene.GetRootGameObjects()
+                    .SelectMany(root => root.GetComponentsInChildren<CombatGemstoneList>(true)).Single();
+                Transform relicRoot = source.transform.Find("RunRelicCollection");
+                Assert.That(relicRoot, Is.Not.Null);
+                var settings = relicRoot.GetComponent<RunRelicCollectionSettings>();
+                Assert.That(settings, Is.Not.Null);
+                Assert.That(settings.RightBoundary.name, Is.EqualTo("Timer"));
+                Assert.That(relicRoot.GetComponent<LayoutElement>().ignoreLayout, Is.True);
+                var serialized = new UnityEditor.SerializedObject(settings);
+                var size = serialized.FindProperty("iconSize");
+                Assert.That(size, Is.Not.Null);
+                Assert.That(size.floatValue, Is.EqualTo(40f));
+                size.floatValue = 84f;
+                serialized.ApplyModifiedPropertiesWithoutUndo();
+                GameObject copy = Object.Instantiate(relicRoot.gameObject);
+                try { Assert.That(copy.GetComponent<RunRelicCollectionSettings>().IconSize, Is.EqualTo(84f)); }
+                finally { Object.DestroyImmediate(copy); }
+            }
+            finally { EditorSceneManager.ClosePreviewScene(scene); }
+        }
+
+        [Test]
         public void SceneContainsSixBoundRowsAndSecondaryDropsCompactIntoTwoColumns()
         {
             var icons = _list.GetComponentsInChildren<GemstoneIconView>(true);

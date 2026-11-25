@@ -1,0 +1,60 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e249d34d4c21f463b835fbdbbc112551, type: 3}
+  m_Name: ResearchMap_v4
+  m_EditorClassIdentifier: CursorHunter.Progression::CursorHunter.Progression.ResearchPrototype.ResearchMapDefinition
+  versionId: v4
+  description: 
+  isolatedTest: 0
+  nodes:
+  - id: node.5468dd4443c74e55ae3f2207b384eab3
+    definition: {fileID: 11400000, guid: 27d638af152249a294ac1de8eaa97884, type: 2}
+    position: {x: 0, y: 0}
+    costs:
+    - currencyId: gem.garnet
+      amount: 100
+    - currencyId: gem.garnet
+      amount: 100
+    - currencyId: gem.garnet
+      amount: 100
+    - currencyId: gem.garnet
+      amount: 100
+    - currencyId: gem.garnet
+      amount: 100
+    prerequisites: []
+    requiredPrerequisites: 0
+  - id: node.1af63890193f4b45a9eaf7b5a485cb63
+    definition: {fileID: 11400000, guid: b5f50aecfcc84eed82bac5127d617971, type: 2}
+    position: {x: 0, y: 150}
+    costs:
+    - currencyId: gem.garnet
+      amount: 100
+    - currencyId: gem.garnet
+      amount: 100
+    - currencyId: gem.garnet
+      amount: 100
+    - currencyId: gem.garnet
+      amount: 100
+    - currencyId: gem.garnet
+      amount: 100
+    prerequisites:
+    - node.5468dd4443c74e55ae3f2207b384eab3
+    requiredPrerequisites: 1
+  - id: node.a22221827fbd45348a0b01e27170b6ea
+    definition: {fileID: 11400000, guid: f64748fdc3354c5a89149cd23621ea6a, type: 2}
+    position: {x: 0, y: -150}
+    costs:
+    - currencyId: gem.topaz
+      amount: 150
+    prerequisites:
+    - node.5468dd4443c74e55ae3f2207b384eab3
+    requiredPrerequisites: 1

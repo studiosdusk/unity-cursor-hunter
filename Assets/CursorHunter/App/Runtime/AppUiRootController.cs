@@ -1,8 +1,9 @@
 using System;
 using System.Collections.Generic;
+using CursorHunter.Data;
 using CursorHunter.Progression;
 using UnityEngine;
-using UnityEngine.EventSystems;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 namespace CursorHunter.App
@@ -32,6 +33,8 @@ namespace CursorHunter.App
     {
         [SerializeField] private UiScreenBinding[] screenBindings = Array.Empty<UiScreenBinding>();
         [SerializeField] private UiScreenId initialScreen = UiScreenId.Trait;
+        [SerializeField] private TraitScreenController progression;
+        [SerializeField] private LocalizedTmpLabel profileErrorMessage;
         private readonly Dictionary<UiScreenId, UiScreenBinding> _bindings =
             new Dictionary<UiScreenId, UiScreenBinding>();
         private UiScreenId _currentScreen = UiScreenId.Trait;
@@ -43,9 +46,11 @@ namespace CursorHunter.App
         private void Awake()
         {
             InitializeBindings();
+            LanguageSelectorController.EnsureRuntime();
             if (!_bindings.ContainsKey(initialScreen) || !_bindings[initialScreen].IsValid)
                 initialScreen = UiScreenId.Trait;
-            ShowScreen(initialScreen);
+            ShowScreen(progression != null && progression.IsProfileLoadBlocked
+                ? UiScreenId.ProfileLoadError : initialScreen);
         }
 
         private void OnEnable()
@@ -68,9 +73,19 @@ namespace CursorHunter.App
         public void CloseTrait() => ShowTrait();
         public void CloseSettings() => ShowTrait();
 
+        // Retry through the same startup and migration path after an update or save restoration.
+        public void RetryProfileLoad()
+        {
+            if (CurrentScreen == UiScreenId.ProfileLoadError)
+                SceneManager.LoadScene(gameObject.scene.buildIndex, LoadSceneMode.Single);
+        }
+
         public bool ShowScreen(UiScreenId screenId)
         {
             InitializeBindings();
+            bool blocked = progression != null && progression.IsProfileLoadBlocked;
+            if (blocked != (screenId == UiScreenId.ProfileLoadError))
+                return false;
             if (screenId == UiScreenId.MainMenu) screenId = UiScreenId.Trait;
             if (!_bindings.TryGetValue(screenId, out UiScreenBinding target) || !target.IsValid)
             {
@@ -84,7 +99,16 @@ namespace CursorHunter.App
             UiScreenId previous = CurrentScreen;
             foreach (UiScreenBinding binding in _bindings.Values)
                 if (binding != target) binding.SetVisible(false);
+            if (screenId == UiScreenId.ProfileLoadError && profileErrorMessage != null)
+                profileErrorMessage.Bind(progression.ProfileLoadStatus switch
+                {
+                    ProgressionLoadStatus.Unsupported => "ui.profile.unsupported",
+                    ProgressionLoadStatus.ResetFailed => "ui.profile.reset_failed",
+                    _ => "ui.profile.corrupt"
+                }, string.Empty);
             target.SetVisible(true);
+            if (screenId == UiScreenId.Settings)
+                LanguageSelectorController.EnsureRuntime().AttachSettingsUi(target.Root);
             AppAmbientMusic.SetEnabled(screenId != UiScreenId.Combat);
             if (screenId != UiScreenId.Trait) InstallButtonAudio(target.Root);
             bool changed = !_hasCurrentScreen || previous != screenId;
@@ -127,15 +151,6 @@ namespace CursorHunter.App
             foreach (Button button in root.GetComponentsInChildren<Button>(true))
                 if (button != null && button.GetComponent<AppUiButtonClickFeedback>() == null)
                     button.gameObject.AddComponent<AppUiButtonClickFeedback>();
-        }
-    }
-
-    public sealed class AppUiButtonClickFeedback : MonoBehaviour, IPointerDownHandler
-    {
-        public void OnPointerDown(PointerEventData eventData)
-        {
-            if (eventData != null && eventData.button == PointerEventData.InputButton.Left)
-                TraitAudioFeedback.PlayClick();
         }
     }
 

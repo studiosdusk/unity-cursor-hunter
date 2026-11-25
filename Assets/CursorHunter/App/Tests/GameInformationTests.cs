@@ -9,6 +9,34 @@ namespace CursorHunter.App.Tests
     // Editor tests are supplied for later use. This change does not run Unity.
     public sealed class GameInformationTests
     {
+        [Test]
+        public void EveryRelicHasCatalogPresentationAndDescriptionUsesCombatValues()
+        {
+            var definitions = GameDataDocument.Load().information.relics;
+            var catalog = UnityEngine.Resources.Load<RelicCollectionCatalog>("RelicCollectionCatalog");
+            Assert.That(catalog, Is.Not.Null);
+            Assert.That(catalog.Entries.Count, Is.EqualTo(definitions.Length));
+            var ids = new System.Collections.Generic.HashSet<string>(StringComparer.Ordinal);
+            foreach (var relic in definitions)
+            {
+                Assert.That(ids.Add(relic.id), Is.True, relic.id);
+                var entry = catalog.FindById(relic.id);
+                Assert.That(entry, Is.Not.Null, relic.id);
+                Assert.That(entry.Icon, Is.Not.Null, relic.id);
+                Assert.That(entry.Title, Is.Not.Empty, relic.id);
+                string original = RelicEffectDescription.Format(relic);
+                Assert.That(original, Is.Not.Empty, relic.effectId);
+                relic.effectValue += 3.25f;
+                Assert.That(RelicEffectDescription.Format(relic), Is.Not.EqualTo(original), relic.effectId);
+                if (relic.effectId == "lowHealthExecuteChancePercent")
+                {
+                    original = RelicEffectDescription.Format(relic);
+                    relic.effectValue2 += 2.5f;
+                    Assert.That(RelicEffectDescription.Format(relic), Is.Not.EqualTo(original), relic.effectId);
+                }
+            }
+        }
+
         private static GameInformation ValidInformation()
         {
             string[] gems = { "gem.garnet", "gem.topaz", "gem.amethyst", "gem.sapphire", "gem.diamond", "gem.dragon" };

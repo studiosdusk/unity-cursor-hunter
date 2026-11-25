@@ -1,0 +1,58 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e9620f8c34305754d8cc9a7e49e852d9, type: 3}
+  m_Name: TraitCard_en
+  m_EditorClassIdentifier: Unity.Localization::UnityEngine.Localization.Tables.StringTable
+  m_LocaleId:
+    m_Code: en
+  m_SharedData: {fileID: 11400000, guid: 7755855de6ad148448e4b5258aada6ad, type: 2}
+  m_Metadata:
+    m_Items: []
+  m_TableData:
+  - m_Id: 363847680
+    m_Localized: Lucky Dice
+    m_Metadata:
+      m_Items: []
+  - m_Id: 6491725824
+    m_Localized: At the end of combat, a {chance}% chance multiplies battle rewards
+      by {multiplier}.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 6495920128
+    m_Localized: Treasure Chest
+    m_Metadata:
+      m_Items: []
+  - m_Id: 6495920129
+    m_Localized: At the start of combat, there is a {chance}% chance to spawn {count}
+      treasure chest(s).
+    m_Metadata:
+      m_Items: []
+  - m_Id: 6495920130
+    m_Localized: Eagle Eye
+    m_Metadata:
+      m_Items: []
+  - m_Id: 6495920131
+    m_Localized: Every {interval} seconds in combat, there is a {chance}% chance
+      to increase cursor range by {bonus}% for {duration} seconds.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 6495920132
+    m_Localized: EXP Up!
+    m_Metadata:
+      m_Items: []
+  - m_Id: 6495920133
+    m_Localized: Gain {bonus}% more experience when defeating normal monsters.
+    m_Metadata:
+      m_Items: []
+  references:
+    version: 2
+    RefIds: []

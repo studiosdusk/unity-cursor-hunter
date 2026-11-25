@@ -34,14 +34,16 @@ namespace CursorHunter.App
 
         [SerializeField] private Entry[] entries = Array.Empty<Entry>();
         [SerializeField] private GemstoneCollectionController collectionController;
-        [SerializeField, Min(16f)] private float relicIconSize = 40f;
-        [SerializeField, Min(0f)] private float relicIconSpacing = 4f;
+        [SerializeField] private RunRelicCollectionSettings relicCollection;
         private RunId _runId;
         private CombatRunController _subscribedCombat;
         private TraitScreenController _progression;
         private RectTransform _relicCollectionRoot;
         private RectTransform _relicCollectionContent;
         private ScrollRect _relicCollectionScroller;
+        private HorizontalLayoutGroup _relicCollectionLayout;
+        private float _appliedRelicIconSize = -1f;
+        private float _appliedRelicIconSpacing = -1f;
         private readonly HashSet<string> _collectedRelicIds = new HashSet<string>(System.StringComparer.Ordinal);
         public bool IsFinishingCollection => collectionController != null && collectionController.IsFinishing;
 
@@ -163,7 +165,8 @@ namespace CursorHunter.App
                 typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
             RectTransform rect = iconObject.transform as RectTransform;
             rect.SetParent(_relicCollectionContent, false);
-            rect.sizeDelta = new Vector2(relicIconSize, relicIconSize);
+            float iconSize = relicCollection != null ? relicCollection.IconSize : 40f;
+            rect.sizeDelta = new Vector2(iconSize, iconSize);
             Image image = iconObject.GetComponent<Image>();
             image.sprite = icon;
             image.preserveAspect = true;
@@ -198,39 +201,48 @@ namespace CursorHunter.App
                 Transform parent = entries[0].root.transform.parent;
                 if (parent == null) return;
 
-                GameObject root = new GameObject(
-                    "RunRelicCollection", typeof(RectTransform), typeof(CanvasRenderer),
-                    typeof(Image), typeof(RectMask2D), typeof(LayoutElement), typeof(ScrollRect));
-                root.GetComponent<LayoutElement>().ignoreLayout = true;
+                GameObject root = relicCollection != null ? relicCollection.gameObject :
+                    new GameObject("RunRelicCollection", typeof(RectTransform), typeof(RunRelicCollectionSettings));
+                if (relicCollection == null) relicCollection = root.GetComponent<RunRelicCollectionSettings>();
                 _relicCollectionRoot = root.transform as RectTransform;
-                _relicCollectionRoot.SetParent(parent, false);
-                _relicCollectionRoot.anchorMin = Vector2.zero;
-                _relicCollectionRoot.anchorMax = Vector2.zero;
-                _relicCollectionRoot.pivot = Vector2.zero;
+                if (_relicCollectionRoot.parent != parent) _relicCollectionRoot.SetParent(parent, false);
+                _relicCollectionRoot.anchorMin = _relicCollectionRoot.anchorMax = new Vector2(0f, 1f);
+                _relicCollectionRoot.pivot = new Vector2(0f, 0.5f);
+                if (root.GetComponent<CanvasRenderer>() == null) root.AddComponent<CanvasRenderer>();
+                if (root.GetComponent<Image>() == null) root.AddComponent<Image>();
+                if (root.GetComponent<RectMask2D>() == null) root.AddComponent<RectMask2D>();
+                LayoutElement layoutElement = root.GetComponent<LayoutElement>();
+                if (layoutElement == null) layoutElement = root.AddComponent<LayoutElement>();
+                layoutElement.ignoreLayout = true;
 
-                GameObject content = new GameObject(
-                    "RelicIcons", typeof(RectTransform), typeof(HorizontalLayoutGroup),
-                    typeof(ContentSizeFitter));
+                Transform existingContent = root.transform.Find("RelicIcons");
+                GameObject content = existingContent != null ? existingContent.gameObject :
+                    new GameObject("RelicIcons", typeof(RectTransform), typeof(HorizontalLayoutGroup),
+                        typeof(ContentSizeFitter));
                 _relicCollectionContent = content.transform as RectTransform;
-                _relicCollectionContent.SetParent(_relicCollectionRoot, false);
+                if (_relicCollectionContent.parent != _relicCollectionRoot)
+                    _relicCollectionContent.SetParent(_relicCollectionRoot, false);
                 _relicCollectionContent.anchorMin = new Vector2(0f, 0.5f);
                 _relicCollectionContent.anchorMax = new Vector2(0f, 0.5f);
                 _relicCollectionContent.pivot = new Vector2(0f, 0.5f);
                 _relicCollectionContent.anchoredPosition = Vector2.zero;
 
-                HorizontalLayoutGroup row = content.GetComponent<HorizontalLayoutGroup>();
-                row.spacing = relicIconSpacing;
-                row.padding = new RectOffset(2, 2, 2, 2);
-                row.childAlignment = TextAnchor.MiddleLeft;
-                row.childControlWidth = false;
-                row.childControlHeight = false;
-                row.childForceExpandWidth = false;
-                row.childForceExpandHeight = false;
+                _relicCollectionLayout = content.GetComponent<HorizontalLayoutGroup>();
+                if (_relicCollectionLayout == null)
+                    _relicCollectionLayout = content.AddComponent<HorizontalLayoutGroup>();
+                _relicCollectionLayout.padding = new RectOffset(2, 2, 2, 2);
+                _relicCollectionLayout.childAlignment = TextAnchor.MiddleLeft;
+                _relicCollectionLayout.childControlWidth = false;
+                _relicCollectionLayout.childControlHeight = false;
+                _relicCollectionLayout.childForceExpandWidth = false;
+                _relicCollectionLayout.childForceExpandHeight = false;
                 ContentSizeFitter fitter = content.GetComponent<ContentSizeFitter>();
+                if (fitter == null) fitter = content.AddComponent<ContentSizeFitter>();
                 fitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
                 fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
                 _relicCollectionScroller = root.GetComponent<ScrollRect>();
+                if (_relicCollectionScroller == null) _relicCollectionScroller = root.AddComponent<ScrollRect>();
                 _relicCollectionScroller.horizontal = true;
                 _relicCollectionScroller.vertical = false;
                 _relicCollectionScroller.movementType = ScrollRect.MovementType.Clamped;
@@ -240,17 +252,37 @@ namespace CursorHunter.App
                 root.SetActive(false);
             }
 
-            Transform layoutParent = _relicCollectionRoot.parent;
-            if (layoutParent == null) return;
-            RectTransform parentRect = layoutParent as RectTransform;
-            float width = parentRect != null ? parentRect.rect.width : Screen.width;
-            VerticalLayoutGroup layout = layoutParent.GetComponent<VerticalLayoutGroup>();
-            int left = layout != null ? layout.padding.left : 50;
-            int bottom = layout != null ? layout.padding.bottom : 32;
-            _relicCollectionRoot.anchoredPosition = new Vector2(left, bottom + 24f);
-            _relicCollectionRoot.sizeDelta = new Vector2(
-                Mathf.Max(0f, width - left * 2f), relicIconSize + 12f);
-            _relicCollectionContent.sizeDelta = new Vector2(0f, relicIconSize + 8f);
+            RectTransform parentRect = _relicCollectionRoot.parent as RectTransform;
+            RectTransform garnet = entries[0].root.transform as RectTransform;
+            if (parentRect == null || garnet == null) return;
+            const float gap = 16f;
+            Vector3 garnetRight = parentRect.InverseTransformPoint(garnet.TransformPoint(
+                new Vector3(garnet.rect.xMax, garnet.rect.center.y, 0f)));
+            float right = parentRect.rect.xMax;
+            RectTransform boundary = relicCollection != null ? relicCollection.RightBoundary : null;
+            if (boundary != null)
+                right = Mathf.Min(right, parentRect.InverseTransformPoint(boundary.TransformPoint(
+                    new Vector3(boundary.rect.xMin, boundary.rect.center.y, 0f))).x);
+            float start = garnetRight.x + gap;
+            float iconSize = relicCollection != null ? relicCollection.IconSize : 40f;
+            float iconSpacing = relicCollection != null ? relicCollection.IconSpacing : 4f;
+            Vector2 position = new Vector2(
+                start - parentRect.rect.xMin, garnetRight.y - parentRect.rect.yMax);
+            Vector2 size = new Vector2(Mathf.Max(0f, right - gap - start), iconSize + 12f);
+            if (_relicCollectionRoot.anchoredPosition != position) _relicCollectionRoot.anchoredPosition = position;
+            if (_relicCollectionRoot.sizeDelta != size) _relicCollectionRoot.sizeDelta = size;
+            if (!Mathf.Approximately(_appliedRelicIconSize, iconSize) ||
+                !Mathf.Approximately(_appliedRelicIconSpacing, iconSpacing))
+            {
+                _appliedRelicIconSize = iconSize;
+                _appliedRelicIconSpacing = iconSpacing;
+                _relicCollectionContent.sizeDelta = new Vector2(0f, iconSize + 8f);
+                _relicCollectionLayout.spacing = iconSpacing;
+                for (int i = 0; i < _relicCollectionContent.childCount; i++)
+                    if (_relicCollectionContent.GetChild(i) is RectTransform icon)
+                        icon.sizeDelta = new Vector2(iconSize, iconSize);
+                LayoutRebuilder.MarkLayoutForRebuild(_relicCollectionContent);
+            }
             Image viewportImage = _relicCollectionRoot.GetComponent<Image>();
             viewportImage.color = new Color(0f, 0f, 0f, 0f);
             viewportImage.raycastTarget = true;
@@ -267,19 +299,23 @@ namespace CursorHunter.App
             if (combat.IsBossRun)
                 foreach (ResourceRewardSnapshot reward in combat.BossClearRewards)
                     if (reward.CurrencyId == currencyId && reward.Amount > 0) return true;
+            foreach (TreasureChestTraitSnapshot chest in combat.TraitChestSpawns)
+                if (CanDropFrom(chest.Chest, currencyId)) return true;
             SpawnPlan plan = spawner != null ? spawner.CurrentSpawnPlan : null;
             if (plan == null) return false;
             for (int index = 0; index < plan.Entries.Count; index++)
             {
                 SpawnSnapshot snapshot = plan.Entries[index].Snapshot;
                 if (!spawner.IsSpeciesEnabled(snapshot.MonsterId)) continue;
-                if (currencyId == "gem.garnet" && snapshot.GarnetReward > 0L) return true;
-                if (snapshot.BonusDropCurrencyId == currencyId &&
-                    snapshot.BonusDropAmount > 0L && snapshot.BonusDropChancePercent > 0f)
-                    return true;
+                if (CanDropFrom(snapshot, currencyId)) return true;
             }
 
             return false;
         }
+
+        private static bool CanDropFrom(SpawnSnapshot snapshot, string currencyId) =>
+            currencyId == "gem.garnet" && snapshot.GarnetReward > 0L ||
+            snapshot.BonusDropCurrencyId == currencyId &&
+            snapshot.BonusDropAmount > 0L && snapshot.BonusDropChancePercent > 0f;
     }
 }

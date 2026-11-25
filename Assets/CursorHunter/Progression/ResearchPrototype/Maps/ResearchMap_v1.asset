@@ -1,0 +1,236 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e249d34d4c21f463b835fbdbbc112551, type: 3}
+  m_Name: ResearchMap_v1
+  m_EditorClassIdentifier: CursorHunter.Progression::CursorHunter.Progression.ResearchPrototype.ResearchMapDefinition
+  versionId: v1
+  description: 
+  nodes:
+  - id: cursor.attack.start
+    definition: {fileID: 11400000, guid: 104413123ab2e4dba9d566082ba0edf1, type: 2}
+    position: {x: 0, y: 0}
+    costs:
+    - currencyId: gem.garnet
+      amount: 100
+    - currencyId: gem.garnet
+      amount: 250
+    - currencyId: gem.garnet
+      amount: 500
+    - currencyId: gem.garnet
+      amount: 1000
+    - currencyId: gem.garnet
+      amount: 2000
+    prerequisites: []
+    requiredPrerequisites: 0
+  - id: cursor.radius.start
+    definition: {fileID: 11400000, guid: 7d1928e5994084988835c5460fbfb275, type: 2}
+    position: {x: 145, y: 85}
+    costs:
+    - currencyId: gem.garnet
+      amount: 100
+    - currencyId: gem.garnet
+      amount: 250
+    - currencyId: gem.garnet
+      amount: 500
+    - currencyId: gem.garnet
+      amount: 1000
+    - currencyId: gem.garnet
+      amount: 2000
+    prerequisites:
+    - cursor.attack.start
+    requiredPrerequisites: 1
+  - id: cursor.interval.start
+    definition: {fileID: 11400000, guid: fe6b220e9835449d4bf77f67b39a4a85, type: 2}
+    position: {x: 145, y: -85}
+    costs:
+    - currencyId: gem.garnet
+      amount: 100
+    - currencyId: gem.garnet
+      amount: 250
+    - currencyId: gem.garnet
+      amount: 500
+    - currencyId: gem.garnet
+      amount: 1000
+    prerequisites:
+    - cursor.attack.start
+    requiredPrerequisites: 1
+  - id: cursor.critical.start
+    definition: {fileID: 11400000, guid: 0fff43de2cebd44f1ba11156fbf4fa23, type: 2}
+    position: {x: 0, y: -165}
+    costs:
+    - currencyId: gem.garnet
+      amount: 100
+    - currencyId: gem.garnet
+      amount: 250
+    - currencyId: gem.garnet
+      amount: 500
+    - currencyId: gem.garnet
+      amount: 1000
+    - currencyId: gem.garnet
+      amount: 2000
+    prerequisites:
+    - cursor.attack.start
+    requiredPrerequisites: 1
+  - id: cursor.critical_damage.start
+    definition: {fileID: 11400000, guid: 1ed040a1ac5104961822bbc6a5637470, type: 2}
+    position: {x: -145, y: -85}
+    costs:
+    - currencyId: gem.garnet
+      amount: 100
+    - currencyId: gem.garnet
+      amount: 250
+    - currencyId: gem.garnet
+      amount: 500
+    prerequisites:
+    - cursor.attack.start
+    requiredPrerequisites: 1
+  - id: cursor.boss_damage.start
+    definition: {fileID: 11400000, guid: b8ff2fdc706774b528624ea2e1855deb, type: 2}
+    position: {x: -145, y: 85}
+    costs:
+    - currencyId: gem.garnet
+      amount: 100
+    - currencyId: gem.garnet
+      amount: 250
+    - currencyId: gem.garnet
+      amount: 500
+    - currencyId: gem.garnet
+      amount: 1000
+    - currencyId: gem.garnet
+      amount: 2000
+    prerequisites:
+    - cursor.attack.start
+    requiredPrerequisites: 1
+  - id: cursor.attack.next
+    definition: {fileID: 11400000, guid: 104413123ab2e4dba9d566082ba0edf1, type: 2}
+    position: {x: 1, y: 165}
+    costs:
+    - currencyId: gem.garnet
+      amount: 100
+    - currencyId: gem.garnet
+      amount: 250
+    - currencyId: gem.garnet
+      amount: 500
+    - currencyId: gem.garnet
+      amount: 1000
+    - currencyId: gem.garnet
+      amount: 2000
+    prerequisites:
+    - cursor.attack.start
+    requiredPrerequisites: 1
+  - id: cursor.radius.next
+    definition: {fileID: 11400000, guid: 7d1928e5994084988835c5460fbfb275, type: 2}
+    position: {x: 290, y: 170}
+    costs:
+    - currencyId: gem.garnet
+      amount: 100
+    - currencyId: gem.garnet
+      amount: 250
+    - currencyId: gem.garnet
+      amount: 500
+    - currencyId: gem.garnet
+      amount: 1000
+    - currencyId: gem.garnet
+      amount: 2000
+    prerequisites:
+    - cursor.radius.start
+    requiredPrerequisites: 1
+  - id: cursor.interval.next
+    definition: {fileID: 11400000, guid: fe6b220e9835449d4bf77f67b39a4a85, type: 2}
+    position: {x: 290, y: -170}
+    costs:
+    - currencyId: gem.garnet
+      amount: 100
+    - currencyId: gem.garnet
+      amount: 250
+    - currencyId: gem.garnet
+      amount: 500
+    - currencyId: gem.garnet
+      amount: 1000
+    prerequisites:
+    - cursor.interval.start
+    requiredPrerequisites: 1
+  - id: cursor.critical.next
+    definition: {fileID: 11400000, guid: 0fff43de2cebd44f1ba11156fbf4fa23, type: 2}
+    position: {x: 0, y: -330}
+    costs:
+    - currencyId: gem.garnet
+      amount: 100
+    - currencyId: gem.garnet
+      amount: 250
+    - currencyId: gem.garnet
+      amount: 500
+    - currencyId: gem.garnet
+      amount: 1000
+    - currencyId: gem.garnet
+      amount: 2000
+    prerequisites:
+    - cursor.critical.start
+    requiredPrerequisites: 1
+  - id: cursor.critical_damage.next
+    definition: {fileID: 11400000, guid: 1ed040a1ac5104961822bbc6a5637470, type: 2}
+    position: {x: -290, y: -170}
+    costs:
+    - currencyId: gem.garnet
+      amount: 100
+    - currencyId: gem.garnet
+      amount: 250
+    - currencyId: gem.garnet
+      amount: 500
+    prerequisites:
+    - cursor.critical_damage.start
+    requiredPrerequisites: 1
+  - id: cursor.boss_damage.next
+    definition: {fileID: 11400000, guid: b8ff2fdc706774b528624ea2e1855deb, type: 2}
+    position: {x: -290, y: 169}
+    costs:
+    - currencyId: gem.garnet
+      amount: 100
+    - currencyId: gem.garnet
+      amount: 250
+    - currencyId: gem.garnet
+      amount: 500
+    - currencyId: gem.garnet
+      amount: 1000
+    - currencyId: gem.garnet
+      amount: 2000
+    prerequisites:
+    - cursor.boss_damage.start
+    requiredPrerequisites: 1
+  - id: node.7476901545c44703b7ad840b5426caa1
+    definition: {fileID: 11400000, guid: fe6b220e9835449d4bf77f67b39a4a85, type: 2}
+    position: {x: 0, y: 328}
+    costs:
+    - currencyId: gem.topaz
+      amount: 100
+    - currencyId: gem.topaz
+      amount: 200
+    - currencyId: gem.topaz
+      amount: 300
+    - currencyId: gem.topaz
+      amount: 400
+    prerequisites:
+    - cursor.attack.next
+    requiredPrerequisites: 1
+  - id: node.c73571a8e4bd4dafa19f92955e2592bc
+    definition: {fileID: 11400000, guid: 1ed040a1ac5104961822bbc6a5637470, type: 2}
+    position: {x: -200, y: 329}
+    costs:
+    - currencyId: gem.garnet
+      amount: 100
+    - currencyId: gem.garnet
+      amount: 250
+    - currencyId: gem.garnet
+      amount: 500
+    prerequisites:
+    - node.7476901545c44703b7ad840b5426caa1
+    requiredPrerequisites: 1

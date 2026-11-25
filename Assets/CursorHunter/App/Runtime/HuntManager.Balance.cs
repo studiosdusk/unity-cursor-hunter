@@ -294,12 +294,14 @@ namespace CursorHunter.App
             }
             settings = _combatBalanceSettings;
             ProgressionCombatSnapshot player = null;
+            TraitCardCombatLoadout traits = null;
             if (settings.UsePlayerProgression)
             {
                 try
                 {
                     progressionController.SetCursorCombatStatDefaults(combatRunController.PlayerCombatStatsRuntime.Defaults);
                     player = progressionController.CreateCombatSnapshot();
+                    traits = TraitCardCombatLoadout.Capture(progressionController);
                 }
                 catch (Exception exception)
                 {
@@ -335,7 +337,7 @@ namespace CursorHunter.App
                 boss == null ? 0 : boss.Stage, boss == null ? null : boss.CreateClearRewards());
             _balanceRunId = request.RunId;
             bool started = player != null
-                ? _runCoordinator.StartBalanceTest(request, player, plan, enabled, out error)
+                ? _runCoordinator.StartBalanceTest(request, player, plan, enabled, traits, out error)
                 : _runCoordinator.StartBalanceTest(request, settings.ToCombatSnapshot(), plan, enabled, out error);
             if (!started)
             {

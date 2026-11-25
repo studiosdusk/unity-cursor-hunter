@@ -1,0 +1,140 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e9620f8c34305754d8cc9a7e49e852d9, type: 3}
+  m_Name: WorldStage_en
+  m_EditorClassIdentifier: Unity.Localization::UnityEngine.Localization.Tables.StringTable
+  m_LocaleId:
+    m_Code: en
+  m_SharedData: {fileID: 11400000, guid: c2ded118033c842c8ae7c6337aa966a6, type: 2}
+  m_Metadata:
+    m_Items: []
+  m_TableData:
+  - m_Id: 418373632
+    m_Localized: Forest
+    m_Metadata:
+      m_Items: []
+  - m_Id: 426762240
+    m_Localized: Forest battlefield
+    m_Metadata:
+      m_Items: []
+  - m_Id: 430956544
+    m_Localized: Desert
+    m_Metadata:
+      m_Items: []
+  - m_Id: 430956545
+    m_Localized: Desert battlefield
+    m_Metadata:
+      m_Items: []
+  - m_Id: 430956546
+    m_Localized: Winter
+    m_Metadata:
+      m_Items: []
+  - m_Id: 430956547
+    m_Localized: Winter battlefield
+    m_Metadata:
+      m_Items: []
+  - m_Id: 430956548
+    m_Localized: Beach
+    m_Metadata:
+      m_Items: []
+  - m_Id: 430956549
+    m_Localized: Beach battlefield
+    m_Metadata:
+      m_Items: []
+  - m_Id: 430956550
+    m_Localized: Space
+    m_Metadata:
+      m_Items: []
+  - m_Id: 430956551
+    m_Localized: Space battlefield
+    m_Metadata:
+      m_Items: []
+  - m_Id: 430956552
+    m_Localized: Construction Site
+    m_Metadata:
+      m_Items: []
+  - m_Id: 430956553
+    m_Localized: Construction Site battlefield
+    m_Metadata:
+      m_Items: []
+  - m_Id: 430956554
+    m_Localized: Stages
+    m_Metadata:
+      m_Items: []
+  - m_Id: 430956555
+    m_Localized: "Selected stage \xB7 {0}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 430956556
+    m_Localized: "Monster XP  \xD7{0}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 430956557
+    m_Localized: "Monster HP  \xD7{0}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 430956558
+    m_Localized: ???
+    m_Metadata:
+      m_Items: []
+  - m_Id: 430956559
+    m_Localized: ???
+    m_Metadata:
+      m_Items: []
+  - m_Id: 430956560
+    m_Localized: Unlock  {0}
+    m_Metadata:
+      m_Items: []
+  - m_Id: 430956561
+    m_Localized: Not enough trait points
+    m_Metadata:
+      m_Items: []
+  - m_Id: 430956562
+    m_Localized: Unlock the previous stage first
+    m_Metadata:
+      m_Items: []
+  - m_Id: 430956563
+    m_Localized: Trait points  {0}
+    m_Metadata:
+      m_Items: []
+  - m_Id: 430956565
+    m_Localized: Home
+    m_Metadata:
+      m_Items: []
+  - m_Id: 430956566
+    m_Localized: Help
+    m_Metadata:
+      m_Items: []
+  - m_Id: 430956567
+    m_Localized: Select a map and press Start Battle. Spend trait points earned by
+      leveling up to unlock stages in order.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 430956568
+    m_Localized: Could not save. Please try again.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2389963694080
+    m_Localized: Start Battle
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2389976276992
+    m_Localized: Raid
+    m_Metadata:
+      m_Items: []
+  - m_Id: 16992860889088
+    m_Localized: '[Stage {0}]'
+    m_Metadata:
+      m_Items: []
+  references:
+    version: 2
+    RefIds: []

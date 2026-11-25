@@ -1,0 +1,156 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b11a58205ec3474ca216360e9fa74a8, type: 3}
+  m_Name: ResultUI Shared Data
+  m_EditorClassIdentifier: Unity.Localization::UnityEngine.Localization.Tables.SharedTableData
+  m_TableCollectionName: ResultUI
+  m_TableCollectionNameGuidString: f971f4349bcd644bbbd9eb9e5afadeec
+  m_Entries:
+  - m_Id: 389013504
+    m_Key: ui.result.retired
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402112
+    m_Key: ui.result.boss.clear
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402113
+    m_Key: ui.result.boss.failed
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402114
+    m_Key: ui.result.timeout
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402115
+    m_Key: ui.result.hunt.over
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402116
+    m_Key: ui.result.boss.retired.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402117
+    m_Key: ui.result.boss.clear.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402118
+    m_Key: ui.result.boss.failed.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402119
+    m_Key: ui.result.retired.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402120
+    m_Key: ui.result.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402121
+    m_Key: ui.result.boss.retired.subtitle
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402122
+    m_Key: ui.result.boss.failed.subtitle
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402123
+    m_Key: ui.result.test.no.reward
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402124
+    m_Key: ui.result.action.upgrade
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402125
+    m_Key: ui.result.action.lobby
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402126
+    m_Key: ui.result.action.boss.next
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402127
+    m_Key: ui.result.action.boss.field
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402128
+    m_Key: ui.result.action.boss.retry
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402129
+    m_Key: ui.result.action.retry
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402130
+    m_Key: ui.result.rewards.heading
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402131
+    m_Key: ui.result.experience
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402133
+    m_Key: ui.result.gem.garnet
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402134
+    m_Key: ui.result.gem.topaz
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402135
+    m_Key: ui.result.gem.amethyst
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402136
+    m_Key: ui.result.gem.sapphire
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402137
+    m_Key: ui.result.gem.diamond
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402138
+    m_Key: ui.result.gem.dragon
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402139
+    m_Key: ui.result.hint
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402140
+    m_Key: ui.result.empty.gems
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402141
+    m_Key: ui.result.confirm
+    m_Metadata:
+      m_Items: []
+  - m_Id: 397402142
+    m_Key: ui.result.action.retry.failed
+    m_Metadata:
+      m_Items: []
+  - m_Id: 381514893221888
+    m_Key: ui.result.relic.discovery
+    m_Metadata:
+      m_Items: []
+  m_Metadata:
+    m_Items: []
+  m_KeyGenerator:
+    rid: 8486289524625768448
+  references:
+    version: 2
+    RefIds:
+    - rid: 8486289524625768448
+      type: {class: DistributedUIDGenerator, ns: UnityEngine.Localization.Tables, asm: Unity.Localization}
+      data:
+        m_CustomEpoch: 1794916252781

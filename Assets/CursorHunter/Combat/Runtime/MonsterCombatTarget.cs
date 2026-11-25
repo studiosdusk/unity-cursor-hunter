@@ -47,6 +47,8 @@ namespace CursorHunter.Combat
 
         private bool _isInitialized;
         private bool _isRegistered;
+        private bool _isTraitChest;
+        private TreasureChestHitFeedback _traitChestHitFeedback;
         private bool _isDead;
         private bool _isVulnerable = true;
         private bool _isShielded;
@@ -94,6 +96,7 @@ namespace CursorHunter.Combat
 
         public bool IsInitialized => _isInitialized;
         public bool IsRegistered => _isRegistered;
+        public bool IsTraitChest => _isTraitChest;
         public bool IsActive => _isInitialized && _isRegistered && !_isDead;
         public bool IsDead => _isDead;
         public bool IsVulnerable => _isVulnerable;
@@ -111,6 +114,17 @@ namespace CursorHunter.Combat
         public long BonusDropAmount => _bonusDropAmount;
         public float BonusDropChancePercent => _bonusDropChancePercent;
         public MonsterBehaviorType BehaviorType => _behaviorType;
+
+        internal void MarkAsTraitChest()
+        {
+            _isTraitChest = true;
+            _traitChestHitFeedback = GetComponentInChildren<TreasureChestHitFeedback>(true);
+            if (_traitChestHitFeedback != null && !_traitChestHitFeedback.Initialize(this, _runController))
+                _traitChestHitFeedback = null;
+        }
+
+        internal bool PlayTraitChestLethalHit() =>
+            _traitChestHitFeedback != null && _traitChestHitFeedback.Play(true);
 
         internal static void CollectActiveForRun(RunId runId, List<MonsterCombatTarget> results)
         {
@@ -250,6 +264,9 @@ namespace CursorHunter.Combat
                 return;
             }
 
+            _traitChestHitFeedback?.Cancel();
+            _traitChestHitFeedback = null;
+            _isTraitChest = false;
             _destroyScheduled = false;
             _deathRunId = default;
             _deathExpiresAt = 0f;
@@ -663,6 +680,7 @@ namespace CursorHunter.Combat
 
             CombatAudioFeedback.PlayMonsterHit(_monsterId);
             PlayHitAnimation();
+            _traitChestHitFeedback?.Play(false);
             return true;
         }
 
@@ -819,7 +837,7 @@ namespace CursorHunter.Combat
             for (int index = 0; index < RegisteredInstances.Count; index++)
             {
                 MonsterCombatTarget ally = RegisteredInstances[index];
-                if (ally == null || ally == source || !ally.IsActive ||
+                if (ally == null || ally == source || ally.IsTraitChest || !ally.IsActive ||
                     !ally.BelongsTo(source.RunId))
                 {
                     continue;
@@ -849,7 +867,7 @@ namespace CursorHunter.Combat
             for (int index = 0; index < RegisteredInstances.Count; index++)
             {
                 MonsterCombatTarget ally = RegisteredInstances[index];
-                if (ally == null || ally == source || !ally.IsDead ||
+                if (ally == null || ally == source || ally.IsTraitChest || !ally.IsDead ||
                     ally._runId != source.RunId || !ally._destroyScheduled)
                 {
                     continue;
@@ -1130,6 +1148,7 @@ namespace CursorHunter.Combat
         private void StartDeathAnimation()
         {
             _deathAnimationFinished = false;
+            if (_isTraitChest) return;
             if (animator == null)
             {
                 ScheduleDeathDespawn(ReviveWindowSeconds);

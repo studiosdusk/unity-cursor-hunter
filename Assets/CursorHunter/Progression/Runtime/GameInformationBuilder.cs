@@ -201,7 +201,7 @@ namespace CursorHunter.Progression
                 defaults.CriticalDamageMultiplier;
         }
 
-        private static void ApplyCursorStatBonuses(
+        internal static void ApplyCursorStatBonuses(
             GameInformation information,
             CursorCombatStatBonusesSnapshot bonuses)
         {

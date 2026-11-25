@@ -33,6 +33,8 @@ namespace CursorHunter.App.Tests
             Assert.That(IsActive("Trait"), Is.True);
             Assert.That(IsActive("FieldSelect"), Is.False);
             Assert.That(IsActive("Combat"), Is.False);
+            Assert.That(controller.ShowScreen(UiScreenId.ProfileLoadError), Is.False);
+            Assert.That(controller.CurrentScreen, Is.EqualTo(UiScreenId.Trait));
         }
 
         [Test]
@@ -68,6 +70,7 @@ namespace CursorHunter.App.Tests
         {
             GameObject controllerObject = CreateObject("UiRootController");
             controllerObject.SetActive(false);
+            CreateObject("Test language selector").AddComponent<LanguageSelectorController>();
 
             GameObject mainMenu = CreateObject("Trait");
             GameObject fieldSelect = CreateObject("FieldSelect");
@@ -86,6 +89,9 @@ namespace CursorHunter.App.Tests
             controllerObject.SetActive(true);
             AppUiRootController controller =
                 controllerObject.GetComponent<AppUiRootController>();
+            // EditMode does not dispatch Awake on this runtime-only component.
+            typeof(AppUiRootController).GetMethod("Awake", BindingFlags.Instance | BindingFlags.NonPublic)
+                .Invoke(controller, null);
             return controller;
         }
 

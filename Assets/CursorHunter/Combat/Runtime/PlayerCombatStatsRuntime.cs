@@ -31,13 +31,14 @@ namespace CursorHunter.Combat
         [SerializeField, Range(0f, 100f)] private float criticalChancePercent;
         [SerializeField, Min(1f)] private float criticalDamageMultiplier = 2f;
         [SerializeField, Min(0.01f)] private float bossDamageMultiplier = 1f;
+        private float traitRangeMultiplier = 1f;
 
         public bool HasRunSnapshot => hasRunSnapshot;
         public bool IsRunActive => runActive;
         public long AttackPower => attackPower;
-        public float AttackRadiusWorldUnits => attackRadiusWorldUnits;
+        public float AttackRadiusWorldUnits => attackRadiusWorldUnits * traitRangeMultiplier;
         public float AttackRangeMultiplier =>
-            attackRadiusWorldUnits / GameInformation.BaseAttackRadiusWorldUnits;
+            AttackRadiusWorldUnits / GameInformation.BaseAttackRadiusWorldUnits;
         public float AttackCooldownSeconds => attackCooldownSeconds;
         public bool AutoAttackEnabled => autoAttackEnabled;
         public float AutoAttackIntervalSeconds => attackCooldownSeconds;
@@ -72,6 +73,7 @@ namespace CursorHunter.Combat
             }
 
             hasRunSnapshot = true;
+            traitRangeMultiplier = 1f;
             attackPower = snapshot.AttackPower;
             attackRadiusWorldUnits =
                 GameInformation.BaseAttackRadiusWorldUnits * snapshot.RangeMultiplier;
@@ -142,6 +144,7 @@ namespace CursorHunter.Combat
             }
 
             hasRunSnapshot = true;
+            traitRangeMultiplier = 1f;
             attackPower = resolvedAttackPower;
             attackRadiusWorldUnits = resolvedRadius;
             attackCooldownSeconds = resolvedCooldown;
@@ -155,6 +158,12 @@ namespace CursorHunter.Combat
         internal void SetRunActive(bool active)
         {
             runActive = hasRunSnapshot && active;
+            if (!runActive) traitRangeMultiplier = 1f;
+        }
+
+        internal void SetTraitRangeMultiplier(float multiplier)
+        {
+            traitRangeMultiplier = IsFinitePositive(multiplier) ? multiplier : 1f;
         }
 
         private PlayerCombatStatsDefaults ResolveDefaults()
